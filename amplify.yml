@@ -1,0 +1,25 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - echo "Amplify build: show current working directory and files"
+        - pwd
+        - ls -la
+        - echo "Checking for package.json"
+        - if [ ! -f package.json ]; then echo "ERROR: package.json not found in $(pwd)"; echo "Listing parent dir:"; ls -la ..; exit 1; fi
+        - bash ./scripts/amplify-debug.sh || true
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    # Amplify expects build artifacts; Next.js SSR uses server, but this spec works for static/SSR hosting
+    baseDirectory: .next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/
+
+# Environment variables can be set in the Amplify Console (e.g., DATABASE_URL)
