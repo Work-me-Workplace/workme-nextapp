@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Switch to PostgreSQL for production/RDS. Set `DATABASE_URL` in environment.
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model WorkMe {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  firstName   String?
+  lastName    String?
+  photoUrl    String?
+  companyId   String?
+  company     Company? @relation(fields: [companyId], references: [id])
+  workLocation String?
+  city        String?
+  state       String?
+
+  jobTitle    String?
+  specialty   String?
+  industry    String?
+  jobRole     JobRole?
+  annualSalary String?
+  salaryRange SalaryRange?
+  createdAt   DateTime @default(now())
+  tasks       Task[]
+  goals       Goal[]
+  achievements Achievement[]
+}
+
+enum JobRole {
+  INDIVIDUAL_CONTRIBUTOR
+  MANAGER
+  DIRECTOR_LEVEL
+  PROJECT_LEAD
+}
+
+enum SalaryRange {
+  BELOW_50K
+  K50_100K
+  K100_150K
+  K150_200K
+  ABOVE_200K
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  industry  String?
+  website   String?
+  city      String?
+  state     String?
+  description String?
+  headcount  Int?
+  companyType CompanyType?
+  revenueRange RevenueRange?
+  createdAt DateTime @default(now())
+
+  employees WorkMe[]
+}
+
+enum CompanyType {
+  NON_PROFIT
+  FOR_PROFIT
+  PUBLICLY_TRADED
+  GOVERNMENT
+}
+
+enum RevenueRange {
+  UNDER_10M
+  M10_50
+  M50_200
+  M200_1000
+  ABOVE_1000M
+}
+
+model Task {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  completed   Boolean  @default(false)
+  dueAt       DateTime?
+  workMeId    String
+  workMe      WorkMe   @relation(fields: [workMeId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Goal {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  progress    Int      @default(0)
+  targetDate  DateTime?
+  workMeId    String
+  workMe      WorkMe   @relation(fields: [workMeId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Achievement {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  date        DateTime @default(now())
+  workMeId    String
+  workMe      WorkMe   @relation(fields: [workMeId], references: [id])
+}

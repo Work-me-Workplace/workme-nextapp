@@ -42,42 +42,27 @@ Next steps / Notes:
 - Add API routes and Prisma CRUD calls for tasks, goals, and achievements.
 - Replace SQLite with Postgres for production and update `prisma/schema.prisma` datasource.
 
-AWS RDS + Amplify deployment (scaffolded):
+Deployment (recommended)
 
-- A Terraform scaffold is provided in `infrastructure/terraform/` to create a VPC, 2 subnets, a security group, and a Postgres RDS instance. You must supply `db_password` as a Terraform variable.
-- The Prisma `schema.prisma` has been switched to use `env("DATABASE_URL")`. Copy `.env.example` to `.env` and fill `DATABASE_URL` once you have the RDS endpoint.
-- `amplify.yml` is added for Amplify Console build settings. Set `DATABASE_URL` and other environment variables in the Amplify Console for your app.
+This project is set up to deploy on Vercel for the Next.js app and Render for a managed Postgres database. Vercel handles Next.js SSR and static builds automatically; Render provides an easy managed Postgres instance for dev/prod.
 
-Important:
-- The Terraform example opens Postgres on 0.0.0.0/0 for simplicity. Restrict this to your IPs or internal CIDRs in production.
-- You need AWS credentials to run `terraform init` and `terraform apply`.
+Quick Render + Vercel flow:
 
-Quick Terraform run (example):
+1. Create a Render Postgres instance (Dashboard → New → Database → Postgres). Choose a Hobby plan for development.
+2. Copy the Render Postgres connection string and add it as `DATABASE_URL` in Vercel (Project → Settings → Environment Variables) and/or in a local `.env`.
+3. Locally, generate Prisma client and create the initial migration:
 
 ```bash
-cd infrastructure/terraform
-terraform init
-terraform apply -var='db_password=StrongPassword123' -auto-approve
+npm ci
+export DATABASE_URL="postgresql://user:pass@your-db-host:5432/workmedb"
+npx prisma generate
+npx prisma migrate dev --name init
 ```
 
-After apply, copy the outputs `db_endpoint` and `db_port` and set:
+4. Commit the `prisma/migrations/` folder and push to your repo. Vercel will build and deploy the app. If you prefer migrations to run during deploy, add a build/start hook to run `npx prisma migrate deploy` in your CI.
 
-```
-DATABASE_URL="postgresql://<username>:<password>@<endpoint>:<port>/<dbname>"
-```
+Notes:
+- `package.json` includes `postinstall` to `prisma generate` and `start` uses `$PORT` so Render/other hosts will work.
+- If you still want to use AWS: see `infrastructure/terraform/` for a Terraform RDS example, but be careful with networking and costs.
 
-Then generate Prisma client and apply migrations:
-
-```bash
-npm run prisma:generate
-npx prisma migrate deploy
-```
-
-
-Workme repo for mvp1 
-
-## Amplify build troubleshooting
-- If the Amplify Console build fails with "Could not read package.json": ensure the app's root directory is set to the repository root (i.e. `/`) in the Amplify build settings. The `amplify.yml` in this repo assumes the Next app lives at the repository root.
-- Make sure environment variables (e.g. `DATABASE_URL`) are set in the Amplify Console. If you rely on SSM Parameter Store, ensure the Amplify service role has permissions to read those parameters.
-- Confirm Amplify is using a Node runtime >= 18 to match the `engines` field in `package.json`.
-- If problems persist, check the build logs for `pwd` and `ls -la` output (these are printed during `preBuild` in `amplify.yml`) to see where CodeBuild is running and what files exist.
+Workme repo for mvp1
