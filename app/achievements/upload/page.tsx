@@ -5,9 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createAchievementsBatch } from '@/lib/actions/csv-import'
 import { getObjectives } from '@/lib/actions/objectives'
-import { getOrganizationalActivities } from '@/lib/actions/activities'
 import { getCommsOutputs } from '@/lib/actions/comms-outputs'
-import { getHappenings } from '@/lib/actions/happenings'
+import { getCompanyCampaigns } from '@/lib/actions/company-campaigns'
 
 interface CSVRow {
   [key: string]: string
@@ -20,9 +19,8 @@ export default function UploadAchievementsPage() {
   const [headers, setHeaders] = useState<string[]>([])
   const [fieldMapping, setFieldMapping] = useState<{ [key: string]: string }>({})
   const [objectives, setObjectives] = useState<any[]>([])
-  const [activities, setActivities] = useState<any[]>([])
   const [commsOutputs, setCommsOutputs] = useState<any[]>([])
-  const [happenings, setHappenings] = useState<any[]>([])
+  const [campaigns, setCampaigns] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [previewRows, setPreviewRows] = useState(5)
 
@@ -31,16 +29,14 @@ export default function UploadAchievementsPage() {
   }, [])
 
   async function loadDropdowns() {
-    const [objResult, actResult, commsResult, hapResult] = await Promise.all([
+    const [objResult, commsResult, campaignsResult] = await Promise.all([
       getObjectives(),
-      getOrganizationalActivities(),
       getCommsOutputs(),
-      getHappenings(),
+      getCompanyCampaigns(),
     ])
     if (objResult.success) setObjectives(objResult.objectives || [])
-    if (actResult.success) setActivities(actResult.activities || [])
     if (commsResult.success) setCommsOutputs(commsResult.commsOutputs || [])
-    if (hapResult.success) setHappenings(hapResult.happenings || [])
+    if (campaignsResult.success) setCampaigns(campaignsResult.campaigns || [])
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -84,12 +80,11 @@ export default function UploadAchievementsPage() {
       if (lower.includes('audience') && lower.includes('name')) autoMapping.audienceName = header
       if (lower.includes('audience') && lower.includes('size')) autoMapping.audienceSize = header
       if (lower.includes('objective')) autoMapping.objective = header
+      if (lower.includes('comms') || lower.includes('output')) autoMapping.commsOutput = header
+      if (lower.includes('campaign')) autoMapping.companyCampaign = header
       if (lower.includes('what') || lower.includes('did')) autoMapping.whatYouDid = header
       if (lower.includes('frequency')) autoMapping.frequency = header
       if (lower.includes('volume')) autoMapping.volume = header
-      if (lower.includes('organizational') || lower.includes('activity')) autoMapping.organizationalActivity = header
-      if (lower.includes('comms') || lower.includes('output')) autoMapping.commsOutput = header
-      if (lower.includes('happening') || lower.includes('event')) autoMapping.companyHappening = header
       if (lower.includes('process') || lower.includes('step')) autoMapping.processSteps = header
       if (lower.includes('impact')) autoMapping.impact = header
     })
@@ -108,9 +103,8 @@ export default function UploadAchievementsPage() {
       csvData,
       fieldMapping,
       objectives,
-      activities,
       commsOutputs,
-      happenings
+      campaigns
     )
     setLoading(false)
 
@@ -131,12 +125,11 @@ export default function UploadAchievementsPage() {
     { value: 'audienceName', label: 'Audience Name' },
     { value: 'audienceSize', label: 'Audience Size' },
     { value: 'objective', label: 'Objective' },
+    { value: 'commsOutput', label: 'Comms Output' },
+    { value: 'companyCampaign', label: 'Company Campaign' },
     { value: 'whatYouDid', label: 'What You Did *' },
     { value: 'frequency', label: 'Frequency' },
     { value: 'volume', label: 'Volume' },
-    { value: 'organizationalActivity', label: 'Organizational Activity' },
-    { value: 'commsOutput', label: 'Comms Output' },
-    { value: 'companyHappening', label: 'Company Happening' },
     { value: 'processSteps', label: 'Process Steps' },
     { value: 'impact', label: 'Impact' },
   ]

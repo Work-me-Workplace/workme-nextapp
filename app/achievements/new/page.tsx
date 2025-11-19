@@ -5,9 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createAchievement } from '@/lib/actions/achievements'
 import { getObjectives } from '@/lib/actions/objectives'
-import { getOrganizationalActivities } from '@/lib/actions/activities'
 import { getCommsOutputs } from '@/lib/actions/comms-outputs'
-import { getHappenings } from '@/lib/actions/happenings'
+import { getCompanyCampaigns } from '@/lib/actions/company-campaigns'
 
 const categories = [
   'INTERNAL_COMMS',
@@ -35,21 +34,19 @@ export default function NewAchievementPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [objectives, setObjectives] = useState<any[]>([])
-  const [activities, setActivities] = useState<any[]>([])
   const [commsOutputs, setCommsOutputs] = useState<any[]>([])
-  const [happenings, setHappenings] = useState<any[]>([])
+  const [campaigns, setCampaigns] = useState<any[]>([])
   const [formData, setFormData] = useState({
     title: '',
     category: 'INTERNAL_COMMS',
     audienceName: '',
     audienceSize: '',
     objectiveId: '',
+    commsOutputId: '',
+    companyCampaignId: '',
     whatYouDid: '',
     frequency: '',
     volume: '',
-    organizationalActivityId: '',
-    commsOutputId: '',
-    companyHappeningId: '',
     processSteps: '',
     impact: '',
   })
@@ -59,16 +56,14 @@ export default function NewAchievementPage() {
   }, [])
 
   async function loadDropdowns() {
-    const [objResult, actResult, commsResult, hapResult] = await Promise.all([
+    const [objResult, commsResult, campaignsResult] = await Promise.all([
       getObjectives(),
-      getOrganizationalActivities(),
       getCommsOutputs(),
-      getHappenings(),
+      getCompanyCampaigns(),
     ])
     if (objResult.success) setObjectives(objResult.objectives || [])
-    if (actResult.success) setActivities(actResult.activities || [])
     if (commsResult.success) setCommsOutputs(commsResult.commsOutputs || [])
-    if (hapResult.success) setHappenings(hapResult.happenings || [])
+    if (campaignsResult.success) setCampaigns(campaignsResult.campaigns || [])
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -84,23 +79,19 @@ export default function NewAchievementPage() {
     if (formData.audienceName) data.audienceName = formData.audienceName
     if (formData.audienceSize) data.audienceSize = parseInt(formData.audienceSize)
     if (formData.objectiveId) data.objectiveId = formData.objectiveId
+    if (formData.commsOutputId) data.commsOutputId = formData.commsOutputId
+    if (formData.companyCampaignId) data.companyCampaignId = formData.companyCampaignId
     if (formData.frequency) data.frequency = formData.frequency
     if (formData.volume) data.volume = parseInt(formData.volume)
-    if (formData.organizationalActivityId) data.organizationalActivityId = formData.organizationalActivityId
-    if (formData.commsOutputId) data.commsOutputId = formData.commsOutputId
-    if (formData.companyHappeningId) data.companyHappeningId = formData.companyHappeningId
     if (formData.processSteps) {
       try {
-        // Try to parse as JSON array
         const steps = JSON.parse(formData.processSteps)
         if (Array.isArray(steps)) {
           data.processSteps = steps
         } else {
-          // If not array, treat as comma-separated
           data.processSteps = formData.processSteps.split(',').map(s => s.trim())
         }
       } catch {
-        // If not valid JSON, treat as comma-separated string
         data.processSteps = formData.processSteps.split(',').map(s => s.trim())
       }
     }
@@ -249,34 +240,22 @@ export default function NewAchievementPage() {
             className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           >
             <option value="">None</option>
-            {objectives.map((obj) => (
-              <option key={obj.id} value={obj.id}>
-                {obj.name}
-              </option>
-            ))}
+            {objectives.length === 0 ? (
+              <option disabled>Set up objectives first in the Setup page</option>
+            ) : (
+              objectives.map((obj) => (
+                <option key={obj.id} value={obj.id}>
+                  {obj.title}
+                </option>
+              ))
+            )}
           </select>
+          {objectives.length === 0 && (
+            <p className="mt-1 text-sm text-gray-500">Set up items first in the Setup page.</p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="organizationalActivityId" className="block text-sm font-medium text-gray-700 mb-2">
-              Organizational Activity
-            </label>
-            <select
-              id="organizationalActivityId"
-              value={formData.organizationalActivityId}
-              onChange={(e) => setFormData({ ...formData, organizationalActivityId: e.target.value })}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            >
-              <option value="">None</option>
-              {activities.map((act) => (
-                <option key={act.id} value={act.id}>
-                  {act.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div>
             <label htmlFor="commsOutputId" className="block text-sm font-medium text-gray-700 mb-2">
               Comms Output
@@ -288,32 +267,46 @@ export default function NewAchievementPage() {
               className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
               <option value="">None</option>
-              {commsOutputs.map((comms) => (
-                <option key={comms.id} value={comms.id}>
-                  {comms.title}
-                </option>
-              ))}
+              {commsOutputs.length === 0 ? (
+                <option disabled>Set up comms outputs first in the Setup page</option>
+              ) : (
+                commsOutputs.map((comms) => (
+                  <option key={comms.id} value={comms.id}>
+                    {comms.title}
+                  </option>
+                ))
+              )}
             </select>
+            {commsOutputs.length === 0 && (
+              <p className="mt-1 text-sm text-gray-500">Set up items first in the Setup page.</p>
+            )}
           </div>
-        </div>
 
-        <div>
-          <label htmlFor="companyHappeningId" className="block text-sm font-medium text-gray-700 mb-2">
-            Company Happening
-          </label>
-          <select
-            id="companyHappeningId"
-            value={formData.companyHappeningId}
-            onChange={(e) => setFormData({ ...formData, companyHappeningId: e.target.value })}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          >
-            <option value="">None</option>
-            {happenings.map((hap) => (
-              <option key={hap.id} value={hap.id}>
-                {hap.name}
-              </option>
-            ))}
-          </select>
+          <div>
+            <label htmlFor="companyCampaignId" className="block text-sm font-medium text-gray-700 mb-2">
+              Company Campaign
+            </label>
+            <select
+              id="companyCampaignId"
+              value={formData.companyCampaignId}
+              onChange={(e) => setFormData({ ...formData, companyCampaignId: e.target.value })}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            >
+              <option value="">None</option>
+              {campaigns.length === 0 ? (
+                <option disabled>Set up campaigns first in the Setup page</option>
+              ) : (
+                campaigns.map((campaign) => (
+                  <option key={campaign.id} value={campaign.id}>
+                    {campaign.name}
+                  </option>
+                ))
+              )}
+            </select>
+            {campaigns.length === 0 && (
+              <p className="mt-1 text-sm text-gray-500">Set up items first in the Setup page.</p>
+            )}
+          </div>
         </div>
 
         <div>

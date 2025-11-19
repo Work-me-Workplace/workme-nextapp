@@ -168,36 +168,29 @@ model CommsOutput {
   achievements Achievement[]
 }
 
-model OrganizationalActivity {
+model Objective {
   id          String   @id @default(cuid())
   userId      String
+
+  title       String
+  description String?
+  howMeasured String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  achievements Achievement[]
+}
+
+model CompanyCampaign {
+  id          String   @id @default(cuid())
+  userId      String
+
   name        String
   description String?
   startDate   DateTime?
   endDate     DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
-  achievements Achievement[]
-}
-
-model CompanyHappening {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
-  description String?
-  date        DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  achievements Achievement[]
-}
-
-model Objective {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
-  description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -217,23 +210,17 @@ model Achievement {
   objectiveId          String?
   objective            Objective? @relation(fields: [objectiveId], references: [id])
 
-  whatYouDid           String
-  frequency            String?
-  volume               Int?
-
-  // Optional link to Organizational Activity
-  organizationalActivityId String?
-  organizationalActivity   OrganizationalActivity? @relation(fields: [organizationalActivityId], references: [id])
-
-  // Optional link to Comms Output
   commsOutputId        String?
   commsOutput          CommsOutput? @relation(fields: [commsOutputId], references: [id])
 
-  // Optional link to Company Happening (Event)
-  companyHappeningId   String?
-  happening            CompanyHappening? @relation(fields: [companyHappeningId], references: [id])
+  companyCampaignId    String?
+  companyCampaign      CompanyCampaign? @relation(fields: [companyCampaignId], references: [id])
 
-  processSteps         Json?
+  whatYouDid           String
+  frequency            String?   // weekly, recurring, one-time
+  volume               Int?
+
+  processSteps         Json?     // array of steps
   impact               String?
 
   createdAt            DateTime @default(now())

@@ -9,8 +9,9 @@ export default function NewObjectivePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    name: '',
+    title: '',
     description: '',
+    howMeasured: '',
   })
 
   async function handleSubmit(e: React.FormEvent) {
@@ -18,10 +19,11 @@ export default function NewObjectivePage() {
     setLoading(true)
 
     const data: any = {
-      name: formData.name,
+      title: formData.title,
     }
 
     if (formData.description) data.description = formData.description
+    if (formData.howMeasured) data.howMeasured = formData.howMeasured
 
     const result = await createObjective(data)
     setLoading(false)
@@ -45,15 +47,15 @@ export default function NewObjectivePage() {
 
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-6">
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-            Name *
+          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+            Title *
           </label>
           <input
             type="text"
-            id="name"
+            id="title"
             required
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             placeholder="e.g., Improve team communication"
           />
@@ -70,6 +72,20 @@ export default function NewObjectivePage() {
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             placeholder="Optional description..."
+          />
+        </div>
+
+        <div>
+          <label htmlFor="howMeasured" className="block text-sm font-medium text-gray-700 mb-2">
+            How Measured
+          </label>
+          <textarea
+            id="howMeasured"
+            rows={2}
+            value={formData.howMeasured}
+            onChange={(e) => setFormData({ ...formData, howMeasured: e.target.value })}
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="How will this objective be measured?"
           />
         </div>
 
@@ -92,4 +108,3 @@ export default function NewObjectivePage() {
     </div>
   )
 }
-

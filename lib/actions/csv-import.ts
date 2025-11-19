@@ -17,12 +17,11 @@ interface FieldMapping {
   audienceName?: string
   audienceSize?: string
   objective?: string
+  commsOutput?: string
+  companyCampaign?: string
   whatYouDid?: string
   frequency?: string
   volume?: string
-  organizationalActivity?: string
-  commsOutput?: string
-  companyHappening?: string
   processSteps?: string
   impact?: string
 }
@@ -30,10 +29,9 @@ interface FieldMapping {
 export async function createAchievementsBatch(
   rows: CSVRow[],
   fieldMapping: FieldMapping,
-  objectives: Array<{ id: string; name: string }>,
-  activities: Array<{ id: string; name: string }>,
+  objectives: Array<{ id: string; title: string }>,
   commsOutputs: Array<{ id: string; title: string }>,
-  happenings: Array<{ id: string; name: string }>
+  campaigns: Array<{ id: string; name: string }>
 ) {
   const results = []
   const errors = []
@@ -64,10 +62,26 @@ export async function createAchievementsBatch(
       }
 
       if (fieldMapping.objective && row[fieldMapping.objective]) {
-        const objectiveName = row[fieldMapping.objective].trim()
-        const objective = objectives.find((o) => o.name === objectiveName || o.id === objectiveName)
+        const objectiveTitle = row[fieldMapping.objective].trim()
+        const objective = objectives.find((o) => o.title === objectiveTitle || o.id === objectiveTitle)
         if (objective) {
           achievementData.objectiveId = objective.id
+        }
+      }
+
+      if (fieldMapping.commsOutput && row[fieldMapping.commsOutput]) {
+        const commsTitle = row[fieldMapping.commsOutput].trim()
+        const comms = commsOutputs.find((c) => c.title === commsTitle || c.id === commsTitle)
+        if (comms) {
+          achievementData.commsOutputId = comms.id
+        }
+      }
+
+      if (fieldMapping.companyCampaign && row[fieldMapping.companyCampaign]) {
+        const campaignName = row[fieldMapping.companyCampaign].trim()
+        const campaign = campaigns.find((c) => c.name === campaignName || c.id === campaignName)
+        if (campaign) {
+          achievementData.companyCampaignId = campaign.id
         }
       }
 
@@ -83,30 +97,6 @@ export async function createAchievementsBatch(
         const volume = parseInt(row[fieldMapping.volume].trim())
         if (!isNaN(volume)) {
           achievementData.volume = volume
-        }
-      }
-
-      if (fieldMapping.organizationalActivity && row[fieldMapping.organizationalActivity]) {
-        const activityName = row[fieldMapping.organizationalActivity].trim()
-        const activity = activities.find((a) => a.name === activityName || a.id === activityName)
-        if (activity) {
-          achievementData.organizationalActivityId = activity.id
-        }
-      }
-
-      if (fieldMapping.commsOutput && row[fieldMapping.commsOutput]) {
-        const commsTitle = row[fieldMapping.commsOutput].trim()
-        const comms = commsOutputs.find((c) => c.title === commsTitle || c.id === commsTitle)
-        if (comms) {
-          achievementData.commsOutputId = comms.id
-        }
-      }
-
-      if (fieldMapping.companyHappening && row[fieldMapping.companyHappening]) {
-        const happeningName = row[fieldMapping.companyHappening].trim()
-        const happening = happenings.find((h) => h.name === happeningName || h.id === happeningName)
-        if (happening) {
-          achievementData.companyHappeningId = happening.id
         }
       }
 

@@ -36,6 +36,9 @@ export default function ObjectivesPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
+          <Link href="/setup" className="text-blue-600 hover:text-blue-700 mb-2 inline-block text-sm">
+            ← Back to Setup
+          </Link>
           <h2 className="text-3xl font-bold text-gray-900">Objectives</h2>
           <p className="text-gray-600 mt-2">Manage your professional objectives</p>
         </div>
@@ -73,10 +76,13 @@ export default function ObjectivesPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
+                    Title
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Description
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    How Measured
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created At
@@ -90,10 +96,13 @@ export default function ObjectivesPage() {
                 {objectives.map((objective) => (
                   <tr key={objective.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {objective.name}
+                      {objective.title}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {objective.description || '-'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {objective.howMeasured || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(objective.createdAt).toLocaleDateString()}

@@ -8,8 +8,9 @@ const getUserId = (): string => {
 }
 
 const objectiveSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  title: z.string().min(1, 'Title is required'),
   description: z.string().optional().nullable(),
+  howMeasured: z.string().optional().nullable(),
 })
 
 export async function createObjective(data: z.infer<typeof objectiveSchema>) {
@@ -22,6 +23,7 @@ export async function createObjective(data: z.infer<typeof objectiveSchema>) {
         ...validated,
         userId,
         description: validated.description ?? undefined,
+        howMeasured: validated.howMeasured ?? undefined,
       },
     })
 
@@ -52,6 +54,7 @@ export async function updateObjective(id: string, data: z.infer<typeof objective
       data: {
         ...validated,
         description: validated.description ?? undefined,
+        howMeasured: validated.howMeasured ?? undefined,
       },
     })
 
