@@ -141,3 +141,67 @@ enum MilestoneType {
   SPEAKING_ENGAGEMENT
   OTHER
 }
+
+enum AchievementCategory {
+  INTERNAL_COMMS
+  WORKFORCE_COMMS
+  EVENT_SUPPORT
+  EXECUTIVE_LEADERSHIP
+  OPERATIONS_SUPPORT
+  READINESS
+  ADMIN
+  COMMUNITY_ENGAGEMENT
+}
+
+model Achievement {
+  id               String   @id @default(cuid())
+  userId           String
+  title            String
+  category         AchievementCategory
+  audienceName     String?
+  audienceSize     Int?
+  objectiveId      String?
+  objective        Objective? @relation(fields: [objectiveId], references: [id])
+  whatYouDid       String
+  frequency        String?   // "weekly", "recurring", "one-time"
+  volume           Int?      // numeric count of outputs
+  companyMilestoneId String?
+  milestone          CompanyMilestone? @relation(fields: [companyMilestoneId], references: [id])
+  companyHappeningId String?
+  happening          CompanyHappening? @relation(fields: [companyHappeningId], references: [id])
+  impact           String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Objective {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  achievements Achievement[]
+}
+
+model CompanyMilestone {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  date        DateTime?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  achievements Achievement[]
+}
+
+model CompanyHappening {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  date        DateTime?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  achievements Achievement[]
+}

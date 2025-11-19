@@ -1,13 +1,18 @@
+'use client'
+
 import './globals.css'
 import React from 'react'
 import Link from 'next/link'
-
-export const metadata = {
-  title: 'Work.me - Your Network, Your Career',
-  description: 'Build professional connections, track career milestones, and grow your network'
-}
+import { usePathname } from 'next/navigation'
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+
+  const isActive = (path: string) => {
+    if (path === '/') return pathname === path
+    return pathname?.startsWith(path)
+  }
+
   return (
     <html lang="en">
       <body className="min-h-screen bg-gray-50">
@@ -39,7 +44,92 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         </nav>
-        <main>{children}</main>
+        <div className="flex">
+          <aside className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-4rem)] p-4">
+            <nav className="space-y-6">
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Achievements
+                </h3>
+                <ul className="space-y-1">
+                  <li>
+                    <Link
+                      href="/achievements"
+                      className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                        isActive('/achievements') && !pathname?.includes('/achievements/')
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      All Achievements
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/achievements/new"
+                      className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                        isActive('/achievements/new')
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      Add Manually
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/achievements/upload"
+                      className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                        isActive('/achievements/upload')
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      Upload CSV
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/objectives"
+                      className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                        isActive('/objectives')
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      Objectives
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/milestones"
+                      className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                        isActive('/milestones')
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      Milestones
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/happenings"
+                      className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                        isActive('/happenings')
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      Happenings
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            </nav>
+          </aside>
+          <main className="flex-1">{children}</main>
+        </div>
       </body>
     </html>
   )

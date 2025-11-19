@@ -1,24 +1,308 @@
 'use client'
+
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import Link from 'next/link'
+import { createAchievement } from '@/lib/actions/achievements'
+import { getObjectives } from '@/lib/actions/objectives'
+import { getMilestones } from '@/lib/actions/milestones'
+import { getHappenings } from '@/lib/actions/happenings'
 
-export default function NewAchievementPage(){
+const categories = [
+  'INTERNAL_COMMS',
+  'WORKFORCE_COMMS',
+  'EVENT_SUPPORT',
+  'EXECUTIVE_LEADERSHIP',
+  'OPERATIONS_SUPPORT',
+  'READINESS',
+  'ADMIN',
+  'COMMUNITY_ENGAGEMENT',
+]
+
+const categoryLabels: { [key: string]: string } = {
+  INTERNAL_COMMS: 'Internal Comms',
+  WORKFORCE_COMMS: 'Workforce Comms',
+  EVENT_SUPPORT: 'Event Support',
+  EXECUTIVE_LEADERSHIP: 'Executive Leadership',
+  OPERATIONS_SUPPORT: 'Operations Support',
+  READINESS: 'Readiness',
+  ADMIN: 'Admin',
+  COMMUNITY_ENGAGEMENT: 'Community Engagement',
+}
+
+export default function NewAchievementPage() {
   const router = useRouter()
-  const [title, setTitle] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [objectives, setObjectives] = useState<any[]>([])
+  const [milestones, setMilestones] = useState<any[]>([])
+  const [happenings, setHappenings] = useState<any[]>([])
+  const [formData, setFormData] = useState({
+    title: '',
+    category: 'INTERNAL_COMMS',
+    audienceName: '',
+    audienceSize: '',
+    objectiveId: '',
+    whatYouDid: '',
+    frequency: '',
+    volume: '',
+    companyMilestoneId: '',
+    companyHappeningId: '',
+    impact: '',
+  })
 
-  function handleSubmit(e: React.FormEvent){
+  useEffect(() => {
+    loadDropdowns()
+  }, [])
+
+  async function loadDropdowns() {
+    const [objResult, milResult, hapResult] = await Promise.all([
+      getObjectives(),
+      getMilestones(),
+      getHappenings(),
+    ])
+    if (objResult.success) setObjectives(objResult.objectives || [])
+    if (milResult.success) setMilestones(milResult.milestones || [])
+    if (hapResult.success) setHappenings(hapResult.happenings || [])
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    // TODO: call API to create achievement
-    router.push('/achievements')
+    setLoading(true)
+
+    const data: any = {
+      title: formData.title,
+      category: formData.category as any,
+      whatYouDid: formData.whatYouDid,
+    }
+
+    if (formData.audienceName) data.audienceName = formData.audienceName
+    if (formData.audienceSize) data.audienceSize = parseInt(formData.audienceSize)
+    if (formData.objectiveId) data.objectiveId = formData.objectiveId
+    if (formData.frequency) data.frequency = formData.frequency
+    if (formData.volume) data.volume = parseInt(formData.volume)
+    if (formData.companyMilestoneId) data.companyMilestoneId = formData.companyMilestoneId
+    if (formData.companyHappeningId) data.companyHappeningId = formData.companyHappeningId
+    if (formData.impact) data.impact = formData.impact
+
+    const result = await createAchievement(data)
+    setLoading(false)
+
+    if (result.success) {
+      router.push('/achievements')
+    } else {
+      alert('Failed to create achievement: ' + JSON.stringify(result.error))
+    }
   }
 
   return (
-    <div className="max-w-md">
-      <h2 className="text-xl font-medium mb-4">New Achievement</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Achievement title" className="w-full border rounded px-3 py-2" />
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-6">
+        <Link href="/achievements" className="text-blue-600 hover:text-blue-700 mb-4 inline-block">
+          ← Back to Achievements
+        </Link>
+        <h2 className="text-3xl font-bold text-gray-900">Add Achievement</h2>
+        <p className="text-gray-600 mt-2">Record a new achievement manually</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-6">
         <div>
-          <button className="rounded bg-blue-600 text-white px-4 py-2">Create</button>
+          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+            Title *
+          </label>
+          <input
+            type="text"
+            id="title"
+            required
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="e.g., Weekly team newsletter"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+            Category *
+          </label>
+          <select
+            id="category"
+            required
+            value={formData.category}
+            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          >
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {categoryLabels[cat]}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="whatYouDid" className="block text-sm font-medium text-gray-700 mb-2">
+            What You Did *
+          </label>
+          <textarea
+            id="whatYouDid"
+            required
+            rows={4}
+            value={formData.whatYouDid}
+            onChange={(e) => setFormData({ ...formData, whatYouDid: e.target.value })}
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Describe what you did..."
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="audienceName" className="block text-sm font-medium text-gray-700 mb-2">
+              Audience Name
+            </label>
+            <input
+              type="text"
+              id="audienceName"
+              value={formData.audienceName}
+              onChange={(e) => setFormData({ ...formData, audienceName: e.target.value })}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="e.g., All employees"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="audienceSize" className="block text-sm font-medium text-gray-700 mb-2">
+              Audience Size
+            </label>
+            <input
+              type="number"
+              id="audienceSize"
+              min="1"
+              value={formData.audienceSize}
+              onChange={(e) => setFormData({ ...formData, audienceSize: e.target.value })}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="e.g., 150"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="frequency" className="block text-sm font-medium text-gray-700 mb-2">
+              Frequency
+            </label>
+            <input
+              type="text"
+              id="frequency"
+              value={formData.frequency}
+              onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="e.g., weekly, recurring, one-time"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="volume" className="block text-sm font-medium text-gray-700 mb-2">
+              Volume
+            </label>
+            <input
+              type="number"
+              id="volume"
+              min="1"
+              value={formData.volume}
+              onChange={(e) => setFormData({ ...formData, volume: e.target.value })}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="e.g., 10"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="objectiveId" className="block text-sm font-medium text-gray-700 mb-2">
+            Linked Objective
+          </label>
+          <select
+            id="objectiveId"
+            value={formData.objectiveId}
+            onChange={(e) => setFormData({ ...formData, objectiveId: e.target.value })}
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="">None</option>
+            {objectives.map((obj) => (
+              <option key={obj.id} value={obj.id}>
+                {obj.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="companyMilestoneId" className="block text-sm font-medium text-gray-700 mb-2">
+              Company Milestone
+            </label>
+            <select
+              id="companyMilestoneId"
+              value={formData.companyMilestoneId}
+              onChange={(e) => setFormData({ ...formData, companyMilestoneId: e.target.value })}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            >
+              <option value="">None</option>
+              {milestones.map((mil) => (
+                <option key={mil.id} value={mil.id}>
+                  {mil.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="companyHappeningId" className="block text-sm font-medium text-gray-700 mb-2">
+              Company Happening
+            </label>
+            <select
+              id="companyHappeningId"
+              value={formData.companyHappeningId}
+              onChange={(e) => setFormData({ ...formData, companyHappeningId: e.target.value })}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            >
+              <option value="">None</option>
+              {happenings.map((hap) => (
+                <option key={hap.id} value={hap.id}>
+                  {hap.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="impact" className="block text-sm font-medium text-gray-700 mb-2">
+            Impact
+          </label>
+          <textarea
+            id="impact"
+            rows={3}
+            value={formData.impact}
+            onChange={(e) => setFormData({ ...formData, impact: e.target.value })}
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Describe the impact of this achievement..."
+          />
+        </div>
+
+        <div className="flex gap-4">
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 rounded-lg bg-blue-600 text-white px-6 py-3 font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+          >
+            {loading ? 'Creating...' : 'Create Achievement'}
+          </button>
+          <Link
+            href="/achievements"
+            className="flex-1 rounded-lg bg-gray-200 text-gray-700 px-6 py-3 font-semibold hover:bg-gray-300 transition text-center"
+          >
+            Cancel
+          </Link>
         </div>
       </form>
     </div>
