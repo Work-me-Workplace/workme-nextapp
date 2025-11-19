@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createAchievementsBatch } from '@/lib/actions/csv-import'
 import { getObjectives } from '@/lib/actions/objectives'
-import { getMilestones } from '@/lib/actions/milestones'
+import { getOrganizationalActivities } from '@/lib/actions/activities'
+import { getCommsOutputs } from '@/lib/actions/comms-outputs'
 import { getHappenings } from '@/lib/actions/happenings'
 
 interface CSVRow {
@@ -19,7 +20,8 @@ export default function UploadAchievementsPage() {
   const [headers, setHeaders] = useState<string[]>([])
   const [fieldMapping, setFieldMapping] = useState<{ [key: string]: string }>({})
   const [objectives, setObjectives] = useState<any[]>([])
-  const [milestones, setMilestones] = useState<any[]>([])
+  const [activities, setActivities] = useState<any[]>([])
+  const [commsOutputs, setCommsOutputs] = useState<any[]>([])
   const [happenings, setHappenings] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [previewRows, setPreviewRows] = useState(5)
@@ -29,13 +31,15 @@ export default function UploadAchievementsPage() {
   }, [])
 
   async function loadDropdowns() {
-    const [objResult, milResult, hapResult] = await Promise.all([
+    const [objResult, actResult, commsResult, hapResult] = await Promise.all([
       getObjectives(),
-      getMilestones(),
+      getOrganizationalActivities(),
+      getCommsOutputs(),
       getHappenings(),
     ])
     if (objResult.success) setObjectives(objResult.objectives || [])
-    if (milResult.success) setMilestones(milResult.milestones || [])
+    if (actResult.success) setActivities(actResult.activities || [])
+    if (commsResult.success) setCommsOutputs(commsResult.commsOutputs || [])
     if (hapResult.success) setHappenings(hapResult.happenings || [])
   }
 
@@ -79,12 +83,14 @@ export default function UploadAchievementsPage() {
       if (lower.includes('category')) autoMapping.category = header
       if (lower.includes('audience') && lower.includes('name')) autoMapping.audienceName = header
       if (lower.includes('audience') && lower.includes('size')) autoMapping.audienceSize = header
-      if (lower.includes('objective')) autoMapping.objectiveId = header
+      if (lower.includes('objective')) autoMapping.objective = header
       if (lower.includes('what') || lower.includes('did')) autoMapping.whatYouDid = header
       if (lower.includes('frequency')) autoMapping.frequency = header
       if (lower.includes('volume')) autoMapping.volume = header
-      if (lower.includes('milestone')) autoMapping.companyMilestoneId = header
-      if (lower.includes('happening')) autoMapping.companyHappeningId = header
+      if (lower.includes('organizational') || lower.includes('activity')) autoMapping.organizationalActivity = header
+      if (lower.includes('comms') || lower.includes('output')) autoMapping.commsOutput = header
+      if (lower.includes('happening') || lower.includes('event')) autoMapping.companyHappening = header
+      if (lower.includes('process') || lower.includes('step')) autoMapping.processSteps = header
       if (lower.includes('impact')) autoMapping.impact = header
     })
     setFieldMapping(autoMapping)
@@ -102,7 +108,8 @@ export default function UploadAchievementsPage() {
       csvData,
       fieldMapping,
       objectives,
-      milestones,
+      activities,
+      commsOutputs,
       happenings
     )
     setLoading(false)
@@ -119,16 +126,18 @@ export default function UploadAchievementsPage() {
   }
 
   const fieldOptions = [
-    { value: 'title', label: 'Title' },
-    { value: 'category', label: 'Category' },
+    { value: 'title', label: 'Title *' },
+    { value: 'category', label: 'Category *' },
     { value: 'audienceName', label: 'Audience Name' },
     { value: 'audienceSize', label: 'Audience Size' },
-    { value: 'objectiveId', label: 'Objective' },
-    { value: 'whatYouDid', label: 'What You Did' },
+    { value: 'objective', label: 'Objective' },
+    { value: 'whatYouDid', label: 'What You Did *' },
     { value: 'frequency', label: 'Frequency' },
     { value: 'volume', label: 'Volume' },
-    { value: 'companyMilestoneId', label: 'Company Milestone' },
-    { value: 'companyHappeningId', label: 'Company Happening' },
+    { value: 'organizationalActivity', label: 'Organizational Activity' },
+    { value: 'commsOutput', label: 'Comms Output' },
+    { value: 'companyHappening', label: 'Company Happening' },
+    { value: 'processSteps', label: 'Process Steps' },
     { value: 'impact', label: 'Impact' },
   ]
 
@@ -171,7 +180,7 @@ export default function UploadAchievementsPage() {
                 {fieldOptions.map((field) => (
                   <div key={field.value}>
                     <label htmlFor={field.value} className="block text-sm font-medium text-gray-700 mb-2">
-                      {field.label} {['title', 'category', 'whatYouDid'].includes(field.value) && '*'}
+                      {field.label}
                     </label>
                     <select
                       id={field.value}
@@ -263,4 +272,3 @@ export default function UploadAchievementsPage() {
     </div>
   )
 }
-

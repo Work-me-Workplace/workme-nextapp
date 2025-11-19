@@ -36,6 +36,59 @@ export async function createHappening(data: z.infer<typeof happeningSchema>) {
   }
 }
 
+export async function updateHappening(id: string, data: z.infer<typeof happeningSchema>) {
+  try {
+    const validated = happeningSchema.parse(data)
+    const userId = getUserId()
+
+    const existing = await prisma.companyHappening.findFirst({
+      where: { id, userId },
+    })
+
+    if (!existing) {
+      return { success: false, error: 'Happening not found' }
+    }
+
+    const happening = await prisma.companyHappening.update({
+      where: { id },
+      data: {
+        ...validated,
+        date: validated.date ?? undefined,
+        description: validated.description ?? undefined,
+      },
+    })
+
+    return { success: true, happening }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors }
+    }
+    return { success: false, error: 'Failed to update happening' }
+  }
+}
+
+export async function deleteHappening(id: string) {
+  try {
+    const userId = getUserId()
+
+    const existing = await prisma.companyHappening.findFirst({
+      where: { id, userId },
+    })
+
+    if (!existing) {
+      return { success: false, error: 'Happening not found' }
+    }
+
+    await prisma.companyHappening.delete({
+      where: { id },
+    })
+
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: 'Failed to delete happening' }
+  }
+}
+
 export async function getHappenings() {
   try {
     const userId = getUserId()
@@ -51,3 +104,20 @@ export async function getHappenings() {
   }
 }
 
+export async function getHappening(id: string) {
+  try {
+    const userId = getUserId()
+
+    const happening = await prisma.companyHappening.findFirst({
+      where: { id, userId },
+    })
+
+    if (!happening) {
+      return { success: false, error: 'Happening not found' }
+    }
+
+    return { success: true, happening }
+  } catch (error) {
+    return { success: false, error: 'Failed to fetch happening' }
+  }
+}

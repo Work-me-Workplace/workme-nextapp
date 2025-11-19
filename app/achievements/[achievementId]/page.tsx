@@ -5,7 +5,8 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { getAchievement, updateAchievement } from '@/lib/actions/achievements'
 import { getObjectives } from '@/lib/actions/objectives'
-import { getMilestones } from '@/lib/actions/milestones'
+import { getOrganizationalActivities } from '@/lib/actions/activities'
+import { getCommsOutputs } from '@/lib/actions/comms-outputs'
 import { getHappenings } from '@/lib/actions/happenings'
 
 const categories = [
@@ -37,7 +38,8 @@ export default function EditAchievementPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [objectives, setObjectives] = useState<any[]>([])
-  const [milestones, setMilestones] = useState<any[]>([])
+  const [activities, setActivities] = useState<any[]>([])
+  const [commsOutputs, setCommsOutputs] = useState<any[]>([])
   const [happenings, setHappenings] = useState<any[]>([])
   const [formData, setFormData] = useState({
     title: '',
@@ -48,8 +50,10 @@ export default function EditAchievementPage() {
     whatYouDid: '',
     frequency: '',
     volume: '',
-    companyMilestoneId: '',
+    organizationalActivityId: '',
+    commsOutputId: '',
     companyHappeningId: '',
+    processSteps: '',
     impact: '',
   })
 
@@ -59,10 +63,11 @@ export default function EditAchievementPage() {
 
   async function loadData() {
     setLoading(true)
-    const [achResult, objResult, milResult, hapResult] = await Promise.all([
+    const [achResult, objResult, actResult, commsResult, hapResult] = await Promise.all([
       getAchievement(achievementId),
       getObjectives(),
-      getMilestones(),
+      getOrganizationalActivities(),
+      getCommsOutputs(),
       getHappenings(),
     ])
 
@@ -77,8 +82,12 @@ export default function EditAchievementPage() {
         whatYouDid: ach.whatYouDid || '',
         frequency: ach.frequency || '',
         volume: ach.volume?.toString() || '',
-        companyMilestoneId: ach.companyMilestoneId || '',
+        organizationalActivityId: ach.organizationalActivityId || '',
+        commsOutputId: ach.commsOutputId || '',
         companyHappeningId: ach.companyHappeningId || '',
+        processSteps: Array.isArray(ach.processSteps) 
+          ? JSON.stringify(ach.processSteps) 
+          : (ach.processSteps ? String(ach.processSteps) : ''),
         impact: ach.impact || '',
       })
     } else {
@@ -88,7 +97,8 @@ export default function EditAchievementPage() {
     }
 
     if (objResult.success) setObjectives(objResult.objectives || [])
-    if (milResult.success) setMilestones(milResult.milestones || [])
+    if (actResult.success) setActivities(actResult.activities || [])
+    if (commsResult.success) setCommsOutputs(commsResult.commsOutputs || [])
     if (hapResult.success) setHappenings(hapResult.happenings || [])
     setLoading(false)
   }
@@ -108,8 +118,21 @@ export default function EditAchievementPage() {
     if (formData.objectiveId) data.objectiveId = formData.objectiveId
     if (formData.frequency) data.frequency = formData.frequency
     if (formData.volume) data.volume = parseInt(formData.volume)
-    if (formData.companyMilestoneId) data.companyMilestoneId = formData.companyMilestoneId
+    if (formData.organizationalActivityId) data.organizationalActivityId = formData.organizationalActivityId
+    if (formData.commsOutputId) data.commsOutputId = formData.commsOutputId
     if (formData.companyHappeningId) data.companyHappeningId = formData.companyHappeningId
+    if (formData.processSteps) {
+      try {
+        const steps = JSON.parse(formData.processSteps)
+        if (Array.isArray(steps)) {
+          data.processSteps = steps
+        } else {
+          data.processSteps = formData.processSteps.split(',').map(s => s.trim())
+        }
+      } catch {
+        data.processSteps = formData.processSteps.split(',').map(s => s.trim())
+      }
+    }
     if (formData.impact) data.impact = formData.impact
 
     const result = await updateAchievement(achievementId, data)
@@ -267,42 +290,74 @@ export default function EditAchievementPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="companyMilestoneId" className="block text-sm font-medium text-gray-700 mb-2">
-              Company Milestone
+            <label htmlFor="organizationalActivityId" className="block text-sm font-medium text-gray-700 mb-2">
+              Organizational Activity
             </label>
             <select
-              id="companyMilestoneId"
-              value={formData.companyMilestoneId}
-              onChange={(e) => setFormData({ ...formData, companyMilestoneId: e.target.value })}
+              id="organizationalActivityId"
+              value={formData.organizationalActivityId}
+              onChange={(e) => setFormData({ ...formData, organizationalActivityId: e.target.value })}
               className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
               <option value="">None</option>
-              {milestones.map((mil) => (
-                <option key={mil.id} value={mil.id}>
-                  {mil.name}
+              {activities.map((act) => (
+                <option key={act.id} value={act.id}>
+                  {act.name}
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label htmlFor="companyHappeningId" className="block text-sm font-medium text-gray-700 mb-2">
-              Company Happening
+            <label htmlFor="commsOutputId" className="block text-sm font-medium text-gray-700 mb-2">
+              Comms Output
             </label>
             <select
-              id="companyHappeningId"
-              value={formData.companyHappeningId}
-              onChange={(e) => setFormData({ ...formData, companyHappeningId: e.target.value })}
+              id="commsOutputId"
+              value={formData.commsOutputId}
+              onChange={(e) => setFormData({ ...formData, commsOutputId: e.target.value })}
               className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
               <option value="">None</option>
-              {happenings.map((hap) => (
-                <option key={hap.id} value={hap.id}>
-                  {hap.name}
+              {commsOutputs.map((comms) => (
+                <option key={comms.id} value={comms.id}>
+                  {comms.title}
                 </option>
               ))}
             </select>
           </div>
+        </div>
+
+        <div>
+          <label htmlFor="companyHappeningId" className="block text-sm font-medium text-gray-700 mb-2">
+            Company Happening
+          </label>
+          <select
+            id="companyHappeningId"
+            value={formData.companyHappeningId}
+            onChange={(e) => setFormData({ ...formData, companyHappeningId: e.target.value })}
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="">None</option>
+            {happenings.map((hap) => (
+              <option key={hap.id} value={hap.id}>
+                {hap.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="processSteps" className="block text-sm font-medium text-gray-700 mb-2">
+            Process Steps (JSON array or comma-separated)
+          </label>
+          <textarea
+            id="processSteps"
+            rows={3}
+            value={formData.processSteps}
+            onChange={(e) => setFormData({ ...formData, processSteps: e.target.value })}
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          />
         </div>
 
         <div>

@@ -28,8 +28,10 @@ const achievementSchema = z.object({
   whatYouDid: z.string().min(1, 'What you did is required'),
   frequency: z.string().optional().nullable(),
   volume: z.number().int().positive().optional().nullable(),
-  companyMilestoneId: z.string().optional().nullable(),
+  organizationalActivityId: z.string().optional().nullable(),
+  commsOutputId: z.string().optional().nullable(),
   companyHappeningId: z.string().optional().nullable(),
+  processSteps: z.any().optional().nullable(), // JSON array
   impact: z.string().optional().nullable(),
 })
 
@@ -46,13 +48,16 @@ export async function createAchievement(data: z.infer<typeof achievementSchema>)
         objectiveId: validated.objectiveId ?? undefined,
         frequency: validated.frequency ?? undefined,
         volume: validated.volume ?? undefined,
-        companyMilestoneId: validated.companyMilestoneId ?? undefined,
+        organizationalActivityId: validated.organizationalActivityId ?? undefined,
+        commsOutputId: validated.commsOutputId ?? undefined,
         companyHappeningId: validated.companyHappeningId ?? undefined,
+        processSteps: validated.processSteps ?? undefined,
         impact: validated.impact ?? undefined,
       },
       include: {
         objective: true,
-        milestone: true,
+        organizationalActivity: true,
+        commsOutput: true,
         happening: true,
       },
     })
@@ -88,13 +93,16 @@ export async function updateAchievement(id: string, data: z.infer<typeof achieve
         objectiveId: validated.objectiveId ?? undefined,
         frequency: validated.frequency ?? undefined,
         volume: validated.volume ?? undefined,
-        companyMilestoneId: validated.companyMilestoneId ?? undefined,
+        organizationalActivityId: validated.organizationalActivityId ?? undefined,
+        commsOutputId: validated.commsOutputId ?? undefined,
         companyHappeningId: validated.companyHappeningId ?? undefined,
+        processSteps: validated.processSteps ?? undefined,
         impact: validated.impact ?? undefined,
       },
       include: {
         objective: true,
-        milestone: true,
+        organizationalActivity: true,
+        commsOutput: true,
         happening: true,
       },
     })
@@ -138,7 +146,8 @@ export async function getAchievements() {
       where: { userId },
       include: {
         objective: true,
-        milestone: true,
+        organizationalActivity: true,
+        commsOutput: true,
         happening: true,
       },
       orderBy: { updatedAt: 'desc' },
@@ -158,7 +167,8 @@ export async function getAchievement(id: string) {
       where: { id, userId },
       include: {
         objective: true,
-        milestone: true,
+        organizationalActivity: true,
+        commsOutput: true,
         happening: true,
       },
     })
@@ -172,4 +182,3 @@ export async function getAchievement(id: string) {
     return { success: false, error: 'Failed to fetch achievement' }
   }
 }
-

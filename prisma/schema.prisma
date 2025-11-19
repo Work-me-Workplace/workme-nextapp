@@ -153,25 +153,44 @@ enum AchievementCategory {
   COMMUNITY_ENGAGEMENT
 }
 
-model Achievement {
-  id               String   @id @default(cuid())
-  userId           String
-  title            String
-  category         AchievementCategory
-  audienceName     String?
-  audienceSize     Int?
-  objectiveId      String?
-  objective        Objective? @relation(fields: [objectiveId], references: [id])
-  whatYouDid       String
-  frequency        String?   // "weekly", "recurring", "one-time"
-  volume           Int?      // numeric count of outputs
-  companyMilestoneId String?
-  milestone          CompanyMilestone? @relation(fields: [companyMilestoneId], references: [id])
-  companyHappeningId String?
-  happening          CompanyHappening? @relation(fields: [companyHappeningId], references: [id])
-  impact           String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+model CommsOutput {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // "email", "flyer", "digest", etc.
+  title       String
+  description String?
+  wordCount   Int?
+  dateSent    DateTime?
+  topics      Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  achievements Achievement[]
+}
+
+model OrganizationalActivity {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  achievements Achievement[]
+}
+
+model CompanyHappening {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  date        DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  achievements Achievement[]
 }
 
 model Objective {
@@ -181,27 +200,42 @@ model Objective {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
   achievements Achievement[]
 }
 
-model CompanyMilestone {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
-  date        DateTime?
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  achievements Achievement[]
-}
+model Achievement {
+  id                   String   @id @default(cuid())
+  userId               String
 
-model CompanyHappening {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
-  date        DateTime?
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  achievements Achievement[]
+  title                String
+  category             AchievementCategory
+
+  audienceName         String?
+  audienceSize         Int?
+
+  objectiveId          String?
+  objective            Objective? @relation(fields: [objectiveId], references: [id])
+
+  whatYouDid           String
+  frequency            String?
+  volume               Int?
+
+  // Optional link to Organizational Activity
+  organizationalActivityId String?
+  organizationalActivity   OrganizationalActivity? @relation(fields: [organizationalActivityId], references: [id])
+
+  // Optional link to Comms Output
+  commsOutputId        String?
+  commsOutput          CommsOutput? @relation(fields: [commsOutputId], references: [id])
+
+  // Optional link to Company Happening (Event)
+  companyHappeningId   String?
+  happening            CompanyHappening? @relation(fields: [companyHappeningId], references: [id])
+
+  processSteps         Json?
+  impact               String?
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }

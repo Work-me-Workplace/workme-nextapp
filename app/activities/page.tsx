@@ -2,32 +2,32 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { getHappenings, deleteHappening } from '@/lib/actions/happenings'
+import { getOrganizationalActivities, deleteOrganizationalActivity } from '@/lib/actions/activities'
 
-export default function HappeningsPage() {
-  const [happenings, setHappenings] = useState<any[]>([])
+export default function ActivitiesPage() {
+  const [activities, setActivities] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadHappenings()
+    loadActivities()
   }, [])
 
-  async function loadHappenings() {
+  async function loadActivities() {
     setLoading(true)
-    const result = await getHappenings()
+    const result = await getOrganizationalActivities()
     if (result.success) {
-      setHappenings(result.happenings || [])
+      setActivities(result.activities || [])
     }
     setLoading(false)
   }
 
   async function handleDelete(id: string) {
-    if (confirm('Are you sure you want to delete this happening?')) {
-      const result = await deleteHappening(id)
+    if (confirm('Are you sure you want to delete this activity?')) {
+      const result = await deleteOrganizationalActivity(id)
       if (result.success) {
-        loadHappenings()
+        loadActivities()
       } else {
-        alert('Failed to delete happening')
+        alert('Failed to delete activity')
       }
     }
   }
@@ -36,14 +36,14 @@ export default function HappeningsPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Company Happenings</h2>
-          <p className="text-gray-600 mt-2">Track important company happenings and events</p>
+          <h2 className="text-3xl font-bold text-gray-900">Organizational Activities</h2>
+          <p className="text-gray-600 mt-2">Manage your organizational activities</p>
         </div>
         <Link
-          href="/happenings/new"
+          href="/activities/new"
           className="rounded-lg bg-blue-600 text-white px-6 py-3 font-semibold hover:bg-blue-700 transition"
         >
-          New Happening
+          New Activity
         </Link>
       </div>
 
@@ -51,18 +51,18 @@ export default function HappeningsPage() {
         <div className="bg-white rounded-lg shadow p-6 text-center">
           <p className="text-gray-500">Loading...</p>
         </div>
-      ) : happenings.length === 0 ? (
+      ) : activities.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-6">
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
             <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
-            <p className="text-gray-500 mb-4">No happenings yet</p>
+            <p className="text-gray-500 mb-4">No activities yet</p>
             <Link
-              href="/happenings/new"
+              href="/activities/new"
               className="text-blue-600 hover:text-blue-700 font-medium"
             >
-              Create your first happening →
+              Create your first activity →
             </Link>
           </div>
         </div>
@@ -79,10 +79,10 @@ export default function HappeningsPage() {
                     Description
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
+                    Start Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created At
+                    End Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -90,30 +90,30 @@ export default function HappeningsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {happenings.map((happening) => (
-                  <tr key={happening.id}>
+                {activities.map((activity) => (
+                  <tr key={activity.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {happening.name}
+                      {activity.name}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {happening.description || '-'}
+                      {activity.description || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {happening.date ? new Date(happening.date).toLocaleDateString() : '-'}
+                      {activity.startDate ? new Date(activity.startDate).toLocaleDateString() : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(happening.createdAt).toLocaleDateString()}
+                      {activity.endDate ? new Date(activity.endDate).toLocaleDateString() : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex gap-2">
                         <Link
-                          href={`/happenings/${happening.id}`}
+                          href={`/activities/${activity.id}`}
                           className="text-blue-600 hover:text-blue-900"
                         >
                           Edit
                         </Link>
                         <button
-                          onClick={() => handleDelete(happening.id)}
+                          onClick={() => handleDelete(activity.id)}
                           className="text-red-600 hover:text-red-900"
                         >
                           Delete
@@ -130,3 +130,4 @@ export default function HappeningsPage() {
     </div>
   )
 }
+

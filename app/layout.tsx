@@ -90,26 +90,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   </li>
                   <li>
                     <Link
-                      href="/objectives"
+                      href="/comms-outputs"
                       className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                        isActive('/objectives')
+                        isActive('/comms-outputs')
                           ? 'bg-blue-50 text-blue-700'
                           : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                       }`}
                     >
-                      Objectives
+                      Communication Outputs
                     </Link>
                   </li>
                   <li>
                     <Link
-                      href="/milestones"
+                      href="/activities"
                       className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                        isActive('/milestones')
+                        isActive('/activities')
                           ? 'bg-blue-50 text-blue-700'
                           : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                       }`}
                     >
-                      Milestones
+                      Organizational Activities
                     </Link>
                   </li>
                   <li>
@@ -121,7 +121,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                           : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                       }`}
                     >
-                      Happenings
+                      Events & Happenings
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/objectives"
+                      className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                        isActive('/objectives')
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      Objectives
                     </Link>
                   </li>
                 </ul>

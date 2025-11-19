@@ -16,12 +16,14 @@ interface FieldMapping {
   category?: string
   audienceName?: string
   audienceSize?: string
-  objectiveId?: string
+  objective?: string
   whatYouDid?: string
   frequency?: string
   volume?: string
-  companyMilestoneId?: string
-  companyHappeningId?: string
+  organizationalActivity?: string
+  commsOutput?: string
+  companyHappening?: string
+  processSteps?: string
   impact?: string
 }
 
@@ -29,7 +31,8 @@ export async function createAchievementsBatch(
   rows: CSVRow[],
   fieldMapping: FieldMapping,
   objectives: Array<{ id: string; name: string }>,
-  milestones: Array<{ id: string; name: string }>,
+  activities: Array<{ id: string; name: string }>,
+  commsOutputs: Array<{ id: string; title: string }>,
   happenings: Array<{ id: string; name: string }>
 ) {
   const results = []
@@ -60,9 +63,8 @@ export async function createAchievementsBatch(
         }
       }
 
-      if (fieldMapping.objectiveId && row[fieldMapping.objectiveId]) {
-        // Try to find objective by name if ID not provided
-        const objectiveName = row[fieldMapping.objectiveId].trim()
+      if (fieldMapping.objective && row[fieldMapping.objective]) {
+        const objectiveName = row[fieldMapping.objective].trim()
         const objective = objectives.find((o) => o.name === objectiveName || o.id === objectiveName)
         if (objective) {
           achievementData.objectiveId = objective.id
@@ -84,19 +86,41 @@ export async function createAchievementsBatch(
         }
       }
 
-      if (fieldMapping.companyMilestoneId && row[fieldMapping.companyMilestoneId]) {
-        const milestoneName = row[fieldMapping.companyMilestoneId].trim()
-        const milestone = milestones.find((m) => m.name === milestoneName || m.id === milestoneName)
-        if (milestone) {
-          achievementData.companyMilestoneId = milestone.id
+      if (fieldMapping.organizationalActivity && row[fieldMapping.organizationalActivity]) {
+        const activityName = row[fieldMapping.organizationalActivity].trim()
+        const activity = activities.find((a) => a.name === activityName || a.id === activityName)
+        if (activity) {
+          achievementData.organizationalActivityId = activity.id
         }
       }
 
-      if (fieldMapping.companyHappeningId && row[fieldMapping.companyHappeningId]) {
-        const happeningName = row[fieldMapping.companyHappeningId].trim()
+      if (fieldMapping.commsOutput && row[fieldMapping.commsOutput]) {
+        const commsTitle = row[fieldMapping.commsOutput].trim()
+        const comms = commsOutputs.find((c) => c.title === commsTitle || c.id === commsTitle)
+        if (comms) {
+          achievementData.commsOutputId = comms.id
+        }
+      }
+
+      if (fieldMapping.companyHappening && row[fieldMapping.companyHappening]) {
+        const happeningName = row[fieldMapping.companyHappening].trim()
         const happening = happenings.find((h) => h.name === happeningName || h.id === happeningName)
         if (happening) {
           achievementData.companyHappeningId = happening.id
+        }
+      }
+
+      if (fieldMapping.processSteps && row[fieldMapping.processSteps]) {
+        try {
+          // Try to parse as JSON array
+          const steps = JSON.parse(row[fieldMapping.processSteps].trim())
+          if (Array.isArray(steps)) {
+            achievementData.processSteps = steps
+          }
+        } catch {
+          // If not valid JSON, treat as comma-separated string
+          const steps = row[fieldMapping.processSteps].trim().split(',').map(s => s.trim())
+          achievementData.processSteps = steps
         }
       }
 
@@ -130,4 +154,3 @@ export async function createAchievementsBatch(
     errors,
   }
 }
-
