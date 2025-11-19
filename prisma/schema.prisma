@@ -27,9 +27,9 @@ model WorkMe {
   annualSalary String?
   salaryRange SalaryRange?
   createdAt   DateTime @default(now())
-  tasks       Task[]
-  goals       Goal[]
-  achievements Achievement[]
+  connections Connection[]
+  events      Event[]
+  milestones  Milestone[]
 }
 
 enum JobRole {
@@ -78,33 +78,66 @@ enum RevenueRange {
   ABOVE_1000M
 }
 
-model Task {
+model Connection {
+  id          String   @id @default(uuid())
+  name        String
+  email       String?
+  company     String?
+  jobTitle    String?
+  linkedinUrl String?
+  notes       String?
+  tags        String[] // e.g., ["mentor", "industry", "alumni"]
+  workMeId    String
+  workMe      WorkMe   @relation(fields: [workMeId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Event {
   id          String   @id @default(uuid())
   title       String
   description String?
-  completed   Boolean  @default(false)
-  dueAt       DateTime?
+  eventType   EventType
+  location    String?
+  startDate   DateTime
+  endDate     DateTime?
+  isVirtual   Boolean  @default(false)
+  url         String?  // For virtual events
   workMeId    String
   workMe      WorkMe   @relation(fields: [workMeId], references: [id])
   createdAt   DateTime @default(now())
 }
 
-model Goal {
-  id          String   @id @default(uuid())
-  title       String
-  description String?
-  progress    Int      @default(0)
-  targetDate  DateTime?
-  workMeId    String
-  workMe      WorkMe   @relation(fields: [workMeId], references: [id])
-  createdAt   DateTime @default(now())
+enum EventType {
+  NETWORKING
+  CONFERENCE
+  WORKSHOP
+  MEETUP
+  WEBINAR
+  INTERVIEW
+  COFFEE_CHAT
+  OTHER
 }
 
-model Achievement {
+model Milestone {
   id          String   @id @default(uuid())
   title       String
   description String?
+  milestoneType MilestoneType
   date        DateTime @default(now())
   workMeId    String
   workMe      WorkMe   @relation(fields: [workMeId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+enum MilestoneType {
+  PROMOTION
+  NEW_ROLE
+  CERTIFICATION
+  SKILL_ACQUIRED
+  PROJECT_COMPLETED
+  AWARD
+  PUBLICATION
+  SPEAKING_ENGAGEMENT
+  OTHER
 }
