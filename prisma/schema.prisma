@@ -10,6 +10,7 @@ datasource db {
 
 model WorkMe {
   id          String   @id @default(uuid())
+  firebaseId  String?  @unique
   email       String   @unique
   firstName   String?
   lastName    String?
