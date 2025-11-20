@@ -53,20 +53,20 @@ export default function ProfilePage() {
         })
       }
     } catch (error) {
-      // Profile might not exist yet, that's okay - prefill with defaults for testing
+      // Profile might not exist yet, that's okay - prefill with Adam's details
       console.log('Profile not loaded (new user):', error)
-      // Prefill with test data for Adam
+      // Prefill with Adam's actual details
       setFormData({
-        jobTitle: 'Founder',
-        specialty: 'Product Development',
+        jobTitle: 'Public Affairs Specialist - Internal Comms',
+        specialty: 'Internal Communications',
         industry: 'Technology',
-        jobRole: 'DIRECTOR_LEVEL',
+        jobRole: 'INDIVIDUAL_CONTRIBUTOR',
         annualSalary: '',
-        salaryRange: 'ABOVE_200K',
-        workLocation: 'Remote',
-        city: 'Arlington',
-        state: 'VA',
-        companyName: 'Work.me',
+        salaryRange: '',
+        workLocation: '',
+        city: '',
+        state: '',
+        companyName: '',
       })
     }
   }

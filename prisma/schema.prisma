@@ -115,9 +115,11 @@ model Company {
 
 enum CompanyType {
   NON_PROFIT
-  FOR_PROFIT
-  PUBLICLY_TRADED
   GOVERNMENT
+  PRIVATELY_HELD_FIRM
+  SMALL_BUSINESS
+  STARTUP
+  PUBLICLY_TRADED
 }
 
 enum RevenueRange {

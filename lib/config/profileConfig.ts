@@ -21,9 +21,11 @@ export const salaryRangeOptions = [
 
 export const companyTypeOptions = [
   { value: 'NON_PROFIT', label: 'Non-Profit' },
-  { value: 'FOR_PROFIT', label: 'For-Profit' },
-  { value: 'PUBLICLY_TRADED', label: 'Publicly Traded' },
   { value: 'GOVERNMENT', label: 'Government' },
+  { value: 'PRIVATELY_HELD_FIRM', label: 'Privately Held Firm' },
+  { value: 'SMALL_BUSINESS', label: 'Small Business' },
+  { value: 'STARTUP', label: 'Startup' },
+  { value: 'PUBLICLY_TRADED', label: 'Publicly Traded Company' },
 ] as const
 
 export const revenueRangeOptions = [

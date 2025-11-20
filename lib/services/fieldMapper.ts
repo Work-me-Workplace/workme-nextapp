@@ -103,7 +103,7 @@ export class FieldMapperService {
    * Validate CompanyType enum value
    */
   static isValidCompanyType(value: string): value is CompanyType {
-    return ['NON_PROFIT', 'FOR_PROFIT', 'PUBLICLY_TRADED', 'GOVERNMENT'].includes(value)
+    return ['NON_PROFIT', 'GOVERNMENT', 'PRIVATELY_HELD_FIRM', 'SMALL_BUSINESS', 'STARTUP', 'PUBLICLY_TRADED'].includes(value)
   }
 
   /**
