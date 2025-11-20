@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getWorkMeCompany } from '@/lib/config/workmeConfig'
+import { FieldMapperService } from '@/lib/services/fieldMapper'
 
 /**
  * PUT /api/workme/company
@@ -57,23 +58,30 @@ export async function PUT(request: NextRequest) {
 
     // If company doesn't exist, create it in directory
     if (!company) {
+      // Map company data using FieldMapperService (if provided)
+      const mappedCompanyData = companyData 
+        ? FieldMapperService.mapCompanyData({ name: companyName.trim(), ...companyData })
+        : { name: companyName.trim() }
+
       company = await prisma.company.create({
         data: {
           workMeCompanyId: workMeCompany.id,
-          name: companyName.trim(),
-          industry: companyData?.industry ?? undefined,
-          website: companyData?.website ?? undefined,
-          city: companyData?.city ?? undefined,
-          state: companyData?.state ?? undefined,
-          description: companyData?.description ?? undefined,
-          headcount: companyData?.headcount ?? undefined,
-          companyType: companyData?.companyType ?? undefined,
-          revenueRange: companyData?.revenueRange ?? undefined,
+          ...mappedCompanyData,
         },
       })
       console.log('✅ Created company in directory:', company.id)
     } else {
-      console.log('✅ Found existing company in directory:', company.id)
+      // If company exists and companyData provided, update it
+      if (companyData) {
+        const mappedCompanyData = FieldMapperService.mapCompanyData({ name: companyName.trim(), ...companyData })
+        company = await prisma.company.update({
+          where: { id: company.id },
+          data: mappedCompanyData,
+        })
+        console.log('✅ Updated company in directory:', company.id)
+      } else {
+        console.log('✅ Found existing company in directory:', company.id)
+      }
     }
 
     // Link user to company

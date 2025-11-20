@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { FieldMapperService } from '@/lib/services/fieldMapper'
 
 /**
  * GET /api/workme/profile
@@ -78,20 +79,13 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // Map and validate profile data using FieldMapperService
+    const mappedData = FieldMapperService.mapWorkMeProfile(profileData)
+
     // Update profile fields
     const workMe = await prisma.workMe.update({
       where: { id },
-      data: {
-        jobTitle: profileData.jobTitle ?? undefined,
-        specialty: profileData.specialty ?? undefined,
-        industry: profileData.industry ?? undefined,
-        jobRole: profileData.jobRole ?? undefined,
-        annualSalary: profileData.annualSalary ?? undefined,
-        salaryRange: profileData.salaryRange ?? undefined,
-        workLocation: profileData.workLocation ?? undefined,
-        city: profileData.city ?? undefined,
-        state: profileData.state ?? undefined,
-      },
+      data: mappedData,
       include: {
         company: true,
       },
