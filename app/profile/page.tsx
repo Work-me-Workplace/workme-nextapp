@@ -10,12 +10,12 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false)
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
-    jobTitle: '',
-    specialty: '',
-    industry: '',
-    jobRole: '',
-    salaryRange: '',
-    companyName: '',
+    jobTitle: 'Public Affairs Specialist - Internal Comms',
+    specialty: 'Internal Communications',
+    industry: 'Defense',
+    jobRole: 'INDIVIDUAL_CONTRIBUTOR',
+    salaryRange: 'K100_150K',
+    companyName: 'NAVSEA Naval Systems Command',
   })
 
   useEffect(() => {
@@ -45,17 +45,8 @@ export default function ProfilePage() {
         })
       }
     } catch (error) {
-      // Profile might not exist yet, that's okay - prefill with Adam's details
+      // Profile might not exist yet, that's okay - already prefilled with defaults
       console.log('Profile not loaded (new user):', error)
-      // Prefill with Adam's actual details
-      setFormData({
-        jobTitle: 'Public Affairs Specialist - Internal Comms',
-        specialty: 'Internal Communications',
-        industry: 'Defense',
-        jobRole: 'INDIVIDUAL_CONTRIBUTOR',
-        salaryRange: '',
-        companyName: 'NAVSEA Naval Systems Command',
-      })
     }
   }
 
