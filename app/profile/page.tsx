@@ -33,6 +33,7 @@ export default function ProfilePage() {
     workLocation: '',
     city: '',
     state: '',
+    companyName: '',
   })
 
   useEffect(() => {
@@ -62,6 +63,7 @@ export default function ProfilePage() {
           workLocation: workMe.workLocation || '',
           city: workMe.city || '',
           state: workMe.state || '',
+          companyName: workMe.company?.name || '',
         })
       }
     } catch (error) {
@@ -76,10 +78,29 @@ export default function ProfilePage() {
 
     setLoading(true)
     try {
+      // Update profile first
       await api.put('/api/workme/profile', {
         workMeId,
-        ...formData,
+        jobTitle: formData.jobTitle,
+        specialty: formData.specialty,
+        industry: formData.industry,
+        jobRole: formData.jobRole,
+        annualSalary: formData.annualSalary,
+        salaryRange: formData.salaryRange,
+        workLocation: formData.workLocation,
+        city: formData.city,
+        state: formData.state,
       })
+
+      // If company name provided, upsert company (just name for now, enrichment later)
+      if (formData.companyName.trim()) {
+        await api.put('/api/workme/company', {
+          workMeId,
+          companyName: formData.companyName.trim(),
+          // No companyData - just upsert with name, leave other fields nullable
+        })
+      }
+
       router.push('/dashboard')
     } catch (error: any) {
       console.error('Profile update failed:', error)
@@ -217,6 +238,22 @@ export default function ProfilePage() {
               className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
               placeholder="e.g. Remote, Hybrid, Office"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white/90 mb-2">
+              Company
+            </label>
+            <input
+              type="text"
+              value={formData.companyName}
+              onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+              className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
+              placeholder="e.g. Acme Corp, Google, Starbucks"
+            />
+            <p className="mt-1 text-xs text-white/60">
+              Company details will be enriched automatically
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
