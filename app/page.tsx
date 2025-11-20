@@ -1,11 +1,49 @@
-'use client';
+'use client'
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function SplashPage() {
-  const router = useRouter();
+  const router = useRouter()
+
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined
+    
+    const checkAuth = async () => {
+      try {
+        // Dynamically import Firebase to avoid SSR issues
+        const { onAuthStateChanged } = await import('firebase/auth')
+        const { auth } = await import('@/lib/firebase')
+        
+        if (auth) {
+          unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+              router.replace('/welcome')
+            } else {
+              router.replace('/signin')
+            }
+          })
+        } else {
+          router.replace('/signin')
+        }
+      } catch (error) {
+        console.error('Auth check error:', error)
+        router.replace('/signin')
+      }
+    }
+
+    // Small delay for splash effect
+    const timer = setTimeout(() => {
+      checkAuth()
+    }, 2000)
+
+    return () => {
+      clearTimeout(timer)
+      if (unsubscribe) {
+        unsubscribe()
+      }
+    }
+  }, [router])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 flex items-center justify-center">
@@ -32,24 +70,10 @@ export default function SplashPage() {
         <p className="text-2xl text-white/90 mb-2">
           Your Network, Your Career
         </p>
-        <p className="text-lg text-white/70 mb-8">
+        <p className="text-lg text-white/70">
           Build connections. Grow your career. Achieve your goals.
         </p>
-        <div className="flex gap-4 justify-center">
-          <Link
-            href="/auth"
-            className="rounded-lg bg-white text-blue-700 px-8 py-3 font-semibold hover:bg-blue-50 transition shadow-lg"
-          >
-            Get Started
-          </Link>
-          <Link
-            href="/dashboard"
-            className="rounded-lg bg-white/10 text-white px-8 py-3 font-semibold hover:bg-white/20 transition border-2 border-white/30"
-          >
-            Sign In
-          </Link>
-        </div>
       </div>
     </div>
-  );
+  )
 }

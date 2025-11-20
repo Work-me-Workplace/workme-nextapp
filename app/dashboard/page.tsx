@@ -1,77 +1,250 @@
+'use client'
+
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function DashboardPage() {
+  const pathname = usePathname()
+  const router = useRouter()
+  const [workMeId, setWorkMeId] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Check for workMeId in localStorage
+    if (typeof window !== 'undefined') {
+      const id = localStorage.getItem('workMeId')
+      if (!id) {
+        // No workMeId, redirect to signin
+        router.push('/signin')
+      } else {
+        setWorkMeId(id)
+      }
+    }
+  }, [router])
+
+  const isActive = (path: string) => {
+    if (path === '/dashboard') return pathname === path
+    return pathname?.startsWith(path)
+  }
+
+  if (!workMeId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900">Dashboard</h2>
-        <p className="text-gray-600 mt-2">Your networking and career growth overview</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Connections</h3>
-            <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Nav */}
+      <nav className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <Link href="/dashboard" className="flex items-center space-x-2">
+                <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span className="text-xl font-bold text-gray-900">Work.me</span>
+              </Link>
+            </div>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => {
+                  localStorage.clear()
+                  router.push('/signin')
+                }}
+                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
-          <p className="text-3xl font-bold text-gray-900 mb-2">0</p>
-          <p className="text-sm text-gray-500 mb-4">Professional connections</p>
-          <Link href="/connections" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-            View all →
-          </Link>
         </div>
+      </nav>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Events</h3>
-            <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+      <div className="flex">
+        {/* Sidebar */}
+        <aside className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-4rem)] p-4">
+          <nav className="space-y-6">
+            <div>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Setup
+              </h3>
+              <ul className="space-y-1">
+                <li>
+                  <Link
+                    href="/setup"
+                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                      isActive('/setup')
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    Setup Dashboard
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/objectives"
+                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                      isActive('/objectives')
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    Objectives
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/comms-outputs"
+                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                      isActive('/comms-outputs')
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    Comms Outputs
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/company-campaigns"
+                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                      isActive('/company-campaigns')
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    Company Campaigns
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Achievements
+              </h3>
+              <ul className="space-y-1">
+                <li>
+                  <Link
+                    href="/achievements"
+                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                      isActive('/achievements') && !pathname?.includes('/achievements/')
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    All Achievements
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/achievements/new"
+                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                      isActive('/achievements/new')
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    Add Manually
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/achievements/upload"
+                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                      isActive('/achievements/upload')
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    Upload CSV
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </nav>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-gray-900">Career Dashboard</h2>
+              <p className="text-gray-600 mt-2">Your networking and career growth overview</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Achievements</h3>
+                  <svg className="h-8 w-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  </svg>
+                </div>
+                <p className="text-3xl font-bold text-gray-900 mb-2">0</p>
+                <p className="text-sm text-gray-500 mb-4">Total achievements</p>
+                <Link href="/achievements" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                  View all →
+                </Link>
+              </div>
+
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Objectives</h3>
+                  <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
+                <p className="text-3xl font-bold text-gray-900 mb-2">0</p>
+                <p className="text-sm text-gray-500 mb-4">Active objectives</p>
+                <Link href="/objectives" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                  View all →
+                </Link>
+              </div>
+
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Campaigns</h3>
+                  <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                  </svg>
+                </div>
+                <p className="text-3xl font-bold text-gray-900 mb-2">0</p>
+                <p className="text-sm text-gray-500 mb-4">Company campaigns</p>
+                <Link href="/company-campaigns" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                  View all →
+                </Link>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-8 text-white">
+              <h3 className="text-2xl font-bold mb-4">Get Started</h3>
+              <p className="text-blue-100 mb-6">
+                Start by setting up your objectives, comms outputs, and company campaigns. 
+                Then track your achievements and measure your impact.
+              </p>
+              <div className="flex gap-4">
+                <Link 
+                  href="/setup" 
+                  className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
+                >
+                  Go to Setup
+                </Link>
+                <Link 
+                  href="/achievements/new" 
+                  className="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-400 transition"
+                >
+                  Add Achievement
+                </Link>
+              </div>
+            </div>
           </div>
-          <p className="text-3xl font-bold text-gray-900 mb-2">0</p>
-          <p className="text-sm text-gray-500 mb-4">Upcoming events</p>
-          <Link href="/events" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-            View all →
-          </Link>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Milestones</h3>
-            <svg className="h-8 w-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-            </svg>
-          </div>
-          <p className="text-3xl font-bold text-gray-900 mb-2">0</p>
-          <p className="text-sm text-gray-500 mb-4">Career achievements</p>
-          <Link href="/milestones" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-            View all →
-          </Link>
-        </div>
-      </div>
-
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-8 text-white">
-        <h3 className="text-2xl font-bold mb-4">Grow Your Network</h3>
-        <p className="text-blue-100 mb-6">
-          Building a strong professional network is key to career growth. Track your connections, 
-          attend events, and celebrate your milestones.
-        </p>
-        <div className="flex gap-4">
-          <Link 
-            href="/connections/new" 
-            className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
-          >
-            Add Connection
-          </Link>
-          <Link 
-            href="/events/new" 
-            className="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-400 transition"
-          >
-            Add Event
-          </Link>
-        </div>
+        </main>
       </div>
     </div>
   )
