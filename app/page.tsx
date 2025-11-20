@@ -24,10 +24,13 @@ export default function SplashPage() {
             }
           })
         } else {
+          // Firebase not configured - go to signup anyway
+          console.warn('Firebase not configured - redirecting to signup')
           router.replace('/signup')
         }
       } catch (error) {
         console.error('Auth check error:', error)
+        // On error, just go to signup (graceful fallback)
         router.replace('/signup')
       }
     }

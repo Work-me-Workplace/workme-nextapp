@@ -19,13 +19,25 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || '',
 }
 
-// Only initialize in browser
+// Only initialize in browser and if config is valid
 let firebaseClientApp: FirebaseApp | null = null
 
 if (typeof window !== 'undefined') {
-  // Initialize only if not already initialized
-  firebaseClientApp =
-    getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
+  // Check if Firebase config is valid (at minimum need apiKey)
+  const hasValidConfig = firebaseConfig.apiKey && firebaseConfig.projectId
+  
+  if (hasValidConfig) {
+    try {
+      // Initialize only if not already initialized
+      firebaseClientApp =
+        getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
+    } catch (error) {
+      console.error('Firebase initialization error:', error)
+      firebaseClientApp = null
+    }
+  } else {
+    console.warn('Firebase config missing - set NEXT_PUBLIC_FIREBASE_* environment variables')
+  }
 }
 
 export { firebaseClientApp }
