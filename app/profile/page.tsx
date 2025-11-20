@@ -3,21 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
-
-const jobRoles = [
-  { value: 'INDIVIDUAL_CONTRIBUTOR', label: 'Individual Contributor' },
-  { value: 'MANAGER', label: 'Manager' },
-  { value: 'DIRECTOR_LEVEL', label: 'Director Level' },
-  { value: 'PROJECT_LEAD', label: 'Project Lead' },
-]
-
-const salaryRanges = [
-  { value: 'BELOW_50K', label: 'Below $50K' },
-  { value: 'K50_100K', label: '$50K - $100K' },
-  { value: 'K100_150K', label: '$100K - $150K' },
-  { value: 'K150_200K', label: '$150K - $200K' },
-  { value: 'ABOVE_200K', label: 'Above $200K' },
-]
+import { jobRoleOptions, salaryRangeOptions } from '@/lib/config/profileConfig'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -67,8 +53,21 @@ export default function ProfilePage() {
         })
       }
     } catch (error) {
-      // Profile might not exist yet, that's okay
+      // Profile might not exist yet, that's okay - prefill with defaults for testing
       console.log('Profile not loaded (new user):', error)
+      // Prefill with test data for Adam
+      setFormData({
+        jobTitle: 'Founder',
+        specialty: 'Product Development',
+        industry: 'Technology',
+        jobRole: 'DIRECTOR_LEVEL',
+        annualSalary: '',
+        salaryRange: 'ABOVE_200K',
+        workLocation: 'Remote',
+        city: 'Arlington',
+        state: 'VA',
+        companyName: 'Work.me',
+      })
     }
   }
 
@@ -157,7 +156,7 @@ export default function ProfilePage() {
                 className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-white/50"
               >
                 <option value="">Select role level</option>
-                {jobRoles.map((role) => (
+                {jobRoleOptions.map((role) => (
                   <option key={role.value} value={role.value} className="text-gray-900">
                     {role.label}
                   </option>
@@ -205,7 +204,7 @@ export default function ProfilePage() {
                 className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-white/50"
               >
                 <option value="">Select range</option>
-                {salaryRanges.map((range) => (
+                {salaryRangeOptions.map((range) => (
                   <option key={range.value} value={range.value} className="text-gray-900">
                     {range.label}
                   </option>
