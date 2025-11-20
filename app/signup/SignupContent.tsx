@@ -201,6 +201,16 @@ export default function SignupContent() {
           </button>
         </p>
 
+        <div className="pt-2 border-t border-white/20">
+          <p className="text-white/60 text-xs mb-2">Are you a user already?</p>
+          <button
+            onClick={() => router.push('/signin')}
+            className="text-white/80 hover:text-white transition text-sm underline"
+          >
+            Sign in to your existing account →
+          </button>
+        </div>
+
         <div className="pt-4 border-t border-white/20">
           <button
             onClick={() => router.push('/')}

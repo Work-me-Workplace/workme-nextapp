@@ -20,15 +20,15 @@ export default function SplashPage() {
             if (user) {
               router.replace('/welcome')
             } else {
-              router.replace('/signin')
+              router.replace('/signup')
             }
           })
         } else {
-          router.replace('/signin')
+          router.replace('/signup')
         }
       } catch (error) {
         console.error('Auth check error:', error)
-        router.replace('/signin')
+        router.replace('/signup')
       }
     }
 
