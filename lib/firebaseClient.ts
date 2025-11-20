@@ -7,7 +7,7 @@
 
 'use client'
 
-import { initializeApp, getApps } from 'firebase/app'
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app'
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '',
@@ -19,7 +19,13 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || '',
 }
 
-// Initialize only if not already initialized
-export const firebaseClientApp =
-  getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
+// Only initialize in browser
+let firebaseClientApp: FirebaseApp | null = null
 
+if (typeof window !== 'undefined') {
+  // Initialize only if not already initialized
+  firebaseClientApp =
+    getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
+}
+
+export { firebaseClientApp }

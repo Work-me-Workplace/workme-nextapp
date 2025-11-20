@@ -17,20 +17,26 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
+  Auth,
 } from 'firebase/auth'
 import { firebaseClientApp } from './firebaseClient'
 
-const app = firebaseClientApp
+// Only initialize auth in browser
+let auth: Auth | null = null
+let googleProvider: GoogleAuthProvider | null = null
 
-export const auth = getAuth(app)
-
-setPersistence(auth, browserLocalPersistence).catch((error) => {
-  console.error('Failed to set auth persistence:', error)
-})
-
-const googleProvider = new GoogleAuthProvider()
+if (typeof window !== 'undefined' && firebaseClientApp) {
+  auth = getAuth(firebaseClientApp)
+  setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.error('Failed to set auth persistence:', error)
+  })
+  googleProvider = new GoogleAuthProvider()
+}
 
 export async function signInWithGoogle() {
+  if (!auth || !googleProvider) {
+    throw new Error('Firebase not initialized')
+  }
   const result = await signInWithPopup(auth, googleProvider)
   const user = result.user
 
@@ -43,10 +49,16 @@ export async function signInWithGoogle() {
 }
 
 export async function signOutUser() {
+  if (!auth) {
+    throw new Error('Firebase not initialized')
+  }
   await signOut(auth)
 }
 
 export async function signUpWithEmail(email: string, password: string, displayName?: string) {
+  if (!auth) {
+    throw new Error('Firebase not initialized')
+  }
   const result = await createUserWithEmailAndPassword(auth, email, password)
   const user = result.user
 
@@ -63,6 +75,9 @@ export async function signUpWithEmail(email: string, password: string, displayNa
 }
 
 export async function signInWithEmail(email: string, password: string) {
+  if (!auth) {
+    throw new Error('Firebase not initialized')
+  }
   const result = await signInWithEmailAndPassword(auth, email, password)
   const user = result.user
 
@@ -75,8 +90,8 @@ export async function signInWithEmail(email: string, password: string) {
 }
 
 export function getCurrentUser() {
-  return auth.currentUser
+  return auth?.currentUser || null
 }
 
-export { app }
-
+// Export auth for direct access (with null check)
+export { auth }
