@@ -52,22 +52,26 @@ enum SalaryRange {
 }
 
 // ============================================
-// COMPANY MODEL (used by WorkMe)
+// COMPANY MODEL (Directory - Container-Scoped)
 // ============================================
 model Company {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  industry  String?
-  website   String?
-  city      String?
-  state     String?
+  id          String   @id @default(uuid())
+  containerId String   // WorkMe container ID (single tenant)
+  name        String   // Company name (unique per container)
+  industry    String?
+  website     String?
+  city        String?
+  state       String?
   description String?
-  headcount  Int?
+  headcount   Int?
   companyType CompanyType?
   revenueRange RevenueRange?
-  createdAt DateTime @default(now())
+  createdAt   DateTime @default(now())
 
-  employees WorkMe[]
+  employees   WorkMe[]
+
+  @@unique([containerId, name]) // Unique name per container
+  @@index([containerId]) // Index for directory lookups
 }
 
 enum CompanyType {

@@ -49,7 +49,7 @@ export default function ProfilePage() {
 
   const loadProfile = async (id: string) => {
     try {
-      const response = await api.get(`/api/workme/${id}`)
+      const response = await api.get(`/api/workme/profile?workMeId=${id}`)
       if (response.data?.workMe) {
         const workMe = response.data.workMe
         setFormData({
@@ -65,7 +65,8 @@ export default function ProfilePage() {
         })
       }
     } catch (error) {
-      console.error('Failed to load profile:', error)
+      // Profile might not exist yet, that's okay
+      console.log('Profile not loaded (new user):', error)
     }
   }
 
@@ -75,7 +76,10 @@ export default function ProfilePage() {
 
     setLoading(true)
     try {
-      await api.put(`/api/workme/${workMeId}`, formData)
+      await api.put('/api/workme/profile', {
+        workMeId,
+        ...formData,
+      })
       router.push('/dashboard')
     } catch (error: any) {
       console.error('Profile update failed:', error)

@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { FirebaseService } from '@/lib/services/firebase'
 
+/**
+ * POST /api/workme/create
+ * 
+ * Find or create WorkMe user from Firebase auth
+ * Uses Firebase service for token verification
+ */
 export async function POST(request: Request) {
   try {
     const body = await request.json()
@@ -10,6 +17,7 @@ export async function POST(request: Request) {
       firstName,
       lastName,
       photoURL,
+      idToken, // Optional: for token verification
     } = body
 
     if (!firebaseId) {
@@ -19,6 +27,26 @@ export async function POST(request: Request) {
       )
     }
 
+    // If idToken provided, verify it via Firebase service
+    if (idToken) {
+      try {
+        const firebaseUser = await FirebaseService.verifyToken(idToken)
+        // Verify firebaseId matches token
+        if (firebaseUser.uid !== firebaseId) {
+          return NextResponse.json(
+            { success: false, error: 'firebaseId does not match token' },
+            { status: 401 },
+          )
+        }
+      } catch (error: any) {
+        return NextResponse.json(
+          { success: false, error: `Token verification failed: ${error.message}` },
+          { status: 401 },
+        )
+      }
+    }
+
+    // Find or create WorkMe
     let workMe = await prisma.workMe.findUnique({
       where: { firebaseId },
     })
@@ -70,4 +98,3 @@ export async function POST(request: Request) {
     )
   }
 }
-
