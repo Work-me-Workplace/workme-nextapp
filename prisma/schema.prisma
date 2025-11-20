@@ -8,6 +8,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================
+// CORE USER MODEL
+// ============================================
 model WorkMe {
   id          String   @id @default(uuid())
   firebaseId  String?  @unique
@@ -28,9 +31,9 @@ model WorkMe {
   annualSalary String?
   salaryRange SalaryRange?
   createdAt   DateTime @default(now())
-  connections Connection[]
-  events      Event[]
-  milestones  Milestone[]
+  // connections Connection[]  // Commented out - not using
+  // events      Event[]       // Commented out - not using
+  // milestones  Milestone[]   // Commented out - not using
 }
 
 enum JobRole {
@@ -48,6 +51,9 @@ enum SalaryRange {
   ABOVE_200K
 }
 
+// ============================================
+// COMPANY MODEL (used by WorkMe)
+// ============================================
 model Company {
   id        String   @id @default(uuid())
   name      String   @unique
@@ -79,70 +85,9 @@ enum RevenueRange {
   ABOVE_1000M
 }
 
-model Connection {
-  id          String   @id @default(uuid())
-  name        String
-  email       String?
-  company     String?
-  jobTitle    String?
-  linkedinUrl String?
-  notes       String?
-  tags        String[] // e.g., ["mentor", "industry", "alumni"]
-  workMeId    String
-  workMe      WorkMe   @relation(fields: [workMeId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model Event {
-  id          String   @id @default(uuid())
-  title       String
-  description String?
-  eventType   EventType
-  location    String?
-  startDate   DateTime
-  endDate     DateTime?
-  isVirtual   Boolean  @default(false)
-  url         String?  // For virtual events
-  workMeId    String
-  workMe      WorkMe   @relation(fields: [workMeId], references: [id])
-  createdAt   DateTime @default(now())
-}
-
-enum EventType {
-  NETWORKING
-  CONFERENCE
-  WORKSHOP
-  MEETUP
-  WEBINAR
-  INTERVIEW
-  COFFEE_CHAT
-  OTHER
-}
-
-model Milestone {
-  id          String   @id @default(uuid())
-  title       String
-  description String?
-  milestoneType MilestoneType
-  date        DateTime @default(now())
-  workMeId    String
-  workMe      WorkMe   @relation(fields: [workMeId], references: [id])
-  createdAt   DateTime @default(now())
-}
-
-enum MilestoneType {
-  PROMOTION
-  NEW_ROLE
-  CERTIFICATION
-  SKILL_ACQUIRED
-  PROJECT_COMPLETED
-  AWARD
-  PUBLICATION
-  SPEAKING_ENGAGEMENT
-  OTHER
-}
-
+// ============================================
+// ACHIEVEMENTS MODULE MODELS
+// ============================================
 enum AchievementCategory {
   INTERNAL_COMMS
   WORKFORCE_COMMS
@@ -156,7 +101,7 @@ enum AchievementCategory {
 
 model CommsOutput {
   id          String   @id @default(cuid())
-  userId      String
+  workMeId    String   // References WorkMe.id
   type        String   // "email", "flyer", "digest", etc.
   title       String
   description String?
@@ -171,7 +116,7 @@ model CommsOutput {
 
 model Objective {
   id          String   @id @default(cuid())
-  userId      String
+  workMeId    String   // References WorkMe.id
 
   title       String
   description String?
@@ -185,7 +130,7 @@ model Objective {
 
 model CompanyCampaign {
   id          String   @id @default(cuid())
-  userId      String
+  workMeId    String   // References WorkMe.id
 
   name        String
   description String?
@@ -200,7 +145,7 @@ model CompanyCampaign {
 
 model Achievement {
   id                   String   @id @default(cuid())
-  userId               String
+  workMeId             String   // References WorkMe.id
 
   title                String
   category             AchievementCategory
@@ -227,3 +172,71 @@ model Achievement {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }
+
+// ============================================
+// COMMENTED OUT - NOT CURRENTLY USED
+// ============================================
+
+// model Connection {
+//   id          String   @id @default(uuid())
+//   name        String
+//   email       String?
+//   company     String?
+//   jobTitle    String?
+//   linkedinUrl String?
+//   notes       String?
+//   tags        String[] // e.g., ["mentor", "industry", "alumni"]
+//   workMeId    String
+//   workMe      WorkMe   @relation(fields: [workMeId], references: [id])
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+// }
+
+// model Event {
+//   id          String   @id @default(uuid())
+//   title       String
+//   description String?
+//   eventType   EventType
+//   location    String?
+//   startDate   DateTime
+//   endDate     DateTime?
+//   isVirtual   Boolean  @default(false)
+//   url         String?  // For virtual events
+//   workMeId    String
+//   workMe      WorkMe   @relation(fields: [workMeId], references: [id])
+//   createdAt   DateTime @default(now())
+// }
+
+// enum EventType {
+//   NETWORKING
+//   CONFERENCE
+//   WORKSHOP
+//   MEETUP
+//   WEBINAR
+//   INTERVIEW
+//   COFFEE_CHAT
+//   OTHER
+// }
+
+// model Milestone {
+//   id          String   @id @default(uuid())
+//   title       String
+//   description String?
+//   milestoneType MilestoneType
+//   date        DateTime @default(now())
+//   workMeId    String
+//   workMe      WorkMe   @relation(fields: [workMeId], references: [id])
+//   createdAt   DateTime @default(now())
+// }
+
+// enum MilestoneType {
+//   PROMOTION
+//   NEW_ROLE
+//   CERTIFICATION
+//   SKILL_ACQUIRED
+//   PROJECT_COMPLETED
+//   AWARD
+//   PUBLICATION
+//   SPEAKING_ENGAGEMENT
+//   OTHER
+// }

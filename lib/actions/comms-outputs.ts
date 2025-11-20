@@ -2,10 +2,7 @@
 
 import { prisma } from '../prisma'
 import { z } from 'zod'
-
-const getUserId = (): string => {
-  return 'user-1' // Placeholder - replace with actual auth
-}
+import { getWorkMeId } from '../getWorkMeId'
 
 const commsOutputSchema = z.object({
   type: z.string().min(1, 'Type is required'),
@@ -19,12 +16,16 @@ const commsOutputSchema = z.object({
 export async function createCommsOutput(data: z.infer<typeof commsOutputSchema>) {
   try {
     const validated = commsOutputSchema.parse(data)
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
     const commsOutput = await prisma.commsOutput.create({
       data: {
         ...validated,
-        userId,
+        workMeId,
         description: validated.description ?? undefined,
         wordCount: validated.wordCount ?? undefined,
         dateSent: validated.dateSent ?? undefined,
@@ -44,10 +45,14 @@ export async function createCommsOutput(data: z.infer<typeof commsOutputSchema>)
 export async function updateCommsOutput(id: string, data: z.infer<typeof commsOutputSchema>) {
   try {
     const validated = commsOutputSchema.parse(data)
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
     const existing = await prisma.commsOutput.findFirst({
-      where: { id, userId },
+      where: { id, workMeId },
     })
 
     if (!existing) {
@@ -76,10 +81,14 @@ export async function updateCommsOutput(id: string, data: z.infer<typeof commsOu
 
 export async function deleteCommsOutput(id: string) {
   try {
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
     const existing = await prisma.commsOutput.findFirst({
-      where: { id, userId },
+      where: { id, workMeId },
     })
 
     if (!existing) {
@@ -98,10 +107,14 @@ export async function deleteCommsOutput(id: string) {
 
 export async function getCommsOutputs() {
   try {
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated', commsOutputs: [] }
+    }
 
     const commsOutputs = await prisma.commsOutput.findMany({
-      where: { userId },
+      where: { workMeId },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -113,10 +126,14 @@ export async function getCommsOutputs() {
 
 export async function getCommsOutput(id: string) {
   try {
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
     const commsOutput = await prisma.commsOutput.findFirst({
-      where: { id, userId },
+      where: { id, workMeId },
     })
 
     if (!commsOutput) {
@@ -128,4 +145,3 @@ export async function getCommsOutput(id: string) {
     return { success: false, error: 'Failed to fetch comms output' }
   }
 }
-

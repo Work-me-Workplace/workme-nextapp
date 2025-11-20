@@ -2,10 +2,7 @@
 
 import { prisma } from '../prisma'
 import { z } from 'zod'
-
-const getUserId = (): string => {
-  return 'user-1' // Placeholder - replace with actual auth
-}
+import { getWorkMeId } from '../getWorkMeId'
 
 const objectiveSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -16,12 +13,16 @@ const objectiveSchema = z.object({
 export async function createObjective(data: z.infer<typeof objectiveSchema>) {
   try {
     const validated = objectiveSchema.parse(data)
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
     const objective = await prisma.objective.create({
       data: {
         ...validated,
-        userId,
+        workMeId,
         description: validated.description ?? undefined,
         howMeasured: validated.howMeasured ?? undefined,
       },
@@ -39,10 +40,14 @@ export async function createObjective(data: z.infer<typeof objectiveSchema>) {
 export async function updateObjective(id: string, data: z.infer<typeof objectiveSchema>) {
   try {
     const validated = objectiveSchema.parse(data)
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
     const existing = await prisma.objective.findFirst({
-      where: { id, userId },
+      where: { id, workMeId },
     })
 
     if (!existing) {
@@ -69,10 +74,14 @@ export async function updateObjective(id: string, data: z.infer<typeof objective
 
 export async function deleteObjective(id: string) {
   try {
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
     const existing = await prisma.objective.findFirst({
-      where: { id, userId },
+      where: { id, workMeId },
     })
 
     if (!existing) {
@@ -91,10 +100,14 @@ export async function deleteObjective(id: string) {
 
 export async function getObjectives() {
   try {
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated', objectives: [] }
+    }
 
     const objectives = await prisma.objective.findMany({
-      where: { userId },
+      where: { workMeId },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -106,10 +119,14 @@ export async function getObjectives() {
 
 export async function getObjective(id: string) {
   try {
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
     const objective = await prisma.objective.findFirst({
-      where: { id, userId },
+      where: { id, workMeId },
     })
 
     if (!objective) {

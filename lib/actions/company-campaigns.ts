@@ -2,10 +2,7 @@
 
 import { prisma } from '../prisma'
 import { z } from 'zod'
-
-const getUserId = (): string => {
-  return 'user-1' // Placeholder - replace with actual auth
-}
+import { getWorkMeId } from '../getWorkMeId'
 
 const companyCampaignSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -17,12 +14,16 @@ const companyCampaignSchema = z.object({
 export async function createCompanyCampaign(data: z.infer<typeof companyCampaignSchema>) {
   try {
     const validated = companyCampaignSchema.parse(data)
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
     const campaign = await prisma.companyCampaign.create({
       data: {
         ...validated,
-        userId,
+        workMeId,
         description: validated.description ?? undefined,
         startDate: validated.startDate ?? undefined,
         endDate: validated.endDate ?? undefined,
@@ -41,10 +42,14 @@ export async function createCompanyCampaign(data: z.infer<typeof companyCampaign
 export async function updateCompanyCampaign(id: string, data: z.infer<typeof companyCampaignSchema>) {
   try {
     const validated = companyCampaignSchema.parse(data)
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
     const existing = await prisma.companyCampaign.findFirst({
-      where: { id, userId },
+      where: { id, workMeId },
     })
 
     if (!existing) {
@@ -72,10 +77,14 @@ export async function updateCompanyCampaign(id: string, data: z.infer<typeof com
 
 export async function deleteCompanyCampaign(id: string) {
   try {
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
     const existing = await prisma.companyCampaign.findFirst({
-      where: { id, userId },
+      where: { id, workMeId },
     })
 
     if (!existing) {
@@ -94,10 +103,14 @@ export async function deleteCompanyCampaign(id: string) {
 
 export async function getCompanyCampaigns() {
   try {
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated', campaigns: [] }
+    }
 
     const campaigns = await prisma.companyCampaign.findMany({
-      where: { userId },
+      where: { workMeId },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -109,10 +122,14 @@ export async function getCompanyCampaigns() {
 
 export async function getCompanyCampaign(id: string) {
   try {
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
     const campaign = await prisma.companyCampaign.findFirst({
-      where: { id, userId },
+      where: { id, workMeId },
     })
 
     if (!campaign) {
@@ -124,4 +141,3 @@ export async function getCompanyCampaign(id: string) {
     return { success: false, error: 'Failed to fetch company campaign' }
   }
 }
-

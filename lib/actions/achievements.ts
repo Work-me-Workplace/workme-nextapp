@@ -2,13 +2,7 @@
 
 import { prisma } from '../prisma'
 import { z } from 'zod'
-
-// For now, we'll use a placeholder userId. In production, this should come from session/auth
-// TODO: Replace with actual user authentication
-const getUserId = (): string => {
-  // This should be replaced with actual auth logic
-  return 'user-1' // Placeholder
-}
+import { getWorkMeId } from '../getWorkMeId'
 
 const achievementSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -37,12 +31,16 @@ const achievementSchema = z.object({
 export async function createAchievement(data: z.infer<typeof achievementSchema>) {
   try {
     const validated = achievementSchema.parse(data)
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
     const achievement = await prisma.achievement.create({
       data: {
         ...validated,
-        userId,
+        workMeId,
         audienceSize: validated.audienceSize ?? undefined,
         objectiveId: validated.objectiveId ?? undefined,
         commsOutputId: validated.commsOutputId ?? undefined,
@@ -71,11 +69,15 @@ export async function createAchievement(data: z.infer<typeof achievementSchema>)
 export async function updateAchievement(id: string, data: z.infer<typeof achievementSchema>) {
   try {
     const validated = achievementSchema.parse(data)
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
     // Verify ownership
     const existing = await prisma.achievement.findFirst({
-      where: { id, userId },
+      where: { id, workMeId },
     })
 
     if (!existing) {
@@ -113,10 +115,14 @@ export async function updateAchievement(id: string, data: z.infer<typeof achieve
 
 export async function deleteAchievement(id: string) {
   try {
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
     const existing = await prisma.achievement.findFirst({
-      where: { id, userId },
+      where: { id, workMeId },
     })
 
     if (!existing) {
@@ -135,10 +141,14 @@ export async function deleteAchievement(id: string) {
 
 export async function getAchievements() {
   try {
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated', achievements: [] }
+    }
 
     const achievements = await prisma.achievement.findMany({
-      where: { userId },
+      where: { workMeId },
       include: {
         objective: true,
         commsOutput: true,
@@ -155,10 +165,14 @@ export async function getAchievements() {
 
 export async function getAchievement(id: string) {
   try {
-    const userId = getUserId()
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
 
     const achievement = await prisma.achievement.findFirst({
-      where: { id, userId },
+      where: { id, workMeId },
       include: {
         objective: true,
         commsOutput: true,
