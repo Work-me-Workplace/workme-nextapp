@@ -22,15 +22,11 @@ model WorkMe {
   company     Company? @relation(fields: [companyId], references: [id])
   workMeCompanyId String?
   workMeCompany WorkMeCompany? @relation(fields: [workMeCompanyId], references: [id])
-  workLocation String?
-  city        String?
-  state       String?
 
   jobTitle    String?
   specialty   String?
   industry    String?
   jobRole     JobRole?
-  annualSalary String?
   salaryRange SalaryRange?
   createdAt   DateTime @default(now())
   
