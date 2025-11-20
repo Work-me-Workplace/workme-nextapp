@@ -51,6 +51,8 @@ export async function POST(request: Request) {
       where: { firebaseId },
     })
 
+    let isNewUser = false
+
     if (!workMe) {
       // Also check by email in case firebaseId wasn't set
       workMe = await prisma.workMe.findUnique({
@@ -80,10 +82,33 @@ export async function POST(request: Request) {
             photoUrl: photoURL || null,
           },
         })
+        isNewUser = true
         console.log('✅ Created new WorkMe:', workMe.id)
       }
     } else {
       console.log('✅ Found existing WorkMe:', workMe.id)
+    }
+
+    // If this is the first user (Adam - the first man), make them super admin
+    if (isNewUser) {
+      const existingSuperAdmin = await prisma.superAdmin.findFirst()
+      
+      if (!existingSuperAdmin) {
+        // This is the first user - make them super admin
+        const superAdmin = await prisma.superAdmin.create({
+          data: {
+            workMeId: workMe.id,
+          },
+        })
+        console.log('✅ Created first super admin (Adam):', superAdmin.id)
+        
+        return NextResponse.json({
+          success: true,
+          workMe,
+          isSuperAdmin: true,
+          message: 'First user created and granted super admin status',
+        })
+      }
     }
 
     return NextResponse.json({

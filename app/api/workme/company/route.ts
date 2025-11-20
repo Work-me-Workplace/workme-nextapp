@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { WORKME_CONTAINER_ID } from '@/lib/config/workmeConfig'
+import { getWorkMeCompany } from '@/lib/config/workmeConfig'
 
 /**
  * PUT /api/workme/company
@@ -42,11 +42,14 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Look up company in directory (by containerId + name)
+    // Get WorkMeCompany (container)
+    const workMeCompany = await getWorkMeCompany()
+
+    // Look up company in directory (by workMeCompanyId + name)
     let company = await prisma.company.findUnique({
       where: {
-        containerId_name: {
-          containerId: WORKME_CONTAINER_ID,
+        workMeCompanyId_name: {
+          workMeCompanyId: workMeCompany.id,
           name: companyName.trim(),
         },
       },
@@ -56,7 +59,7 @@ export async function PUT(request: NextRequest) {
     if (!company) {
       company = await prisma.company.create({
         data: {
-          containerId: WORKME_CONTAINER_ID,
+          workMeCompanyId: workMeCompany.id,
           name: companyName.trim(),
           industry: companyData?.industry ?? undefined,
           website: companyData?.website ?? undefined,
@@ -109,9 +112,12 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('q') || ''
     const limit = parseInt(searchParams.get('limit') || '20')
 
+    // Get WorkMeCompany (container)
+    const workMeCompany = await getWorkMeCompany()
+
     const companies = await prisma.company.findMany({
       where: {
-        containerId: WORKME_CONTAINER_ID,
+        workMeCompanyId: workMeCompany.id,
         name: {
           contains: query,
           mode: 'insensitive',

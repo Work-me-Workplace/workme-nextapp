@@ -20,6 +20,8 @@ model WorkMe {
   photoUrl    String?
   companyId   String?
   company     Company? @relation(fields: [companyId], references: [id])
+  workMeCompanyId String?
+  workMeCompany WorkMeCompany? @relation(fields: [workMeCompanyId], references: [id])
   workLocation String?
   city        String?
   state       String?
@@ -31,6 +33,8 @@ model WorkMe {
   annualSalary String?
   salaryRange SalaryRange?
   createdAt   DateTime @default(now())
+  
+  superAdmin  SuperAdmin? // One-to-one: user can be super admin
   // connections Connection[]  // Commented out - not using
   // events      Event[]       // Commented out - not using
   // milestones  Milestone[]   // Commented out - not using
@@ -52,26 +56,56 @@ enum SalaryRange {
 }
 
 // ============================================
+// WORKME COMPANY MODEL (Container/Tenant)
+// ============================================
+model WorkMeCompany {
+  id          String   @id @default(uuid())
+  name        String   // WorkMe platform name
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employees   WorkMe[]
+  companies   Company[] // Companies in this container
+
+  @@map("workme_company")
+}
+
+// ============================================
+// SUPER ADMIN MODEL
+// ============================================
+model SuperAdmin {
+  id        String   @id @default(uuid())
+  workMeId  String   @unique // One super admin per WorkMe user
+  createdAt DateTime @default(now())
+
+  workMe    WorkMe   @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+
+  @@map("super_admin")
+}
+
+// ============================================
 // COMPANY MODEL (Directory - Container-Scoped)
 // ============================================
 model Company {
-  id          String   @id @default(uuid())
-  containerId String   // WorkMe container ID (single tenant)
-  name        String   // Company name (unique per container)
-  industry    String?
-  website     String?
-  city        String?
-  state       String?
-  description String?
-  headcount   Int?
-  companyType CompanyType?
-  revenueRange RevenueRange?
-  createdAt   DateTime @default(now())
+  id              String   @id @default(uuid())
+  workMeCompanyId String   // WorkMe container ID (single tenant)
+  workMeCompany   WorkMeCompany @relation(fields: [workMeCompanyId], references: [id])
+  name            String   // Company name (unique per container)
+  industry        String?
+  website         String?
+  city            String?
+  state           String?
+  description     String?
+  headcount       Int?
+  companyType     CompanyType?
+  revenueRange    RevenueRange?
+  createdAt       DateTime @default(now())
 
-  employees   WorkMe[]
+  employees       WorkMe[]
 
-  @@unique([containerId, name]) // Unique name per container
-  @@index([containerId]) // Index for directory lookups
+  @@unique([workMeCompanyId, name]) // Unique name per container
+  @@index([workMeCompanyId]) // Index for directory lookups
 }
 
 enum CompanyType {
