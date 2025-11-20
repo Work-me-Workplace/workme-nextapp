@@ -215,6 +215,118 @@ model Achievement {
 }
 
 // ============================================
+// WORK ARCHITECTURE MODELS
+// ============================================
+// Router model - references typed context models
+model WorkContext {
+  id              String      @id @default(cuid())
+  createdAt       DateTime    @default(now())
+  type            String      // "campaign" | "impact_event" | "training" | "event" | "community"
+  typeRefId       String      // references the typed context model
+  createdByWorkMeId String    // References WorkMe.id
+
+  outputs         WorkOutput[]
+
+  @@index([createdByWorkMeId])
+  @@index([createdAt])
+  @@index([type, typeRefId])
+}
+
+// Typed Context Models
+model CompanyCampaign {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  title         String
+  description   String?
+  windowStart   DateTime?
+  windowEnd     DateTime?
+  ctaLink       String?
+  sponsor       String?
+  pocLastName   String?
+  createdByWorkMeId String
+
+  @@index([createdByWorkMeId])
+}
+
+model CompanyWorkforceImpactEvent {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  title         String
+  description   String?
+  effectiveDate DateTime?
+  impactedPopulation String?
+  urgency       String?
+  pocLastName   String?
+  createdByWorkMeId String
+
+  @@index([createdByWorkMeId])
+}
+
+model CompanyTraining {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  title         String
+  description   String?
+  trainingDate  DateTime?
+  deadline      DateTime?
+  link          String?
+  mandatory     Boolean  @default(false)
+  sponsoringOffice String?
+  pocLastName   String?
+  createdByWorkMeId String
+
+  @@index([createdByWorkMeId])
+}
+
+model CompanyEvent {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  title         String
+  description   String?
+  startDate     DateTime?
+  endDate       DateTime?
+  location      String?
+  pocLastName   String?
+  eventCategory String?
+  createdByWorkMeId String
+
+  @@index([createdByWorkMeId])
+}
+
+model CompanyCommunityOpportunity {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  title         String
+  description   String?
+  partnerOrg    String?
+  date          DateTime?
+  location      String?
+  signUpLink    String?
+  pocLastName   String?
+  createdByWorkMeId String
+
+  @@index([createdByWorkMeId])
+}
+
+model WorkOutput {
+  id              String      @id @default(cuid())
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  contextId       String
+  context         WorkContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
+
+  outputType      String      // "email" | "poster" | "talking_points" | "sharepoint" | "event_kit"
+  dataJson        Json?
+
+  createdByWorkMeId String    // References WorkMe.id
+
+  @@index([contextId])
+  @@index([createdByWorkMeId])
+  @@index([updatedAt])
+}
+
+// ============================================
 // COMMENTED OUT - NOT CURRENTLY USED
 // ============================================
 
