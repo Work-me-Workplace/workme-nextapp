@@ -69,7 +69,7 @@ export async function createCampaign(data: z.infer<typeof campaignSchema>) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    const campaign = await prisma.companyCampaign.create({
+    const campaign = await prisma.workContextCampaign.create({
       data: {
         ...validated,
         createdByWorkMeId: workMeId,
@@ -110,7 +110,7 @@ export async function createImpactEvent(data: z.infer<typeof impactEventSchema>)
       return { success: false, error: 'Not authenticated' }
     }
 
-    const impactEvent = await prisma.companyWorkforceImpactEvent.create({
+    const impactEvent = await prisma.workContextImpactEvent.create({
       data: {
         ...validated,
         createdByWorkMeId: workMeId,
@@ -149,7 +149,7 @@ export async function createTraining(data: z.infer<typeof trainingSchema>) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    const training = await prisma.companyTraining.create({
+    const training = await prisma.workContextTraining.create({
       data: {
         ...validated,
         createdByWorkMeId: workMeId,
@@ -190,7 +190,7 @@ export async function createEvent(data: z.infer<typeof eventSchema>) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    const event = await prisma.companyEvent.create({
+    const event = await prisma.workContextEvent.create({
       data: {
         ...validated,
         createdByWorkMeId: workMeId,
@@ -230,7 +230,7 @@ export async function createCommunityOpportunity(data: z.infer<typeof communityO
       return { success: false, error: 'Not authenticated' }
     }
 
-    const opportunity = await prisma.companyCommunityOpportunity.create({
+    const opportunity = await prisma.workContextCommunity.create({
       data: {
         ...validated,
         createdByWorkMeId: workMeId,
@@ -265,31 +265,31 @@ export async function getTypedContext(workContext: { type: string; typeRefId: st
   try {
     switch (workContext.type) {
       case 'campaign':
-        const campaign = await prisma.companyCampaign.findUnique({
+        const campaign = await prisma.workContextCampaign.findUnique({
           where: { id: workContext.typeRefId },
         })
         return { success: true, data: campaign, title: campaign?.title || '' }
       
       case 'impact_event':
-        const impactEvent = await prisma.companyWorkforceImpactEvent.findUnique({
+        const impactEvent = await prisma.workContextImpactEvent.findUnique({
           where: { id: workContext.typeRefId },
         })
         return { success: true, data: impactEvent, title: impactEvent?.title || '' }
       
       case 'training':
-        const training = await prisma.companyTraining.findUnique({
+        const training = await prisma.workContextTraining.findUnique({
           where: { id: workContext.typeRefId },
         })
         return { success: true, data: training, title: training?.title || '' }
       
       case 'event':
-        const event = await prisma.companyEvent.findUnique({
+        const event = await prisma.workContextEvent.findUnique({
           where: { id: workContext.typeRefId },
         })
         return { success: true, data: event, title: event?.title || '' }
       
       case 'community':
-        const opportunity = await prisma.companyCommunityOpportunity.findUnique({
+        const opportunity = await prisma.workContextCommunity.findUnique({
           where: { id: workContext.typeRefId },
         })
         return { success: true, data: opportunity, title: opportunity?.title || '' }

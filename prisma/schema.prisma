@@ -232,8 +232,8 @@ model WorkContext {
   @@index([type, typeRefId])
 }
 
-// Typed Context Models
-model CompanyCampaign {
+// Typed Context Models (WorkContext Architecture)
+model WorkContextCampaign {
   id            String   @id @default(cuid())
   createdAt     DateTime @default(now())
   title         String
@@ -248,7 +248,7 @@ model CompanyCampaign {
   @@index([createdByWorkMeId])
 }
 
-model CompanyWorkforceImpactEvent {
+model WorkContextImpactEvent {
   id            String   @id @default(cuid())
   createdAt     DateTime @default(now())
   title         String
@@ -262,7 +262,7 @@ model CompanyWorkforceImpactEvent {
   @@index([createdByWorkMeId])
 }
 
-model CompanyTraining {
+model WorkContextTraining {
   id            String   @id @default(cuid())
   createdAt     DateTime @default(now())
   title         String
@@ -278,7 +278,7 @@ model CompanyTraining {
   @@index([createdByWorkMeId])
 }
 
-model CompanyEvent {
+model WorkContextEvent {
   id            String   @id @default(cuid())
   createdAt     DateTime @default(now())
   title         String
@@ -293,7 +293,7 @@ model CompanyEvent {
   @@index([createdByWorkMeId])
 }
 
-model CompanyCommunityOpportunity {
+model WorkContextCommunity {
   id            String   @id @default(cuid())
   createdAt     DateTime @default(now())
   title         String
