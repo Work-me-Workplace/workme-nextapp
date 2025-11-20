@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { createCampaign } from '@/lib/actions/typed-contexts'
-import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId'
+import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
 export default function NewCampaignPage() {
   const router = useRouter()

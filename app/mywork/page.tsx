@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkContexts } from '@/lib/actions/work-context'
 import { getWorkOutputs } from '@/lib/actions/work-output'
-import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId'
+import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
 export default function MyWorkPage() {
   const pathname = usePathname()

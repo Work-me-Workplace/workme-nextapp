@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkContext } from '@/lib/actions/work-context'
-import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId'
+import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
 export default function WorkSupportPage() {
   const router = useRouter()

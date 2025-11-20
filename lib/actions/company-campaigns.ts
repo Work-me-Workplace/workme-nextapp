@@ -2,7 +2,7 @@
 
 import { prisma } from '../prisma'
 import { z } from 'zod'
-import { getWorkMeId } from '../getWorkMeId'
+import { getWorkMeId } from '../getWorkMeId.server'
 
 const companyCampaignSchema = z.object({
   name: z.string().min(1, 'Name is required'),

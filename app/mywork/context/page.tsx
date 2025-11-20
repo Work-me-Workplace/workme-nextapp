@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkContexts, deleteWorkContext } from '@/lib/actions/work-context'
-import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId'
+import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
 export default function WorkContextListPage() {
   const pathname = usePathname()

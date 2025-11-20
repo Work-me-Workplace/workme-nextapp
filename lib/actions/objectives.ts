@@ -2,7 +2,7 @@
 
 import { prisma } from '../prisma'
 import { z } from 'zod'
-import { getWorkMeId } from '../getWorkMeId'
+import { getWorkMeId } from '../getWorkMeId.server'
 
 const objectiveSchema = z.object({
   title: z.string().min(1, 'Title is required'),

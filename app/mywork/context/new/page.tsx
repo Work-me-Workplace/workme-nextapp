@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId'
+import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
 const contextTypes = [
   {

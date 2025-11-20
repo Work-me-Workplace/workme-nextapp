@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId'
+import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { getAchievements } from '@/lib/actions/achievements'
 import { getObjectives } from '@/lib/actions/objectives'
 import { getCompanyCampaigns } from '@/lib/actions/company-campaigns'
