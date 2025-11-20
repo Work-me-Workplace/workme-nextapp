@@ -11,11 +11,7 @@ export interface WorkMeProfileData {
   specialty?: string
   industry?: string
   jobRole?: string | JobRole
-  annualSalary?: string
   salaryRange?: string | SalaryRange
-  workLocation?: string
-  city?: string
-  state?: string
 }
 
 export interface CompanyData {
@@ -39,22 +35,14 @@ export class FieldMapperService {
     specialty?: string
     industry?: string
     jobRole?: JobRole
-    annualSalary?: string
     salaryRange?: SalaryRange
-    workLocation?: string
-    city?: string
-    state?: string
   } {
     return {
       jobTitle: data.jobTitle?.trim() || undefined,
       specialty: data.specialty?.trim() || undefined,
       industry: data.industry?.trim() || undefined,
       jobRole: data.jobRole ? (data.jobRole as JobRole) : undefined,
-      annualSalary: data.annualSalary?.trim() || undefined,
       salaryRange: data.salaryRange ? (data.salaryRange as SalaryRange) : undefined,
-      workLocation: data.workLocation?.trim() || undefined,
-      city: data.city?.trim() || undefined,
-      state: data.state?.trim() || undefined,
     }
   }
 

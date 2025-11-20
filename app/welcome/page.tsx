@@ -36,13 +36,13 @@ export default function WelcomePage() {
             Your career growth platform is ready
           </p>
         </div>
-
+        
         <div className="space-y-6 text-left bg-white/5 rounded-xl p-6">
           <div className="flex items-start gap-4">
             <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
               <span className="text-white font-bold">1</span>
             </div>
-            <div>
+          <div>
               <h3 className="text-lg font-semibold text-white mb-1">Track Your Achievements</h3>
               <p className="text-white/80">Document your professional accomplishments and impact</p>
             </div>
@@ -51,7 +51,7 @@ export default function WelcomePage() {
             <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
               <span className="text-white font-bold">2</span>
             </div>
-            <div>
+          <div>
               <h3 className="text-lg font-semibold text-white mb-1">Set Objectives</h3>
               <p className="text-white/80">Define goals and measure your progress</p>
             </div>
@@ -60,21 +60,21 @@ export default function WelcomePage() {
             <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
               <span className="text-white font-bold">3</span>
             </div>
-            <div>
+          <div>
               <h3 className="text-lg font-semibold text-white mb-1">Build Your Career</h3>
               <p className="text-white/80">Grow your network and advance your professional journey</p>
             </div>
           </div>
-        </div>
-
+          </div>
+          
         <div className="flex gap-4">
-          <button
+            <button
             onClick={handleContinue}
             className="flex-1 bg-white text-blue-700 py-4 px-8 rounded-xl font-semibold hover:bg-blue-50 transition shadow-lg"
-          >
+            >
             Continue to Dashboard →
-          </button>
-        </div>
+            </button>
+          </div>
 
         {workMeId && (
           <p className="text-white/60 text-sm">

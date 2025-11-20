@@ -172,76 +172,76 @@ export default function DashboardPage() {
 
         {/* Main Content */}
         <main className="flex-1">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="mb-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-8">
               <h2 className="text-3xl font-bold text-gray-900">Career Dashboard</h2>
-              <p className="text-gray-600 mt-2">Your networking and career growth overview</p>
-            </div>
+        <p className="text-gray-600 mt-2">Your networking and career growth overview</p>
+      </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Achievements</h3>
                   <svg className="h-8 w-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                  </svg>
-                </div>
-                <p className="text-3xl font-bold text-gray-900 mb-2">0</p>
+            </svg>
+          </div>
+          <p className="text-3xl font-bold text-gray-900 mb-2">0</p>
                 <p className="text-sm text-gray-500 mb-4">Total achievements</p>
                 <Link href="/achievements" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                  View all →
-                </Link>
-              </div>
+            View all →
+          </Link>
+        </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Objectives</h3>
-                  <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </div>
-                <p className="text-3xl font-bold text-gray-900 mb-2">0</p>
+            </svg>
+          </div>
+          <p className="text-3xl font-bold text-gray-900 mb-2">0</p>
                 <p className="text-sm text-gray-500 mb-4">Active objectives</p>
                 <Link href="/objectives" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                  View all →
-                </Link>
-              </div>
+            View all →
+          </Link>
+        </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Campaigns</h3>
                   <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-                  </svg>
-                </div>
-                <p className="text-3xl font-bold text-gray-900 mb-2">0</p>
+            </svg>
+          </div>
+          <p className="text-3xl font-bold text-gray-900 mb-2">0</p>
                 <p className="text-sm text-gray-500 mb-4">Company campaigns</p>
                 <Link href="/company-campaigns" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                  View all →
-                </Link>
-              </div>
-            </div>
+            View all →
+          </Link>
+        </div>
+      </div>
 
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-8 text-white">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-8 text-white">
               <h3 className="text-2xl font-bold mb-4">Get Started</h3>
-              <p className="text-blue-100 mb-6">
+        <p className="text-blue-100 mb-6">
                 Start by setting up your objectives, comms outputs, and company campaigns. 
                 Then track your achievements and measure your impact.
-              </p>
-              <div className="flex gap-4">
-                <Link 
+        </p>
+        <div className="flex gap-4">
+          <Link 
                   href="/setup" 
-                  className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
-                >
+            className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
+          >
                   Go to Setup
-                </Link>
-                <Link 
+          </Link>
+          <Link 
                   href="/achievements/new" 
-                  className="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-400 transition"
-                >
+            className="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-400 transition"
+          >
                   Add Achievement
-                </Link>
-              </div>
+          </Link>
+        </div>
             </div>
           </div>
         </main>

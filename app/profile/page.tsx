@@ -14,11 +14,7 @@ export default function ProfilePage() {
     specialty: '',
     industry: '',
     jobRole: '',
-    annualSalary: '',
     salaryRange: '',
-    workLocation: '',
-    city: '',
-    state: '',
     companyName: '',
   })
 
@@ -44,11 +40,7 @@ export default function ProfilePage() {
           specialty: workMe.specialty || '',
           industry: workMe.industry || '',
           jobRole: workMe.jobRole || '',
-          annualSalary: workMe.annualSalary || '',
           salaryRange: workMe.salaryRange || '',
-          workLocation: workMe.workLocation || '',
-          city: workMe.city || '',
-          state: workMe.state || '',
           companyName: workMe.company?.name || '',
         })
       }
@@ -59,14 +51,10 @@ export default function ProfilePage() {
       setFormData({
         jobTitle: 'Public Affairs Specialist - Internal Comms',
         specialty: 'Internal Communications',
-        industry: 'Technology',
+        industry: 'Defense',
         jobRole: 'INDIVIDUAL_CONTRIBUTOR',
-        annualSalary: '',
         salaryRange: '',
-        workLocation: '',
-        city: '',
-        state: '',
-        companyName: '',
+        companyName: 'NAVSEA Naval Systems Command',
       })
     }
   }
@@ -84,11 +72,7 @@ export default function ProfilePage() {
         specialty: formData.specialty,
         industry: formData.industry,
         jobRole: formData.jobRole,
-        annualSalary: formData.annualSalary,
         salaryRange: formData.salaryRange,
-        workLocation: formData.workLocation,
-        city: formData.city,
-        state: formData.state,
       })
 
       // If company name provided, upsert company (just name for now, enrichment later)
@@ -193,52 +177,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-white/90 mb-2">
-                Salary Range
-              </label>
-              <select
-                value={formData.salaryRange}
-                onChange={(e) => setFormData({ ...formData, salaryRange: e.target.value })}
-                className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-white/50"
-              >
-                <option value="">Select range</option>
-                {salaryRangeOptions.map((range) => (
-                  <option key={range.value} value={range.value} className="text-gray-900">
-                    {range.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white/90 mb-2">
-                Annual Salary
-              </label>
-              <input
-                type="text"
-                value={formData.annualSalary}
-                onChange={(e) => setFormData({ ...formData, annualSalary: e.target.value })}
-                className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
-                placeholder="e.g. $75,000"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-white/90 mb-2">
-              Work Location
-            </label>
-            <input
-              type="text"
-              value={formData.workLocation}
-              onChange={(e) => setFormData({ ...formData, workLocation: e.target.value })}
-              className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
-              placeholder="e.g. Remote, Hybrid, Office"
-            />
-          </div>
-
           <div>
             <label className="block text-sm font-medium text-white/90 mb-2">
               Company
@@ -248,39 +186,29 @@ export default function ProfilePage() {
               value={formData.companyName}
               onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
               className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
-              placeholder="e.g. Acme Corp, Google, Starbucks"
+              placeholder="e.g. NAVSEA Naval Systems Command"
             />
             <p className="mt-1 text-xs text-white/60">
               Company details will be enriched automatically
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-white/90 mb-2">
-                City
-              </label>
-              <input
-                type="text"
-                value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
-                placeholder="e.g. San Francisco"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white/90 mb-2">
-                State
-              </label>
-              <input
-                type="text"
-                value={formData.state}
-                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
-                placeholder="e.g. CA"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-white/90 mb-2">
+              Salary Range
+            </label>
+            <select
+              value={formData.salaryRange}
+              onChange={(e) => setFormData({ ...formData, salaryRange: e.target.value })}
+              className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-white/50"
+            >
+              <option value="">Select range</option>
+              {salaryRangeOptions.map((range) => (
+                <option key={range.value} value={range.value} className="text-gray-900">
+                  {range.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex gap-4 pt-4">
