@@ -18,12 +18,21 @@ export default function SignupPage() {
   })
 
   const createOrFindWorkMe = async (payload: any) => {
-    const response = await api.post('/api/workme/create', payload)
-    const { workMe } = response || {}
-    if (!workMe) {
-      throw new Error('WorkMe creation failed - no workMe returned')
+    try {
+      const response = await api.post('/api/workme/create', payload)
+      const { workMe, success, error, details } = response.data || response || {}
+      
+      if (!success || !workMe) {
+        const errorMsg = error || 'WorkMe creation failed - no workMe returned'
+        console.error('WorkMe creation error:', { error, details, response })
+        throw new Error(errorMsg)
+      }
+      
+      return workMe
+    } catch (error: any) {
+      console.error('createOrFindWorkMe error:', error)
+      throw error
     }
-    return workMe
   }
 
   const persistSession = async (firebaseUser: any, workMeRecord: any) => {

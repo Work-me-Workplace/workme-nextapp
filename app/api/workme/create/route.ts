@@ -126,8 +126,18 @@ export async function POST(request: Request) {
     })
   } catch (error: any) {
     console.error('❌ WorkMeCreate error:', error)
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      stack: error.stack,
+    })
     return NextResponse.json(
-      { success: false, error: error.message },
+      { 
+        success: false, 
+        error: error.message || 'Failed to create WorkMe',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      },
       { status: 500 },
     )
   }
