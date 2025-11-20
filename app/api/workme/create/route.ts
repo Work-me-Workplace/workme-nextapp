@@ -94,10 +94,15 @@ export async function POST(request: Request) {
       const existingSuperAdmin = await prisma.superAdmin.findFirst()
       
       if (!existingSuperAdmin) {
-        // This is the first user - make them super admin
+        // This is the first user - create standalone super admin
         const superAdmin = await prisma.superAdmin.create({
           data: {
-            workMeId: workMe.id,
+            firebaseId: workMe.firebaseId,
+            email: workMe.email,
+            firstName: workMe.firstName,
+            lastName: workMe.lastName,
+            photoUrl: workMe.photoUrl,
+            workMeId: workMe.id, // Link to WorkMe (optional, may migrate away)
           },
         })
         console.log('✅ Created first super admin (Adam):', superAdmin.id)
@@ -105,6 +110,10 @@ export async function POST(request: Request) {
         return NextResponse.json({
           success: true,
           workMe,
+          superAdmin: {
+            id: superAdmin.id,
+            email: superAdmin.email,
+          },
           isSuperAdmin: true,
           message: 'First user created and granted super admin status',
         })

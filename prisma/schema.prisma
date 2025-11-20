@@ -34,7 +34,7 @@ model WorkMe {
   salaryRange SalaryRange?
   createdAt   DateTime @default(now())
   
-  superAdmin  SuperAdmin? // One-to-one: user can be super admin
+  superAdmin  SuperAdmin? // Optional link to SuperAdmin (may migrate away)
   // connections Connection[]  // Commented out - not using
   // events      Event[]       // Commented out - not using
   // milestones  Milestone[]   // Commented out - not using
@@ -72,14 +72,19 @@ model WorkMeCompany {
 }
 
 // ============================================
-// SUPER ADMIN MODEL
+// SUPER ADMIN MODEL (Standalone Identity)
 // ============================================
 model SuperAdmin {
-  id        String   @id @default(uuid())
-  workMeId  String   @unique // One super admin per WorkMe user
-  createdAt DateTime @default(now())
-
-  workMe    WorkMe   @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  id          String   @id @default(uuid())
+  firebaseId  String?  @unique // Firebase Auth UID (optional)
+  email       String   @unique // Super admin email
+  firstName   String?
+  lastName    String?
+  photoUrl    String?
+  workMeId    String?  @unique // Optional link to WorkMe (may migrate away)
+  workMe      WorkMe?  @relation(fields: [workMeId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@map("super_admin")
 }

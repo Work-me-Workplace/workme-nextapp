@@ -44,10 +44,15 @@ export async function POST(request: Request) {
       )
     }
 
-    // Create super admin (first user - Adam)
+    // Create standalone super admin (first user - Adam)
     const superAdmin = await prisma.superAdmin.create({
       data: {
-        workMeId,
+        firebaseId: workMe.firebaseId,
+        email: workMe.email,
+        firstName: workMe.firstName,
+        lastName: workMe.lastName,
+        photoUrl: workMe.photoUrl,
+        workMeId, // Optional link (may migrate away)
       },
       include: {
         workMe: true,
