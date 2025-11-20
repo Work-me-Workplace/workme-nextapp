@@ -58,7 +58,7 @@ export default function SignupPage() {
       })
 
       await persistSession(result, workMe)
-      router.push('/welcome')
+      router.push('/profile')
     } catch (error) {
       console.error('Google signup failed:', error)
       alert('Signup failed. Please try again.')
@@ -94,7 +94,7 @@ export default function SignupPage() {
       })
 
       await persistSession(result, workMe)
-      router.push('/welcome')
+      router.push('/profile')
     } catch (error: any) {
       console.error('Email signup failed:', error)
       alert(`Signup failed: ${error.message || 'Please try again.'}`)
