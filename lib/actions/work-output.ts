@@ -1,13 +1,16 @@
 'use server'
 
-import { prisma } from '../prisma'
+import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getWorkMeId } from '../getWorkMeId.server'
+import { getWorkMeId } from '@/lib/getWorkMeId.server'
+import { WORK_OUTPUT_TYPE_VALUES } from './work-support'
 
 const workOutputSchema = z.object({
-  contextId: z.string().min(1, 'Context ID is required'),
-  outputType: z.enum(['email', 'poster', 'talking_points', 'sharepoint', 'event_kit']),
+  contextId: z.string().optional().nullable(),
+  supportId: z.string().optional().nullable(),
+  outputType: z.enum(WORK_OUTPUT_TYPE_VALUES as [string, ...string[]]),
   dataJson: z.any().optional().nullable(),
+  status: z.enum(['draft', 'final']).default('draft'),
 })
 
 export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
@@ -19,36 +22,91 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    // Verify context exists and belongs to user
-    const context = await prisma.workContext.findFirst({
-      where: { id: validated.contextId, createdByWorkMeId: workMeId },
-    })
-
-    if (!context) {
-      return { success: false, error: 'Work context not found' }
+    // Verify at least one of contextId or supportId is provided
+    if (!validated.contextId && !validated.supportId) {
+      return { success: false, error: 'Either contextId or supportId is required' }
     }
 
-    const workOutput = await prisma.workOutput.create({
-      data: {
-        contextId: validated.contextId,
-        outputType: validated.outputType,
-        dataJson: validated.dataJson ?? undefined,
-        createdByWorkMeId: workMeId,
-      },
-    })
+    // If supportId provided, verify it exists and belongs to user
+    if (validated.supportId) {
+      const support = await prisma.workSupport.findFirst({
+        where: { id: validated.supportId, createdByWorkMeId: workMeId },
+      })
 
-    return { success: true, workOutput }
+      if (!support) {
+        return { success: false, error: 'WorkSupport not found' }
+      }
+
+      // Use support's contextId if contextId not provided
+      const contextIdToUse = validated.contextId || support.contextId
+
+      const workOutput = await prisma.workOutput.create({
+        data: {
+          contextId: contextIdToUse,
+          supportId: validated.supportId,
+          outputType: validated.outputType,
+          dataJson: validated.dataJson ?? undefined,
+          status: validated.status || 'draft',
+          createdByWorkMeId: workMeId,
+        },
+        include: {
+          context: true,
+          support: true,
+        },
+      })
+
+      // Update support assets with new output ID
+      const currentAssets = (support.assets as string[]) || []
+      await prisma.workSupport.update({
+        where: { id: validated.supportId },
+        data: {
+          assets: [...currentAssets, workOutput.id],
+        },
+      })
+
+      return { success: true, workOutput }
+    }
+
+    // If only contextId provided, verify it exists and belongs to user
+    if (validated.contextId) {
+      const context = await prisma.workContext.findFirst({
+        where: { id: validated.contextId, createdByWorkMeId: workMeId },
+      })
+
+      if (!context) {
+        return { success: false, error: 'Work context not found' }
+      }
+
+      const workOutput = await prisma.workOutput.create({
+        data: {
+          contextId: validated.contextId,
+          outputType: validated.outputType,
+          dataJson: validated.dataJson ?? undefined,
+          status: validated.status || 'draft',
+          createdByWorkMeId: workMeId,
+        },
+        include: {
+          context: true,
+          support: true,
+        },
+      })
+
+      return { success: true, workOutput }
+    }
+
+    return { success: false, error: 'Invalid input' }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
     }
+    console.error('Error creating WorkOutput:', error)
     return { success: false, error: 'Failed to create work output' }
   }
 }
 
-export async function updateWorkOutput(id: string, data: Partial<Pick<z.infer<typeof workOutputSchema>, 'dataJson'>>) {
+export async function updateWorkOutput(id: string, data: Partial<Pick<z.infer<typeof workOutputSchema>, 'dataJson' | 'status'>>) {
   try {
-    const validated = workOutputSchema.pick({ dataJson: true }).partial().parse(data)
+    const validated = workOutputSchema.pick({ dataJson: true, status: true }).partial().parse(data)
     const workMeId = await getWorkMeId()
 
     if (!workMeId) {
@@ -63,10 +121,16 @@ export async function updateWorkOutput(id: string, data: Partial<Pick<z.infer<ty
       return { success: false, error: 'Work output not found' }
     }
 
+    const updateData: any = {}
+    if (validated.dataJson !== undefined) updateData.dataJson = validated.dataJson ?? undefined
+    if (validated.status !== undefined) updateData.status = validated.status
+
     const workOutput = await prisma.workOutput.update({
       where: { id },
-      data: {
-        dataJson: validated.dataJson ?? undefined,
+      data: updateData,
+      include: {
+        context: true,
+        support: true,
       },
     })
 
@@ -75,6 +139,7 @@ export async function updateWorkOutput(id: string, data: Partial<Pick<z.infer<ty
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
     }
+    console.error('Error updating WorkOutput:', error)
     return { success: false, error: 'Failed to update work output' }
   }
 }
@@ -117,6 +182,7 @@ export async function getWorkOutputs(workMeId?: string) {
       where: { createdByWorkMeId: userId },
       include: {
         context: true,
+        support: true,
       },
       orderBy: { updatedAt: 'desc' },
     })
@@ -139,6 +205,7 @@ export async function getWorkOutput(id: string) {
       where: { id, createdByWorkMeId: workMeId },
       include: {
         context: true,
+        support: true,
       },
     })
 
@@ -171,6 +238,10 @@ export async function getWorkOutputsByContext(contextId: string) {
 
     const workOutputs = await prisma.workOutput.findMany({
       where: { contextId },
+      include: {
+        context: true,
+        support: true,
+      },
       orderBy: { updatedAt: 'desc' },
     })
 

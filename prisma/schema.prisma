@@ -208,6 +208,7 @@ model WorkContext {
   createdByWorkMeId String // References WorkMe.id
 
   outputs WorkOutput[]
+  supports WorkSupport[]
 
   @@index([createdByWorkMeId])
   @@index([createdAt])
@@ -367,21 +368,60 @@ model WorkContextEmployeeCause {
   @@index([createdByWorkMeId])
 }
 
+// ============================================
+// WORKSUPPORT MODEL (Support Container)
+// ============================================
+model WorkSupport {
+  id                String    @id @default(cuid())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  contextId         String
+  context           WorkContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
+
+  supportType       String?    // optional, e.g. "event_support", "training_support"
+
+  selectedOutputs   String[]   // list of WorkOutput types chosen by user
+  evolvingInfo      Json?      // RSVP list, notes, last-minute requests, etc.
+  assets            Json?      // WorkOutput IDs created through this support
+  status            String      @default("draft") // "draft" | "in_progress" | "complete"
+
+  createdByWorkMeId String
+
+  outputs           WorkOutput[]
+
+  @@unique([contextId]) // One WorkSupport per WorkContext (unless multiple needed later)
+  @@index([contextId])
+  @@index([createdByWorkMeId])
+  @@index([status])
+}
+
+// ============================================
+// WORKOUTPUT MODEL (Output Builder)
+// ============================================
 model WorkOutput {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  contextId String
-  context   WorkContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
+  contextId String?
+  context   WorkContext? @relation(fields: [contextId], references: [id], onDelete: Cascade)
 
-  outputType String // "email" | "poster" | "talking_points" | "sharepoint" | "event_kit"
-  dataJson   Json?
+  supportId String?
+  support   WorkSupport? @relation(fields: [supportId], references: [id], onDelete: Cascade)
+
+  outputType String // "ntk_snippet" | "talking_points" | "digital_signage" | "print_product" | "sharepoint_block" | "quick_blurb" | "event_kit" | "photo_video"
+  dataJson   Json?     // saved content from builders
+
+  status     String   @default("draft") // "draft" | "final"
 
   createdByWorkMeId String // References WorkMe.id
 
   @@index([contextId])
+  @@index([supportId])
   @@index([createdByWorkMeId])
+  @@index([outputType])
+  @@index([status])
   @@index([updatedAt])
 }
 
