@@ -45,12 +45,12 @@ export default function NewImpactEventPage() {
       if (result.success && result.workContext) {
         router.push(`/mywork/context/${result.workContext.id}`)
       } else {
-        alert('Failed to create Impact Event: ' + (result.error || 'Unknown error'))
+        alert('Failed to create Impact: ' + (result.error || 'Unknown error'))
         setLoading(false)
       }
     } catch (error) {
       console.error('Error creating Impact Event:', error)
-      alert('Failed to create Impact Event')
+      alert('Failed to create Impact')
       setLoading(false)
     }
   }
@@ -78,7 +78,7 @@ export default function NewImpactEventPage() {
         </Link>
 
         <div className="bg-white rounded-lg shadow p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Impact Event</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Impact</h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -220,7 +220,7 @@ export default function NewImpactEventPage() {
                 disabled={loading}
                 className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
               >
-                {loading ? 'Creating...' : 'Create Impact Event'}
+                {loading ? 'Creating...' : 'Create Impact'}
               </button>
               <Link
                 href="/mywork/context/new"

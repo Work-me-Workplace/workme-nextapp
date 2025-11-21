@@ -13,7 +13,9 @@ export default function NewTrainingPage() {
     title: '',
     description: '',
     trainingDate: '',
+    trainingTime: '',
     deadline: '',
+    deadlineTime: '',
     link: '',
     mandatory: false,
     sponsoringOffice: '',
@@ -35,8 +37,16 @@ export default function NewTrainingPage() {
       const result = await createTraining({
         title: formData.title,
         description: formData.description || null,
-        trainingDate: formData.trainingDate ? new Date(formData.trainingDate + 'T00:00:00') : null,
-        deadline: formData.deadline ? new Date(formData.deadline + 'T23:59:59') : null,
+        trainingDate: formData.trainingDate && formData.trainingTime 
+          ? new Date(`${formData.trainingDate}T${formData.trainingTime}`)
+          : formData.trainingDate 
+          ? new Date(formData.trainingDate + 'T00:00:00')
+          : null,
+        deadline: formData.deadline && formData.deadlineTime 
+          ? new Date(`${formData.deadline}T${formData.deadlineTime}`)
+          : formData.deadline 
+          ? new Date(formData.deadline + 'T23:59:59')
+          : null,
         link: formData.link || null,
         mandatory: formData.mandatory,
         sponsoringOffice: formData.sponsoringOffice || null,
@@ -112,31 +122,61 @@ export default function NewTrainingPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="trainingDate" className="block text-sm font-medium text-gray-700 mb-2">
-                  Training Date
-                </label>
-                <input
-                  type="date"
-                  id="trainingDate"
-                  value={formData.trainingDate}
-                  onChange={(e) => setFormData({ ...formData, trainingDate: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="trainingDate" className="block text-sm font-medium text-gray-700 mb-2">
+                    Training Date
+                  </label>
+                  <input
+                    type="date"
+                    id="trainingDate"
+                    value={formData.trainingDate}
+                    onChange={(e) => setFormData({ ...formData, trainingDate: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="trainingTime" className="block text-sm font-medium text-gray-700 mb-2">
+                    Training Time
+                  </label>
+                  <input
+                    type="time"
+                    id="trainingTime"
+                    value={formData.trainingTime}
+                    onChange={(e) => setFormData({ ...formData, trainingTime: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label htmlFor="deadline" className="block text-sm font-medium text-gray-700 mb-2">
-                  Deadline
-                </label>
-                <input
-                  type="date"
-                  id="deadline"
-                  value={formData.deadline}
-                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="deadline" className="block text-sm font-medium text-gray-700 mb-2">
+                    Deadline
+                  </label>
+                  <input
+                    type="date"
+                    id="deadline"
+                    value={formData.deadline}
+                    onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="deadlineTime" className="block text-sm font-medium text-gray-700 mb-2">
+                    Deadline Time
+                  </label>
+                  <input
+                    type="time"
+                    id="deadlineTime"
+                    value={formData.deadlineTime}
+                    onChange={(e) => setFormData({ ...formData, deadlineTime: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
               </div>
             </div>
 
