@@ -89,6 +89,7 @@ export default function TalkingPointsOutputPage() {
           contextId,
           outputType: 'talking_points',
           dataJson,
+          status: 'draft',
         })
         if (result.success && result.workOutput) {
           alert('Talking points created!')

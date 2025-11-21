@@ -46,7 +46,7 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
           supportId: validated.supportId,
           outputType: validated.outputType,
           dataJson: validated.dataJson ?? undefined,
-          status: validated.status || 'draft',
+          status: (validated.status || 'draft') as 'draft' | 'final',
           createdByWorkMeId: workMeId,
         },
         include: {
@@ -82,7 +82,7 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
           contextId: validated.contextId,
           outputType: validated.outputType,
           dataJson: validated.dataJson ?? undefined,
-          status: validated.status || 'draft',
+          status: (validated.status || 'draft') as 'draft' | 'final',
           createdByWorkMeId: workMeId,
         },
         include: {

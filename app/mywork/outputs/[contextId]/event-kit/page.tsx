@@ -95,6 +95,7 @@ export default function EventKitOutputPage() {
           contextId,
           outputType: 'event_kit',
           dataJson,
+          status: 'draft',
         })
         if (result.success && result.workOutput) {
           alert('Event kit created!')

@@ -92,6 +92,7 @@ export default function SharePointBlockOutputPage() {
           contextId,
           outputType: 'sharepoint',
           dataJson,
+          status: 'draft',
         })
         if (result.success && result.workOutput) {
           alert('SharePoint block created!')

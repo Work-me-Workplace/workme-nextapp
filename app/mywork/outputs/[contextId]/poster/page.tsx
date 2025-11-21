@@ -92,6 +92,7 @@ export default function PosterOutputPage() {
           contextId,
           outputType: 'poster',
           dataJson,
+          status: 'draft',
         })
         if (result.success && result.workOutput) {
           alert('Poster output created!')
