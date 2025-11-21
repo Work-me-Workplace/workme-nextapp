@@ -11,7 +11,12 @@ export async function GET(request: Request) {
   try {
     const workMeId = await getWorkMeId()
 
+    console.log('[API GET /api/context]', {
+      workMeId,
+    })
+
     if (!workMeId) {
+      console.error('[API GET /api/context] ERROR: Not authenticated')
       return NextResponse.json(
         { success: false, error: 'Not authenticated' },
         { status: 401 },
@@ -42,6 +47,16 @@ export async function GET(request: Request) {
         }
       })
     )
+
+    console.log('[API GET /api/context] SUCCESS', {
+      workMeId,
+      count: enrichedContexts.length,
+      contexts: enrichedContexts.map(c => ({
+        routerId: c.id,
+        type: c.type,
+        title: c.title,
+      })),
+    })
 
     return NextResponse.json({
       success: true,

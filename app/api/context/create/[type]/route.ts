@@ -34,6 +34,11 @@ export async function POST(
     const { type } = await params
     const body = await request.json()
 
+    console.log('[API POST /api/context/create/[type]]', {
+      type,
+      payload: body,
+    })
+
     // Validate type
     if (!type || !VALID_TYPES.includes(type as ContextType)) {
       return NextResponse.json(
@@ -67,6 +72,12 @@ export async function POST(
 
     // Create using factory (includes transaction)
     const result = await createTypedContext(type as ContextType, cleanData)
+
+    console.log('[API POST /api/context/create/[type]] SUCCESS', {
+      type,
+      typedId: result.typed.id,
+      routerId: result.router.id,
+    })
 
     return NextResponse.json(result)
   } catch (error: any) {

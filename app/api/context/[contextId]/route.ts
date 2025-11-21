@@ -15,6 +15,10 @@ export async function GET(
   try {
     const { contextId } = await params
 
+    console.log('[API GET /api/context/[contextId]]', {
+      contextId,
+    })
+
     if (!contextId) {
       return NextResponse.json(
         { success: false, error: 'Context ID is required' },
@@ -26,11 +30,21 @@ export async function GET(
     const workContext = await getWorkContext(contextId)
 
     if (!workContext) {
+      console.error('[API GET /api/context/[contextId]] ERROR: Context not found', {
+        contextId,
+      })
       return NextResponse.json(
         { success: false, error: 'Context not found or unauthorized' },
         { status: 404 },
       )
     }
+
+    console.log('[API GET /api/context/[contextId]] SUCCESS', {
+      contextId,
+      routerId: workContext.id,
+      type: workContext.type,
+      title: workContext.title,
+    })
 
     return NextResponse.json({
       success: true,
@@ -64,6 +78,11 @@ export async function PUT(
   try {
     const { contextId } = await params
     const body = await request.json()
+
+    console.log('[API PUT /api/context/[contextId]]', {
+      contextId,
+      payload: body,
+    })
 
     if (!contextId) {
       return NextResponse.json(
@@ -109,6 +128,13 @@ export async function PUT(
       cleanData
     )
 
+    console.log('[API PUT /api/context/[contextId]] SUCCESS', {
+      contextId,
+      type: workContext.type,
+      typedId: result.typed.id,
+      routerId: result.router.id,
+    })
+
     return NextResponse.json(result)
   } catch (error: any) {
     console.error('❌ PUT /api/context/[contextId] error:', error)
@@ -148,6 +174,10 @@ export async function DELETE(
   try {
     const { contextId } = await params
 
+    console.log('[API DELETE /api/context/[contextId]]', {
+      contextId,
+    })
+
     if (!contextId) {
       return NextResponse.json(
         { success: false, error: 'Context ID is required' },
@@ -157,6 +187,10 @@ export async function DELETE(
 
     // Delete using factory (includes transaction and ownership validation)
     await deleteTypedContext(contextId)
+
+    console.log('[API DELETE /api/context/[contextId]] SUCCESS', {
+      contextId,
+    })
 
     return NextResponse.json({
       success: true,
