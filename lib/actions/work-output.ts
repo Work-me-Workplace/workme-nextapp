@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { getWorkMeId } from '@/lib/getWorkMeId.server'
 import { WORK_OUTPUT_TYPE_VALUES } from './work-support'
 
 const workOutputSchema = z.object({
@@ -188,11 +189,48 @@ export async function deleteWorkOutput(id: string) {
 
 export async function getWorkOutputs(workMeId?: string) {
   try {
-    const { workMeId: authWorkMeId, companyId } = await verifyAuth()
-    const userId = workMeId || authWorkMeId
+    // Try to get workMeId from server (cookies/headers) first
+    let userId = await getWorkMeId()
+    
+    // Fallback to provided workMeId if server can't get it
+    if (!userId && workMeId) {
+      // Verify the workMeId exists in the database for security
+      const workMe = await prisma.workMe.findUnique({
+        where: { id: workMeId },
+        select: { id: true, companyId: true },
+      })
+      if (workMe) {
+        userId = workMeId
+      }
+    }
 
-    if (!userId || !companyId) {
-      return { success: false, error: 'Not authenticated or user must belong to a company', workOutputs: [] }
+    // If still no userId, try verifyAuth as last resort (requires Firebase token)
+    let companyId: string | null = null
+    if (!userId) {
+      try {
+        const auth = await verifyAuth()
+        userId = auth.workMeId
+        companyId = auth.companyId
+      } catch (authError) {
+        // verifyAuth failed, but that's okay if we have userId from other sources
+      }
+    }
+
+    if (!userId) {
+      return { success: false, error: 'Not authenticated', workOutputs: [] }
+    }
+
+    // Get companyId from WorkMe if we don't have it yet
+    if (!companyId) {
+      const workMe = await prisma.workMe.findUnique({
+        where: { id: userId },
+        select: { companyId: true },
+      })
+      companyId = workMe?.companyId || null
+    }
+
+    if (!companyId) {
+      return { success: false, error: 'User must belong to a company', workOutputs: [] }
     }
 
     const workOutputs = await prisma.workOutput.findMany({
@@ -208,6 +246,7 @@ export async function getWorkOutputs(workMeId?: string) {
 
     return { success: true, workOutputs }
   } catch (error) {
+    console.error('[getWorkOutputs] Error:', error)
     return { success: false, error: 'Failed to fetch work outputs', workOutputs: [] }
   }
 }

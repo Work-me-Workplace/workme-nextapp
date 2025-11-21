@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { useAuth } from '@/lib/providers/AuthProvider'
+import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
 // Static output type cards configuration
 const outputTypes = [
@@ -53,15 +54,24 @@ const outputTypes = [
 
 export default function StandaloneOutputsListPage() {
   const router = useRouter()
-  const { session, loading } = useAuth()
+  const [workMeId, setWorkMeId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Redirect to signin if not authenticated
-  if (!loading && !session.workMeId) {
-    router.push('/signin')
-    return null
-  }
+  useEffect(() => {
+    // Check for workMeId in localStorage (matching mywork page pattern)
+    if (typeof window !== 'undefined') {
+      const id = getWorkMeIdFromStorage()
+      if (!id) {
+        // No workMeId, redirect to signin
+        router.push('/signin')
+      } else {
+        setWorkMeId(id)
+        setLoading(false)
+      }
+    }
+  }, [router])
 
-  if (loading) {
+  if (!workMeId || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
