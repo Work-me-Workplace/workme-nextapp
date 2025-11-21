@@ -184,7 +184,7 @@ export async function createWorkforceCommsDraft(data: z.infer<typeof workforceCo
     const draft = await prisma.workforceCommsDraft.create({
       data: {
         workforceCommsId: validated.workforceCommsId,
-        contextIds: validated.contextIds || null,
+        contextIds: validated.contextIds ? validated.contextIds : undefined,
         lastEditionId: lastEditionId || null,
         authorNotes: validated.authorNotes ?? undefined,
         whatChanged: validated.whatChanged ?? undefined,
