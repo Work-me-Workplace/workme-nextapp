@@ -12,25 +12,25 @@ datasource db {
 // CORE USER MODEL
 // ============================================
 model WorkMe {
-  id          String   @id @default(uuid())
-  firebaseId  String?  @unique
-  email       String   @unique
-  firstName   String?
-  lastName    String?
-  photoUrl    String?
-  companyId   String?
-  company     Company? @relation(fields: [companyId], references: [id])
+  id              String         @id @default(uuid())
+  firebaseId      String?        @unique
+  email           String         @unique
+  firstName       String?
+  lastName        String?
+  photoUrl        String?
+  companyId       String?
+  company         Company?       @relation(fields: [companyId], references: [id])
   workMeCompanyId String?
-  workMeCompany WorkMeCompany? @relation(fields: [workMeCompanyId], references: [id])
+  workMeCompany   WorkMeCompany? @relation(fields: [workMeCompanyId], references: [id])
 
   jobTitle    String?
   specialty   String?
   industry    String?
   jobRole     JobRole?
   salaryRange SalaryRange?
-  createdAt   DateTime @default(now())
-  
-  superAdmin  SuperAdmin? // Optional link to SuperAdmin (may migrate away)
+  createdAt   DateTime     @default(now())
+
+  superAdmin SuperAdmin? // Optional link to SuperAdmin (may migrate away)
   // connections Connection[]  // Commented out - not using
   // events      Event[]       // Commented out - not using
   // milestones  Milestone[]   // Commented out - not using
@@ -56,13 +56,13 @@ enum SalaryRange {
 // ============================================
 model WorkMeCompany {
   id          String   @id @default(uuid())
-  name        String   // WorkMe platform name
+  name        String // WorkMe platform name
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  employees   WorkMe[]
-  companies   Company[] // Companies in this container
+  employees WorkMe[]
+  companies Company[] // Companies in this container
 
   @@map("workme_company")
 }
@@ -71,16 +71,16 @@ model WorkMeCompany {
 // SUPER ADMIN MODEL (Standalone Identity)
 // ============================================
 model SuperAdmin {
-  id          String   @id @default(uuid())
-  firebaseId  String?  @unique // Firebase Auth UID (optional)
-  email       String   @unique // Super admin email
-  firstName   String?
-  lastName    String?
-  photoUrl    String?
-  workMeId    String?  @unique // Optional link to WorkMe (may migrate away)
-  workMe      WorkMe?  @relation(fields: [workMeId], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(uuid())
+  firebaseId String?  @unique // Firebase Auth UID (optional)
+  email      String   @unique // Super admin email
+  firstName  String?
+  lastName   String?
+  photoUrl   String?
+  workMeId   String?  @unique // Optional link to WorkMe (may migrate away)
+  workMe     WorkMe?  @relation(fields: [workMeId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@map("super_admin")
 }
@@ -89,10 +89,10 @@ model SuperAdmin {
 // COMPANY MODEL (Directory - Container-Scoped)
 // ============================================
 model Company {
-  id              String   @id @default(uuid())
-  workMeCompanyId String   // WorkMe container ID (single tenant)
+  id              String        @id @default(uuid())
+  workMeCompanyId String // WorkMe container ID (single tenant)
   workMeCompany   WorkMeCompany @relation(fields: [workMeCompanyId], references: [id])
-  name            String   // Company name (unique per container)
+  name            String // Company name (unique per container)
   industry        String?
   website         String?
   city            String?
@@ -101,9 +101,9 @@ model Company {
   headcount       Int?
   companyType     CompanyType?
   revenueRange    RevenueRange?
-  createdAt       DateTime @default(now())
+  createdAt       DateTime      @default(now())
 
-  employees       WorkMe[]
+  employees WorkMe[]
 
   @@unique([workMeCompanyId, name]) // Unique name per container
   @@index([workMeCompanyId]) // Index for directory lookups
@@ -141,77 +141,77 @@ enum AchievementCategory {
 }
 
 model CommsOutput {
-  id          String   @id @default(cuid())
-  workMeId    String   // References WorkMe.id
-  type        String   // "email", "flyer", "digest", etc.
+  id          String    @id @default(cuid())
+  workMeId    String // References WorkMe.id
+  type        String // "email", "flyer", "digest", etc.
   title       String
   description String?
   wordCount   Int?
   dateSent    DateTime?
   topics      Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   achievements Achievement[]
 }
 
 model Objective {
-  id          String   @id @default(cuid())
-  workMeId    String   // References WorkMe.id
+  id       String @id @default(cuid())
+  workMeId String // References WorkMe.id
 
   title       String
   description String?
   howMeasured String?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   achievements Achievement[]
 }
 
 model CompanyCampaign {
-  id          String   @id @default(cuid())
-  workMeId    String   // References WorkMe.id
+  id       String @id @default(cuid())
+  workMeId String // References WorkMe.id
 
   name        String
   description String?
   startDate   DateTime?
   endDate     DateTime?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   achievements Achievement[]
 }
 
 model Achievement {
-  id                   String   @id @default(cuid())
-  workMeId             String   // References WorkMe.id
+  id       String @id @default(cuid())
+  workMeId String // References WorkMe.id
 
-  title                String
-  category             AchievementCategory
+  title    String
+  category AchievementCategory
 
-  audienceName         String?
-  audienceSize         Int?
+  audienceName String?
+  audienceSize Int?
 
-  objectiveId          String?
-  objective            Objective? @relation(fields: [objectiveId], references: [id])
+  objectiveId String?
+  objective   Objective? @relation(fields: [objectiveId], references: [id])
 
-  commsOutputId        String?
-  commsOutput          CommsOutput? @relation(fields: [commsOutputId], references: [id])
+  commsOutputId String?
+  commsOutput   CommsOutput? @relation(fields: [commsOutputId], references: [id])
 
-  companyCampaignId    String?
-  companyCampaign      CompanyCampaign? @relation(fields: [companyCampaignId], references: [id])
+  companyCampaignId String?
+  companyCampaign   CompanyCampaign? @relation(fields: [companyCampaignId], references: [id])
 
-  whatYouDid           String
-  frequency            String?   // weekly, recurring, one-time
-  volume               Int?
+  whatYouDid String
+  frequency  String? // weekly, recurring, one-time
+  volume     Int?
 
-  processSteps         Json?     // array of steps
-  impact               String?
+  processSteps Json? // array of steps
+  impact       String?
 
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ============================================
@@ -219,13 +219,13 @@ model Achievement {
 // ============================================
 // Router model - references typed context models
 model WorkContext {
-  id              String      @id @default(cuid())
-  createdAt       DateTime    @default(now())
-  type            String      // "campaign" | "impact_event" | "training" | "event" | "community" | "benefits" | "career" | "employee_cause"
-  typeRefId       String      // references the typed context model
-  createdByWorkMeId String    // References WorkMe.id
+  id                String   @id @default(cuid())
+  createdAt         DateTime @default(now())
+  type              String // "campaign" | "impact_event" | "training" | "event" | "community" | "benefits" | "career" | "employee_cause"
+  typeRefId         String // references the typed context model
+  createdByWorkMeId String // References WorkMe.id
 
-  outputs         WorkOutput[]
+  outputs WorkOutput[]
 
   @@index([createdByWorkMeId])
   @@index([createdAt])
@@ -234,169 +234,169 @@ model WorkContext {
 
 // Typed Context Models (WorkContext Architecture)
 model WorkContextCampaign {
-  id            String   @id @default(cuid())
-  createdAt     DateTime @default(now())
-  title         String
-  description   String?
-  windowStart   DateTime?
-  windowEnd     DateTime?
-  ctaLink       String?
-  sponsor       String?
-  pocFirstName  String?
-  pocLastName   String?
-  pocEmail      String?
-  pocPhone      String?
+  id                String    @id @default(cuid())
+  createdAt         DateTime  @default(now())
+  title             String
+  description       String?
+  windowStart       DateTime?
+  windowEnd         DateTime?
+  ctaLink           String?
+  sponsor           String?
+  pocFirstName      String?
+  pocLastName       String?
+  pocEmail          String?
+  pocPhone          String?
   createdByWorkMeId String
 
   @@index([createdByWorkMeId])
 }
 
 model WorkContextImpactEvent {
-  id            String   @id @default(cuid())
-  createdAt     DateTime @default(now())
-  title         String
-  description   String?
-  effectiveDate DateTime?
+  id                 String    @id @default(cuid())
+  createdAt          DateTime  @default(now())
+  title              String
+  description        String?
+  effectiveDate      DateTime?
   impactedPopulation String?
-  urgency       String?
-  pocFirstName  String?
-  pocLastName   String?
-  pocEmail      String?
-  pocPhone      String?
-  createdByWorkMeId String
+  urgency            String?
+  pocFirstName       String?
+  pocLastName        String?
+  pocEmail           String?
+  pocPhone           String?
+  createdByWorkMeId  String
 
   @@index([createdByWorkMeId])
 }
 
 model WorkContextTraining {
-  id            String   @id @default(cuid())
-  createdAt     DateTime @default(now())
-  title         String
-  description   String?
-  trainingDate  DateTime?
-  deadline      DateTime?
-  link          String?
-  mandatory     Boolean  @default(false)
-  sponsoringOffice String?
-  pocFirstName  String?
-  pocLastName   String?
-  pocEmail      String?
-  pocPhone      String?
+  id                String    @id @default(cuid())
+  createdAt         DateTime  @default(now())
+  title             String
+  description       String?
+  trainingDate      DateTime?
+  deadline          DateTime?
+  link              String?
+  mandatory         Boolean   @default(false)
+  sponsoringOffice  String?
+  pocFirstName      String?
+  pocLastName       String?
+  pocEmail          String?
+  pocPhone          String?
   createdByWorkMeId String
 
   @@index([createdByWorkMeId])
 }
 
 model WorkContextEvent {
-  id            String   @id @default(cuid())
-  createdAt     DateTime @default(now())
-  title         String
-  description   String?
-  startDate     DateTime?
-  endDate       DateTime?
-  location      String?
-  eventCategory String?
-  pocFirstName  String?
-  pocLastName   String?
-  pocEmail      String?
-  pocPhone      String?
+  id                String    @id @default(cuid())
+  createdAt         DateTime  @default(now())
+  title             String
+  description       String?
+  startDate         DateTime?
+  endDate           DateTime?
+  location          String?
+  eventCategory     String?
+  pocFirstName      String?
+  pocLastName       String?
+  pocEmail          String?
+  pocPhone          String?
   createdByWorkMeId String
 
   @@index([createdByWorkMeId])
 }
 
 model WorkContextCommunity {
-  id            String   @id @default(cuid())
-  createdAt     DateTime @default(now())
-  title         String
-  description   String?
-  partnerOrg    String?
-  date          DateTime?
-  location      String?
-  signUpLink    String?
-  pocFirstName  String?
-  pocLastName   String?
-  pocEmail      String?
-  pocPhone      String?
+  id                String    @id @default(cuid())
+  createdAt         DateTime  @default(now())
+  title             String
+  description       String?
+  partnerOrg        String?
+  date              DateTime?
+  location          String?
+  signUpLink        String?
+  pocFirstName      String?
+  pocLastName       String?
+  pocEmail          String?
+  pocPhone          String?
   createdByWorkMeId String
 
   @@index([createdByWorkMeId])
 }
 
 model WorkContextBenefits {
-  id            String   @id @default(cuid())
-  createdAt     DateTime @default(now())
-  title         String
-  description   String?
-  windowStart   DateTime?
-  windowEnd     DateTime?
-  fehbLink      String?
-  fedvipLink    String?
-  fsafedsLink   String?
-  faqLink       String?
-  pocFirstName  String?
-  pocLastName   String?
-  pocEmail      String?
-  pocPhone      String?
-  pocDepartment String?
-  annualRecurrence Boolean @default(false)
+  id                String    @id @default(cuid())
+  createdAt         DateTime  @default(now())
+  title             String
+  description       String?
+  windowStart       DateTime?
+  windowEnd         DateTime?
+  fehbLink          String?
+  fedvipLink        String?
+  fsafedsLink       String?
+  faqLink           String?
+  pocFirstName      String?
+  pocLastName       String?
+  pocEmail          String?
+  pocPhone          String?
+  pocDepartment     String?
+  annualRecurrence  Boolean   @default(false)
   createdByWorkMeId String
 
   @@index([createdByWorkMeId])
 }
 
 model WorkContextCareer {
-  id            String   @id @default(cuid())
-  createdAt     DateTime @default(now())
-  title         String
-  description   String?
-  deadlines     Json?    // Array of {label: string, date: DateTime}
-  supervisorName String?
-  resourceLink  String?
-  pocFirstName  String?
-  pocLastName   String?
-  pocEmail      String?
-  pocPhone      String?
-  pocDepartment String?
+  id                String   @id @default(cuid())
+  createdAt         DateTime @default(now())
+  title             String
+  description       String?
+  deadlines         Json? // Array of {label: string, date: DateTime}
+  supervisorName    String?
+  resourceLink      String?
+  pocFirstName      String?
+  pocLastName       String?
+  pocEmail          String?
+  pocPhone          String?
+  pocDepartment     String?
   createdByWorkMeId String
 
   @@index([createdByWorkMeId])
 }
 
 model WorkContextEmployeeCause {
-  id                    String    @id @default(cuid())
-  createdAt             DateTime  @default(now())
-  title                 String
-  description           String?
-  partnerOrg            String?
-  windowStart           DateTime?
-  windowEnd             DateTime?
-  location              String?
-  neededItems           String[]
-  collectionPoints      String[]
-  signUpLink            String?
-  pocFirstName          String?
-  pocLastName           String?
-  pocEmail              String?
-  pocPhone              String?
-  sponsoringDepartment  String?
-  createdByWorkMeId     String
+  id                   String    @id @default(cuid())
+  createdAt            DateTime  @default(now())
+  title                String
+  description          String?
+  partnerOrg           String?
+  windowStart          DateTime?
+  windowEnd            DateTime?
+  location             String?
+  neededItems          String[]
+  collectionPoints     String[]
+  signUpLink           String?
+  pocFirstName         String?
+  pocLastName          String?
+  pocEmail             String?
+  pocPhone             String?
+  sponsoringDepartment String?
+  createdByWorkMeId    String
 
   @@index([createdByWorkMeId])
 }
 
 model WorkOutput {
-  id              String      @id @default(cuid())
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  contextId       String
-  context         WorkContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
+  contextId String
+  context   WorkContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
 
-  outputType      String      // "email" | "poster" | "talking_points" | "sharepoint" | "event_kit"
-  dataJson        Json?
+  outputType String // "email" | "poster" | "talking_points" | "sharepoint" | "event_kit"
+  dataJson   Json?
 
-  createdByWorkMeId String    // References WorkMe.id
+  createdByWorkMeId String // References WorkMe.id
 
   @@index([contextId])
   @@index([createdByWorkMeId])

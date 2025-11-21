@@ -96,10 +96,11 @@ const benefitsSchema = z.object({
 const careerSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional().nullable(),
-  dueDate: z.date().optional().nullable(),
-  employeeDueDate: z.date().optional().nullable(),
-  supervisorDueDate: z.date().optional().nullable(),
-  resultsDate: z.date().optional().nullable(),
+  deadlines: z.array(z.object({
+    label: z.string(),
+    date: z.date(),
+  })).optional().nullable(),
+  supervisorName: z.string().optional().nullable(),
   resourceLink: z.string().url().optional().nullable(),
   pocFirstName: z.string().optional().nullable(),
   pocLastName: z.string().optional().nullable(),

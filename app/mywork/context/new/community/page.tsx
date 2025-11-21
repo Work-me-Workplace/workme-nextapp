@@ -43,7 +43,6 @@ export default function NewCommunityPage() {
           : null,
         location: formData.location || null,
         signUpLink: formData.signUpLink || null,
-        partnerOrg: formData.partnerOrg || null,
         pocFirstName: formData.pocFirstName || null,
         pocLastName: formData.pocLastName || null,
         pocEmail: formData.pocEmail || null,
