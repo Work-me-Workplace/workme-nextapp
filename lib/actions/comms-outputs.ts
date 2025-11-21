@@ -1,3 +1,9 @@
+/**
+ * DEPRECATED - These models are deprecated and will be removed.
+ * Commented out to prevent usage while preserving code for reference.
+ */
+
+/*
 'use server'
 
 import { prisma } from '../prisma'
@@ -145,3 +151,4 @@ export async function getCommsOutput(id: string) {
     return { success: false, error: 'Failed to fetch comms output' }
   }
 }
+*/

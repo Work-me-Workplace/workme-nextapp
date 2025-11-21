@@ -1,3 +1,9 @@
+/**
+ * DEPRECATED - These models are deprecated and will be removed.
+ * Commented out to prevent usage while preserving code for reference.
+ */
+
+/*
 'use server'
 
 import { prisma } from '../prisma'
@@ -138,3 +144,4 @@ export async function getObjective(id: string) {
     return { success: false, error: 'Failed to fetch objective' }
   }
 }
+*/
