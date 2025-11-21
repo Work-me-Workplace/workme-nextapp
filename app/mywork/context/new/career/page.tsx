@@ -6,16 +6,19 @@ import { useState } from 'react'
 import { createCareer } from '@/lib/actions/typed-contexts'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
+interface Deadline {
+  label: string
+  date: string
+}
+
 export default function NewCareerPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    dueDate: '',
-    employeeDueDate: '',
-    supervisorDueDate: '',
-    resultsDate: '',
+    deadlines: [] as Deadline[],
+    supervisorName: '',
     resourceLink: '',
     pocFirstName: '',
     pocLastName: '',
@@ -23,6 +26,26 @@ export default function NewCareerPage() {
     pocPhone: '',
     pocDepartment: '',
   })
+
+  const addDeadline = () => {
+    setFormData({
+      ...formData,
+      deadlines: [...formData.deadlines, { label: '', date: '' }],
+    })
+  }
+
+  const removeDeadline = (index: number) => {
+    setFormData({
+      ...formData,
+      deadlines: formData.deadlines.filter((_, i) => i !== index),
+    })
+  }
+
+  const updateDeadline = (index: number, field: 'label' | 'date', value: string) => {
+    const updated = [...formData.deadlines]
+    updated[index] = { ...updated[index], [field]: value }
+    setFormData({ ...formData, deadlines: updated })
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,13 +57,19 @@ export default function NewCareerPage() {
 
     setLoading(true)
     try {
+      // Convert deadlines to Date objects
+      const deadlinesWithDates = formData.deadlines
+        .filter(d => d.label && d.date)
+        .map(d => ({
+          label: d.label,
+          date: new Date(d.date + 'T23:59:59'),
+        }))
+
       const result = await createCareer({
         title: formData.title,
         description: formData.description || null,
-        dueDate: formData.dueDate ? new Date(formData.dueDate + 'T23:59:59') : null,
-        employeeDueDate: formData.employeeDueDate ? new Date(formData.employeeDueDate + 'T23:59:59') : null,
-        supervisorDueDate: formData.supervisorDueDate ? new Date(formData.supervisorDueDate + 'T23:59:59') : null,
-        resultsDate: formData.resultsDate ? new Date(formData.resultsDate + 'T00:00:00') : null,
+        deadlines: deadlinesWithDates.length > 0 ? deadlinesWithDates : null,
+        supervisorName: formData.supervisorName || null,
         resourceLink: formData.resourceLink || null,
         pocFirstName: formData.pocFirstName || null,
         pocLastName: formData.pocLastName || null,
@@ -119,66 +148,78 @@ export default function NewCareerPage() {
             </div>
 
             <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Deadlines</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="employeeDueDate" className="block text-sm font-medium text-gray-700 mb-2">
-                    Employee Due Date
-                  </label>
-                  <input
-                    type="date"
-                    id="employeeDueDate"
-                    value={formData.employeeDueDate}
-                    onChange={(e) => setFormData({ ...formData, employeeDueDate: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="supervisorDueDate" className="block text-sm font-medium text-gray-700 mb-2">
-                    Supervisor Due Date
-                  </label>
-                  <input
-                    type="date"
-                    id="supervisorDueDate"
-                    value={formData.supervisorDueDate}
-                    onChange={(e) => setFormData({ ...formData, supervisorDueDate: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="resultsDate" className="block text-sm font-medium text-gray-700 mb-2">
-                    Results Date (when employees receive feedback)
-                  </label>
-                  <input
-                    type="date"
-                    id="resultsDate"
-                    value={formData.resultsDate}
-                    onChange={(e) => setFormData({ ...formData, resultsDate: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-2">
-                    General Due Date (optional, if different from above)
-                  </label>
-                  <input
-                    type="date"
-                    id="dueDate"
-                    value={formData.dueDate}
-                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Deadlines</h3>
+                <button
+                  type="button"
+                  onClick={addDeadline}
+                  className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
+                >
+                  + Add Deadline
+                </button>
               </div>
+
+              {formData.deadlines.length === 0 ? (
+                <p className="text-sm text-gray-500 mb-4">No deadlines added yet. Click "Add Deadline" to add one.</p>
+              ) : (
+                <div className="space-y-4">
+                  {formData.deadlines.map((deadline, index) => (
+                    <div key={index} className="grid grid-cols-12 gap-4 items-start p-4 border border-gray-200 rounded-lg">
+                      <div className="col-span-5">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Label
+                        </label>
+                        <input
+                          type="text"
+                          value={deadline.label}
+                          onChange={(e) => updateDeadline(index, 'label', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="e.g., Employee Self-Assessment"
+                        />
+                      </div>
+                      <div className="col-span-5">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Date
+                        </label>
+                        <input
+                          type="date"
+                          value={deadline.date}
+                          onChange={(e) => updateDeadline(index, 'date', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div className="col-span-2 flex items-end">
+                        <button
+                          type="button"
+                          onClick={() => removeDeadline(index)}
+                          className="w-full px-3 py-2 text-sm text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="supervisorName" className="block text-sm font-medium text-gray-700 mb-2">
+                Supervisor Name (optional)
+              </label>
+              <input
+                type="text"
+                id="supervisorName"
+                value={formData.supervisorName}
+                onChange={(e) => setFormData({ ...formData, supervisorName: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Supervisor name if applicable"
+              />
             </div>
 
             <div>
               <label htmlFor="resourceLink" className="block text-sm font-medium text-gray-700 mb-2">
-                Resource Link (SharePoint, training materials, etc.)
+                Resource Link
               </label>
               <input
                 type="url"
@@ -253,7 +294,7 @@ export default function NewCareerPage() {
 
               <div className="mt-4">
                 <label htmlFor="pocDepartment" className="block text-sm font-medium text-gray-700 mb-2">
-                  POC Department (optional)
+                  POC Department
                 </label>
                 <input
                   type="text"
@@ -261,16 +302,16 @@ export default function NewCareerPage() {
                   value={formData.pocDepartment}
                   onChange={(e) => setFormData({ ...formData, pocDepartment: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., HR, Benefits, AcqDemo Office"
+                  placeholder="Department or office name"
                 />
               </div>
             </div>
 
-            <div className="flex gap-4 pt-4 border-t border-gray-200">
+            <div className="flex gap-4 pt-4">
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
               >
                 {loading ? 'Creating...' : 'Create Career Context'}
               </button>
@@ -287,4 +328,3 @@ export default function NewCareerPage() {
     </div>
   )
 }
-

@@ -286,28 +286,25 @@ export default function WorkContextDetailPage() {
             )}
             {workContext.type === 'career' && workContext.typedData && (
               <>
-                {workContext.typedData.employeeDueDate && (
+                {workContext.typedData.supervisorName && (
                   <div>
-                    <span className="font-medium text-gray-700">Employee Due Date:</span>
-                    <span className="ml-2 text-gray-600">{new Date(workContext.typedData.employeeDueDate).toLocaleString()}</span>
+                    <span className="font-medium text-gray-700">Supervisor Name:</span>
+                    <span className="ml-2 text-gray-600">{workContext.typedData.supervisorName}</span>
                   </div>
                 )}
-                {workContext.typedData.supervisorDueDate && (
-                  <div>
-                    <span className="font-medium text-gray-700">Supervisor Due Date:</span>
-                    <span className="ml-2 text-gray-600">{new Date(workContext.typedData.supervisorDueDate).toLocaleString()}</span>
-                  </div>
-                )}
-                {workContext.typedData.resultsDate && (
-                  <div>
-                    <span className="font-medium text-gray-700">Results Date:</span>
-                    <span className="ml-2 text-gray-600">{new Date(workContext.typedData.resultsDate).toLocaleString()}</span>
-                  </div>
-                )}
-                {workContext.typedData.dueDate && (
-                  <div>
-                    <span className="font-medium text-gray-700">General Due Date:</span>
-                    <span className="ml-2 text-gray-600">{new Date(workContext.typedData.dueDate).toLocaleString()}</span>
+                {workContext.typedData.deadlines && Array.isArray(workContext.typedData.deadlines) && workContext.typedData.deadlines.length > 0 && (
+                  <div className="col-span-2">
+                    <span className="font-medium text-gray-700">Deadlines:</span>
+                    <div className="mt-2 space-y-2">
+                      {workContext.typedData.deadlines.map((deadline: any, idx: number) => (
+                        <div key={idx} className="pl-4 border-l-2 border-blue-200">
+                          <span className="font-medium text-gray-700">{deadline.label}:</span>
+                          <span className="ml-2 text-gray-600">
+                            {deadline.date ? new Date(deadline.date).toLocaleDateString() : 'No date'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
                 {workContext.typedData.resourceLink && (

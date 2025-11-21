@@ -350,10 +350,8 @@ model WorkContextCareer {
   createdAt     DateTime @default(now())
   title         String
   description   String?
-  dueDate       DateTime?
-  employeeDueDate DateTime?
-  supervisorDueDate DateTime?
-  resultsDate   DateTime?
+  deadlines     Json?    // Array of {label: string, date: DateTime}
+  supervisorName String?
   resourceLink  String?
   pocFirstName  String?
   pocLastName   String?

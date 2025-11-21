@@ -354,19 +354,17 @@ export async function createCareer(data: z.infer<typeof careerSchema>) {
 
     const career = await prisma.workContextCareer.create({
       data: {
-        ...validated,
-        createdByWorkMeId: workMeId,
+        title: validated.title,
         description: validated.description ?? undefined,
-        dueDate: validated.dueDate ?? undefined,
-        employeeDueDate: validated.employeeDueDate ?? undefined,
-        supervisorDueDate: validated.supervisorDueDate ?? undefined,
-        resultsDate: validated.resultsDate ?? undefined,
+        deadlines: validated.deadlines ? validated.deadlines : undefined,
+        supervisorName: validated.supervisorName ?? undefined,
         resourceLink: validated.resourceLink ?? undefined,
         pocFirstName: validated.pocFirstName ?? undefined,
         pocLastName: validated.pocLastName ?? undefined,
         pocEmail: validated.pocEmail ?? undefined,
         pocPhone: validated.pocPhone ?? undefined,
         pocDepartment: validated.pocDepartment ?? undefined,
+        createdByWorkMeId: workMeId,
       },
     })
 
