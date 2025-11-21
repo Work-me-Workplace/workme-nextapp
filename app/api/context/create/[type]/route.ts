@@ -113,7 +113,7 @@ export async function POST(
 
     return NextResponse.json(result)
   } catch (error: any) {
-    console.error(`❌ POST /api/context/create/[${type}] error:`, error)
+    console.error('❌ POST /api/context/create/[type] error:', error)
     return NextResponse.json(
       { 
         success: false, 

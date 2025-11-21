@@ -159,13 +159,107 @@ When deleting a WorkContext:
    - Need to ensure typed model is also deleted
    - Currently handled via cascade in schema (check relations)
 
+## API Routes
+
+### REST API Endpoints
+
+All API routes use server-side authentication via `getWorkMeId()` and return `NextResponse` with proper status codes.
+
+#### ✅ CREATE Routes - **IMPLEMENTED**
+
+- **POST** `/api/context/create/[type]` - Create a new typed context
+  - Types: `campaign`, `impact_event`, `training`, `event`, `community`, `benefits`, `career`, `employee_cause`
+  - Examples:
+    - `POST /api/context/create/campaign`
+    - `POST /api/context/create/event`
+    - `POST /api/context/create/training`
+  - Body: Typed context data (matches Zod schema for each type)
+  - Returns: `{ success: true, campaign/event/etc, workContext }`
+
+**Server Actions (Alternative)**:
+- `createCampaign(data, workMeId)` in `lib/actions/typed-contexts.ts`
+- `createImpactEvent(data)`
+- `createTraining(data)`
+- `createEvent(data)`
+- `createCommunityOpportunity(data)`
+- `createBenefits(data)`
+- `createCareer(data)`
+- `createEmployeeCause(data)`
+
+#### ❌ UPDATE Routes - **NOT IMPLEMENTED**
+
+- **PUT** `/api/context/[contextId]` - Update a WorkContext's typed data
+  - Currently returns 501 (Not Implemented)
+  - **Missing**: Update functions for each typed context type
+
+**Required Implementation**:
+- `updateCampaign(workContextId, data)` in `lib/actions/typed-contexts.ts`
+- `updateImpactEvent(workContextId, data)`
+- `updateTraining(workContextId, data)`
+- `updateEvent(workContextId, data)`
+- `updateCommunityOpportunity(workContextId, data)`
+- `updateBenefits(workContextId, data)`
+- `updateCareer(workContextId, data)`
+- `updateEmployeeCause(workContextId, data)`
+
+**Implementation Pattern**:
+```typescript
+export async function updateCampaign(
+  workContextId: string,
+  data: CampaignUpdateData
+) {
+  // 1. Get WorkContext to find typeRefId
+  const workContext = await prisma.workContext.findFirst({
+    where: { id: workContextId, createdByWorkMeId }
+  })
+  
+  if (!workContext || workContext.type !== 'campaign') {
+    return { success: false, error: 'Invalid context type' }
+  }
+
+  // 2. Update typed model using typeRefId
+  const campaign = await prisma.workContextCampaign.update({
+    where: { id: workContext.typeRefId },
+    data: { ...validated }
+  })
+
+  // 3. Return enriched context
+  return { success: true, campaign, workContext }
+}
+```
+
+#### ✅ READ Routes - **IMPLEMENTED**
+
+- **GET** `/api/context` - List all WorkContexts for authenticated user
+  - Returns: `{ success: true, workContexts: [...] }`
+  - Each context is enriched with typed data
+
+- **GET** `/api/context/[contextId]` - Get single WorkContext with typed data
+  - Returns: `{ success: true, workContext: { ...router, typedData: {...}, title: "..." } }`
+  - Enriches WorkContext router with typed model data
+
+#### ✅ DELETE Routes - **IMPLEMENTED**
+
+- **DELETE** `/api/context/[contextId]` - Delete a WorkContext and its typed data
+  - Validates ownership via `createdByWorkMeId`
+  - Cascades to outputs/supports (via Prisma relations)
+  - Returns: `{ success: true, message: "Context deleted successfully" }`
+
+**Server Action**: `deleteWorkContext(contextId)` in `lib/actions/work-context.ts`
+
 ## Routing
 
 ### URL Structure
 
+**Page Routes**:
 - `/mywork/context/[contextId]` → View WorkContext (uses WorkContext router ID)
 - `/mywork/support/[contextId]` → View WorkSupport (uses WorkContext router ID)
 - `/mywork/outputs/builder/[outputId]` → Build WorkOutput (uses WorkOutput ID)
+
+**API Routes**:
+- `/api/context` → List/query contexts
+- `/api/context/[contextId]` → Get/update/delete specific context
+- `/api/context/create/[type]` → Create typed context
 
 ### Navigation Flow
 
