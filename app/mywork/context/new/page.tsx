@@ -55,6 +55,13 @@ const contextTypes = [
     icon: '📈',
     formPath: '/mywork/context/new/career',
   },
+  {
+    type: 'employee_cause',
+    name: 'Employee Cause',
+    description: 'Employee-driven causes, drives, or donation campaigns',
+    icon: '❤️',
+    formPath: '/mywork/context/new/employee-cause',
+  },
 ]
 
 export default function NewWorkContextPage() {

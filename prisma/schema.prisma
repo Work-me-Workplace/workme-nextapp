@@ -221,7 +221,7 @@ model Achievement {
 model WorkContext {
   id              String      @id @default(cuid())
   createdAt       DateTime    @default(now())
-  type            String      // "campaign" | "impact_event" | "training" | "event" | "community" | "benefits" | "career"
+  type            String      // "campaign" | "impact_event" | "training" | "event" | "community" | "benefits" | "career" | "employee_cause"
   typeRefId       String      // references the typed context model
   createdByWorkMeId String    // References WorkMe.id
 
@@ -361,6 +361,28 @@ model WorkContextCareer {
   pocPhone      String?
   pocDepartment String?
   createdByWorkMeId String
+
+  @@index([createdByWorkMeId])
+}
+
+model WorkContextEmployeeCause {
+  id                    String    @id @default(cuid())
+  createdAt             DateTime  @default(now())
+  title                 String
+  description           String?
+  partnerOrg            String?
+  windowStart           DateTime?
+  windowEnd             DateTime?
+  location              String?
+  neededItems           String[]
+  collectionPoints      String[]
+  signUpLink            String?
+  pocFirstName          String?
+  pocLastName           String?
+  pocEmail              String?
+  pocPhone              String?
+  sponsoringDepartment  String?
+  createdByWorkMeId     String
 
   @@index([createdByWorkMeId])
 }

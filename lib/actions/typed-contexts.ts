@@ -324,6 +324,24 @@ export async function createCommunityOpportunity(data: z.infer<typeof communityO
   }
 }
 
+// Employee Cause Schema
+const employeeCauseSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional().nullable(),
+  partnerOrg: z.string().optional().nullable(),
+  windowStart: z.date().optional().nullable(),
+  windowEnd: z.date().optional().nullable(),
+  location: z.string().optional().nullable(),
+  neededItems: z.array(z.string()).default([]),
+  collectionPoints: z.array(z.string()).default([]),
+  signUpLink: z.string().url().optional().nullable(),
+  pocFirstName: z.string().optional().nullable(),
+  pocLastName: z.string().optional().nullable(),
+  pocEmail: z.string().email().optional().nullable(),
+  pocPhone: z.string().optional().nullable(),
+  sponsoringDepartment: z.string().optional().nullable(),
+})
+
 // Create Career
 export async function createCareer(data: z.infer<typeof careerSchema>) {
   try {
@@ -416,6 +434,53 @@ export async function createBenefits(data: z.infer<typeof benefitsSchema>) {
   }
 }
 
+// Create Employee Cause
+export async function createEmployeeCause(data: z.infer<typeof employeeCauseSchema>) {
+  try {
+    const validated = employeeCauseSchema.parse(data)
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const employeeCause = await prisma.workContextEmployeeCause.create({
+      data: {
+        title: validated.title,
+        description: validated.description ?? undefined,
+        partnerOrg: validated.partnerOrg ?? undefined,
+        windowStart: validated.windowStart ?? undefined,
+        windowEnd: validated.windowEnd ?? undefined,
+        location: validated.location ?? undefined,
+        neededItems: validated.neededItems || [],
+        collectionPoints: validated.collectionPoints || [],
+        signUpLink: validated.signUpLink ?? undefined,
+        pocFirstName: validated.pocFirstName ?? undefined,
+        pocLastName: validated.pocLastName ?? undefined,
+        pocEmail: validated.pocEmail ?? undefined,
+        pocPhone: validated.pocPhone ?? undefined,
+        sponsoringDepartment: validated.sponsoringDepartment ?? undefined,
+        createdByWorkMeId: workMeId,
+      },
+    })
+
+    const workContext = await prisma.workContext.create({
+      data: {
+        type: 'employee_cause',
+        typeRefId: employeeCause.id,
+        createdByWorkMeId: workMeId,
+      },
+    })
+
+    return { success: true, employeeCause, workContext }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors }
+    }
+    return { success: false, error: 'Failed to create employee cause context' }
+  }
+}
+
 // Get typed context data by WorkContext
 export async function getTypedContext(workContext: { type: string; typeRefId: string }) {
   try {
@@ -461,6 +526,12 @@ export async function getTypedContext(workContext: { type: string; typeRefId: st
           where: { id: workContext.typeRefId },
         })
         return { success: true, data: career, title: career?.title || '' }
+      
+      case 'employee_cause':
+        const employeeCause = await prisma.workContextEmployeeCause.findUnique({
+          where: { id: workContext.typeRefId },
+        })
+        return { success: true, data: employeeCause, title: employeeCause?.title || '' }
       
       default:
         return { success: false, error: 'Unknown context type' }
