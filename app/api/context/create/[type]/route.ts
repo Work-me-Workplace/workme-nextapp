@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { ContextType } from '@prisma/client'
 import { createTypedContext } from '@/lib/server/context-factory'
 import { SCHEMA_MAP } from '@/lib/server/context-schemas'
+import { verifyAuth } from '@/lib/server/verifyAuth'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -34,12 +35,17 @@ export async function POST(
   { params }: { params: Promise<{ type: string }> }
 ) {
   try {
+    // Verify Firebase token and get authenticated context
+    const { workMeId, companyId } = await verifyAuth(request)
+
     const { type } = await params
     const body = await request.json()
 
     console.log('[API POST /api/context/create/[type]]', {
       type,
       payload: body,
+      workMeId,
+      companyId,
     })
 
     // Validate type
@@ -74,7 +80,7 @@ export async function POST(
     )
 
     // Create using factory (includes transaction)
-    const result = await createTypedContext(type as ContextType, cleanData)
+    const result = await createTypedContext(type as ContextType, cleanData, workMeId, companyId)
 
     console.log('[API POST /api/context/create/[type]] SUCCESS', {
       type,
@@ -98,13 +104,16 @@ export async function POST(
       )
     }
 
+    // Return 401 for auth errors, 500 for others
+    const status = error.message?.includes('Unauthorized') ? 401 : 500
+
     return NextResponse.json(
       { 
         success: false, 
         error: error.message || 'Failed to create context',
         details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       },
-      { status: 500 },
+      { status },
     )
   }
 }

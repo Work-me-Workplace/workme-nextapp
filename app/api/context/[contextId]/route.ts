@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getWorkContext } from '@/lib/server/get-work-context'
 import { updateTypedContext, deleteTypedContext } from '@/lib/server/context-factory'
 import { SCHEMA_MAP } from '@/lib/server/context-schemas'
+import { verifyAuth } from '@/lib/server/verifyAuth'
 import type { ContextType } from '@prisma/client'
 
 // Force dynamic rendering
@@ -16,10 +17,15 @@ export async function GET(
   { params }: { params: Promise<{ contextId: string }> }
 ) {
   try {
+    // Verify Firebase token and get authenticated context
+    const { workMeId, companyId } = await verifyAuth(request)
+
     const { contextId } = await params
 
     console.log('[API GET /api/context/[contextId]]', {
       contextId,
+      workMeId,
+      companyId,
     })
 
     if (!contextId) {
@@ -29,8 +35,8 @@ export async function GET(
       )
     }
 
-    // Get WorkContext with enrichment (uses factory pattern)
-    const workContext = await getWorkContext(contextId)
+    // Get WorkContext with enrichment (uses factory pattern, filtered by companyId)
+    const workContext = await getWorkContext(contextId, companyId)
 
     if (!workContext) {
       console.error('[API GET /api/context/[contextId]] ERROR: Context not found', {
@@ -79,12 +85,17 @@ export async function PUT(
   { params }: { params: Promise<{ contextId: string }> }
 ) {
   try {
+    // Verify Firebase token and get authenticated context
+    const { workMeId, companyId } = await verifyAuth(request)
+
     const { contextId } = await params
     const body = await request.json()
 
     console.log('[API PUT /api/context/[contextId]]', {
       contextId,
       payload: body,
+      workMeId,
+      companyId,
     })
 
     if (!contextId) {
@@ -94,8 +105,8 @@ export async function PUT(
       )
     }
 
-    // Get WorkContext to determine type (uses factory enrichment)
-    const workContext = await getWorkContext(contextId)
+    // Get WorkContext to determine type (uses factory enrichment, filtered by companyId)
+    const workContext = await getWorkContext(contextId, companyId)
 
     if (!workContext) {
       return NextResponse.json(
@@ -128,7 +139,9 @@ export async function PUT(
     const result = await updateTypedContext(
       contextId,
       workContext.type,
-      cleanData
+      cleanData,
+      workMeId,
+      companyId
     )
 
     console.log('[API PUT /api/context/[contextId]] SUCCESS', {
@@ -175,10 +188,15 @@ export async function DELETE(
   { params }: { params: Promise<{ contextId: string }> }
 ) {
   try {
+    // Verify Firebase token and get authenticated context
+    const { workMeId, companyId } = await verifyAuth(request)
+
     const { contextId } = await params
 
     console.log('[API DELETE /api/context/[contextId]]', {
       contextId,
+      workMeId,
+      companyId,
     })
 
     if (!contextId) {
@@ -189,7 +207,7 @@ export async function DELETE(
     }
 
     // Delete using factory (includes transaction and ownership validation)
-    await deleteTypedContext(contextId)
+    await deleteTypedContext(contextId, workMeId, companyId)
 
     console.log('[API DELETE /api/context/[contextId]] SUCCESS', {
       contextId,

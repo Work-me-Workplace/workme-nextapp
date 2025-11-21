@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getWorkMeId } from '@/lib/getWorkMeId.server'
+import { verifyAuth } from '@/lib/server/verifyAuth'
 
 // Force dynamic rendering (API routes are dynamic by default, but explicit for safety)
 export const dynamic = 'force-dynamic'
@@ -12,23 +12,19 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: Request) {
   try {
-    const workMeId = await getWorkMeId()
+    // Verify Firebase token and get authenticated context
+    const { workMeId, companyId } = await verifyAuth(request)
 
     console.log('[API GET /api/context]', {
       workMeId,
+      companyId,
     })
 
-    if (!workMeId) {
-      console.error('[API GET /api/context] ERROR: Not authenticated')
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 },
-      )
-    }
-
-    // Get all WorkContexts for user
+    // Get all WorkContexts for user's company (multi-tenant scoping)
     const workContexts = await prisma.workContext.findMany({
-      where: { createdByWorkMeId: workMeId },
+      where: { 
+        companyId, // Multi-tenant: filter by company
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         outputs: {
@@ -37,12 +33,12 @@ export async function GET(request: Request) {
       },
     })
 
-    // Enrich with typed data using factory
+    // Enrich with typed data using factory (filtered by companyId)
     const { getTypedContext } = await import('@/lib/server/context-factory')
     
     const enrichedContexts = await Promise.all(
       workContexts.map(async (ctx) => {
-        const typed = await getTypedContext(ctx.type, ctx.typeRefId)
+        const typed = await getTypedContext(ctx.type, ctx.typeRefId, companyId)
         return {
           ...ctx,
           typedData: typed,
@@ -53,6 +49,7 @@ export async function GET(request: Request) {
 
     console.log('[API GET /api/context] SUCCESS', {
       workMeId,
+      companyId,
       count: enrichedContexts.length,
       contexts: enrichedContexts.map(c => ({
         routerId: c.id,

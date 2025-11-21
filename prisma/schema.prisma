@@ -31,6 +31,33 @@ model WorkMe {
   createdAt   DateTime     @default(now())
 
   superAdmin SuperAdmin? // Optional link to SuperAdmin (may migrate away)
+
+  // Work Architecture Relations (created by this WorkMe)
+  createdContexts          WorkContext[]
+  createdSupports          WorkSupport[]
+  createdOutputs           WorkOutput[]
+  createdStandaloneOutputs WorkOutputStandalone[]
+
+  // Typed Context Relations (created by this WorkMe)
+  createdCampaignContexts      WorkContextCampaign[]
+  createdImpactEventContexts   WorkContextImpactEvent[]
+  createdTrainingContexts      WorkContextTraining[]
+  createdEventContexts         WorkContextEvent[]
+  createdCommunityContexts     WorkContextCommunity[]
+  createdBenefitsContexts      WorkContextBenefits[]
+  createdCareerContexts        WorkContextCareer[]
+  createdEmployeeCauseContexts WorkContextEmployeeCause[]
+
+  // Career Relations (created by this WorkMe)
+  createdObjectives   Objective[]
+  createdAchievements Achievement[]
+  createdCommsOutputs CommsOutput[]
+
+  // Workforce Comms Relations (created by this WorkMe)
+  createdWorkforceComms WorkforceComms[]
+  createdCommsDrafts    WorkforceCommsDraft[]
+  createdCommsEditions  WorkforceCommsEdition[]
+
   // connections Connection[]  // Commented out - not using
   // events      Event[]       // Commented out - not using
   // milestones  Milestone[]   // Commented out - not using
@@ -103,7 +130,34 @@ model Company {
   revenueRange    RevenueRange?
   createdAt       DateTime      @default(now())
 
+  // Relations
   employees WorkMe[]
+
+  // Work Architecture Relations
+  contexts          WorkContext[]
+  supports          WorkSupport[]
+  outputs           WorkOutput[]
+  standaloneOutputs WorkOutputStandalone[]
+
+  // Typed Context Relations
+  campaignContexts      WorkContextCampaign[]
+  impactEventContexts   WorkContextImpactEvent[]
+  trainingContexts      WorkContextTraining[]
+  eventContexts         WorkContextEvent[]
+  communityContexts     WorkContextCommunity[]
+  benefitsContexts      WorkContextBenefits[]
+  careerContexts        WorkContextCareer[]
+  employeeCauseContexts WorkContextEmployeeCause[]
+
+  // Career Relations
+  objectives   Objective[]
+  achievements Achievement[]
+  commsOutputs CommsOutput[]
+
+  // Workforce Comms Relations
+  workforceComms WorkforceComms[]
+  commsDrafts    WorkforceCommsDraft[]
+  commsEditions  WorkforceCommsEdition[]
 
   @@unique([workMeCompanyId, name]) // Unique name per container
   @@index([workMeCompanyId]) // Index for directory lookups
@@ -141,8 +195,13 @@ enum AchievementCategory {
 }
 
 model CommsOutput {
-  id          String    @id @default(cuid())
-  workMeId    String // References WorkMe.id
+  id String @id @default(cuid())
+
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
   type        String // "email", "flyer", "digest", etc.
   title       String
   description String?
@@ -153,11 +212,18 @@ model CommsOutput {
   updatedAt   DateTime  @updatedAt
 
   achievements Achievement[]
+
+  @@index([companyId])
+  @@index([createdByWorkMeId])
 }
 
 model Objective {
-  id       String @id @default(cuid())
-  workMeId String // References WorkMe.id
+  id String @id @default(cuid())
+
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   title       String
   description String?
@@ -167,11 +233,18 @@ model Objective {
   updatedAt DateTime @updatedAt
 
   achievements Achievement[]
+
+  @@index([companyId])
+  @@index([createdByWorkMeId])
 }
 
 model Achievement {
-  id       String @id @default(cuid())
-  workMeId String // References WorkMe.id
+  id String @id @default(cuid())
+
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   title    String
   category AchievementCategory
@@ -180,10 +253,10 @@ model Achievement {
   audienceSize Int?
 
   objectiveId String?
-  objective   Objective? @relation(fields: [objectiveId], references: [id])
+  objective   Objective? @relation(fields: [objectiveId], references: [id], onDelete: SetNull)
 
   commsOutputId String?
-  commsOutput   CommsOutput? @relation(fields: [commsOutputId], references: [id])
+  commsOutput   CommsOutput? @relation(fields: [commsOutputId], references: [id], onDelete: SetNull)
 
   whatYouDid String
   frequency  String? // weekly, recurring, one-time
@@ -194,6 +267,10 @@ model Achievement {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([createdByWorkMeId])
+  @@index([category])
 }
 
 // ============================================
@@ -213,15 +290,20 @@ enum ContextType {
 
 // Router model - references typed context models
 model WorkContext {
-  id                String      @id @default(cuid())
-  createdAt         DateTime    @default(now())
-  type              ContextType
-  typeRefId         String      // references the typed context model
-  createdByWorkMeId String      // References WorkMe.id
+  id        String      @id @default(cuid())
+  createdAt DateTime    @default(now())
+  type      ContextType
+  typeRefId String // references the typed context model
 
-  outputs WorkOutput[]
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
+  outputs  WorkOutput[]
   supports WorkSupport[]
 
+  @@index([companyId])
   @@index([createdByWorkMeId])
   @@index([createdAt])
   @@index([type, typeRefId])
@@ -229,20 +311,25 @@ model WorkContext {
 
 // Typed Context Models (WorkContext Architecture)
 model WorkContextCampaign {
-  id                String    @id @default(cuid())
-  createdAt         DateTime  @default(now())
-  title             String
-  description       String?
-  windowStart       DateTime?
-  windowEnd         DateTime?
-  ctaLink           String?
-  sponsor           String?
-  pocFirstName      String?
-  pocLastName       String?
-  pocEmail          String?
-  pocPhone          String?
-  createdByWorkMeId String
+  id           String    @id @default(cuid())
+  createdAt    DateTime  @default(now())
+  title        String
+  description  String?
+  windowStart  DateTime?
+  windowEnd    DateTime?
+  ctaLink      String?
+  sponsor      String?
+  pocFirstName String?
+  pocLastName  String?
+  pocEmail     String?
+  pocPhone     String?
 
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
   @@index([createdByWorkMeId])
 }
 
@@ -258,103 +345,133 @@ model WorkContextImpactEvent {
   pocLastName        String?
   pocEmail           String?
   pocPhone           String?
-  createdByWorkMeId  String
 
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
   @@index([createdByWorkMeId])
 }
 
 model WorkContextTraining {
-  id                String    @id @default(cuid())
-  createdAt         DateTime  @default(now())
-  title             String
-  description       String?
-  trainingDate      DateTime?
-  deadline          DateTime?
-  link              String?
-  mandatory         Boolean   @default(false)
-  sponsoringOffice  String?
-  pocFirstName      String?
-  pocLastName       String?
-  pocEmail          String?
-  pocPhone          String?
-  createdByWorkMeId String
+  id               String    @id @default(cuid())
+  createdAt        DateTime  @default(now())
+  title            String
+  description      String?
+  trainingDate     DateTime?
+  deadline         DateTime?
+  link             String?
+  mandatory        Boolean   @default(false)
+  sponsoringOffice String?
+  pocFirstName     String?
+  pocLastName      String?
+  pocEmail         String?
+  pocPhone         String?
 
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
   @@index([createdByWorkMeId])
 }
 
 model WorkContextEvent {
-  id                String    @id @default(cuid())
-  createdAt         DateTime  @default(now())
-  title             String
-  description       String?
-  startDate         DateTime?
-  endDate           DateTime?
-  location          String?
-  eventCategory     String?
-  pocFirstName      String?
-  pocLastName       String?
-  pocEmail          String?
-  pocPhone          String?
-  createdByWorkMeId String
+  id            String    @id @default(cuid())
+  createdAt     DateTime  @default(now())
+  title         String
+  description   String?
+  startDate     DateTime?
+  endDate       DateTime?
+  location      String?
+  eventCategory String?
+  pocFirstName  String?
+  pocLastName   String?
+  pocEmail      String?
+  pocPhone      String?
 
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
   @@index([createdByWorkMeId])
 }
 
 model WorkContextCommunity {
-  id                String    @id @default(cuid())
-  createdAt         DateTime  @default(now())
-  title             String
-  description       String?
-  partnerOrg        String?
-  date              DateTime?
-  location          String?
-  signUpLink        String?
-  pocFirstName      String?
-  pocLastName       String?
-  pocEmail          String?
-  pocPhone          String?
-  createdByWorkMeId String
+  id           String    @id @default(cuid())
+  createdAt    DateTime  @default(now())
+  title        String
+  description  String?
+  partnerOrg   String?
+  date         DateTime?
+  location     String?
+  signUpLink   String?
+  pocFirstName String?
+  pocLastName  String?
+  pocEmail     String?
+  pocPhone     String?
 
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
   @@index([createdByWorkMeId])
 }
 
 model WorkContextBenefits {
-  id                String    @id @default(cuid())
-  createdAt         DateTime  @default(now())
-  title             String
-  description       String?
-  windowStart       DateTime?
-  windowEnd         DateTime?
-  fehbLink          String?
-  fedvipLink        String?
-  fsafedsLink       String?
-  faqLink           String?
-  pocFirstName      String?
-  pocLastName       String?
-  pocEmail          String?
-  pocPhone          String?
-  pocDepartment     String?
-  annualRecurrence  Boolean   @default(false)
-  createdByWorkMeId String
+  id               String    @id @default(cuid())
+  createdAt        DateTime  @default(now())
+  title            String
+  description      String?
+  windowStart      DateTime?
+  windowEnd        DateTime?
+  fehbLink         String?
+  fedvipLink       String?
+  fsafedsLink      String?
+  faqLink          String?
+  pocFirstName     String?
+  pocLastName      String?
+  pocEmail         String?
+  pocPhone         String?
+  pocDepartment    String?
+  annualRecurrence Boolean   @default(false)
 
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
   @@index([createdByWorkMeId])
 }
 
 model WorkContextCareer {
-  id                String   @id @default(cuid())
-  createdAt         DateTime @default(now())
-  title             String
-  description       String?
-  deadlines         Json? // Array of {label: string, date: DateTime}
-  supervisorName    String?
-  resourceLink      String?
-  pocFirstName      String?
-  pocLastName       String?
-  pocEmail          String?
-  pocPhone          String?
-  pocDepartment     String?
-  createdByWorkMeId String
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  title          String
+  description    String?
+  deadlines      Json? // Array of {label: string, date: DateTime}
+  supervisorName String?
+  resourceLink   String?
+  pocFirstName   String?
+  pocLastName    String?
+  pocEmail       String?
+  pocPhone       String?
+  pocDepartment  String?
 
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
   @@index([createdByWorkMeId])
 }
 
@@ -375,8 +492,13 @@ model WorkContextEmployeeCause {
   pocEmail             String?
   pocPhone             String?
   sponsoringDepartment String?
-  createdByWorkMeId    String
 
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
   @@index([createdByWorkMeId])
 }
 
@@ -384,26 +506,30 @@ model WorkContextEmployeeCause {
 // WORKSUPPORT MODEL (Support Container)
 // ============================================
 model WorkSupport {
-  id                String    @id @default(cuid())
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  contextId         String
-  context           WorkContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
+  contextId String
+  context   WorkContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
 
-  supportType       String?    // optional, e.g. "event_support", "training_support"
-
-  selectedOutputs   String[]   // list of WorkOutput types chosen by user
-  evolvingInfo      Json?      // RSVP list, notes, last-minute requests, etc.
-  assets            Json?      // WorkOutput IDs created through this support
-  status            String      @default("draft") // "draft" | "in_progress" | "complete"
-
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  outputs           WorkOutput[]
+  supportType String? // optional, e.g. "event_support", "training_support"
+
+  selectedOutputs String[] // list of WorkOutput types chosen by user
+  evolvingInfo    Json? // RSVP list, notes, last-minute requests, etc.
+  assets          Json? // WorkOutput IDs created through this support
+  status          String   @default("draft") // "draft" | "in_progress" | "complete"
+
+  outputs WorkOutput[]
 
   @@unique([contextId]) // One WorkSupport per WorkContext (unless multiple needed later)
   @@index([contextId])
+  @@index([companyId])
   @@index([createdByWorkMeId])
   @@index([status])
 }
@@ -422,19 +548,70 @@ model WorkOutput {
   supportId String?
   support   WorkSupport? @relation(fields: [supportId], references: [id], onDelete: Cascade)
 
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
   outputType String // "ntk_snippet" | "talking_points" | "digital_signage" | "print_product" | "sharepoint_block" | "quick_blurb" | "event_kit" | "photo_video"
-  dataJson   Json?     // saved content from builders
+  dataJson   Json? // saved content from builders
 
-  status     String   @default("draft") // "draft" | "final"
-
-  createdByWorkMeId String // References WorkMe.id
+  status String @default("draft") // "draft" | "final"
 
   @@index([contextId])
   @@index([supportId])
+  @@index([companyId])
   @@index([createdByWorkMeId])
   @@index([outputType])
   @@index([status])
   @@index([updatedAt])
+}
+
+// ============================================
+// WORKOUTPUT STANDALONE MODEL (Standalone Deliverables)
+// ============================================
+enum OutputCategory {
+  workforce_comms_email
+  messaging_talking_points
+  digital_product
+  print_product
+  sharepoint_update
+  photo_video_support
+  ntk
+}
+
+/// FUTURE:
+/// workSupportId will be connected to WorkSupport model
+/// once WorkSupport is implemented.
+/// For now this field remains optional and unused.
+model WorkOutputStandalone {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Output Category (Email, Talking Points, Digital, etc.)
+  outputType OutputCategory
+
+  title        String
+  description  String?
+  draftContent Json? // email body, notes, fields, etc.
+  metadata     Json? // any structured data needed later
+
+  // OPTIONAL: future relational hook (not used today)
+  workSupportId String?
+  // DO NOT enforce relation today
+  // Add relation later when WorkSupport is built
+
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([createdByWorkMeId])
+  @@index([outputType])
+  @@index([updatedAt])
+  @@index([workSupportId])
 }
 
 // ============================================
@@ -450,9 +627,16 @@ model WorkforceComms {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
   editions WorkforceCommsEdition[]
   drafts   WorkforceCommsDraft[]
 
+  @@index([companyId])
+  @@index([createdByWorkMeId])
   @@index([type])
   @@index([name])
 }
@@ -473,7 +657,14 @@ model WorkforceCommsDraft {
   product     WorkforceComms         @relation(fields: [workforceCommsId], references: [workforceCommsId], onDelete: Cascade)
   lastEdition WorkforceCommsEdition? @relation(fields: [lastEditionId], references: [editionId], onDelete: SetNull)
 
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
   @@index([workforceCommsId])
+  @@index([companyId])
+  @@index([createdByWorkMeId])
   @@index([status])
   @@index([createdAt])
 }
@@ -491,7 +682,14 @@ model WorkforceCommsEdition {
   product      WorkforceComms        @relation(fields: [workforceCommsId], references: [workforceCommsId], onDelete: Cascade)
   referencedBy WorkforceCommsDraft[] // Drafts that reference this edition as lastEdition
 
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
   @@index([workforceCommsId])
+  @@index([companyId])
+  @@index([createdByWorkMeId])
   @@index([sentAt])
   @@index([createdAt])
 }

@@ -3,9 +3,12 @@
  * 
  * Service layer for Firebase authentication operations
  * Used by API routes and server actions
+ * 
+ * ⚠️ SERVER-ONLY - Never import in client components
+ * This file must NOT be imported in client components
  */
 
-import { auth } from '@/lib/firebaseAdmin'
+import { getAdminAuth } from '@/lib/server/firebaseAdmin'
 
 export interface FirebaseUser {
   uid: string
@@ -20,10 +23,11 @@ export class FirebaseService {
    */
   static async verifyToken(idToken: string): Promise<FirebaseUser> {
     try {
-      const decodedToken = await auth.verifyIdToken(idToken)
+      const adminAuth = getAdminAuth()
+      const decodedToken = await adminAuth.verifyIdToken(idToken)
       
       // Get full user record
-      const user = await auth.getUser(decodedToken.uid)
+      const user = await adminAuth.getUser(decodedToken.uid)
       
       return {
         uid: user.uid,
@@ -41,7 +45,8 @@ export class FirebaseService {
    */
   static async getUserByUid(uid: string): Promise<FirebaseUser> {
     try {
-      const user = await auth.getUser(uid)
+      const adminAuth = getAdminAuth()
+      const user = await adminAuth.getUser(uid)
       
       return {
         uid: user.uid,
@@ -59,7 +64,8 @@ export class FirebaseService {
    */
   static async createUser(email: string, password: string, displayName?: string): Promise<FirebaseUser> {
     try {
-      const user = await auth.createUser({
+      const adminAuth = getAdminAuth()
+      const user = await adminAuth.createUser({
         email,
         password,
         displayName,

@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getWorkMeId } from '@/lib/getWorkMeId.server'
+import { verifyAuth } from '@/lib/server/verifyAuth'
 import { WORK_OUTPUT_TYPE_VALUES } from './work-support'
 
 const workOutputSchema = z.object({
@@ -16,10 +16,10 @@ const workOutputSchema = z.object({
 export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
   try {
     const validated = workOutputSchema.parse(data)
-    const workMeId = await getWorkMeId()
+    const { workMeId, companyId } = await verifyAuth()
 
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or user must belong to a company' }
     }
 
     // Verify at least one of contextId or supportId is provided
@@ -27,14 +27,17 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
       return { success: false, error: 'Either contextId or supportId is required' }
     }
 
-    // If supportId provided, verify it exists and belongs to user
+    // If supportId provided, verify it exists and belongs to user's company
     if (validated.supportId) {
       const support = await prisma.workSupport.findFirst({
-        where: { id: validated.supportId, createdByWorkMeId: workMeId },
+        where: { 
+          id: validated.supportId,
+          companyId, // Multi-tenant: ensure same company
+        },
       })
 
       if (!support) {
-        return { success: false, error: 'WorkSupport not found' }
+        return { success: false, error: 'WorkSupport not found or unauthorized' }
       }
 
       // Use support's contextId if contextId not provided
@@ -47,6 +50,7 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
           outputType: validated.outputType,
           dataJson: validated.dataJson ?? undefined,
           status: (validated.status || 'draft') as 'draft' | 'final',
+          companyId,
           createdByWorkMeId: workMeId,
         },
         include: {
@@ -67,14 +71,17 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
       return { success: true, workOutput }
     }
 
-    // If only contextId provided, verify it exists and belongs to user
+    // If only contextId provided, verify it exists and belongs to user's company
     if (validated.contextId) {
       const context = await prisma.workContext.findFirst({
-        where: { id: validated.contextId, createdByWorkMeId: workMeId },
+        where: { 
+          id: validated.contextId,
+          companyId, // Multi-tenant: ensure same company
+        },
       })
 
       if (!context) {
-        return { success: false, error: 'Work context not found' }
+        return { success: false, error: 'Work context not found or unauthorized' }
       }
 
       const workOutput = await prisma.workOutput.create({
@@ -83,6 +90,7 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
           outputType: validated.outputType,
           dataJson: validated.dataJson ?? undefined,
           status: (validated.status || 'draft') as 'draft' | 'final',
+          companyId,
           createdByWorkMeId: workMeId,
         },
         include: {
@@ -107,14 +115,18 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
 export async function updateWorkOutput(id: string, data: Partial<Pick<z.infer<typeof workOutputSchema>, 'dataJson' | 'status'>>) {
   try {
     const validated = workOutputSchema.pick({ dataJson: true, status: true }).partial().parse(data)
-    const workMeId = await getWorkMeId()
+    const { workMeId, companyId } = await verifyAuth()
 
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or user must belong to a company' }
     }
 
     const existing = await prisma.workOutput.findFirst({
-      where: { id, createdByWorkMeId: workMeId },
+      where: { 
+        id,
+        companyId, // Multi-tenant: ensure same company
+        createdByWorkMeId: workMeId,
+      },
     })
 
     if (!existing) {
@@ -146,14 +158,18 @@ export async function updateWorkOutput(id: string, data: Partial<Pick<z.infer<ty
 
 export async function deleteWorkOutput(id: string) {
   try {
-    const workMeId = await getWorkMeId()
+    const { workMeId, companyId } = await verifyAuth()
 
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or user must belong to a company' }
     }
 
     const existing = await prisma.workOutput.findFirst({
-      where: { id, createdByWorkMeId: workMeId },
+      where: { 
+        id,
+        companyId, // Multi-tenant: ensure same company
+        createdByWorkMeId: workMeId,
+      },
     })
 
     if (!existing) {
@@ -172,14 +188,17 @@ export async function deleteWorkOutput(id: string) {
 
 export async function getWorkOutputs(workMeId?: string) {
   try {
-    const userId = workMeId || await getWorkMeId()
+    const { workMeId: authWorkMeId, companyId } = await verifyAuth()
+    const userId = workMeId || authWorkMeId
 
-    if (!userId) {
-      return { success: false, error: 'Not authenticated', workOutputs: [] }
+    if (!userId || !companyId) {
+      return { success: false, error: 'Not authenticated or user must belong to a company', workOutputs: [] }
     }
 
     const workOutputs = await prisma.workOutput.findMany({
-      where: { createdByWorkMeId: userId },
+      where: { 
+        companyId, // Multi-tenant: filter by company
+      },
       include: {
         context: true,
         support: true,
@@ -195,14 +214,17 @@ export async function getWorkOutputs(workMeId?: string) {
 
 export async function getWorkOutput(id: string) {
   try {
-    const workMeId = await getWorkMeId()
+    const { workMeId, companyId } = await verifyAuth()
 
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or user must belong to a company' }
     }
 
     const workOutput = await prisma.workOutput.findFirst({
-      where: { id, createdByWorkMeId: workMeId },
+      where: { 
+        id,
+        companyId, // Multi-tenant: ensure same company
+      },
       include: {
         context: true,
         support: true,
@@ -221,23 +243,29 @@ export async function getWorkOutput(id: string) {
 
 export async function getWorkOutputsByContext(contextId: string) {
   try {
-    const workMeId = await getWorkMeId()
+    const { workMeId, companyId } = await verifyAuth()
 
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated', workOutputs: [] }
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or user must belong to a company', workOutputs: [] }
     }
 
-    // Verify context belongs to user
+    // Verify context belongs to user's company
     const context = await prisma.workContext.findFirst({
-      where: { id: contextId, createdByWorkMeId: workMeId },
+      where: { 
+        id: contextId,
+        companyId, // Multi-tenant: ensure same company
+      },
     })
 
     if (!context) {
-      return { success: false, error: 'Work context not found', workOutputs: [] }
+      return { success: false, error: 'Work context not found or unauthorized', workOutputs: [] }
     }
 
     const workOutputs = await prisma.workOutput.findMany({
-      where: { contextId },
+      where: { 
+        contextId,
+        companyId, // Multi-tenant: ensure same company
+      },
       include: {
         context: true,
         support: true,
