@@ -45,7 +45,7 @@ export async function PUT(request: NextRequest) {
     // Look up company by name (globally unique)
     let company = await prisma.company.findUnique({
       where: {
-        name: companyName.trim(),
+          name: companyName.trim(),
       },
     })
 
