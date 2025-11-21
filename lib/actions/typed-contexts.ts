@@ -110,10 +110,24 @@ const careerSchema = z.object({
 })
 
 // Create Campaign
-export async function createCampaign(data: z.infer<typeof campaignSchema>) {
+export async function createCampaign(data: z.infer<typeof campaignSchema>, clientWorkMeId?: string | null) {
   try {
     const validated = campaignSchema.parse(data)
-    const workMeId = await getWorkMeId()
+    
+    // Try to get workMeId from server first, fall back to client-provided value
+    let workMeId = await getWorkMeId()
+    
+    // If server can't get it, use the client-provided value (from localStorage)
+    if (!workMeId && clientWorkMeId) {
+      // Verify the workMeId exists in the database for security
+      const workMe = await prisma.workMe.findUnique({
+        where: { id: clientWorkMeId },
+        select: { id: true },
+      })
+      if (workMe) {
+        workMeId = clientWorkMeId
+      }
+    }
 
     if (!workMeId) {
       return { success: false, error: 'Not authenticated' }

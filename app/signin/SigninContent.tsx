@@ -36,6 +36,13 @@ export default function SigninContent() {
       const idToken = await auth.currentUser.getIdToken()
       localStorage.setItem('firebaseToken', idToken)
     }
+
+    // Also set cookies for server actions to access
+    // Set cookie that expires in 7 days
+    const expires = new Date()
+    expires.setDate(expires.getDate() + 7)
+    document.cookie = `workMeId=${workMeRecord.id}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`
+    document.cookie = `firebaseId=${firebaseUser.uid}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`
   }
 
   const handleGoogleSignIn = async () => {

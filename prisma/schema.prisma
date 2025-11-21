@@ -404,6 +404,65 @@ model WorkOutput {
 }
 
 // ============================================
+// WORKFORCE COMMUNICATIONS SYSTEM (3-Layer)
+// ============================================
+
+// 1. Product Layer (True North) - Stable, reusable product definitions
+model WorkforceComms {
+  workforceCommsId String   @id @default(uuid())
+  type             String // "email" for now, future-proof for other types
+  name             String // "Need to Know", "Urgent Update", "Awareness Email"
+  description      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  editions WorkforceCommsEdition[]
+  drafts   WorkforceCommsDraft[]
+
+  @@index([type])
+  @@index([name])
+}
+
+// 2. Draft Layer (Staging Container) - Where context and notes live before GPT generation
+model WorkforceCommsDraft {
+  draftId          String   @id @default(uuid())
+  workforceCommsId String // FK → WorkforceComms
+  contextIds       Json? // Array of WorkContext references
+  lastEditionId    String? // FK → WorkforceCommsEdition (optional reference to previous edition)
+  authorNotes      String? // Freeform "what to tell GPT"
+  whatChanged      String? // Crisp delta from last send
+  priorityNotes    String? // "still a priority", "emphasize X"
+  status           String   @default("drafting") // "drafting" | "readyForGeneration" | "needsReview" | "generating"
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  product     WorkforceComms         @relation(fields: [workforceCommsId], references: [workforceCommsId], onDelete: Cascade)
+  lastEdition WorkforceCommsEdition? @relation(fields: [lastEditionId], references: [editionId], onDelete: SetNull)
+
+  @@index([workforceCommsId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// 3. Edition Layer (Final Output) - Immutable generated emails
+model WorkforceCommsEdition {
+  editionId        String    @id @default(uuid())
+  workforceCommsId String // FK → WorkforceComms
+  subject          String
+  body             String
+  sentAt           DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  product      WorkforceComms        @relation(fields: [workforceCommsId], references: [workforceCommsId], onDelete: Cascade)
+  referencedBy WorkforceCommsDraft[] // Drafts that reference this edition as lastEdition
+
+  @@index([workforceCommsId])
+  @@index([sentAt])
+  @@index([createdAt])
+}
+
+// ============================================
 // COMMENTED OUT - NOT CURRENTLY USED
 // ============================================
 

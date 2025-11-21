@@ -32,6 +32,7 @@ export default function NewCampaignPage() {
 
     setLoading(true)
     try {
+      const workMeId = getWorkMeIdFromStorage()
       const result = await createCampaign({
         title: formData.title,
         description: formData.description || null,
@@ -43,7 +44,7 @@ export default function NewCampaignPage() {
         pocLastName: formData.pocLastName || null,
         pocEmail: formData.pocEmail || null,
         pocPhone: formData.pocPhone || null,
-      })
+      }, workMeId)
 
       if (result.success && result.workContext) {
         router.push(`/mywork/context/${result.workContext.id}`)
