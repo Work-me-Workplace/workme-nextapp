@@ -324,6 +324,71 @@ export default function WorkContextDetailPage() {
                 )}
               </>
             )}
+            {workContext.type === 'employee_cause' && workContext.typedData && (
+              <>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 col-span-2">Employee Cause Details</h3>
+                {workContext.typedData.partnerOrg && (
+                  <div>
+                    <span className="font-medium text-gray-700">Partner Organization:</span>
+                    <span className="ml-2 text-gray-600">{workContext.typedData.partnerOrg}</span>
+                  </div>
+                )}
+                {workContext.typedData.windowStart && (
+                  <div>
+                    <span className="font-medium text-gray-700">Collection Start:</span>
+                    <span className="ml-2 text-gray-600">{new Date(workContext.typedData.windowStart).toLocaleDateString()}</span>
+                  </div>
+                )}
+                {workContext.typedData.windowEnd && (
+                  <div>
+                    <span className="font-medium text-gray-700">Collection End:</span>
+                    <span className="ml-2 text-gray-600">{new Date(workContext.typedData.windowEnd).toLocaleDateString()}</span>
+                  </div>
+                )}
+                {workContext.typedData.location && (
+                  <div className="col-span-2">
+                    <span className="font-medium text-gray-700">Location:</span>
+                    <span className="ml-2 text-gray-600">{workContext.typedData.location}</span>
+                  </div>
+                )}
+                {workContext.typedData.sponsoringDepartment && (
+                  <div>
+                    <span className="font-medium text-gray-700">Sponsoring Department:</span>
+                    <span className="ml-2 text-gray-600">{workContext.typedData.sponsoringDepartment}</span>
+                  </div>
+                )}
+                {workContext.typedData.neededItems && Array.isArray(workContext.typedData.neededItems) && workContext.typedData.neededItems.length > 0 && (
+                  <div className="col-span-2">
+                    <span className="font-medium text-gray-700">Needed Items:</span>
+                    <div className="mt-2">
+                      <ul className="list-disc list-inside space-y-1">
+                        {workContext.typedData.neededItems.map((item: string, idx: number) => (
+                          <li key={idx} className="text-gray-600">{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+                {workContext.typedData.collectionPoints && Array.isArray(workContext.typedData.collectionPoints) && workContext.typedData.collectionPoints.length > 0 && (
+                  <div className="col-span-2">
+                    <span className="font-medium text-gray-700">Collection Points:</span>
+                    <div className="mt-2">
+                      <ul className="list-disc list-inside space-y-1">
+                        {workContext.typedData.collectionPoints.map((point: string, idx: number) => (
+                          <li key={idx} className="text-gray-600">{point}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+                {workContext.typedData.signUpLink && (
+                  <div className="col-span-2">
+                    <span className="font-medium text-gray-700">Sign Up Link:</span>
+                    <span className="ml-2"><a href={workContext.typedData.signUpLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Sign Up</a></span>
+                  </div>
+                )}
+              </>
+            )}
             {/* POC Information - show for all types */}
             {(workContext.typedData?.pocFirstName || workContext.typedData?.pocLastName || workContext.typedData?.pocEmail || workContext.typedData?.pocPhone) && (
               <div className="col-span-2 border-t pt-4 mt-4">
