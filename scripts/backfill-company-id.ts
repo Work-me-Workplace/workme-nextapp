@@ -2,7 +2,7 @@
  * Backfill Script: Populate companyId for all existing records
  * 
  * For each record with NULL companyId:
- * - Find creator WorkMe via createdByWorkMeId
+ * - Find creator WorkMe via originatorId
  * - Use workMe.companyId to populate companyId
  */
 
@@ -36,7 +36,7 @@ async function backfillCompanyId() {
     // All records should already have companyId set
     const workContexts = await prisma.workContext.findMany({
       where: { companyId: { equals: null } as any }, // Type assertion for legacy script
-      select: { id: true, createdByWorkMeId: true },
+      select: { id: true, originatorId: true },
     })
 
     let updated = 0
@@ -44,20 +44,20 @@ async function backfillCompanyId() {
     const errors: string[] = []
 
     for (const ctx of workContexts) {
-      if (!ctx.createdByWorkMeId) {
+      if (!ctx.originatorId) {
         skipped++
-        errors.push(`WorkContext ${ctx.id}: missing createdByWorkMeId`)
+        errors.push(`WorkContext ${ctx.id}: missing originatorId`)
         continue
       }
 
       const creator = await prisma.workMe.findUnique({
-        where: { id: ctx.createdByWorkMeId },
+        where: { id: ctx.originatorId },
         select: { companyId: true },
       })
 
       if (!creator || !creator.companyId) {
         skipped++
-        errors.push(`WorkContext ${ctx.id}: creator ${ctx.createdByWorkMeId} has no companyId`)
+        errors.push(`WorkContext ${ctx.id}: creator ${ctx.originatorId} has no companyId`)
         continue
       }
 
@@ -93,7 +93,7 @@ async function backfillCompanyId() {
       try {
         const records = await (model as any).findMany({
           where: { companyId: null as any }, // Type assertion for legacy script
-          select: { id: true, createdByWorkMeId: true },
+          select: { id: true, originatorId: true },
         })
 
         let updated = 0
@@ -101,20 +101,20 @@ async function backfillCompanyId() {
         const errors: string[] = []
 
         for (const record of records) {
-          if (!record.createdByWorkMeId) {
+          if (!record.originatorId) {
             skipped++
-            errors.push(`${name} ${record.id}: missing createdByWorkMeId`)
+            errors.push(`${name} ${record.id}: missing originatorId`)
             continue
           }
 
           const creator = await prisma.workMe.findUnique({
-            where: { id: record.createdByWorkMeId },
+            where: { id: record.originatorId },
             select: { companyId: true },
           })
 
           if (!creator || !creator.companyId) {
             skipped++
-            errors.push(`${name} ${record.id}: creator ${record.createdByWorkMeId} has no companyId`)
+            errors.push(`${name} ${record.id}: creator ${record.originatorId} has no companyId`)
             continue
           }
 
@@ -141,7 +141,7 @@ async function backfillCompanyId() {
     console.log('📊 Backfilling WorkSupport...')
     const workSupports = await prisma.workSupport.findMany({
       where: { companyId: null as any }, // Type assertion for legacy script
-      select: { id: true, createdByWorkMeId: true, contextId: true },
+      select: { id: true, originatorId: true, contextId: true },
     })
 
     let supportUpdated = 0
@@ -161,9 +161,9 @@ async function backfillCompanyId() {
       }
 
       // Fallback to creator's companyId
-      if (!companyId && support.createdByWorkMeId) {
+      if (!companyId && support.originatorId) {
         const creator = await prisma.workMe.findUnique({
-          where: { id: support.createdByWorkMeId },
+          where: { id: support.originatorId },
           select: { companyId: true },
         })
         companyId = creator?.companyId || null
@@ -193,7 +193,7 @@ async function backfillCompanyId() {
     console.log('📊 Backfilling WorkOutput...')
     const workOutputs = await prisma.workOutput.findMany({
       where: { companyId: null as any }, // Type assertion for legacy script
-      select: { id: true, createdByWorkMeId: true, contextId: true, supportId: true },
+      select: { id: true, originatorId: true, contextId: true, supportId: true },
     })
 
     let outputUpdated = 0
@@ -222,9 +222,9 @@ async function backfillCompanyId() {
       }
 
       // Fallback to creator
-      if (!companyId && output.createdByWorkMeId) {
+      if (!companyId && output.originatorId) {
         const creator = await prisma.workMe.findUnique({
-          where: { id: output.createdByWorkMeId },
+          where: { id: output.originatorId },
           select: { companyId: true },
         })
         companyId = creator?.companyId || null
@@ -254,7 +254,7 @@ async function backfillCompanyId() {
     console.log('📊 Backfilling WorkOutputStandalone...')
     const standaloneOutputs = await prisma.workOutputStandalone.findMany({
       where: { companyId: null as any }, // Type assertion for legacy script
-      select: { id: true, createdByWorkMeId: true },
+      select: { id: true, originatorId: true },
     })
 
     let standaloneUpdated = 0
@@ -262,14 +262,14 @@ async function backfillCompanyId() {
     const standaloneErrors: string[] = []
 
     for (const output of standaloneOutputs) {
-      if (!output.createdByWorkMeId) {
+      if (!output.originatorId) {
         skipped++
-        errors.push(`WorkOutputStandalone ${output.id}: missing createdByWorkMeId`)
+        errors.push(`WorkOutputStandalone ${output.id}: missing originatorId`)
         continue
       }
 
       const creator = await prisma.workMe.findUnique({
-        where: { id: output.createdByWorkMeId },
+        where: { id: output.originatorId },
         select: { companyId: true },
       })
 
@@ -306,7 +306,7 @@ async function backfillCompanyId() {
       try {
         const records = await (model as any).findMany({
           where: { companyId: null as any }, // Type assertion for legacy script
-          select: { id: true, createdByWorkMeId: true },
+          select: { id: true, originatorId: true },
         })
 
         let careerUpdated = 0
@@ -314,14 +314,14 @@ async function backfillCompanyId() {
         const careerErrors: string[] = []
 
         for (const record of records) {
-          if (!record.createdByWorkMeId) {
+          if (!record.originatorId) {
             careerSkipped++
-            careerErrors.push(`${name} ${record.id}: missing createdByWorkMeId`)
+            careerErrors.push(`${name} ${record.id}: missing originatorId`)
             continue
           }
 
           const creator = await prisma.workMe.findUnique({
-            where: { id: record.createdByWorkMeId },
+            where: { id: record.originatorId },
             select: { companyId: true },
           })
 
@@ -363,7 +363,7 @@ async function backfillCompanyId() {
       try {
         const records = await (model as any).findMany({
           where: { companyId: null as any }, // Type assertion for legacy script
-          select: { [idField]: true, createdByWorkMeId: true },
+          select: { [idField]: true, originatorId: true },
         })
 
         let commsUpdated = 0
@@ -373,14 +373,14 @@ async function backfillCompanyId() {
         for (const record of records) {
           const recordId = record[idField]
           
-          if (!record.createdByWorkMeId) {
+          if (!record.originatorId) {
             commsSkipped++
-            commsErrors.push(`${name} ${recordId}: missing createdByWorkMeId`)
+            commsErrors.push(`${name} ${recordId}: missing originatorId`)
             continue
           }
 
           const creator = await prisma.workMe.findUnique({
-            where: { id: record.createdByWorkMeId },
+            where: { id: record.originatorId },
             select: { companyId: true },
           })
 
