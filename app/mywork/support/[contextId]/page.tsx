@@ -4,9 +4,12 @@ import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkContext } from '@/lib/actions/work-context'
-import { getWorkSupportByContext, WORK_OUTPUT_TYPES } from '@/lib/actions/work-support'
+import { getWorkSupportByContext, WORK_OUTPUT_TYPES, WORK_OUTPUT_TYPE_VALUES } from '@/lib/actions/work-support'
 import { createWorkOutput } from '@/lib/actions/work-output'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
+
+// Type for WorkOutput types
+type WorkOutputType = typeof WORK_OUTPUT_TYPE_VALUES[number]
 
 export default function WorkSupportPage() {
   const router = useRouter()
@@ -61,7 +64,7 @@ export default function WorkSupportPage() {
     setLoading(false)
   }
 
-  async function handleCreateOutput(outputType: string) {
+  async function handleCreateOutput(outputType: WorkOutputType) {
     if (!workSupport) return
 
     try {
@@ -171,7 +174,9 @@ export default function WorkSupportPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedOutputTypes.map((outputType: string) => {
                   const existingOutput = createdOutputs.find((o: any) => o.outputType === outputType)
-                  const label = outputTypesMap.get(outputType) || outputType
+                  // Type assertion needed because outputType comes from database as string
+                  const typedOutputType = outputType as WorkOutputType
+                  const label = outputTypesMap.get(typedOutputType) || outputType
 
                   return (
                     <div
@@ -199,7 +204,7 @@ export default function WorkSupportPage() {
                         </Link>
                       ) : (
                         <button
-                          onClick={() => handleCreateOutput(outputType)}
+                          onClick={() => handleCreateOutput(outputType as WorkOutputType)}
                           className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                         >
                           Create Output →
@@ -225,7 +230,7 @@ export default function WorkSupportPage() {
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="font-medium text-gray-900">{outputTypesMap.get(output.outputType) || output.outputType}</span>
+                        <span className="font-medium text-gray-900">{outputTypesMap.get(output.outputType as WorkOutputType) || output.outputType}</span>
                         <span className={`ml-2 text-xs px-2 py-1 rounded ${
                           output.status === 'final' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                         }`}>
