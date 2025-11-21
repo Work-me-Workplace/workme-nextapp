@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { getAchievement, updateAchievement } from '@/lib/actions/achievements'
 import { getObjectives } from '@/lib/actions/objectives'
 import { getCommsOutputs } from '@/lib/actions/comms-outputs'
-import { getCompanyCampaigns } from '@/lib/actions/company-campaigns'
 
 const categories = [
   'INTERNAL_COMMS',
@@ -38,7 +37,6 @@ export default function EditAchievementPage() {
   const [saving, setSaving] = useState(false)
   const [objectives, setObjectives] = useState<any[]>([])
   const [commsOutputs, setCommsOutputs] = useState<any[]>([])
-  const [campaigns, setCampaigns] = useState<any[]>([])
   const [formData, setFormData] = useState({
     title: '',
     category: 'INTERNAL_COMMS',
@@ -49,7 +47,6 @@ export default function EditAchievementPage() {
     frequency: '',
     volume: '',
     commsOutputId: '',
-    companyCampaignId: '',
     processSteps: '',
     impact: '',
   })
@@ -60,11 +57,10 @@ export default function EditAchievementPage() {
 
   async function loadData() {
     setLoading(true)
-    const [achResult, objResult, commsResult, campaignsResult] = await Promise.all([
+    const [achResult, objResult, commsResult] = await Promise.all([
       getAchievement(achievementId),
       getObjectives(),
       getCommsOutputs(),
-      getCompanyCampaigns(),
     ])
 
     if (achResult.success && achResult.achievement) {
@@ -79,7 +75,6 @@ export default function EditAchievementPage() {
         frequency: ach.frequency || '',
         volume: ach.volume?.toString() || '',
         commsOutputId: ach.commsOutputId || '',
-        companyCampaignId: ach.companyCampaignId || '',
         processSteps: Array.isArray(ach.processSteps) 
           ? JSON.stringify(ach.processSteps) 
           : (ach.processSteps ? String(ach.processSteps) : ''),
@@ -93,7 +88,6 @@ export default function EditAchievementPage() {
 
     if (objResult.success) setObjectives(objResult.objectives || [])
     if (commsResult.success) setCommsOutputs(commsResult.commsOutputs || [])
-    if (campaignsResult.success) setCampaigns(campaignsResult.campaigns || [])
     setLoading(false)
   }
 
@@ -113,7 +107,6 @@ export default function EditAchievementPage() {
     if (formData.frequency) data.frequency = formData.frequency
     if (formData.volume) data.volume = parseInt(formData.volume)
     if (formData.commsOutputId) data.commsOutputId = formData.commsOutputId
-    if (formData.companyCampaignId) data.companyCampaignId = formData.companyCampaignId
     if (formData.processSteps) {
       try {
         const steps = JSON.parse(formData.processSteps)
@@ -301,24 +294,6 @@ export default function EditAchievementPage() {
             </select>
           </div>
 
-          <div>
-            <label htmlFor="companyCampaignId" className="block text-sm font-medium text-gray-700 mb-2">
-              Company Campaign
-            </label>
-            <select
-              id="companyCampaignId"
-              value={formData.companyCampaignId}
-              onChange={(e) => setFormData({ ...formData, companyCampaignId: e.target.value })}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            >
-              <option value="">None</option>
-              {campaigns.map((campaign) => (
-                <option key={campaign.id} value={campaign.id}>
-                  {campaign.name}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
 
         <div>

@@ -28,7 +28,7 @@ export default function DraftEditPage({ params }: { params: Promise<{ productId:
         const d = draftResult.draft
         setDraft(d)
         setFormData({
-          contextIds: Array.isArray(d.contextIds) ? d.contextIds : [],
+          contextIds: Array.isArray(d.contextIds) ? (d.contextIds as string[]) : [],
           authorNotes: d.authorNotes || '',
           whatChanged: d.whatChanged || '',
           priorityNotes: d.priorityNotes || '',

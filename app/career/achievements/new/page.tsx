@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { createAchievement } from '@/lib/actions/achievements'
 import { getObjectives } from '@/lib/actions/objectives'
 import { getCommsOutputs } from '@/lib/actions/comms-outputs'
-import { getCompanyCampaigns } from '@/lib/actions/company-campaigns'
 
 const categories = [
   'INTERNAL_COMMS',
@@ -35,7 +34,6 @@ export default function NewAchievementPage() {
   const [loading, setLoading] = useState(false)
   const [objectives, setObjectives] = useState<any[]>([])
   const [commsOutputs, setCommsOutputs] = useState<any[]>([])
-  const [campaigns, setCampaigns] = useState<any[]>([])
   const [formData, setFormData] = useState({
     title: '',
     category: 'INTERNAL_COMMS',
@@ -43,7 +41,6 @@ export default function NewAchievementPage() {
     audienceSize: '',
     objectiveId: '',
     commsOutputId: '',
-    companyCampaignId: '',
     whatYouDid: '',
     frequency: '',
     volume: '',
@@ -56,14 +53,12 @@ export default function NewAchievementPage() {
   }, [])
 
   async function loadDropdowns() {
-    const [objResult, commsResult, campaignsResult] = await Promise.all([
+    const [objResult, commsResult] = await Promise.all([
       getObjectives(),
       getCommsOutputs(),
-      getCompanyCampaigns(),
     ])
     if (objResult.success) setObjectives(objResult.objectives || [])
     if (commsResult.success) setCommsOutputs(commsResult.commsOutputs || [])
-    if (campaignsResult.success) setCampaigns(campaignsResult.campaigns || [])
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -80,7 +75,6 @@ export default function NewAchievementPage() {
     if (formData.audienceSize) data.audienceSize = parseInt(formData.audienceSize)
     if (formData.objectiveId) data.objectiveId = formData.objectiveId
     if (formData.commsOutputId) data.commsOutputId = formData.commsOutputId
-    if (formData.companyCampaignId) data.companyCampaignId = formData.companyCampaignId
     if (formData.frequency) data.frequency = formData.frequency
     if (formData.volume) data.volume = parseInt(formData.volume)
     if (formData.processSteps) {
@@ -282,31 +276,6 @@ export default function NewAchievementPage() {
             )}
           </div>
 
-          <div>
-            <label htmlFor="companyCampaignId" className="block text-sm font-medium text-gray-700 mb-2">
-              Company Campaign
-            </label>
-            <select
-              id="companyCampaignId"
-              value={formData.companyCampaignId}
-              onChange={(e) => setFormData({ ...formData, companyCampaignId: e.target.value })}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            >
-              <option value="">None</option>
-              {campaigns.length === 0 ? (
-                <option disabled>Set up campaigns first in the Setup page</option>
-              ) : (
-                campaigns.map((campaign) => (
-                  <option key={campaign.id} value={campaign.id}>
-                    {campaign.name}
-                  </option>
-                ))
-              )}
-            </select>
-            {campaigns.length === 0 && (
-              <p className="mt-1 text-sm text-gray-500">Set up items first in the Setup page.</p>
-            )}
-          </div>
         </div>
 
         <div>

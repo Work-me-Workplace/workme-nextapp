@@ -6,7 +6,7 @@
 'use server'
 
 import { cookies, headers } from 'next/headers'
-import { prisma } from '../prisma'
+import { prisma } from '@/lib/prisma'
 
 export async function getWorkMeId(): Promise<string | null> {
   // Try to get from cookies first (set by middleware or auth)

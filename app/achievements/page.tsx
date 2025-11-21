@@ -130,7 +130,7 @@ export default function AchievementsPage() {
                       {achievement.commsOutput?.title || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {achievement.companyCampaign?.name || '-'}
+                      -
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(achievement.updatedAt).toLocaleDateString()}
