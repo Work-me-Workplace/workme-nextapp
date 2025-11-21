@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getWorkMeCompany } from '@/lib/config/workmeConfig'
 import { FieldMapperService } from '@/lib/services/fieldMapper'
 
 /**
  * PUT /api/workme/company
  * 
- * Link user to a company (or create company in directory if needed)
- * Companies are container-scoped shared entities
+ * Link user to a company (or create company if needed)
+ * Companies are independent entities (globally unique by name)
  */
 export async function PUT(request: NextRequest) {
   try {
@@ -43,20 +42,14 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Get WorkMeCompany (container)
-    const workMeCompany = await getWorkMeCompany()
-
-    // Look up company in directory (by workMeCompanyId + name)
+    // Look up company by name (globally unique)
     let company = await prisma.company.findUnique({
       where: {
-        workMeCompanyId_name: {
-          workMeCompanyId: workMeCompany.id,
-          name: companyName.trim(),
-        },
+        name: companyName.trim(),
       },
     })
 
-    // If company doesn't exist, create it in directory
+    // If company doesn't exist, create it
     if (!company) {
       // Map company data using FieldMapperService (if provided)
       const mappedCompanyData = companyData 
@@ -64,12 +57,9 @@ export async function PUT(request: NextRequest) {
         : { name: companyName.trim() }
 
       company = await prisma.company.create({
-        data: {
-          workMeCompanyId: workMeCompany.id,
-          ...mappedCompanyData,
-        },
+        data: mappedCompanyData,
       })
-      console.log('✅ Created company in directory:', company.id)
+      console.log('✅ Created company:', company.id)
     } else {
       // If company exists and companyData provided, update it
       if (companyData) {
@@ -112,7 +102,7 @@ export async function PUT(request: NextRequest) {
 /**
  * GET /api/workme/company
  * 
- * Search companies in directory (for company lookup/selection)
+ * Search companies (for company lookup/selection)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -120,12 +110,8 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('q') || ''
     const limit = parseInt(searchParams.get('limit') || '20')
 
-    // Get WorkMeCompany (container)
-    const workMeCompany = await getWorkMeCompany()
-
     const companies = await prisma.company.findMany({
       where: {
-        workMeCompanyId: workMeCompany.id,
         name: {
           contains: query,
           mode: 'insensitive',

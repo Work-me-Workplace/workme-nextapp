@@ -18,8 +18,8 @@ model WorkMe {
   firstName       String?
   lastName        String?
   photoUrl        String?
-  companyId         String
-  company           Company       @relation(fields: [companyId], references: [id])
+  companyId         String?
+  company           Company?      @relation(fields: [companyId], references: [id])
   workMeCompanyId String?
   workMeCompany   WorkMeCompany? @relation(fields: [workMeCompanyId], references: [id])
 
