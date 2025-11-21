@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { getAchievements } from '@/lib/actions/achievements'
 import { getObjectives } from '@/lib/actions/objectives'
-import { getCompanyCampaigns } from '@/lib/actions/company-campaigns'
 
 export default function CareerDashboardPage() {
   const pathname = usePathname()
@@ -14,7 +13,6 @@ export default function CareerDashboardPage() {
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [achievementsCount, setAchievementsCount] = useState(0)
   const [objectivesCount, setObjectivesCount] = useState(0)
-  const [campaignsCount, setCampaignsCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -40,11 +38,6 @@ export default function CareerDashboardPage() {
       const objectivesResult = await getObjectives()
       if (objectivesResult.success) {
         setObjectivesCount(objectivesResult.objectives?.length || 0)
-      }
-
-      const campaignsResult = await getCompanyCampaigns()
-      if (campaignsResult.success) {
-        setCampaignsCount(campaignsResult.campaigns?.length || 0)
       }
     } catch (error) {
       console.error('Failed to load data:', error)
@@ -162,18 +155,6 @@ export default function CareerDashboardPage() {
                     Achievements
                   </Link>
                 </li>
-                <li>
-                  <Link
-                    href="/career/campaigns"
-                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                      isActive('/career/campaigns')
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    Campaigns
-                  </Link>
-                </li>
               </ul>
             </div>
             <div>
@@ -202,7 +183,7 @@ export default function CareerDashboardPage() {
               <p className="text-gray-600 mt-2">Your networking and career growth overview</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Achievements</h3>
@@ -230,26 +211,12 @@ export default function CareerDashboardPage() {
                   View all →
                 </Link>
               </div>
-
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Campaigns</h3>
-                  <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-                  </svg>
-                </div>
-                <p className="text-3xl font-bold text-gray-900 mb-2">{campaignsCount}</p>
-                <p className="text-sm text-gray-500 mb-4">Company campaigns</p>
-                <Link href="/career/campaigns" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                  View all →
-                </Link>
-              </div>
             </div>
 
             <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-8 text-white">
               <h3 className="text-2xl font-bold mb-4">Get Started</h3>
               <p className="text-blue-100 mb-6">
-                Start by setting up your objectives, comms outputs, and company campaigns. 
+                Start by setting up your objectives and comms outputs. 
                 Then track your achievements and measure your impact.
               </p>
               <div className="flex gap-4">

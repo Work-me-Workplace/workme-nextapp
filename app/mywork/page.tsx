@@ -167,18 +167,6 @@ export default function MyWorkPage() {
                     Achievements
                   </Link>
                 </li>
-                <li>
-                  <Link
-                    href="/career/campaigns"
-                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                      isActive('/career/campaigns')
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    Campaigns
-                  </Link>
-                </li>
               </ul>
             </div>
             <div>
