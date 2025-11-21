@@ -141,6 +141,7 @@ export default function WorkContextDetailPage() {
             )}
             {workContext.type === 'impact_event' && workContext.typedData && (
               <>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Impact Details</h3>
                 {workContext.typedData.effectiveDate && (
                   <div>
                     <span className="font-medium text-gray-700">Effective Date:</span>
