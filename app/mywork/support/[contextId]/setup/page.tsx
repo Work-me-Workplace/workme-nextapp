@@ -4,8 +4,7 @@ import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkContext } from '@/lib/actions/work-context'
-import { getWorkSupportByContext, createWorkSupport, updateWorkSupport } from '@/lib/actions/work-support'
-import { WORK_OUTPUT_TYPES } from '@/lib/actions/work-support'
+import { getWorkSupportByContext, createWorkSupport, updateWorkSupport, WORK_OUTPUT_TYPES } from '@/lib/actions/work-support'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
 export default function WorkSupportSetupPage() {
@@ -35,8 +34,9 @@ export default function WorkSupportSetupPage() {
     if (!contextId) return
     setLoading(true)
     try {
+      const clientWorkMeId = typeof window !== 'undefined' ? getWorkMeIdFromStorage() : null
       const [contextResult, supportResult] = await Promise.all([
-        getWorkContext(contextId),
+        getWorkContext(contextId, clientWorkMeId),
         getWorkSupportByContext(contextId),
       ])
 

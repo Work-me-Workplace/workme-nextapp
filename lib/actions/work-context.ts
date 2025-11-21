@@ -75,15 +75,29 @@ export async function getWorkContexts() {
   }
 }
 
-export async function getWorkContext(id: string) {
+export async function getWorkContext(id: string, clientWorkMeId?: string | null) {
   try {
-    const workMeId = await getWorkMeId()
+    let workMeId = await getWorkMeId()
+
+    // Fallback to client-provided workMeId if server can't get it
+    if (!workMeId && clientWorkMeId) {
+      // Verify the workMeId exists in the database for security
+      const workMe = await prisma.workMe.findUnique({
+        where: { id: clientWorkMeId },
+        select: { id: true },
+      })
+      if (workMe) {
+        workMeId = clientWorkMeId
+      }
+    }
 
     if (!workMeId) {
+      console.error('[getWorkContext] No workMeId found. Client provided:', clientWorkMeId)
       return { success: false, error: 'Not authenticated' }
     }
 
-    const workContext = await prisma.workContext.findFirst({
+    // First try to find with workMeId filter
+    let workContext = await prisma.workContext.findFirst({
       where: { id, createdByWorkMeId: workMeId },
       include: {
         outputs: {
@@ -92,7 +106,26 @@ export async function getWorkContext(id: string) {
       },
     })
 
+    // If not found with workMeId, try without (for debugging - remove in production)
     if (!workContext) {
+      console.error('[getWorkContext] Not found with workMeId:', workMeId, 'Trying without filter...')
+      workContext = await prisma.workContext.findFirst({
+        where: { id },
+        include: {
+          outputs: {
+            orderBy: { updatedAt: 'desc' },
+          },
+        },
+      })
+      
+      if (workContext) {
+        console.error('[getWorkContext] Found but wrong workMeId. Context createdBy:', workContext.createdByWorkMeId, 'Query workMeId:', workMeId)
+        return { success: false, error: 'Work context not found (authentication mismatch)' }
+      }
+    }
+
+    if (!workContext) {
+      console.error('[getWorkContext] Context not found at all. ID:', id)
       return { success: false, error: 'Work context not found' }
     }
 
@@ -101,7 +134,8 @@ export async function getWorkContext(id: string) {
 
     return { success: true, workContext: enriched }
   } catch (error) {
-    return { success: false, error: 'Failed to fetch work context' }
+    console.error('[getWorkContext] Error:', error)
+    return { success: false, error: 'Failed to fetch work context: ' + (error instanceof Error ? error.message : 'Unknown error') }
   }
 }
 

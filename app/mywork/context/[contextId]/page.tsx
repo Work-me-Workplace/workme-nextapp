@@ -30,15 +30,19 @@ export default function WorkContextDetailPage() {
     if (!contextId) return
     setLoading(true)
     try {
-      const result = await getWorkContext(contextId)
+      // Pass workMeId from client as fallback
+      const clientWorkMeId = typeof window !== 'undefined' ? getWorkMeIdFromStorage() : null
+      const result = await getWorkContext(contextId, clientWorkMeId)
       if (result.success && result.workContext) {
         setWorkContext(result.workContext)
       } else {
-        alert('WorkContext not found')
+        console.error('Failed to load context:', result.error)
+        alert('WorkContext not found: ' + (result.error || 'Unknown error'))
         router.push('/mywork/context')
       }
     } catch (error) {
       console.error('Failed to load context:', error)
+      alert('Failed to load context: ' + (error instanceof Error ? error.message : 'Unknown error'))
       router.push('/mywork/context')
     }
     setLoading(false)
