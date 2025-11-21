@@ -32,35 +32,29 @@ model WorkMe {
 
   superAdmin SuperAdmin? // Optional link to SuperAdmin (may migrate away)
 
-  // Work Architecture Relations (created by this WorkMe)
-  createdContexts          WorkContext[]
-  createdSupports          WorkSupport[]
-  createdOutputs           WorkOutput[]
-  createdStandaloneOutputs WorkOutputStandalone[]
-  createdNTKs NTK[]
-
-  // Typed Context Relations (created by this WorkMe)
-  createdCampaignContexts      WorkContextCampaign[]
-  createdImpactEventContexts   WorkContextImpactEvent[]
-  createdTrainingContexts      WorkContextTraining[]
-  createdEventContexts         WorkContextEvent[]
-  createdCommunityContexts     WorkContextCommunity[]
-  createdBenefitsContexts      WorkContextBenefits[]
-  createdCareerContexts        WorkContextCareer[]
-  createdEmployeeCauseContexts WorkContextEmployeeCause[]
-
-  // Career Relations (created by this WorkMe)
-  createdObjectives   Objective[]
-  createdAchievements Achievement[]
-  createdCommsOutputs CommsOutput[]
-
-  // Workforce Comms Relations (created by this WorkMe)
-  createdWorkforceComms WorkforceComms[]
-  createdCommsDrafts    WorkforceCommsDraft[]
-  createdCommsEditions  WorkforceCommsEdition[]
-
-  // NTK Edition Relations
-  createdNTKEditions NTKEdition[] @relation("NTKEditionOriginator")
+  // Minimal reverse relations (required by Prisma, but NOT to be queried)
+  // WorkMe is pure identity - work outputs reference WorkMe via originatorId
+  // These relations exist only for Prisma schema validation
+  originatedCommsOutputs        CommsOutput[]        @relation("CommsOutputOriginator")
+  originatedObjectives          Objective[]          @relation("ObjectiveOriginator")
+  originatedAchievements        Achievement[]        @relation("AchievementOriginator")
+  originatedWorkContexts        WorkContext[]       @relation("WorkContextOriginator")
+  originatedWorkContextCampaigns WorkContextCampaign[] @relation("WorkContextCampaignOriginator")
+  originatedWorkContextImpactEvents WorkContextImpactEvent[] @relation("WorkContextImpactEventOriginator")
+  originatedWorkContextTrainings WorkContextTraining[] @relation("WorkContextTrainingOriginator")
+  originatedWorkContextEvents   WorkContextEvent[]  @relation("WorkContextEventOriginator")
+  originatedWorkContextCommunities WorkContextCommunity[] @relation("WorkContextCommunityOriginator")
+  originatedWorkContextBenefits WorkContextBenefits[] @relation("WorkContextBenefitsOriginator")
+  originatedWorkContextCareers  WorkContextCareer[]  @relation("WorkContextCareerOriginator")
+  originatedWorkContextEmployeeCauses WorkContextEmployeeCause[] @relation("WorkContextEmployeeCauseOriginator")
+  originatedWorkSupports        WorkSupport[]       @relation("WorkSupportOriginator")
+  originatedWorkOutputs        WorkOutput[]        @relation("WorkOutputOriginator")
+  originatedWorkOutputStandalones WorkOutputStandalone[] @relation("WorkOutputStandaloneOriginator")
+  originatedNTKs                NTK[]               @relation("NTKOriginator")
+  originatedWorkforceComms      WorkforceComms[]   @relation("WorkforceCommsOriginator")
+  originatedWorkforceCommsDrafts WorkforceCommsDraft[] @relation("WorkforceCommsDraftOriginator")
+  originatedWorkforceCommsEditions WorkforceCommsEdition[] @relation("WorkforceCommsEditionOriginator")
+  originatedNTKEditions         NTKEdition[]        @relation("NTKEditionOriginator")
 
   // connections Connection[]  // Commented out - not using
   // events      Event[]       // Commented out - not using
@@ -93,7 +87,7 @@ model WorkMeCompany {
   updatedAt   DateTime @updatedAt
 
   employees WorkMe[]
-  companies Company[] // Companies in this container
+  // NO companies relation - Company is independent
 
   @@map("workme_company")
 }
@@ -117,58 +111,49 @@ model SuperAdmin {
 }
 
 // ============================================
-// COMPANY MODEL (Directory - Container-Scoped)
+// COMPANY MODEL (Independent Entity)
 // ============================================
 model Company {
-  id              String        @id @default(uuid())
-  workMeCompanyId String // WorkMe container ID (single tenant)
-  workMeCompany   WorkMeCompany @relation(fields: [workMeCompanyId], references: [id])
-  name            String // Company name (unique per container)
-  industry        String?
-  website         String?
-  city            String?
-  state           String?
-  description     String?
-  headcount       Int?
-  companyType     CompanyType?
-  revenueRange    RevenueRange?
-  createdAt       DateTime      @default(now())
+  id            String        @id @default(uuid())
+  name          String        @unique // Company name (unique globally)
+  industry      String?
+  website       String?
+  city          String?
+  state         String?
+  description   String?
+  headcount     Int?
+  companyType   CompanyType?
+  revenueRange  RevenueRange?
+  createdAt     DateTime      @default(now())
 
   // Relations
   employees WorkMe[]
 
-  // Work Architecture Relations
-  contexts          WorkContext[]
-  supports          WorkSupport[]
-  outputs           WorkOutput[]
-  standaloneOutputs WorkOutputStandalone[]
-  ntks              NTK[]
+  // Minimal reverse relations (required by Prisma, but NOT to be queried)
+  // Company is independent - work outputs reference Company via companyId
+  // These relations exist only for Prisma schema validation
+  commsOutputs        CommsOutput[]        @relation("CommsOutputCompany")
+  objectives          Objective[]          @relation("ObjectiveCompany")
+  achievements        Achievement[]        @relation("AchievementCompany")
+  workContexts        WorkContext[]         @relation("WorkContextCompany")
+  workContextCampaigns WorkContextCampaign[] @relation("WorkContextCampaignCompany")
+  workContextImpactEvents WorkContextImpactEvent[] @relation("WorkContextImpactEventCompany")
+  workContextTrainings WorkContextTraining[] @relation("WorkContextTrainingCompany")
+  workContextEvents   WorkContextEvent[]   @relation("WorkContextEventCompany")
+  workContextCommunities WorkContextCommunity[] @relation("WorkContextCommunityCompany")
+  workContextBenefits WorkContextBenefits[] @relation("WorkContextBenefitsCompany")
+  workContextCareers  WorkContextCareer[]  @relation("WorkContextCareerCompany")
+  workContextEmployeeCauses WorkContextEmployeeCause[] @relation("WorkContextEmployeeCauseCompany")
+  workSupports        WorkSupport[]        @relation("WorkSupportCompany")
+  workOutputs        WorkOutput[]         @relation("WorkOutputCompany")
+  workOutputStandalones WorkOutputStandalone[] @relation("WorkOutputStandaloneCompany")
+  ntks                NTK[]                @relation("NTKCompany")
+  workforceComms      WorkforceComms[]     @relation("WorkforceCommsCompany")
+  workforceCommsDrafts WorkforceCommsDraft[] @relation("WorkforceCommsDraftCompany")
+  workforceCommsEditions WorkforceCommsEdition[] @relation("WorkforceCommsEditionCompany")
+  ntkEditions         NTKEdition[]         @relation("NTKEditionCompany")
 
-  // Typed Context Relations
-  campaignContexts      WorkContextCampaign[]
-  impactEventContexts   WorkContextImpactEvent[]
-  trainingContexts      WorkContextTraining[]
-  eventContexts         WorkContextEvent[]
-  communityContexts     WorkContextCommunity[]
-  benefitsContexts      WorkContextBenefits[]
-  careerContexts        WorkContextCareer[]
-  employeeCauseContexts WorkContextEmployeeCause[]
-
-  // Career Relations
-  objectives   Objective[]
-  achievements Achievement[]
-  commsOutputs CommsOutput[]
-
-  // Workforce Comms Relations
-  workforceComms WorkforceComms[]
-  commsDrafts    WorkforceCommsDraft[]
-  commsEditions  WorkforceCommsEdition[]
-
-  // NTK Edition Relations
-  ntkEditions NTKEdition[] @relation("NTKEditionCompany")
-
-  @@unique([workMeCompanyId, name]) // Unique name per container
-  @@index([workMeCompanyId]) // Index for directory lookups
+  @@index([name]) // Index for directory lookups
 }
 
 enum CompanyType {
@@ -205,10 +190,10 @@ enum AchievementCategory {
 model CommsOutput {
   id String @id @default(cuid())
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId    String?
+  company      Company? @relation("CommsOutputCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId    String?
+  originator   WorkMe?  @relation("CommsOutputOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   type        String // "email", "flyer", "digest", etc.
   title       String
@@ -222,16 +207,16 @@ model CommsOutput {
   achievements Achievement[]
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([originatorId])
 }
 
 model Objective {
   id String @id @default(cuid())
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId    String?
+  company      Company? @relation("ObjectiveCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId    String?
+  originator   WorkMe?  @relation("ObjectiveOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   title       String
   description String?
@@ -243,16 +228,16 @@ model Objective {
   achievements Achievement[]
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([originatorId])
 }
 
 model Achievement {
   id String @id @default(cuid())
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId    String?
+  company      Company? @relation("AchievementCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId    String?
+  originator   WorkMe?  @relation("AchievementOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   title    String
   category AchievementCategory
@@ -277,7 +262,7 @@ model Achievement {
   updatedAt DateTime @updatedAt
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([originatorId])
   @@index([category])
 }
 
@@ -303,16 +288,16 @@ model WorkContext {
   type      ContextType
   typeRefId String // references the typed context model
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId    String?
+  company      Company? @relation("WorkContextCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId    String?
+  originator   WorkMe?  @relation("WorkContextOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   outputs  WorkOutput[]
   supports WorkSupport[]
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([originatorId])
   @@index([createdAt])
   @@index([type, typeRefId])
 }
@@ -332,13 +317,13 @@ model WorkContextCampaign {
   pocEmail     String?
   pocPhone     String?
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId    String?
+  company      Company? @relation("WorkContextCampaignCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId    String?
+  originator   WorkMe?  @relation("WorkContextCampaignOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([originatorId])
 }
 
 model WorkContextImpactEvent {
@@ -354,13 +339,13 @@ model WorkContextImpactEvent {
   pocEmail           String?
   pocPhone           String?
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId    String?
+  company      Company? @relation("WorkContextImpactEventCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId    String?
+  originator   WorkMe?  @relation("WorkContextImpactEventOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([originatorId])
 }
 
 model WorkContextTraining {
@@ -378,13 +363,13 @@ model WorkContextTraining {
   pocEmail         String?
   pocPhone         String?
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId    String?
+  company      Company? @relation("WorkContextTrainingCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId    String?
+  originator   WorkMe?  @relation("WorkContextTrainingOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([originatorId])
 }
 
 model WorkContextEvent {
@@ -401,13 +386,13 @@ model WorkContextEvent {
   pocEmail      String?
   pocPhone      String?
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId    String?
+  company      Company? @relation("WorkContextEventCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId    String?
+  originator   WorkMe?  @relation("WorkContextEventOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([originatorId])
 }
 
 model WorkContextCommunity {
@@ -424,13 +409,13 @@ model WorkContextCommunity {
   pocEmail     String?
   pocPhone     String?
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId    String?
+  company      Company? @relation("WorkContextCommunityCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId    String?
+  originator   WorkMe?  @relation("WorkContextCommunityOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([originatorId])
 }
 
 model WorkContextBenefits {
@@ -451,13 +436,13 @@ model WorkContextBenefits {
   pocDepartment    String?
   annualRecurrence Boolean   @default(false)
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId    String?
+  company      Company? @relation("WorkContextBenefitsCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId    String?
+  originator   WorkMe?  @relation("WorkContextBenefitsOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([originatorId])
 }
 
 model WorkContextCareer {
@@ -474,13 +459,13 @@ model WorkContextCareer {
   pocPhone       String?
   pocDepartment  String?
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId    String?
+  company      Company? @relation("WorkContextCareerCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId    String?
+  originator   WorkMe?  @relation("WorkContextCareerOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([originatorId])
 }
 
 model WorkContextEmployeeCause {
@@ -501,13 +486,13 @@ model WorkContextEmployeeCause {
   pocPhone             String?
   sponsoringDepartment String?
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId    String?
+  company      Company? @relation("WorkContextEmployeeCauseCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId    String?
+  originator   WorkMe?  @relation("WorkContextEmployeeCauseOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([originatorId])
 }
 
 // ============================================
@@ -521,10 +506,10 @@ model WorkSupport {
   contextId String
   context   WorkContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId    String?
+  company      Company? @relation("WorkSupportCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId    String?
+  originator   WorkMe?  @relation("WorkSupportOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   supportType String? // optional, e.g. "event_support", "training_support"
 
@@ -538,7 +523,7 @@ model WorkSupport {
   @@unique([contextId]) // One WorkSupport per WorkContext (unless multiple needed later)
   @@index([contextId])
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([originatorId])
   @@index([status])
 }
 
@@ -556,10 +541,10 @@ model WorkOutput {
   supportId String?
   support   WorkSupport? @relation(fields: [supportId], references: [id], onDelete: Cascade)
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId    String?
+  company      Company? @relation("WorkOutputCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId    String?
+  originator   WorkMe?  @relation("WorkOutputOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   outputType String // "ntk_snippet" | "talking_points" | "digital_signage" | "print_product" | "sharepoint_block" | "quick_blurb" | "event_kit" | "photo_video"
   dataJson   Json? // saved content from builders
@@ -569,7 +554,7 @@ model WorkOutput {
   @@index([contextId])
   @@index([supportId])
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([originatorId])
   @@index([outputType])
   @@index([status])
   @@index([updatedAt])
@@ -610,13 +595,11 @@ model WorkOutputStandalone {
   // DO NOT enforce relation today
   // Add relation later when WorkSupport is built
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-
-  @@index([companyId])
-  @@index([createdByWorkMeId])
+  companyId    String?
+  company      Company? @relation("WorkOutputStandaloneCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId String?
+  originator   WorkMe?  @relation("WorkOutputStandaloneOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
+  @@index([originatorId])
   @@index([outputType])
   @@index([updatedAt])
   @@index([workSupportId])
@@ -641,13 +624,11 @@ model NTK {
   metadata     Json?    // Additional metadata (isCSV, generatedAt, etc.)
 
   // Multi-tenant scoping
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-
-  @@index([companyId])
-  @@index([createdByWorkMeId])
+  companyId    String?
+  company      Company? @relation("NTKCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId    String?
+  originator   WorkMe?  @relation("NTKOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
+  @@index([originatorId])
   @@index([createdAt])
   @@map("ntk")
 }
@@ -670,10 +651,10 @@ model NTKEdition {
   date          DateTime?
   title         String?
   originatorId  String?
-  originator    WorkMe?      @relation("NTKEditionOriginator", fields: [originatorId], references: [id], onDelete: SetNull)
+  originator   WorkMe?  @relation("NTKEditionOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
-  companyId     String
-  company       Company      @relation("NTKEditionCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  companyId     String?
+  company      Company? @relation("NTKEditionCompany", fields: [companyId], references: [id], onDelete: Cascade)
 
   items         NTKItem[]
 
@@ -718,16 +699,16 @@ model WorkforceComms {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId    String?
+  company      Company? @relation("WorkforceCommsCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId String?
+  originator   WorkMe?  @relation("WorkforceCommsOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
-  editions WorkforceCommsEdition[]
-  drafts   WorkforceCommsDraft[]
+  editions WorkforceCommsEdition[] @relation("WorkforceCommsEditions")
+  drafts   WorkforceCommsDraft[]   @relation("WorkforceCommsDrafts")
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([originatorId])
   @@index([type])
   @@index([name])
 }
@@ -745,17 +726,15 @@ model WorkforceCommsDraft {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  product     WorkforceComms         @relation(fields: [workforceCommsId], references: [workforceCommsId], onDelete: Cascade)
+  product     WorkforceComms         @relation("WorkforceCommsDrafts", fields: [workforceCommsId], references: [workforceCommsId], onDelete: Cascade)
   lastEdition WorkforceCommsEdition? @relation(fields: [lastEditionId], references: [editionId], onDelete: SetNull)
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-
-  @@index([workforceCommsId])
+  companyId    String?
+  company      Company? @relation("WorkforceCommsDraftCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId String?
+  originator   WorkMe?  @relation("WorkforceCommsDraftOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([originatorId])
   @@index([status])
   @@index([createdAt])
 }
@@ -770,17 +749,14 @@ model WorkforceCommsEdition {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  product      WorkforceComms        @relation(fields: [workforceCommsId], references: [workforceCommsId], onDelete: Cascade)
+  product      WorkforceComms        @relation("WorkforceCommsEditions", fields: [workforceCommsId], references: [workforceCommsId], onDelete: Cascade)
   referencedBy WorkforceCommsDraft[] // Drafts that reference this edition as lastEdition
 
-  companyId         String
-  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-
-  @@index([workforceCommsId])
-  @@index([companyId])
-  @@index([createdByWorkMeId])
+  companyId    String?
+  company      Company? @relation("WorkforceCommsEditionCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId String?
+  originator   WorkMe?  @relation("WorkforceCommsEditionOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
+  @@index([originatorId])
   @@index([sentAt])
   @@index([createdAt])
 }
