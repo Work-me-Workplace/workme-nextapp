@@ -48,6 +48,13 @@ const contextTypes = [
     icon: '🎁',
     formPath: '/mywork/context/new/benefits',
   },
+  {
+    type: 'career',
+    name: 'Company Career',
+    description: 'Performance reviews, assessments, career development',
+    icon: '📈',
+    formPath: '/mywork/context/new/career',
+  },
 ]
 
 export default function NewWorkContextPage() {

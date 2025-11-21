@@ -3,27 +3,30 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { createEvent } from '@/lib/actions/typed-contexts'
+import { createCareer } from '@/lib/actions/typed-contexts'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
-export default function NewEventPage() {
+export default function NewCareerPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    startDate: '',
-    endDate: '',
-    location: '',
-    eventCategory: '',
+    dueDate: '',
+    employeeDueDate: '',
+    supervisorDueDate: '',
+    resultsDate: '',
+    resourceLink: '',
     pocFirstName: '',
     pocLastName: '',
     pocEmail: '',
     pocPhone: '',
+    pocDepartment: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
     if (!getWorkMeIdFromStorage()) {
       router.push('/signin')
       return
@@ -31,28 +34,30 @@ export default function NewEventPage() {
 
     setLoading(true)
     try {
-      const result = await createEvent({
+      const result = await createCareer({
         title: formData.title,
         description: formData.description || null,
-        startDate: formData.startDate ? new Date(formData.startDate) : null,
-        endDate: formData.endDate ? new Date(formData.endDate) : null,
-        location: formData.location || null,
-        eventCategory: formData.eventCategory || null,
+        dueDate: formData.dueDate ? new Date(formData.dueDate) : null,
+        employeeDueDate: formData.employeeDueDate ? new Date(formData.employeeDueDate) : null,
+        supervisorDueDate: formData.supervisorDueDate ? new Date(formData.supervisorDueDate) : null,
+        resultsDate: formData.resultsDate ? new Date(formData.resultsDate) : null,
+        resourceLink: formData.resourceLink || null,
         pocFirstName: formData.pocFirstName || null,
         pocLastName: formData.pocLastName || null,
         pocEmail: formData.pocEmail || null,
         pocPhone: formData.pocPhone || null,
+        pocDepartment: formData.pocDepartment || null,
       })
 
       if (result.success && result.workContext) {
         router.push(`/mywork/context/${result.workContext.id}`)
       } else {
-        alert('Failed to create Event: ' + (result.error || 'Unknown error'))
+        alert('Failed to create Career Context: ' + (result.error || 'Unknown error'))
         setLoading(false)
       }
     } catch (error) {
-      console.error('Error creating Event:', error)
-      alert('Failed to create Event')
+      console.error('Error creating Career Context:', error)
+      alert('Failed to create Career Context')
       setLoading(false)
     }
   }
@@ -80,7 +85,8 @@ export default function NewEventPage() {
         </Link>
 
         <div className="bg-white rounded-lg shadow p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Event</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Company Career Context</h2>
+          <p className="text-gray-600 mb-6">For performance reviews, assessment cycles, career development activities, etc.</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -94,6 +100,7 @@ export default function NewEventPage() {
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
+                placeholder="e.g., FY25 AcqDemo CCAS Assessment Cycle"
               />
             </div>
 
@@ -105,64 +112,81 @@ export default function NewEventPage() {
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={4}
+                rows={6}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Brief description of the career/assessment activity..."
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
-                  Start Date
-                </label>
-                <input
-                  type="datetime-local"
-                  id="startDate"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Deadlines</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="employeeDueDate" className="block text-sm font-medium text-gray-700 mb-2">
+                    Employee Due Date
+                  </label>
+                  <input
+                    type="datetime-local"
+                    id="employeeDueDate"
+                    value={formData.employeeDueDate}
+                    onChange={(e) => setFormData({ ...formData, employeeDueDate: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
 
-              <div>
-                <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
-                  End Date
-                </label>
-                <input
-                  type="datetime-local"
-                  id="endDate"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+                <div>
+                  <label htmlFor="supervisorDueDate" className="block text-sm font-medium text-gray-700 mb-2">
+                    Supervisor Due Date
+                  </label>
+                  <input
+                    type="datetime-local"
+                    id="supervisorDueDate"
+                    value={formData.supervisorDueDate}
+                    onChange={(e) => setFormData({ ...formData, supervisorDueDate: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="resultsDate" className="block text-sm font-medium text-gray-700 mb-2">
+                    Results Date (when employees receive feedback)
+                  </label>
+                  <input
+                    type="datetime-local"
+                    id="resultsDate"
+                    value={formData.resultsDate}
+                    onChange={(e) => setFormData({ ...formData, resultsDate: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-2">
+                    General Due Date (optional, if different from above)
+                  </label>
+                  <input
+                    type="datetime-local"
+                    id="dueDate"
+                    value={formData.dueDate}
+                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
               </div>
             </div>
 
             <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
-                Location
+              <label htmlFor="resourceLink" className="block text-sm font-medium text-gray-700 mb-2">
+                Resource Link (SharePoint, training materials, etc.)
               </label>
               <input
-                type="text"
-                id="location"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                type="url"
+                id="resourceLink"
+                value={formData.resourceLink}
+                onChange={(e) => setFormData({ ...formData, resourceLink: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Physical location or virtual"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="eventCategory" className="block text-sm font-medium text-gray-700 mb-2">
-                Event Category
-              </label>
-              <input
-                type="text"
-                id="eventCategory"
-                value={formData.eventCategory}
-                onChange={(e) => setFormData({ ...formData, eventCategory: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., All-hands, Town Hall, Workshop"
+                placeholder="https://..."
               />
             </div>
 
@@ -226,15 +250,29 @@ export default function NewEventPage() {
                   />
                 </div>
               </div>
+
+              <div className="mt-4">
+                <label htmlFor="pocDepartment" className="block text-sm font-medium text-gray-700 mb-2">
+                  POC Department (optional)
+                </label>
+                <input
+                  type="text"
+                  id="pocDepartment"
+                  value={formData.pocDepartment}
+                  onChange={(e) => setFormData({ ...formData, pocDepartment: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., HR, Benefits, AcqDemo Office"
+                />
+              </div>
             </div>
 
-            <div className="flex gap-4 pt-4">
+            <div className="flex gap-4 pt-4 border-t border-gray-200">
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+                className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Creating...' : 'Create Event'}
+                {loading ? 'Creating...' : 'Create Career Context'}
               </button>
               <Link
                 href="/mywork/context/new"
@@ -249,3 +287,4 @@ export default function NewEventPage() {
     </div>
   )
 }
+

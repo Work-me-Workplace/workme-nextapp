@@ -12,7 +12,10 @@ const campaignSchema = z.object({
   windowEnd: z.date().optional().nullable(),
   ctaLink: z.string().url().optional().nullable(),
   sponsor: z.string().optional().nullable(),
+  pocFirstName: z.string().optional().nullable(),
   pocLastName: z.string().optional().nullable(),
+  pocEmail: z.string().email().optional().nullable(),
+  pocPhone: z.string().optional().nullable(),
 })
 
 // Impact Event Schema
@@ -22,7 +25,10 @@ const impactEventSchema = z.object({
   effectiveDate: z.date().optional().nullable(),
   impactedPopulation: z.string().optional().nullable(),
   urgency: z.string().optional().nullable(),
+  pocFirstName: z.string().optional().nullable(),
   pocLastName: z.string().optional().nullable(),
+  pocEmail: z.string().email().optional().nullable(),
+  pocPhone: z.string().optional().nullable(),
 })
 
 // Training Schema
@@ -34,7 +40,10 @@ const trainingSchema = z.object({
   link: z.string().url().optional().nullable(),
   mandatory: z.boolean().default(false),
   sponsoringOffice: z.string().optional().nullable(),
+  pocFirstName: z.string().optional().nullable(),
   pocLastName: z.string().optional().nullable(),
+  pocEmail: z.string().email().optional().nullable(),
+  pocPhone: z.string().optional().nullable(),
 })
 
 // Event Schema
@@ -44,8 +53,11 @@ const eventSchema = z.object({
   startDate: z.date().optional().nullable(),
   endDate: z.date().optional().nullable(),
   location: z.string().optional().nullable(),
-  pocLastName: z.string().optional().nullable(),
   eventCategory: z.string().optional().nullable(),
+  pocFirstName: z.string().optional().nullable(),
+  pocLastName: z.string().optional().nullable(),
+  pocEmail: z.string().email().optional().nullable(),
+  pocPhone: z.string().optional().nullable(),
 })
 
 // Community Opportunity Schema
@@ -56,7 +68,10 @@ const communityOpportunitySchema = z.object({
   date: z.date().optional().nullable(),
   location: z.string().optional().nullable(),
   signUpLink: z.string().url().optional().nullable(),
+  pocFirstName: z.string().optional().nullable(),
   pocLastName: z.string().optional().nullable(),
+  pocEmail: z.string().email().optional().nullable(),
+  pocPhone: z.string().optional().nullable(),
 })
 
 // Benefits Schema
@@ -69,9 +84,28 @@ const benefitsSchema = z.object({
   fedvipLink: z.string().url().optional().nullable(),
   fsafedsLink: z.string().url().optional().nullable(),
   faqLink: z.string().url().optional().nullable(),
+  pocFirstName: z.string().optional().nullable(),
   pocLastName: z.string().optional().nullable(),
+  pocEmail: z.string().email().optional().nullable(),
+  pocPhone: z.string().optional().nullable(),
   pocDepartment: z.string().optional().nullable(),
   annualRecurrence: z.boolean().default(false),
+})
+
+// Career Schema (performance reviews, assessments, etc.)
+const careerSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional().nullable(),
+  dueDate: z.date().optional().nullable(),
+  employeeDueDate: z.date().optional().nullable(),
+  supervisorDueDate: z.date().optional().nullable(),
+  resultsDate: z.date().optional().nullable(),
+  resourceLink: z.string().url().optional().nullable(),
+  pocFirstName: z.string().optional().nullable(),
+  pocLastName: z.string().optional().nullable(),
+  pocEmail: z.string().email().optional().nullable(),
+  pocPhone: z.string().optional().nullable(),
+  pocDepartment: z.string().optional().nullable(),
 })
 
 // Create Campaign
@@ -93,7 +127,10 @@ export async function createCampaign(data: z.infer<typeof campaignSchema>) {
         windowEnd: validated.windowEnd ?? undefined,
         ctaLink: validated.ctaLink ?? undefined,
         sponsor: validated.sponsor ?? undefined,
+        pocFirstName: validated.pocFirstName ?? undefined,
         pocLastName: validated.pocLastName ?? undefined,
+        pocEmail: validated.pocEmail ?? undefined,
+        pocPhone: validated.pocPhone ?? undefined,
       },
     })
 
@@ -133,7 +170,10 @@ export async function createImpactEvent(data: z.infer<typeof impactEventSchema>)
         effectiveDate: validated.effectiveDate ?? undefined,
         impactedPopulation: validated.impactedPopulation ?? undefined,
         urgency: validated.urgency ?? undefined,
+        pocFirstName: validated.pocFirstName ?? undefined,
         pocLastName: validated.pocLastName ?? undefined,
+        pocEmail: validated.pocEmail ?? undefined,
+        pocPhone: validated.pocPhone ?? undefined,
       },
     })
 
@@ -174,7 +214,10 @@ export async function createTraining(data: z.infer<typeof trainingSchema>) {
         link: validated.link ?? undefined,
         mandatory: validated.mandatory ?? false,
         sponsoringOffice: validated.sponsoringOffice ?? undefined,
+        pocFirstName: validated.pocFirstName ?? undefined,
         pocLastName: validated.pocLastName ?? undefined,
+        pocEmail: validated.pocEmail ?? undefined,
+        pocPhone: validated.pocPhone ?? undefined,
       },
     })
 
@@ -213,8 +256,11 @@ export async function createEvent(data: z.infer<typeof eventSchema>) {
         startDate: validated.startDate ?? undefined,
         endDate: validated.endDate ?? undefined,
         location: validated.location ?? undefined,
-        pocLastName: validated.pocLastName ?? undefined,
         eventCategory: validated.eventCategory ?? undefined,
+        pocFirstName: validated.pocFirstName ?? undefined,
+        pocLastName: validated.pocLastName ?? undefined,
+        pocEmail: validated.pocEmail ?? undefined,
+        pocPhone: validated.pocPhone ?? undefined,
       },
     })
 
@@ -254,7 +300,10 @@ export async function createCommunityOpportunity(data: z.infer<typeof communityO
         location: validated.location ?? undefined,
         signUpLink: validated.signUpLink ?? undefined,
         partnerOrg: validated.partnerOrg ?? undefined,
+        pocFirstName: validated.pocFirstName ?? undefined,
         pocLastName: validated.pocLastName ?? undefined,
+        pocEmail: validated.pocEmail ?? undefined,
+        pocPhone: validated.pocPhone ?? undefined,
       },
     })
 
@@ -272,6 +321,51 @@ export async function createCommunityOpportunity(data: z.infer<typeof communityO
       return { success: false, error: error.errors }
     }
     return { success: false, error: 'Failed to create community opportunity' }
+  }
+}
+
+// Create Career
+export async function createCareer(data: z.infer<typeof careerSchema>) {
+  try {
+    const validated = careerSchema.parse(data)
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const career = await prisma.workContextCareer.create({
+      data: {
+        ...validated,
+        createdByWorkMeId: workMeId,
+        description: validated.description ?? undefined,
+        dueDate: validated.dueDate ?? undefined,
+        employeeDueDate: validated.employeeDueDate ?? undefined,
+        supervisorDueDate: validated.supervisorDueDate ?? undefined,
+        resultsDate: validated.resultsDate ?? undefined,
+        resourceLink: validated.resourceLink ?? undefined,
+        pocFirstName: validated.pocFirstName ?? undefined,
+        pocLastName: validated.pocLastName ?? undefined,
+        pocEmail: validated.pocEmail ?? undefined,
+        pocPhone: validated.pocPhone ?? undefined,
+        pocDepartment: validated.pocDepartment ?? undefined,
+      },
+    })
+
+    const workContext = await prisma.workContext.create({
+      data: {
+        type: 'career',
+        typeRefId: career.id,
+        createdByWorkMeId: workMeId,
+      },
+    })
+
+    return { success: true, career, workContext }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors }
+    }
+    return { success: false, error: 'Failed to create career context' }
   }
 }
 
@@ -296,7 +390,10 @@ export async function createBenefits(data: z.infer<typeof benefitsSchema>) {
         fedvipLink: validated.fedvipLink ?? undefined,
         fsafedsLink: validated.fsafedsLink ?? undefined,
         faqLink: validated.faqLink ?? undefined,
+        pocFirstName: validated.pocFirstName ?? undefined,
         pocLastName: validated.pocLastName ?? undefined,
+        pocEmail: validated.pocEmail ?? undefined,
+        pocPhone: validated.pocPhone ?? undefined,
         pocDepartment: validated.pocDepartment ?? undefined,
         annualRecurrence: validated.annualRecurrence ?? false,
       },
@@ -358,6 +455,12 @@ export async function getTypedContext(workContext: { type: string; typeRefId: st
           where: { id: workContext.typeRefId },
         })
         return { success: true, data: benefits, title: benefits?.title || '' }
+      
+      case 'career':
+        const career = await prisma.workContextCareer.findUnique({
+          where: { id: workContext.typeRefId },
+        })
+        return { success: true, data: career, title: career?.title || '' }
       
       default:
         return { success: false, error: 'Unknown context type' }

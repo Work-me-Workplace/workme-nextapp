@@ -221,7 +221,7 @@ model Achievement {
 model WorkContext {
   id              String      @id @default(cuid())
   createdAt       DateTime    @default(now())
-  type            String      // "campaign" | "impact_event" | "training" | "event" | "community" | "benefits"
+  type            String      // "campaign" | "impact_event" | "training" | "event" | "community" | "benefits" | "career"
   typeRefId       String      // references the typed context model
   createdByWorkMeId String    // References WorkMe.id
 
@@ -242,7 +242,10 @@ model WorkContextCampaign {
   windowEnd     DateTime?
   ctaLink       String?
   sponsor       String?
+  pocFirstName  String?
   pocLastName   String?
+  pocEmail      String?
+  pocPhone      String?
   createdByWorkMeId String
 
   @@index([createdByWorkMeId])
@@ -256,7 +259,10 @@ model WorkContextImpactEvent {
   effectiveDate DateTime?
   impactedPopulation String?
   urgency       String?
+  pocFirstName  String?
   pocLastName   String?
+  pocEmail      String?
+  pocPhone      String?
   createdByWorkMeId String
 
   @@index([createdByWorkMeId])
@@ -272,7 +278,10 @@ model WorkContextTraining {
   link          String?
   mandatory     Boolean  @default(false)
   sponsoringOffice String?
+  pocFirstName  String?
   pocLastName   String?
+  pocEmail      String?
+  pocPhone      String?
   createdByWorkMeId String
 
   @@index([createdByWorkMeId])
@@ -286,8 +295,11 @@ model WorkContextEvent {
   startDate     DateTime?
   endDate       DateTime?
   location      String?
-  pocLastName   String?
   eventCategory String?
+  pocFirstName  String?
+  pocLastName   String?
+  pocEmail      String?
+  pocPhone      String?
   createdByWorkMeId String
 
   @@index([createdByWorkMeId])
@@ -302,7 +314,10 @@ model WorkContextCommunity {
   date          DateTime?
   location      String?
   signUpLink    String?
+  pocFirstName  String?
   pocLastName   String?
+  pocEmail      String?
+  pocPhone      String?
   createdByWorkMeId String
 
   @@index([createdByWorkMeId])
@@ -319,9 +334,32 @@ model WorkContextBenefits {
   fedvipLink    String?
   fsafedsLink   String?
   faqLink       String?
+  pocFirstName  String?
   pocLastName   String?
+  pocEmail      String?
+  pocPhone      String?
   pocDepartment String?
   annualRecurrence Boolean @default(false)
+  createdByWorkMeId String
+
+  @@index([createdByWorkMeId])
+}
+
+model WorkContextCareer {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  title         String
+  description   String?
+  dueDate       DateTime?
+  employeeDueDate DateTime?
+  supervisorDueDate DateTime?
+  resultsDate   DateTime?
+  resourceLink  String?
+  pocFirstName  String?
+  pocLastName   String?
+  pocEmail      String?
+  pocPhone      String?
+  pocDepartment String?
   createdByWorkMeId String
 
   @@index([createdByWorkMeId])

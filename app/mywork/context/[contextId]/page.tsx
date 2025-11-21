@@ -283,10 +283,72 @@ export default function WorkContextDetailPage() {
                 )}
               </>
             )}
-            {workContext.typedData?.pocLastName && (
-              <div>
-                <span className="font-medium text-gray-700">POC:</span>
-                <span className="ml-2 text-gray-600">{workContext.typedData.pocLastName}</span>
+            {workContext.type === 'career' && workContext.typedData && (
+              <>
+                {workContext.typedData.employeeDueDate && (
+                  <div>
+                    <span className="font-medium text-gray-700">Employee Due Date:</span>
+                    <span className="ml-2 text-gray-600">{new Date(workContext.typedData.employeeDueDate).toLocaleString()}</span>
+                  </div>
+                )}
+                {workContext.typedData.supervisorDueDate && (
+                  <div>
+                    <span className="font-medium text-gray-700">Supervisor Due Date:</span>
+                    <span className="ml-2 text-gray-600">{new Date(workContext.typedData.supervisorDueDate).toLocaleString()}</span>
+                  </div>
+                )}
+                {workContext.typedData.resultsDate && (
+                  <div>
+                    <span className="font-medium text-gray-700">Results Date:</span>
+                    <span className="ml-2 text-gray-600">{new Date(workContext.typedData.resultsDate).toLocaleString()}</span>
+                  </div>
+                )}
+                {workContext.typedData.dueDate && (
+                  <div>
+                    <span className="font-medium text-gray-700">General Due Date:</span>
+                    <span className="ml-2 text-gray-600">{new Date(workContext.typedData.dueDate).toLocaleString()}</span>
+                  </div>
+                )}
+                {workContext.typedData.resourceLink && (
+                  <div className="col-span-2">
+                    <span className="font-medium text-gray-700">Resource Link:</span>
+                    <span className="ml-2"><a href={workContext.typedData.resourceLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Resources</a></span>
+                  </div>
+                )}
+                {workContext.typedData.pocDepartment && (
+                  <div>
+                    <span className="font-medium text-gray-700">Department:</span>
+                    <span className="ml-2 text-gray-600">{workContext.typedData.pocDepartment}</span>
+                  </div>
+                )}
+              </>
+            )}
+            {/* POC Information - show for all types */}
+            {(workContext.typedData?.pocFirstName || workContext.typedData?.pocLastName || workContext.typedData?.pocEmail || workContext.typedData?.pocPhone) && (
+              <div className="col-span-2 border-t pt-4 mt-4">
+                <h4 className="font-medium text-gray-700 mb-2">Point of Contact</h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {(workContext.typedData.pocFirstName || workContext.typedData.pocLastName) && (
+                    <div>
+                      <span className="text-gray-600">Name:</span>
+                      <span className="ml-2 font-medium">
+                        {[workContext.typedData.pocFirstName, workContext.typedData.pocLastName].filter(Boolean).join(' ') || 'N/A'}
+                      </span>
+                    </div>
+                  )}
+                  {workContext.typedData.pocEmail && (
+                    <div>
+                      <span className="text-gray-600">Email:</span>
+                      <span className="ml-2"><a href={`mailto:${workContext.typedData.pocEmail}`} className="text-blue-600 hover:underline">{workContext.typedData.pocEmail}</a></span>
+                    </div>
+                  )}
+                  {workContext.typedData.pocPhone && (
+                    <div>
+                      <span className="text-gray-600">Phone:</span>
+                      <span className="ml-2">{workContext.typedData.pocPhone}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

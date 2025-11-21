@@ -16,7 +16,10 @@ export default function NewCampaignPage() {
     windowEnd: '',
     ctaLink: '',
     sponsor: '',
+    pocFirstName: '',
     pocLastName: '',
+    pocEmail: '',
+    pocPhone: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,7 +39,10 @@ export default function NewCampaignPage() {
         windowEnd: formData.windowEnd ? new Date(formData.windowEnd) : null,
         ctaLink: formData.ctaLink || null,
         sponsor: formData.sponsor || null,
+        pocFirstName: formData.pocFirstName || null,
         pocLastName: formData.pocLastName || null,
+        pocEmail: formData.pocEmail || null,
+        pocPhone: formData.pocPhone || null,
       })
 
       if (result.success && result.workContext) {
@@ -163,18 +169,66 @@ export default function NewCampaignPage() {
               />
             </div>
 
-            <div>
-              <label htmlFor="pocLastName" className="block text-sm font-medium text-gray-700 mb-2">
-                POC Last Name
-              </label>
-              <input
-                type="text"
-                id="pocLastName"
-                value={formData.pocLastName}
-                onChange={(e) => setFormData({ ...formData, pocLastName: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Last name of point of contact"
-              />
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Point of Contact</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="pocFirstName" className="block text-sm font-medium text-gray-700 mb-2">
+                    POC First Name
+                  </label>
+                  <input
+                    type="text"
+                    id="pocFirstName"
+                    value={formData.pocFirstName}
+                    onChange={(e) => setFormData({ ...formData, pocFirstName: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="pocLastName" className="block text-sm font-medium text-gray-700 mb-2">
+                    POC Last Name
+                  </label>
+                  <input
+                    type="text"
+                    id="pocLastName"
+                    value={formData.pocLastName}
+                    onChange={(e) => setFormData({ ...formData, pocLastName: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label htmlFor="pocEmail" className="block text-sm font-medium text-gray-700 mb-2">
+                    POC Email
+                  </label>
+                  <input
+                    type="email"
+                    id="pocEmail"
+                    value={formData.pocEmail}
+                    onChange={(e) => setFormData({ ...formData, pocEmail: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="email@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="pocPhone" className="block text-sm font-medium text-gray-700 mb-2">
+                    POC Phone (optional)
+                  </label>
+                  <input
+                    type="tel"
+                    id="pocPhone"
+                    value={formData.pocPhone}
+                    onChange={(e) => setFormData({ ...formData, pocPhone: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-4 pt-4">
