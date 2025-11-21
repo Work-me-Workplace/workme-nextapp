@@ -3,6 +3,9 @@ import { ContextType } from '@prisma/client'
 import { createTypedContext } from '@/lib/server/context-factory'
 import { SCHEMA_MAP } from '@/lib/server/context-schemas'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 const VALID_TYPES: ContextType[] = [
   'campaign',
   'impact_event',

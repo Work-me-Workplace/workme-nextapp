@@ -4,6 +4,9 @@ import { updateTypedContext, deleteTypedContext } from '@/lib/server/context-fac
 import { SCHEMA_MAP } from '@/lib/server/context-schemas'
 import type { ContextType } from '@prisma/client'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/context/[contextId]
  * Get a single WorkContext with enriched typed data

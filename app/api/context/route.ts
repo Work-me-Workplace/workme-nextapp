@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getWorkMeId } from '@/lib/getWorkMeId.server'
 
+// Force dynamic rendering (API routes are dynamic by default, but explicit for safety)
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/context
  * List all WorkContexts for the authenticated user
