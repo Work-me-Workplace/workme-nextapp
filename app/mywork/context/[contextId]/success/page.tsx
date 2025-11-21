@@ -140,7 +140,7 @@ export default function WorkContextSuccessPage() {
             <h3 className="text-sm font-semibold text-gray-700 mb-3">Context Preview</h3>
             <div className="bg-gray-50 rounded-lg p-4">
               <p className="text-sm text-gray-600">
-                <span className="font-medium">Type:</span> {workContext.type?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Unknown'}
+                <span className="font-medium">Type:</span> {workContext.type?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'Unknown'}
               </p>
               {workContext.typedData?.description && (
                 <p className="text-sm text-gray-600 mt-2">
