@@ -35,7 +35,7 @@ export default function NewCommunityPage() {
         title: formData.title,
         description: formData.description || null,
         partnerOrg: formData.partnerOrg || null,
-        date: formData.date ? new Date(formData.date) : null,
+        date: formData.date ? new Date(formData.date + 'T00:00:00') : null,
         location: formData.location || null,
         signUpLink: formData.signUpLink || null,
         partnerOrg: formData.partnerOrg || null,
@@ -125,18 +125,18 @@ export default function NewCommunityPage() {
               />
             </div>
 
-            <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
-                Date
-              </label>
-              <input
-                type="datetime-local"
-                id="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+              <div>
+                <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  id="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
 
             <div>
               <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">

@@ -37,10 +37,10 @@ export default function NewCareerPage() {
       const result = await createCareer({
         title: formData.title,
         description: formData.description || null,
-        dueDate: formData.dueDate ? new Date(formData.dueDate) : null,
-        employeeDueDate: formData.employeeDueDate ? new Date(formData.employeeDueDate) : null,
-        supervisorDueDate: formData.supervisorDueDate ? new Date(formData.supervisorDueDate) : null,
-        resultsDate: formData.resultsDate ? new Date(formData.resultsDate) : null,
+        dueDate: formData.dueDate ? new Date(formData.dueDate + 'T23:59:59') : null,
+        employeeDueDate: formData.employeeDueDate ? new Date(formData.employeeDueDate + 'T23:59:59') : null,
+        supervisorDueDate: formData.supervisorDueDate ? new Date(formData.supervisorDueDate + 'T23:59:59') : null,
+        resultsDate: formData.resultsDate ? new Date(formData.resultsDate + 'T00:00:00') : null,
         resourceLink: formData.resourceLink || null,
         pocFirstName: formData.pocFirstName || null,
         pocLastName: formData.pocLastName || null,
@@ -127,7 +127,7 @@ export default function NewCareerPage() {
                     Employee Due Date
                   </label>
                   <input
-                    type="datetime-local"
+                    type="date"
                     id="employeeDueDate"
                     value={formData.employeeDueDate}
                     onChange={(e) => setFormData({ ...formData, employeeDueDate: e.target.value })}
@@ -140,7 +140,7 @@ export default function NewCareerPage() {
                     Supervisor Due Date
                   </label>
                   <input
-                    type="datetime-local"
+                    type="date"
                     id="supervisorDueDate"
                     value={formData.supervisorDueDate}
                     onChange={(e) => setFormData({ ...formData, supervisorDueDate: e.target.value })}
@@ -153,7 +153,7 @@ export default function NewCareerPage() {
                     Results Date (when employees receive feedback)
                   </label>
                   <input
-                    type="datetime-local"
+                    type="date"
                     id="resultsDate"
                     value={formData.resultsDate}
                     onChange={(e) => setFormData({ ...formData, resultsDate: e.target.value })}
@@ -166,7 +166,7 @@ export default function NewCareerPage() {
                     General Due Date (optional, if different from above)
                   </label>
                   <input
-                    type="datetime-local"
+                    type="date"
                     id="dueDate"
                     value={formData.dueDate}
                     onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}

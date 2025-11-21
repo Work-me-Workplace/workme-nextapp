@@ -35,8 +35,8 @@ export default function NewCampaignPage() {
       const result = await createCampaign({
         title: formData.title,
         description: formData.description || null,
-        windowStart: formData.windowStart ? new Date(formData.windowStart) : null,
-        windowEnd: formData.windowEnd ? new Date(formData.windowEnd) : null,
+        windowStart: formData.windowStart ? new Date(formData.windowStart + 'T00:00:00') : null,
+        windowEnd: formData.windowEnd ? new Date(formData.windowEnd + 'T23:59:59') : null,
         ctaLink: formData.ctaLink || null,
         sponsor: formData.sponsor || null,
         pocFirstName: formData.pocFirstName || null,
@@ -119,7 +119,7 @@ export default function NewCampaignPage() {
                   Window Start
                 </label>
                 <input
-                  type="datetime-local"
+                  type="date"
                   id="windowStart"
                   value={formData.windowStart}
                   onChange={(e) => setFormData({ ...formData, windowStart: e.target.value })}
@@ -132,7 +132,7 @@ export default function NewCampaignPage() {
                   Window End
                 </label>
                 <input
-                  type="datetime-local"
+                  type="date"
                   id="windowEnd"
                   value={formData.windowEnd}
                   onChange={(e) => setFormData({ ...formData, windowEnd: e.target.value })}

@@ -35,8 +35,8 @@ export default function NewTrainingPage() {
       const result = await createTraining({
         title: formData.title,
         description: formData.description || null,
-        trainingDate: formData.trainingDate ? new Date(formData.trainingDate) : null,
-        deadline: formData.deadline ? new Date(formData.deadline) : null,
+        trainingDate: formData.trainingDate ? new Date(formData.trainingDate + 'T00:00:00') : null,
+        deadline: formData.deadline ? new Date(formData.deadline + 'T23:59:59') : null,
         link: formData.link || null,
         mandatory: formData.mandatory,
         sponsoringOffice: formData.sponsoringOffice || null,
@@ -118,7 +118,7 @@ export default function NewTrainingPage() {
                   Training Date
                 </label>
                 <input
-                  type="datetime-local"
+                  type="date"
                   id="trainingDate"
                   value={formData.trainingDate}
                   onChange={(e) => setFormData({ ...formData, trainingDate: e.target.value })}
@@ -131,7 +131,7 @@ export default function NewTrainingPage() {
                   Deadline
                 </label>
                 <input
-                  type="datetime-local"
+                  type="date"
                   id="deadline"
                   value={formData.deadline}
                   onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}

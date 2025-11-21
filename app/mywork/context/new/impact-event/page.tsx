@@ -33,7 +33,7 @@ export default function NewImpactEventPage() {
       const result = await createImpactEvent({
         title: formData.title,
         description: formData.description || null,
-        effectiveDate: formData.effectiveDate ? new Date(formData.effectiveDate) : null,
+        effectiveDate: formData.effectiveDate ? new Date(formData.effectiveDate + 'T00:00:00') : null,
         impactedPopulation: formData.impactedPopulation || null,
         urgency: formData.urgency || null,
         pocFirstName: formData.pocFirstName || null,
@@ -108,18 +108,18 @@ export default function NewImpactEventPage() {
               />
             </div>
 
-            <div>
-              <label htmlFor="effectiveDate" className="block text-sm font-medium text-gray-700 mb-2">
-                Effective Date
-              </label>
-              <input
-                type="datetime-local"
-                id="effectiveDate"
-                value={formData.effectiveDate}
-                onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+              <div>
+                <label htmlFor="effectiveDate" className="block text-sm font-medium text-gray-700 mb-2">
+                  Effective Date
+                </label>
+                <input
+                  type="date"
+                  id="effectiveDate"
+                  value={formData.effectiveDate}
+                  onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
 
             <div>
               <label htmlFor="impactedPopulation" className="block text-sm font-medium text-gray-700 mb-2">
