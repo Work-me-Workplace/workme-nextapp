@@ -20,7 +20,6 @@ const achievementSchema = z.object({
   audienceSize: z.number().int().positive().optional().nullable(),
   objectiveId: z.string().optional().nullable(),
   commsOutputId: z.string().optional().nullable(),
-  companyCampaignId: z.string().optional().nullable(),
   whatYouDid: z.string().min(1, 'What you did is required'),
   frequency: z.string().optional().nullable(),
   volume: z.number().int().positive().optional().nullable(),
@@ -44,7 +43,6 @@ export async function createAchievement(data: z.infer<typeof achievementSchema>)
         audienceSize: validated.audienceSize ?? undefined,
         objectiveId: validated.objectiveId ?? undefined,
         commsOutputId: validated.commsOutputId ?? undefined,
-        companyCampaignId: validated.companyCampaignId ?? undefined,
         frequency: validated.frequency ?? undefined,
         volume: validated.volume ?? undefined,
         processSteps: validated.processSteps ?? undefined,
@@ -53,7 +51,6 @@ export async function createAchievement(data: z.infer<typeof achievementSchema>)
       include: {
         objective: true,
         commsOutput: true,
-        companyCampaign: true,
       },
     })
 
@@ -91,7 +88,6 @@ export async function updateAchievement(id: string, data: z.infer<typeof achieve
         audienceSize: validated.audienceSize ?? undefined,
         objectiveId: validated.objectiveId ?? undefined,
         commsOutputId: validated.commsOutputId ?? undefined,
-        companyCampaignId: validated.companyCampaignId ?? undefined,
         frequency: validated.frequency ?? undefined,
         volume: validated.volume ?? undefined,
         processSteps: validated.processSteps ?? undefined,
@@ -100,7 +96,6 @@ export async function updateAchievement(id: string, data: z.infer<typeof achieve
       include: {
         objective: true,
         commsOutput: true,
-        companyCampaign: true,
       },
     })
 
@@ -152,7 +147,6 @@ export async function getAchievements() {
       include: {
         objective: true,
         commsOutput: true,
-        companyCampaign: true,
       },
       orderBy: { updatedAt: 'desc' },
     })
@@ -176,7 +170,6 @@ export async function getAchievement(id: string) {
       include: {
         objective: true,
         commsOutput: true,
-        companyCampaign: true,
       },
     })
 

@@ -169,21 +169,6 @@ model Objective {
   achievements Achievement[]
 }
 
-model CompanyCampaign {
-  id       String @id @default(cuid())
-  workMeId String // References WorkMe.id
-
-  name        String
-  description String?
-  startDate   DateTime?
-  endDate     DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  achievements Achievement[]
-}
-
 model Achievement {
   id       String @id @default(cuid())
   workMeId String // References WorkMe.id
@@ -199,9 +184,6 @@ model Achievement {
 
   commsOutputId String?
   commsOutput   CommsOutput? @relation(fields: [commsOutputId], references: [id])
-
-  companyCampaignId String?
-  companyCampaign   CompanyCampaign? @relation(fields: [companyCampaignId], references: [id])
 
   whatYouDid String
   frequency  String? // weekly, recurring, one-time
