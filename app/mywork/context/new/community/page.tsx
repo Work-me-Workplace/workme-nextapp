@@ -38,7 +38,11 @@ export default function NewCommunityPage() {
         date: formData.date ? new Date(formData.date) : null,
         location: formData.location || null,
         signUpLink: formData.signUpLink || null,
+        partnerOrg: formData.partnerOrg || null,
+        pocFirstName: formData.pocFirstName || null,
         pocLastName: formData.pocLastName || null,
+        pocEmail: formData.pocEmail || null,
+        pocPhone: formData.pocPhone || null,
       })
 
       if (result.success && result.workContext) {
