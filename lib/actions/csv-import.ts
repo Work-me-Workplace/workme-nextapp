@@ -1,7 +1,8 @@
 'use server'
 
 import { prisma } from '../prisma'
-import { createAchievement } from './achievements'
+// DEPRECATED: achievements actions are deprecated
+// import { createAchievement } from './achievements'
 
 const getUserId = (): string => {
   return 'user-1' // Placeholder - replace with actual auth
@@ -117,12 +118,14 @@ export async function createAchievementsBatch(
         continue
       }
 
-      const result = await createAchievement(achievementData)
-      if (result.success) {
-        results.push({ row: i + 1, success: true })
-      } else {
-        errors.push({ row: i + 1, error: result.error })
-      }
+      // DEPRECATED: Achievement creation is deprecated
+      // const result = await createAchievement(achievementData)
+      // if (result.success) {
+      //   results.push({ row: i + 1, success: true })
+      // } else {
+      //   errors.push({ row: i + 1, error: result.error })
+      // }
+      errors.push({ row: i + 1, error: 'Achievement creation is deprecated' })
     } catch (error: any) {
       errors.push({ row: i + 1, error: error.message || 'Unknown error' })
     }

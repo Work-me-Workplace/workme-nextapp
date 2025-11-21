@@ -150,7 +150,7 @@ async function auditDatabase() {
     console.log('📊 Auditing Career Models...')
     
     const achievements = await prisma.achievement.findMany({
-      select: { id: true, workMeId: true },
+      select: { id: true, createdByWorkMeId: true },
     })
     console.log(`  Achievement: ${achievements.length} records`)
     audits.push({
@@ -158,12 +158,12 @@ async function auditDatabase() {
       recordCount: achievements.length,
       hasData: achievements.length > 0,
       missingCompanyId: achievements.length,
-      missingCreatedBy: achievements.filter(a => !a.workMeId).length, // Will need to rename workMeId
+      missingCreatedBy: achievements.filter(a => !a.createdByWorkMeId).length,
       sampleIds: achievements.slice(0, 5).map(a => a.id),
     })
 
     const objectives = await prisma.objective.findMany({
-      select: { id: true, workMeId: true },
+      select: { id: true, createdByWorkMeId: true },
     })
     console.log(`  Objective: ${objectives.length} records`)
     audits.push({
@@ -171,12 +171,12 @@ async function auditDatabase() {
       recordCount: objectives.length,
       hasData: objectives.length > 0,
       missingCompanyId: objectives.length,
-      missingCreatedBy: objectives.filter(o => !o.workMeId).length,
+      missingCreatedBy: objectives.filter(o => !o.createdByWorkMeId).length,
       sampleIds: objectives.slice(0, 5).map(o => o.id),
     })
 
     const commsOutputs = await prisma.commsOutput.findMany({
-      select: { id: true, workMeId: true },
+      select: { id: true, createdByWorkMeId: true },
     })
     console.log(`  CommsOutput: ${commsOutputs.length} records`)
     audits.push({
@@ -184,7 +184,7 @@ async function auditDatabase() {
       recordCount: commsOutputs.length,
       hasData: commsOutputs.length > 0,
       missingCompanyId: commsOutputs.length,
-      missingCreatedBy: commsOutputs.filter(c => !c.workMeId).length,
+      missingCreatedBy: commsOutputs.filter(c => !c.createdByWorkMeId).length,
       sampleIds: commsOutputs.slice(0, 5).map(c => c.id),
     })
     console.log('')

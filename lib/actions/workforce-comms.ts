@@ -2,7 +2,7 @@
 
 import { prisma } from '../prisma'
 import { z } from 'zod'
-import { getWorkMeId } from '../getWorkMeId.server'
+import { verifyAuth } from '@/lib/server/verifyAuth'
 
 // ============================================
 // ZOD SCHEMAS
@@ -95,12 +95,15 @@ export async function getWorkforceCommsProduct(id: string) {
 export async function createWorkforceCommsProduct(data: z.infer<typeof workforceCommsProductSchema>) {
   try {
     const validated = workforceCommsProductSchema.parse(data)
+    const { workMeId, companyId } = await verifyAuth()
 
     const product = await prisma.workforceComms.create({
       data: {
         type: validated.type || 'email',
         name: validated.name,
         description: validated.description ?? undefined,
+        createdByWorkMeId: workMeId,
+        companyId: companyId,
       },
     })
 
@@ -108,6 +111,9 @@ export async function createWorkforceCommsProduct(data: z.infer<typeof workforce
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
+    }
+    if (error instanceof Error && error.message.includes('Unauthorized')) {
+      return { success: false, error: 'Not authenticated' }
     }
     console.error('Error creating workforce comms product:', error)
     return { success: false, error: 'Failed to create product' }
@@ -159,6 +165,7 @@ export async function getWorkforceCommsDraft(draftId: string) {
 export async function createWorkforceCommsDraft(data: z.infer<typeof workforceCommsDraftSchema>) {
   try {
     const validated = workforceCommsDraftSchema.parse(data)
+    const { workMeId, companyId } = await verifyAuth()
 
     // Verify product exists
     const product = await prisma.workforceComms.findUnique({
@@ -190,6 +197,8 @@ export async function createWorkforceCommsDraft(data: z.infer<typeof workforceCo
         whatChanged: validated.whatChanged ?? undefined,
         priorityNotes: validated.priorityNotes ?? undefined,
         status: validated.status || 'drafting',
+        createdByWorkMeId: workMeId,
+        companyId: companyId,
       },
       include: {
         product: true,
@@ -276,6 +285,7 @@ export async function getWorkforceCommsEdition(editionId: string) {
 export async function createWorkforceCommsEdition(data: z.infer<typeof workforceCommsEditionSchema>) {
   try {
     const validated = workforceCommsEditionSchema.parse(data)
+    const { workMeId, companyId } = await verifyAuth()
 
     // Verify product exists
     const product = await prisma.workforceComms.findUnique({
@@ -292,6 +302,8 @@ export async function createWorkforceCommsEdition(data: z.infer<typeof workforce
         subject: validated.subject,
         body: validated.body,
         sentAt: validated.sentAt ?? undefined,
+        createdByWorkMeId: workMeId,
+        companyId: companyId,
       },
       include: {
         product: true,
@@ -302,6 +314,9 @@ export async function createWorkforceCommsEdition(data: z.infer<typeof workforce
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
+    }
+    if (error instanceof Error && error.message.includes('Unauthorized')) {
+      return { success: false, error: 'Not authenticated' }
     }
     console.error('Error creating edition:', error)
     return { success: false, error: 'Failed to create edition' }

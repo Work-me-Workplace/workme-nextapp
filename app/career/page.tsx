@@ -4,8 +4,9 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
-import { getAchievements } from '@/lib/actions/achievements'
-import { getObjectives } from '@/lib/actions/objectives'
+// DEPRECATED: achievements and objectives actions are deprecated
+// import { getAchievements } from '@/lib/actions/achievements'
+// import { getObjectives } from '@/lib/actions/objectives'
 
 export default function CareerDashboardPage() {
   const pathname = usePathname()
@@ -30,15 +31,9 @@ export default function CareerDashboardPage() {
   async function loadData() {
     setLoading(true)
     try {
-      const achievementsResult = await getAchievements()
-      if (achievementsResult.success) {
-        setAchievementsCount(achievementsResult.achievements?.length || 0)
-      }
-
-      const objectivesResult = await getObjectives()
-      if (objectivesResult.success) {
-        setObjectivesCount(objectivesResult.objectives?.length || 0)
-      }
+      // DEPRECATED: Achievements and objectives are deprecated
+      setAchievementsCount(0)
+      setObjectivesCount(0)
     } catch (error) {
       console.error('Failed to load data:', error)
     }
@@ -131,30 +126,7 @@ export default function CareerDashboardPage() {
                     Dashboard
                   </Link>
                 </li>
-                <li>
-                  <Link
-                    href="/career/objectives"
-                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                      isActive('/career/objectives')
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    Objectives
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/career/achievements"
-                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                      isActive('/career/achievements')
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    Achievements
-                  </Link>
-                </li>
+                {/* DEPRECATED: Objectives and Achievements pages removed */}
               </ul>
             </div>
             <div>
@@ -193,9 +165,7 @@ export default function CareerDashboardPage() {
                 </div>
                 <p className="text-3xl font-bold text-gray-900 mb-2">{achievementsCount}</p>
                 <p className="text-sm text-gray-500 mb-4">Total achievements</p>
-                <Link href="/career/achievements" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                  View all →
-                </Link>
+                <span className="text-gray-400 text-sm">Deprecated</span>
               </div>
 
               <div className="bg-white rounded-lg shadow p-6">
@@ -207,9 +177,7 @@ export default function CareerDashboardPage() {
                 </div>
                 <p className="text-3xl font-bold text-gray-900 mb-2">{objectivesCount}</p>
                 <p className="text-sm text-gray-500 mb-4">Active objectives</p>
-                <Link href="/career/objectives" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                  View all →
-                </Link>
+                <span className="text-gray-400 text-sm">Deprecated</span>
               </div>
             </div>
 
@@ -226,12 +194,7 @@ export default function CareerDashboardPage() {
                 >
                   Go to Setup
                 </Link>
-                <Link 
-                  href="/career/achievements/new" 
-                  className="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-400 transition"
-                >
-                  Add Achievement
-                </Link>
+                {/* DEPRECATED: Add Achievement button removed */}
               </div>
             </div>
           </div>

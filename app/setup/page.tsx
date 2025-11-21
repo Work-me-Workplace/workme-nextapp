@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { getObjectives } from '@/lib/actions/objectives'
-import { getCommsOutputs } from '@/lib/actions/comms-outputs'
+// DEPRECATED: objectives and comms-outputs actions are deprecated
+// import { getObjectives } from '@/lib/actions/objectives'
+// import { getCommsOutputs } from '@/lib/actions/comms-outputs'
 
 export default function SetupPage() {
   const [objectivesCount, setObjectivesCount] = useState(0)
@@ -16,12 +17,9 @@ export default function SetupPage() {
 
   async function loadCounts() {
     setLoading(true)
-    const [objResult, commsResult] = await Promise.all([
-      getObjectives(),
-      getCommsOutputs(),
-    ])
-    if (objResult.success) setObjectivesCount(objResult.objectives?.length || 0)
-    if (commsResult.success) setCommsOutputsCount(commsResult.commsOutputs?.length || 0)
+    // DEPRECATED: Objectives and comms outputs are deprecated
+    setObjectivesCount(0)
+    setCommsOutputsCount(0)
     setLoading(false)
   }
 

@@ -32,8 +32,10 @@ async function backfillCompanyId() {
     // 1. WorkContext
     // ============================================================
     console.log('📊 Backfilling WorkContext...')
+    // Note: Since companyId is now required, this backfill script is obsolete
+    // All records should already have companyId set
     const workContexts = await prisma.workContext.findMany({
-      where: { companyId: null },
+      where: { companyId: { equals: null } as any }, // Type assertion for legacy script
       select: { id: true, createdByWorkMeId: true },
     })
 
@@ -90,7 +92,7 @@ async function backfillCompanyId() {
       
       try {
         const records = await (model as any).findMany({
-          where: { companyId: null },
+          where: { companyId: null as any }, // Type assertion for legacy script
           select: { id: true, createdByWorkMeId: true },
         })
 
@@ -138,7 +140,7 @@ async function backfillCompanyId() {
     // ============================================================
     console.log('📊 Backfilling WorkSupport...')
     const workSupports = await prisma.workSupport.findMany({
-      where: { companyId: null },
+      where: { companyId: null as any }, // Type assertion for legacy script
       select: { id: true, createdByWorkMeId: true, contextId: true },
     })
 
@@ -190,7 +192,7 @@ async function backfillCompanyId() {
     // ============================================================
     console.log('📊 Backfilling WorkOutput...')
     const workOutputs = await prisma.workOutput.findMany({
-      where: { companyId: null },
+      where: { companyId: null as any }, // Type assertion for legacy script
       select: { id: true, createdByWorkMeId: true, contextId: true, supportId: true },
     })
 
@@ -251,7 +253,7 @@ async function backfillCompanyId() {
     // ============================================================
     console.log('📊 Backfilling WorkOutputStandalone...')
     const standaloneOutputs = await prisma.workOutputStandalone.findMany({
-      where: { companyId: null },
+      where: { companyId: null as any }, // Type assertion for legacy script
       select: { id: true, createdByWorkMeId: true },
     })
 
@@ -303,7 +305,7 @@ async function backfillCompanyId() {
       
       try {
         const records = await (model as any).findMany({
-          where: { companyId: null },
+          where: { companyId: null as any }, // Type assertion for legacy script
           select: { id: true, createdByWorkMeId: true },
         })
 
@@ -360,7 +362,7 @@ async function backfillCompanyId() {
       
       try {
         const records = await (model as any).findMany({
-          where: { companyId: null },
+          where: { companyId: null as any }, // Type assertion for legacy script
           select: { [idField]: true, createdByWorkMeId: true },
         })
 

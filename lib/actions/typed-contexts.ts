@@ -2,7 +2,7 @@
 
 import { prisma } from '../prisma'
 import { z } from 'zod'
-import { getWorkMeId } from '../getWorkMeId.server'
+import { verifyAuth } from '@/lib/server/verifyAuth'
 
 // Campaign Schema
 const campaignSchema = z.object({
@@ -114,29 +114,14 @@ export async function createCampaign(data: z.infer<typeof campaignSchema>, clien
   try {
     const validated = campaignSchema.parse(data)
     
-    // Try to get workMeId from server first, fall back to client-provided value
-    let workMeId = await getWorkMeId()
-    
-    // If server can't get it, use the client-provided value (from localStorage)
-    if (!workMeId && clientWorkMeId) {
-      // Verify the workMeId exists in the database for security
-      const workMe = await prisma.workMe.findUnique({
-        where: { id: clientWorkMeId },
-        select: { id: true },
-      })
-      if (workMe) {
-        workMeId = clientWorkMeId
-      }
-    }
-
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
-    }
+    // Use verifyAuth to get workMeId and companyId
+    const { workMeId, companyId } = await verifyAuth()
 
     const campaign = await prisma.workContextCampaign.create({
       data: {
         ...validated,
         createdByWorkMeId: workMeId,
+        companyId: companyId,
         description: validated.description ?? undefined,
         windowStart: validated.windowStart ?? undefined,
         windowEnd: validated.windowEnd ?? undefined,
@@ -155,6 +140,7 @@ export async function createCampaign(data: z.infer<typeof campaignSchema>, clien
         type: 'campaign',
         typeRefId: campaign.id,
         createdByWorkMeId: workMeId,
+        companyId: companyId,
       },
     })
 
@@ -162,6 +148,9 @@ export async function createCampaign(data: z.infer<typeof campaignSchema>, clien
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
+    }
+    if (error instanceof Error && error.message.includes('Unauthorized')) {
+      return { success: false, error: 'Not authenticated' }
     }
     return { success: false, error: 'Failed to create campaign' }
   }
@@ -171,16 +160,13 @@ export async function createCampaign(data: z.infer<typeof campaignSchema>, clien
 export async function createImpactEvent(data: z.infer<typeof impactEventSchema>) {
   try {
     const validated = impactEventSchema.parse(data)
-    const workMeId = await getWorkMeId()
-
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
-    }
+    const { workMeId, companyId } = await verifyAuth()
 
     const impactEvent = await prisma.workContextImpactEvent.create({
       data: {
         ...validated,
         createdByWorkMeId: workMeId,
+        companyId: companyId,
         description: validated.description ?? undefined,
         effectiveDate: validated.effectiveDate ?? undefined,
         impactedPopulation: validated.impactedPopulation ?? undefined,
@@ -197,6 +183,7 @@ export async function createImpactEvent(data: z.infer<typeof impactEventSchema>)
         type: 'impact_event',
         typeRefId: impactEvent.id,
         createdByWorkMeId: workMeId,
+        companyId: companyId,
       },
     })
 
@@ -204,6 +191,9 @@ export async function createImpactEvent(data: z.infer<typeof impactEventSchema>)
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
+    }
+    if (error instanceof Error && error.message.includes('Unauthorized')) {
+      return { success: false, error: 'Not authenticated' }
     }
     return { success: false, error: 'Failed to create impact event' }
   }
@@ -213,16 +203,13 @@ export async function createImpactEvent(data: z.infer<typeof impactEventSchema>)
 export async function createTraining(data: z.infer<typeof trainingSchema>) {
   try {
     const validated = trainingSchema.parse(data)
-    const workMeId = await getWorkMeId()
-
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
-    }
+    const { workMeId, companyId } = await verifyAuth()
 
     const training = await prisma.workContextTraining.create({
       data: {
         ...validated,
         createdByWorkMeId: workMeId,
+        companyId: companyId,
         description: validated.description ?? undefined,
         trainingDate: validated.trainingDate ?? undefined,
         deadline: validated.deadline ?? undefined,
@@ -241,6 +228,7 @@ export async function createTraining(data: z.infer<typeof trainingSchema>) {
         type: 'training',
         typeRefId: training.id,
         createdByWorkMeId: workMeId,
+        companyId: companyId,
       },
     })
 
@@ -248,6 +236,9 @@ export async function createTraining(data: z.infer<typeof trainingSchema>) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
+    }
+    if (error instanceof Error && error.message.includes('Unauthorized')) {
+      return { success: false, error: 'Not authenticated' }
     }
     return { success: false, error: 'Failed to create training' }
   }
@@ -257,16 +248,13 @@ export async function createTraining(data: z.infer<typeof trainingSchema>) {
 export async function createEvent(data: z.infer<typeof eventSchema>) {
   try {
     const validated = eventSchema.parse(data)
-    const workMeId = await getWorkMeId()
-
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
-    }
+    const { workMeId, companyId } = await verifyAuth()
 
     const event = await prisma.workContextEvent.create({
       data: {
         ...validated,
         createdByWorkMeId: workMeId,
+        companyId: companyId,
         description: validated.description ?? undefined,
         startDate: validated.startDate ?? undefined,
         endDate: validated.endDate ?? undefined,
@@ -284,6 +272,7 @@ export async function createEvent(data: z.infer<typeof eventSchema>) {
         type: 'event',
         typeRefId: event.id,
         createdByWorkMeId: workMeId,
+        companyId: companyId,
       },
     })
 
@@ -291,6 +280,9 @@ export async function createEvent(data: z.infer<typeof eventSchema>) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
+    }
+    if (error instanceof Error && error.message.includes('Unauthorized')) {
+      return { success: false, error: 'Not authenticated' }
     }
     return { success: false, error: 'Failed to create event' }
   }
@@ -300,16 +292,13 @@ export async function createEvent(data: z.infer<typeof eventSchema>) {
 export async function createCommunityOpportunity(data: z.infer<typeof communityOpportunitySchema>) {
   try {
     const validated = communityOpportunitySchema.parse(data)
-    const workMeId = await getWorkMeId()
-
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
-    }
+    const { workMeId, companyId } = await verifyAuth()
 
     const opportunity = await prisma.workContextCommunity.create({
       data: {
         ...validated,
         createdByWorkMeId: workMeId,
+        companyId: companyId,
         description: validated.description ?? undefined,
         date: validated.date ?? undefined,
         location: validated.location ?? undefined,
@@ -327,6 +316,7 @@ export async function createCommunityOpportunity(data: z.infer<typeof communityO
         type: 'community',
         typeRefId: opportunity.id,
         createdByWorkMeId: workMeId,
+        companyId: companyId,
       },
     })
 
@@ -334,6 +324,9 @@ export async function createCommunityOpportunity(data: z.infer<typeof communityO
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
+    }
+    if (error instanceof Error && error.message.includes('Unauthorized')) {
+      return { success: false, error: 'Not authenticated' }
     }
     return { success: false, error: 'Failed to create community opportunity' }
   }
@@ -361,11 +354,7 @@ const employeeCauseSchema = z.object({
 export async function createCareer(data: z.infer<typeof careerSchema>) {
   try {
     const validated = careerSchema.parse(data)
-    const workMeId = await getWorkMeId()
-
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
-    }
+    const { workMeId, companyId } = await verifyAuth()
 
     const career = await prisma.workContextCareer.create({
       data: {
@@ -380,6 +369,7 @@ export async function createCareer(data: z.infer<typeof careerSchema>) {
         pocPhone: validated.pocPhone ?? undefined,
         pocDepartment: validated.pocDepartment ?? undefined,
         createdByWorkMeId: workMeId,
+        companyId: companyId,
       },
     })
 
@@ -388,6 +378,7 @@ export async function createCareer(data: z.infer<typeof careerSchema>) {
         type: 'career',
         typeRefId: career.id,
         createdByWorkMeId: workMeId,
+        companyId: companyId,
       },
     })
 
@@ -395,6 +386,9 @@ export async function createCareer(data: z.infer<typeof careerSchema>) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
+    }
+    if (error instanceof Error && error.message.includes('Unauthorized')) {
+      return { success: false, error: 'Not authenticated' }
     }
     return { success: false, error: 'Failed to create career context' }
   }
@@ -404,16 +398,13 @@ export async function createCareer(data: z.infer<typeof careerSchema>) {
 export async function createBenefits(data: z.infer<typeof benefitsSchema>) {
   try {
     const validated = benefitsSchema.parse(data)
-    const workMeId = await getWorkMeId()
-
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
-    }
+    const { workMeId, companyId } = await verifyAuth()
 
     const benefits = await prisma.workContextBenefits.create({
       data: {
         ...validated,
         createdByWorkMeId: workMeId,
+        companyId: companyId,
         description: validated.description ?? undefined,
         windowStart: validated.windowStart ?? undefined,
         windowEnd: validated.windowEnd ?? undefined,
@@ -435,6 +426,7 @@ export async function createBenefits(data: z.infer<typeof benefitsSchema>) {
         type: 'benefits',
         typeRefId: benefits.id,
         createdByWorkMeId: workMeId,
+        companyId: companyId,
       },
     })
 
@@ -442,6 +434,9 @@ export async function createBenefits(data: z.infer<typeof benefitsSchema>) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
+    }
+    if (error instanceof Error && error.message.includes('Unauthorized')) {
+      return { success: false, error: 'Not authenticated' }
     }
     return { success: false, error: 'Failed to create benefits context' }
   }
@@ -451,11 +446,7 @@ export async function createBenefits(data: z.infer<typeof benefitsSchema>) {
 export async function createEmployeeCause(data: z.infer<typeof employeeCauseSchema>) {
   try {
     const validated = employeeCauseSchema.parse(data)
-    const workMeId = await getWorkMeId()
-
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
-    }
+    const { workMeId, companyId } = await verifyAuth()
 
     const employeeCause = await prisma.workContextEmployeeCause.create({
       data: {
@@ -474,6 +465,7 @@ export async function createEmployeeCause(data: z.infer<typeof employeeCauseSche
         pocPhone: validated.pocPhone ?? undefined,
         sponsoringDepartment: validated.sponsoringDepartment ?? undefined,
         createdByWorkMeId: workMeId,
+        companyId: companyId,
       },
     })
 
@@ -482,6 +474,7 @@ export async function createEmployeeCause(data: z.infer<typeof employeeCauseSche
         type: 'employee_cause',
         typeRefId: employeeCause.id,
         createdByWorkMeId: workMeId,
+        companyId: companyId,
       },
     })
 
@@ -489,6 +482,9 @@ export async function createEmployeeCause(data: z.infer<typeof employeeCauseSche
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
+    }
+    if (error instanceof Error && error.message.includes('Unauthorized')) {
+      return { success: false, error: 'Not authenticated' }
     }
     return { success: false, error: 'Failed to create employee cause context' }
   }
@@ -498,11 +494,7 @@ export async function createEmployeeCause(data: z.infer<typeof employeeCauseSche
 export async function updateCampaign(workContextId: string, data: z.infer<typeof campaignSchema>) {
   try {
     const validated = campaignSchema.parse(data)
-    const workMeId = await getWorkMeId()
-
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
-    }
+    const { workMeId } = await verifyAuth()
 
     // Get WorkContext to find typeRefId and validate ownership
     const workContext = await prisma.workContext.findFirst({
@@ -543,11 +535,7 @@ export async function updateCampaign(workContextId: string, data: z.infer<typeof
 export async function updateImpactEvent(workContextId: string, data: z.infer<typeof impactEventSchema>) {
   try {
     const validated = impactEventSchema.parse(data)
-    const workMeId = await getWorkMeId()
-
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
-    }
+    const { workMeId } = await verifyAuth()
 
     const workContext = await prisma.workContext.findFirst({
       where: { id: workContextId, createdByWorkMeId: workMeId },
@@ -585,11 +573,7 @@ export async function updateImpactEvent(workContextId: string, data: z.infer<typ
 export async function updateTraining(workContextId: string, data: z.infer<typeof trainingSchema>) {
   try {
     const validated = trainingSchema.parse(data)
-    const workMeId = await getWorkMeId()
-
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
-    }
+    const { workMeId } = await verifyAuth()
 
     const workContext = await prisma.workContext.findFirst({
       where: { id: workContextId, createdByWorkMeId: workMeId },
@@ -629,11 +613,7 @@ export async function updateTraining(workContextId: string, data: z.infer<typeof
 export async function updateEvent(workContextId: string, data: z.infer<typeof eventSchema>) {
   try {
     const validated = eventSchema.parse(data)
-    const workMeId = await getWorkMeId()
-
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
-    }
+    const { workMeId } = await verifyAuth()
 
     const workContext = await prisma.workContext.findFirst({
       where: { id: workContextId, createdByWorkMeId: workMeId },
@@ -672,11 +652,7 @@ export async function updateEvent(workContextId: string, data: z.infer<typeof ev
 export async function updateCommunityOpportunity(workContextId: string, data: z.infer<typeof communityOpportunitySchema>) {
   try {
     const validated = communityOpportunitySchema.parse(data)
-    const workMeId = await getWorkMeId()
-
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
-    }
+    const { workMeId } = await verifyAuth()
 
     const workContext = await prisma.workContext.findFirst({
       where: { id: workContextId, createdByWorkMeId: workMeId },
@@ -715,11 +691,7 @@ export async function updateCommunityOpportunity(workContextId: string, data: z.
 export async function updateBenefits(workContextId: string, data: z.infer<typeof benefitsSchema>) {
   try {
     const validated = benefitsSchema.parse(data)
-    const workMeId = await getWorkMeId()
-
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
-    }
+    const { workMeId } = await verifyAuth()
 
     const workContext = await prisma.workContext.findFirst({
       where: { id: workContextId, createdByWorkMeId: workMeId },
@@ -762,11 +734,7 @@ export async function updateBenefits(workContextId: string, data: z.infer<typeof
 export async function updateCareer(workContextId: string, data: z.infer<typeof careerSchema>) {
   try {
     const validated = careerSchema.parse(data)
-    const workMeId = await getWorkMeId()
-
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
-    }
+    const { workMeId } = await verifyAuth()
 
     const workContext = await prisma.workContext.findFirst({
       where: { id: workContextId, createdByWorkMeId: workMeId },
@@ -805,11 +773,7 @@ export async function updateCareer(workContextId: string, data: z.infer<typeof c
 export async function updateEmployeeCause(workContextId: string, data: z.infer<typeof employeeCauseSchema>) {
   try {
     const validated = employeeCauseSchema.parse(data)
-    const workMeId = await getWorkMeId()
-
-    if (!workMeId) {
-      return { success: false, error: 'Not authenticated' }
-    }
+    const { workMeId } = await verifyAuth()
 
     const workContext = await prisma.workContext.findFirst({
       where: { id: workContextId, createdByWorkMeId: workMeId },
