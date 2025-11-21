@@ -10,7 +10,7 @@ const workOutputSchema = z.object({
   supportId: z.string().optional().nullable(),
   outputType: z.enum(WORK_OUTPUT_TYPE_VALUES as [string, ...string[]]),
   dataJson: z.any().optional().nullable(),
-  status: z.enum(['draft', 'final']).default('draft'),
+  status: z.enum(['draft', 'final']).optional().default('draft'),
 })
 
 export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
