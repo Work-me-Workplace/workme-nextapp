@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import api from '@/lib/api'
 import NTKPreview from '@/components/ntk/NTKPreview'
-import type { NTKStructure } from '@/lib/services/ntk-generator'
+import type { NTKStructure } from '@/lib/types/ntk'
 
 interface NTKData {
   ntkId: string

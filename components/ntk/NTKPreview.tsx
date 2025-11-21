@@ -1,6 +1,6 @@
 'use client'
 
-import { NTKStructure } from '@/lib/services/ntk-generator'
+import type { NTKStructure } from '@/lib/types/ntk'
 
 interface NTKPreviewProps {
   ntk: NTKStructure

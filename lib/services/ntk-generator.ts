@@ -8,31 +8,25 @@
  */
 
 import OpenAI from 'openai'
+import type { NTKStructure } from '@/lib/types/ntk'
+
+// Re-export for backwards compatibility (server-only imports)
+export type { NTKStructure } from '@/lib/types/ntk'
 
 // Initialize OpenAI client (uses OPENAI_API_KEY from env)
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// Lazy initialization to prevent build-time errors if env var is missing
+let openaiInstance: OpenAI | null = null
 
-/**
- * NTK Structure
- * NAVSEA-style format for Need-to-Know communications
- */
-export interface NTKStructure {
-  header: string // [TITLE IN ALL CAPS] – [MONTH] [DAY] format
-  poc: string // POC in markdown italics format: *POC: name & email*
-  summary: string // 2-4 sentence summary in NAVSEA tone
-  title: string // Original title (for compatibility)
-  keyPoints?: string[] // Optional: 3-7 bullet points
-  actionItems?: string[] // Optional: What readers need to do
-  deadline?: string // Optional deadline
-  contactInfo?: {
-    name?: string
-    email?: string
-    phone?: string
+function getOpenAIClient(): OpenAI {
+  if (!openaiInstance) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is required')
+    }
+    openaiInstance = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
   }
-  relatedLinks?: string[] // URLs or references
-  tags?: string[] // Keywords for categorization
+  return openaiInstance
 }
 
 /**
@@ -42,10 +36,6 @@ export interface NTKStructure {
  * @returns Structured NTK object
  */
 export async function generateNTK(sourceText: string): Promise<NTKStructure> {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY environment variable is required')
-  }
-
   if (!sourceText || sourceText.trim().length === 0) {
     throw new Error('Source text cannot be empty')
   }
@@ -55,6 +45,7 @@ export async function generateNTK(sourceText: string): Promise<NTKStructure> {
   })
 
   try {
+    const openai = getOpenAIClient()
     const prompt = `You are a NAVSEA Internal Communications writer supporting the weekly "Need to Know" workforce email. Rewrite the following item into a short, clear blurb following these rules:
 
 ---

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
 import CSVUpload from '@/components/ntk/CSVUpload'
 import NTKPreview from '@/components/ntk/NTKPreview'
-import type { NTKStructure } from '@/lib/services/ntk-generator'
+import type { NTKStructure } from '@/lib/types/ntk'
 
 type InputMode = 'manual' | 'csv' | 'reuse'
 
