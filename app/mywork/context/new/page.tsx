@@ -16,7 +16,7 @@ const contextTypes = [
   {
     type: 'impact_event',
     name: 'Impact Event',
-    description: 'Workforce impact event or change',
+    description: 'Hazard or disruption affecting workforce activities',
     icon: '⚡',
     formPath: '/mywork/context/new/impact-event',
   },
