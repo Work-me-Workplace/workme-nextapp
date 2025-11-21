@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { createAchievementsBatch } from '@/lib/actions/csv-import'
 import { getObjectives } from '@/lib/actions/objectives'
 import { getCommsOutputs } from '@/lib/actions/comms-outputs'
-import { getCompanyCampaigns } from '@/lib/actions/company-campaigns'
 
 interface CSVRow {
   [key: string]: string
@@ -20,7 +19,6 @@ export default function UploadAchievementsPage() {
   const [fieldMapping, setFieldMapping] = useState<{ [key: string]: string }>({})
   const [objectives, setObjectives] = useState<any[]>([])
   const [commsOutputs, setCommsOutputs] = useState<any[]>([])
-  const [campaigns, setCampaigns] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [previewRows, setPreviewRows] = useState(5)
 
@@ -29,14 +27,12 @@ export default function UploadAchievementsPage() {
   }, [])
 
   async function loadDropdowns() {
-    const [objResult, commsResult, campaignsResult] = await Promise.all([
+    const [objResult, commsResult] = await Promise.all([
       getObjectives(),
       getCommsOutputs(),
-      getCompanyCampaigns(),
     ])
     if (objResult.success) setObjectives(objResult.objectives || [])
     if (commsResult.success) setCommsOutputs(commsResult.commsOutputs || [])
-    if (campaignsResult.success) setCampaigns(campaignsResult.campaigns || [])
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -81,7 +77,6 @@ export default function UploadAchievementsPage() {
       if (lower.includes('audience') && lower.includes('size')) autoMapping.audienceSize = header
       if (lower.includes('objective')) autoMapping.objective = header
       if (lower.includes('comms') || lower.includes('output')) autoMapping.commsOutput = header
-      if (lower.includes('campaign')) autoMapping.companyCampaign = header
       if (lower.includes('what') || lower.includes('did')) autoMapping.whatYouDid = header
       if (lower.includes('frequency')) autoMapping.frequency = header
       if (lower.includes('volume')) autoMapping.volume = header
@@ -103,8 +98,7 @@ export default function UploadAchievementsPage() {
       csvData,
       fieldMapping,
       objectives,
-      commsOutputs,
-      campaigns
+      commsOutputs
     )
     setLoading(false)
 
@@ -126,7 +120,6 @@ export default function UploadAchievementsPage() {
     { value: 'audienceSize', label: 'Audience Size' },
     { value: 'objective', label: 'Objective' },
     { value: 'commsOutput', label: 'Comms Output' },
-    { value: 'companyCampaign', label: 'Company Campaign' },
     { value: 'whatYouDid', label: 'What You Did *' },
     { value: 'frequency', label: 'Frequency' },
     { value: 'volume', label: 'Volume' },

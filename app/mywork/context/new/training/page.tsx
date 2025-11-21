@@ -123,19 +123,19 @@ export default function NewTrainingPage() {
             </div>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="trainingDate" className="block text-sm font-medium text-gray-700 mb-2">
-                    Training Date
-                  </label>
-                  <input
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="trainingDate" className="block text-sm font-medium text-gray-700 mb-2">
+                  Training Date
+                </label>
+                <input
                     type="date"
-                    id="trainingDate"
-                    value={formData.trainingDate}
-                    onChange={(e) => setFormData({ ...formData, trainingDate: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
+                  id="trainingDate"
+                  value={formData.trainingDate}
+                  onChange={(e) => setFormData({ ...formData, trainingDate: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
 
                 <div>
                   <label htmlFor="trainingTime" className="block text-sm font-medium text-gray-700 mb-2">
@@ -152,17 +152,17 @@ export default function NewTrainingPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="deadline" className="block text-sm font-medium text-gray-700 mb-2">
-                    Deadline
-                  </label>
-                  <input
+              <div>
+                <label htmlFor="deadline" className="block text-sm font-medium text-gray-700 mb-2">
+                  Deadline
+                </label>
+                <input
                     type="date"
-                    id="deadline"
-                    value={formData.deadline}
-                    onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                  id="deadline"
+                  value={formData.deadline}
+                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
                 </div>
 
                 <div>
@@ -208,13 +208,13 @@ export default function NewTrainingPage() {
             </div>
 
             <div className="flex items-center">
-              <input
-                type="checkbox"
+                <input
+                  type="checkbox"
                 id="mandatory"
-                checked={formData.mandatory}
-                onChange={(e) => setFormData({ ...formData, mandatory: e.target.checked })}
+                  checked={formData.mandatory}
+                  onChange={(e) => setFormData({ ...formData, mandatory: e.target.checked })}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
+                />
               <label htmlFor="mandatory" className="ml-2 block text-sm text-gray-700">
                 Mandatory training
               </label>
@@ -235,19 +235,19 @@ export default function NewTrainingPage() {
                     onChange={(e) => setFormData({ ...formData, pocFirstName: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                </div>
+            </div>
 
-                <div>
-                  <label htmlFor="pocLastName" className="block text-sm font-medium text-gray-700 mb-2">
-                    POC Last Name
-                  </label>
-                  <input
-                    type="text"
-                    id="pocLastName"
-                    value={formData.pocLastName}
-                    onChange={(e) => setFormData({ ...formData, pocLastName: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+            <div>
+              <label htmlFor="pocLastName" className="block text-sm font-medium text-gray-700 mb-2">
+                POC Last Name
+              </label>
+              <input
+                type="text"
+                id="pocLastName"
+                value={formData.pocLastName}
+                onChange={(e) => setFormData({ ...formData, pocLastName: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
                 </div>
               </div>
 

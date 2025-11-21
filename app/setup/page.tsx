@@ -4,12 +4,10 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { getObjectives } from '@/lib/actions/objectives'
 import { getCommsOutputs } from '@/lib/actions/comms-outputs'
-import { getCompanyCampaigns } from '@/lib/actions/company-campaigns'
 
 export default function SetupPage() {
   const [objectivesCount, setObjectivesCount] = useState(0)
   const [commsOutputsCount, setCommsOutputsCount] = useState(0)
-  const [campaignsCount, setCampaignsCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -18,14 +16,12 @@ export default function SetupPage() {
 
   async function loadCounts() {
     setLoading(true)
-    const [objResult, commsResult, campaignsResult] = await Promise.all([
+    const [objResult, commsResult] = await Promise.all([
       getObjectives(),
       getCommsOutputs(),
-      getCompanyCampaigns(),
     ])
     if (objResult.success) setObjectivesCount(objResult.objectives?.length || 0)
     if (commsResult.success) setCommsOutputsCount(commsResult.commsOutputs?.length || 0)
-    if (campaignsResult.success) setCampaignsCount(campaignsResult.campaigns?.length || 0)
     setLoading(false)
   }
 
@@ -34,7 +30,7 @@ export default function SetupPage() {
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-gray-900">Setup Dashboard</h2>
         <p className="text-gray-600 mt-2">
-          Configure your Objectives, Comms Outputs, and Company Campaigns before creating Achievements
+          Configure your Objectives and Comms Outputs before creating Achievements
         </p>
       </div>
 
@@ -43,7 +39,7 @@ export default function SetupPage() {
           <p className="text-gray-500">Loading...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Objectives Card */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-4">
@@ -105,44 +101,13 @@ export default function SetupPage() {
               </Link>
             </div>
           </div>
-
-          {/* Company Campaigns Card */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-gray-900">Company Campaigns</h3>
-              <svg className="h-8 w-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <p className="text-gray-600 mb-4">
-              Manage your company campaigns and their timelines.
-            </p>
-            <div className="mb-4">
-              <p className="text-2xl font-bold text-gray-900">{campaignsCount}</p>
-              <p className="text-sm text-gray-500">Campaigns created</p>
-            </div>
-            <div className="flex gap-2">
-              <Link
-                href="/company-campaigns"
-                className="flex-1 text-center rounded-lg bg-blue-600 text-white px-4 py-2 font-semibold hover:bg-blue-700 transition"
-              >
-                View All
-              </Link>
-              <Link
-                href="/company-campaigns/new"
-                className="flex-1 text-center rounded-lg bg-gray-200 text-gray-700 px-4 py-2 font-semibold hover:bg-gray-300 transition"
-              >
-                Create New
-              </Link>
-            </div>
-          </div>
         </div>
       )}
 
       <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-blue-900 mb-2">Ready to Create Achievements?</h3>
         <p className="text-blue-800 mb-4">
-          Once you've set up your Objectives, Comms Outputs, and Company Campaigns, you can start creating Achievements that link to them.
+          Once you've set up your Objectives and Comms Outputs, you can start creating Achievements that link to them.
         </p>
         <Link
           href="/achievements/new"

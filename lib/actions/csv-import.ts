@@ -18,7 +18,6 @@ interface FieldMapping {
   audienceSize?: string
   objective?: string
   commsOutput?: string
-  companyCampaign?: string
   whatYouDid?: string
   frequency?: string
   volume?: string
@@ -30,8 +29,7 @@ export async function createAchievementsBatch(
   rows: CSVRow[],
   fieldMapping: FieldMapping,
   objectives: Array<{ id: string; title: string }>,
-  commsOutputs: Array<{ id: string; title: string }>,
-  campaigns: Array<{ id: string; name: string }>
+  commsOutputs: Array<{ id: string; title: string }>
 ) {
   const results = []
   const errors = []
@@ -74,14 +72,6 @@ export async function createAchievementsBatch(
         const comms = commsOutputs.find((c) => c.title === commsTitle || c.id === commsTitle)
         if (comms) {
           achievementData.commsOutputId = comms.id
-        }
-      }
-
-      if (fieldMapping.companyCampaign && row[fieldMapping.companyCampaign]) {
-        const campaignName = row[fieldMapping.companyCampaign].trim()
-        const campaign = campaigns.find((c) => c.name === campaignName || c.id === campaignName)
-        if (campaign) {
-          achievementData.companyCampaignId = campaign.id
         }
       }
 
