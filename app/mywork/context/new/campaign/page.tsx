@@ -47,7 +47,7 @@ export default function NewCampaignPage() {
       }, workMeId)
 
       if (result.success && result.workContext) {
-        router.push(`/mywork/context/${result.workContext.id}`)
+        router.push(`/mywork/context/${result.workContext.id}/success`)
       } else {
         alert('Failed to create Campaign: ' + (result.error || 'Unknown error'))
         setLoading(false)

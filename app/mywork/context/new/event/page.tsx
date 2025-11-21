@@ -55,7 +55,7 @@ export default function NewEventPage() {
       })
 
       if (result.success && result.workContext) {
-        router.push(`/mywork/context/${result.workContext.id}`)
+        router.push(`/mywork/context/${result.workContext.id}/success`)
       } else {
         alert('Failed to create Event: ' + (result.error || 'Unknown error'))
         setLoading(false)

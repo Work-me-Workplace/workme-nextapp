@@ -79,7 +79,7 @@ export default function NewCareerPage() {
       })
 
       if (result.success && result.workContext) {
-        router.push(`/mywork/context/${result.workContext.id}`)
+        router.push(`/mywork/context/${result.workContext.id}/success`)
       } else {
         alert('Failed to create Career Context: ' + (result.error || 'Unknown error'))
         setLoading(false)

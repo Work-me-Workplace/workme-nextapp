@@ -64,7 +64,7 @@ export default function NewEmployeeCausePage() {
       })
 
       if (result.success && result.workContext) {
-        router.push(`/mywork/context/${result.workContext.id}`)
+        router.push(`/mywork/context/${result.workContext.id}/success`)
       } else {
         alert('Failed to create Employee Cause: ' + (result.error || 'Unknown error'))
         setLoading(false)

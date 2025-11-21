@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { getWorkContexts } from '@/lib/actions/work-context'
 import { getWorkOutputs } from '@/lib/actions/work-output'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
+import SidebarNav from '@/components/mywork/SidebarNav'
 
 export default function MyWorkPage() {
   const pathname = usePathname()
@@ -93,103 +94,7 @@ export default function MyWorkPage() {
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-4rem)] p-4">
-          <nav className="space-y-6">
-            <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                MyWork
-              </h3>
-              <ul className="space-y-1">
-                <li>
-                  <Link
-                    href="/mywork"
-                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                      isActive('/mywork') && pathname === '/mywork'
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    Dashboard
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/mywork/context"
-                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                      isActive('/mywork/context')
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    WorkContext
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                Career
-              </h3>
-              <ul className="space-y-1">
-                <li>
-                  <Link
-                    href="/career"
-                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                      isActive('/career')
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    Dashboard
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/career/objectives"
-                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                      isActive('/career/objectives')
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    Objectives
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/career/achievements"
-                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                      isActive('/career/achievements')
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    Achievements
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                Setup
-              </h3>
-              <ul className="space-y-1">
-                <li>
-                  <Link
-                    href="/setup"
-                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                      isActive('/setup')
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    Modules
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </nav>
-        </aside>
+        <SidebarNav />
 
         {/* Main Content */}
         <main className="flex-1">
