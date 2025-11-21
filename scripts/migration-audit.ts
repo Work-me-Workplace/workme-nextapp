@@ -2,7 +2,7 @@
  * Migration Safety Audit Script
  * 
  * Inspects the live database to determine migration safety
- * for adding required companyId and createdByWorkMeId fields
+ * for adding required companyId and originatorId fields
  */
 
 import { PrismaClient } from '@prisma/client'
@@ -51,7 +51,7 @@ async function auditDatabase() {
       recordCount: workContexts.length,
       hasData: workContexts.length > 0,
       missingCompanyId: workContexts.length, // All will need companyId
-      missingCreatedBy: 0, // Already has createdByWorkMeId
+      missingCreatedBy: 0, // Already has originatorId
       sampleIds: workContexts.slice(0, 5).map(w => w.id),
     })
     console.log('')
@@ -67,7 +67,7 @@ async function auditDatabase() {
       recordCount: workSupports.length,
       hasData: workSupports.length > 0,
       missingCompanyId: workSupports.length,
-      missingCreatedBy: 0, // Already has createdByWorkMeId
+      missingCreatedBy: 0, // Already has originatorId
       sampleIds: workSupports.slice(0, 5).map(w => w.id),
     })
     console.log('')
@@ -83,7 +83,7 @@ async function auditDatabase() {
       recordCount: workOutputs.length,
       hasData: workOutputs.length > 0,
       missingCompanyId: workOutputs.length,
-      missingCreatedBy: 0, // Already has createdByWorkMeId
+      missingCreatedBy: 0, // Already has originatorId
       sampleIds: workOutputs.slice(0, 5).map(w => w.id),
     })
     console.log('')
@@ -99,7 +99,7 @@ async function auditDatabase() {
       recordCount: standaloneOutputs.length,
       hasData: standaloneOutputs.length > 0,
       missingCompanyId: standaloneOutputs.length,
-      missingCreatedBy: 0, // Already has createdByWorkMeId
+      missingCreatedBy: 0, // Already has originatorId
       sampleIds: standaloneOutputs.slice(0, 5).map(w => w.id),
     })
     console.log('')
@@ -121,7 +121,7 @@ async function auditDatabase() {
     for (const { name, model } of typedModels) {
       try {
         const records = await (model as any).findMany({
-          select: { id: true, createdByWorkMeId: true },
+          select: { id: true, originatorId: true },
         })
         console.log(`  ${name}: ${records.length} records`)
         audits.push({
@@ -129,7 +129,7 @@ async function auditDatabase() {
           recordCount: records.length,
           hasData: records.length > 0,
           missingCompanyId: records.length,
-          missingCreatedBy: 0, // Already has createdByWorkMeId
+          missingCreatedBy: 0, // Already has originatorId
           sampleIds: records.slice(0, 5).map((r: any) => r.id),
         })
       } catch (error: any) {
@@ -150,7 +150,7 @@ async function auditDatabase() {
     console.log('📊 Auditing Career Models...')
     
     const achievements = await prisma.achievement.findMany({
-      select: { id: true, createdByWorkMeId: true },
+      select: { id: true, originatorId: true },
     })
     console.log(`  Achievement: ${achievements.length} records`)
     audits.push({
@@ -158,12 +158,12 @@ async function auditDatabase() {
       recordCount: achievements.length,
       hasData: achievements.length > 0,
       missingCompanyId: achievements.length,
-      missingCreatedBy: achievements.filter(a => !a.createdByWorkMeId).length,
+      missingCreatedBy: achievements.filter(a => !a.originatorId).length,
       sampleIds: achievements.slice(0, 5).map(a => a.id),
     })
 
     const objectives = await prisma.objective.findMany({
-      select: { id: true, createdByWorkMeId: true },
+      select: { id: true, originatorId: true },
     })
     console.log(`  Objective: ${objectives.length} records`)
     audits.push({
@@ -171,12 +171,12 @@ async function auditDatabase() {
       recordCount: objectives.length,
       hasData: objectives.length > 0,
       missingCompanyId: objectives.length,
-      missingCreatedBy: objectives.filter(o => !o.createdByWorkMeId).length,
+      missingCreatedBy: objectives.filter(o => !o.originatorId).length,
       sampleIds: objectives.slice(0, 5).map(o => o.id),
     })
 
     const commsOutputs = await prisma.commsOutput.findMany({
-      select: { id: true, createdByWorkMeId: true },
+      select: { id: true, originatorId: true },
     })
     console.log(`  CommsOutput: ${commsOutputs.length} records`)
     audits.push({
@@ -184,7 +184,7 @@ async function auditDatabase() {
       recordCount: commsOutputs.length,
       hasData: commsOutputs.length > 0,
       missingCompanyId: commsOutputs.length,
-      missingCreatedBy: commsOutputs.filter(c => !c.createdByWorkMeId).length,
+      missingCreatedBy: commsOutputs.filter(c => !c.originatorId).length,
       sampleIds: commsOutputs.slice(0, 5).map(c => c.id),
     })
     console.log('')
@@ -202,7 +202,7 @@ async function auditDatabase() {
         recordCount: workforceComms.length,
         hasData: workforceComms.length > 0,
         missingCompanyId: workforceComms.length,
-        missingCreatedBy: workforceComms.length, // Missing createdByWorkMeId
+        missingCreatedBy: workforceComms.length, // Missing originatorId
         sampleIds: workforceComms.slice(0, 5).map(w => w.workforceCommsId),
       })
     } catch (error: any) {
@@ -266,7 +266,7 @@ async function auditDatabase() {
 
     console.log(`📊 Tables with existing data: ${tablesWithData.length}`)
     console.log(`⚠️  Tables needing companyId: ${tablesNeedingCompanyId.length}`)
-    console.log(`⚠️  Tables needing createdByWorkMeId: ${tablesNeedingCreatedBy.length}`)
+    console.log(`⚠️  Tables needing originatorId: ${tablesNeedingCreatedBy.length}`)
     console.log(`👤 WorkMe records without companyId: ${workMeWithoutCompany.length}`)
     console.log(`🏢 Total Company records: ${companies.length}`)
     console.log('')
@@ -280,7 +280,7 @@ async function auditDatabase() {
           console.log(`    ⚠️  Missing companyId: ${audit.missingCompanyId}`)
         }
         if (audit.missingCreatedBy > 0) {
-          console.log(`    ⚠️  Missing createdByWorkMeId: ${audit.missingCreatedBy}`)
+          console.log(`    ⚠️  Missing originatorId: ${audit.missingCreatedBy}`)
         }
         if (audit.sampleIds.length > 0) {
           console.log(`    Sample IDs: ${audit.sampleIds.slice(0, 3).join(', ')}`)

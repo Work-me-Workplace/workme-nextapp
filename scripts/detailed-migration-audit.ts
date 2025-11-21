@@ -55,7 +55,7 @@ async function detailedAudit() {
     console.log('📊 3. WORKCONTEXT RECORDS\n')
     const workContexts = await prisma.workContext.findMany({
       include: {
-        // Note: createdByWorkMeId relation doesn't exist yet in current schema
+        // Note: originatorId relation doesn't exist yet in current schema
       },
     })
     
@@ -64,12 +64,12 @@ async function detailedAudit() {
       console.log(`   - WorkContext ID: ${ctx.id}`)
       console.log(`     Type: ${ctx.type}`)
       console.log(`     TypeRefId: ${ctx.typeRefId}`)
-      console.log(`     CreatedByWorkMeId: ${ctx.createdByWorkMeId}`)
+      console.log(`     CreatedByWorkMeId: ${ctx.originatorId}`)
       console.log(`     CreatedAt: ${ctx.createdAt}`)
       
       // Try to find the creator's company
       const creator = await prisma.workMe.findUnique({
-        where: { id: ctx.createdByWorkMeId },
+        where: { id: ctx.originatorId },
         select: { companyId: true, company: { select: { id: true, name: true } } },
       })
       
@@ -102,7 +102,7 @@ async function detailedAudit() {
     for (const { name, model } of typedModels) {
       try {
         const records = await (model as any).findMany({
-          select: { id: true, createdByWorkMeId: true, title: true },
+          select: { id: true, originatorId: true, title: true },
         })
         
         if (records.length > 0) {
@@ -110,11 +110,11 @@ async function detailedAudit() {
           for (const record of records) {
             console.log(`     - ID: ${record.id}`)
             console.log(`       Title: ${record.title || 'N/A'}`)
-            console.log(`       CreatedByWorkMeId: ${record.createdByWorkMeId}`)
+            console.log(`       CreatedByWorkMeId: ${record.originatorId}`)
             
             // Find creator's company
             const creator = await prisma.workMe.findUnique({
-              where: { id: record.createdByWorkMeId },
+              where: { id: record.originatorId },
               select: { companyId: true, company: { select: { id: true, name: true } } },
             })
             
@@ -148,7 +148,7 @@ async function detailedAudit() {
     // Count all records that need companyId
     for (const ctx of workContexts) {
       const creator = await prisma.workMe.findUnique({
-        where: { id: ctx.createdByWorkMeId },
+        where: { id: ctx.originatorId },
         select: { companyId: true },
       })
       
@@ -163,12 +163,12 @@ async function detailedAudit() {
     for (const { name, model } of typedModels) {
       try {
         const records = await (model as any).findMany({
-          select: { id: true, createdByWorkMeId: true },
+          select: { id: true, originatorId: true },
         })
         
         for (const record of records) {
           const creator = await prisma.workMe.findUnique({
-            where: { id: record.createdByWorkMeId },
+            where: { id: record.originatorId },
             select: { companyId: true },
           })
           

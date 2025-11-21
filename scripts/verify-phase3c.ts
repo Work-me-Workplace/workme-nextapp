@@ -28,20 +28,20 @@ async function verifyPhase3C() {
     // 1. Check WorkContext has companyId required
     console.log('📊 1. Checking Prisma Schema...')
     const workContextSample = await prisma.workContext.findFirst({
-      select: { id: true, companyId: true, createdByWorkMeId: true },
+      select: { id: true, companyId: true, originatorId: true },
     })
 
     if (workContextSample) {
-      if (workContextSample.companyId && workContextSample.createdByWorkMeId) {
+      if (workContextSample.companyId && workContextSample.originatorId) {
         results.push({
-          check: 'WorkContext has companyId and createdByWorkMeId',
+          check: 'WorkContext has companyId and originatorId',
           status: '✅ PASS',
           message: `Sample record has companyId: ${workContextSample.companyId}`,
         })
-        console.log('  ✅ WorkContext has companyId and createdByWorkMeId')
+        console.log('  ✅ WorkContext has companyId and originatorId')
       } else {
         results.push({
-          check: 'WorkContext has companyId and createdByWorkMeId',
+          check: 'WorkContext has companyId and originatorId',
           status: '❌ FAIL',
           message: 'Sample record missing required fields',
         })
@@ -49,7 +49,7 @@ async function verifyPhase3C() {
       }
     } else {
       results.push({
-        check: 'WorkContext has companyId and createdByWorkMeId',
+        check: 'WorkContext has companyId and originatorId',
         status: '⚠️  WARN',
         message: 'No WorkContext records found (empty database)',
       })
@@ -60,20 +60,20 @@ async function verifyPhase3C() {
     // 2. Check WorkSupport has companyId
     console.log('📊 2. Checking WorkSupport...')
     const workSupportSample = await prisma.workSupport.findFirst({
-      select: { id: true, companyId: true, createdByWorkMeId: true },
+      select: { id: true, companyId: true, originatorId: true },
     })
 
     if (workSupportSample) {
-      if (workSupportSample.companyId && workSupportSample.createdByWorkMeId) {
+      if (workSupportSample.companyId && workSupportSample.originatorId) {
         results.push({
-          check: 'WorkSupport has companyId and createdByWorkMeId',
+          check: 'WorkSupport has companyId and originatorId',
           status: '✅ PASS',
           message: `Sample record has companyId: ${workSupportSample.companyId}`,
         })
-        console.log('  ✅ WorkSupport has companyId and createdByWorkMeId')
+        console.log('  ✅ WorkSupport has companyId and originatorId')
       } else {
         results.push({
-          check: 'WorkSupport has companyId and createdByWorkMeId',
+          check: 'WorkSupport has companyId and originatorId',
           status: '❌ FAIL',
           message: 'Sample record missing required fields',
         })
@@ -81,7 +81,7 @@ async function verifyPhase3C() {
       }
     } else {
       results.push({
-        check: 'WorkSupport has companyId and createdByWorkMeId',
+        check: 'WorkSupport has companyId and originatorId',
         status: '⚠️  WARN',
         message: 'No WorkSupport records found (empty database)',
       })
@@ -92,20 +92,20 @@ async function verifyPhase3C() {
     // 3. Check WorkOutput has companyId
     console.log('📊 3. Checking WorkOutput...')
     const workOutputSample = await prisma.workOutput.findFirst({
-      select: { id: true, companyId: true, createdByWorkMeId: true },
+      select: { id: true, companyId: true, originatorId: true },
     })
 
     if (workOutputSample) {
-      if (workOutputSample.companyId && workOutputSample.createdByWorkMeId) {
+      if (workOutputSample.companyId && workOutputSample.originatorId) {
         results.push({
-          check: 'WorkOutput has companyId and createdByWorkMeId',
+          check: 'WorkOutput has companyId and originatorId',
           status: '✅ PASS',
           message: `Sample record has companyId: ${workOutputSample.companyId}`,
         })
-        console.log('  ✅ WorkOutput has companyId and createdByWorkMeId')
+        console.log('  ✅ WorkOutput has companyId and originatorId')
       } else {
         results.push({
-          check: 'WorkOutput has companyId and createdByWorkMeId',
+          check: 'WorkOutput has companyId and originatorId',
           status: '❌ FAIL',
           message: 'Sample record missing required fields',
         })
@@ -113,7 +113,7 @@ async function verifyPhase3C() {
       }
     } else {
       results.push({
-        check: 'WorkOutput has companyId and createdByWorkMeId',
+        check: 'WorkOutput has companyId and originatorId',
         status: '⚠️  WARN',
         message: 'No WorkOutput records found (empty database)',
       })
@@ -124,20 +124,20 @@ async function verifyPhase3C() {
     // 4. Check WorkOutputStandalone has companyId
     console.log('📊 4. Checking WorkOutputStandalone...')
     const standaloneSample = await prisma.workOutputStandalone.findFirst({
-      select: { id: true, companyId: true, createdByWorkMeId: true },
+      select: { id: true, companyId: true, originatorId: true },
     })
 
     if (standaloneSample) {
-      if (standaloneSample.companyId && standaloneSample.createdByWorkMeId) {
+      if (standaloneSample.companyId && standaloneSample.originatorId) {
         results.push({
-          check: 'WorkOutputStandalone has companyId and createdByWorkMeId',
+          check: 'WorkOutputStandalone has companyId and originatorId',
           status: '✅ PASS',
           message: `Sample record has companyId: ${standaloneSample.companyId}`,
         })
-        console.log('  ✅ WorkOutputStandalone has companyId and createdByWorkMeId')
+        console.log('  ✅ WorkOutputStandalone has companyId and originatorId')
       } else {
         results.push({
-          check: 'WorkOutputStandalone has companyId and createdByWorkMeId',
+          check: 'WorkOutputStandalone has companyId and originatorId',
           status: '❌ FAIL',
           message: 'Sample record missing required fields',
         })
@@ -145,7 +145,7 @@ async function verifyPhase3C() {
       }
     } else {
       results.push({
-        check: 'WorkOutputStandalone has companyId and createdByWorkMeId',
+        check: 'WorkOutputStandalone has companyId and originatorId',
         status: '⚠️  WARN',
         message: 'No WorkOutputStandalone records found (empty database)',
       })
@@ -169,20 +169,20 @@ async function verifyPhase3C() {
     for (const { name, model } of typedModels) {
       try {
         const sample = await (model as any).findFirst({
-          select: { id: true, companyId: true, createdByWorkMeId: true },
+          select: { id: true, companyId: true, originatorId: true },
         })
 
         if (sample) {
-          if (sample.companyId && sample.createdByWorkMeId) {
+          if (sample.companyId && sample.originatorId) {
             results.push({
-              check: `${name} has companyId and createdByWorkMeId`,
+              check: `${name} has companyId and originatorId`,
               status: '✅ PASS',
               message: `Sample record has companyId: ${sample.companyId}`,
             })
-            console.log(`  ✅ ${name} has companyId and createdByWorkMeId`)
+            console.log(`  ✅ ${name} has companyId and originatorId`)
           } else {
             results.push({
-              check: `${name} has companyId and createdByWorkMeId`,
+              check: `${name} has companyId and originatorId`,
               status: '❌ FAIL',
               message: 'Sample record missing required fields',
             })
