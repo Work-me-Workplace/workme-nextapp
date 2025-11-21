@@ -8,6 +8,7 @@ export default function SidebarNav() {
 
   const isActive = (path: string) => {
     if (path === '/mywork') return pathname === path
+    if (path === '/worksupport') return pathname?.startsWith(path) || pathname?.startsWith('/mywork/support')
     return pathname?.startsWith(path)
   }
 
@@ -46,9 +47,9 @@ export default function SidebarNav() {
               WorkContext
             </Link>
             <Link
-              href="/mywork/support"
+              href="/worksupport"
               className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                isActive('/mywork/support')
+                isActive('/worksupport')
                   ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700'
                   : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
               }`}

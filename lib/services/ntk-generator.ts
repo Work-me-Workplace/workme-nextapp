@@ -33,9 +33,13 @@ function getOpenAIClient(): OpenAI {
  * Generate structured NTK from raw text
  * 
  * @param sourceText - Raw text input (manual entry, CSV content, or previous NTK)
+ * @param feedback - Optional user feedback for regeneration
  * @returns Structured NTK object
  */
-export async function generateNTK(sourceText: string): Promise<NTKStructure> {
+export async function generateNTK(
+  sourceText: string,
+  feedback?: string,
+): Promise<NTKStructure> {
   if (!sourceText || sourceText.trim().length === 0) {
     throw new Error('Source text cannot be empty')
   }
@@ -46,54 +50,31 @@ export async function generateNTK(sourceText: string): Promise<NTKStructure> {
 
   try {
     const openai = getOpenAIClient()
-    const prompt = `You are a NAVSEA Internal Communications writer supporting the weekly "Need to Know" workforce email. Rewrite the following item into a short, clear blurb following these rules:
+    
+    // Build prompt with optional feedback
+    let prompt = `Rewrite the following workplace update in clear, concise, plain internal communication ("Need to Know") style.
 
----
-${sourceText}
----
+Do not use emojis or decorative language.
+Avoid marketing tone or filler.
+Use factual, direct sentences.
+Focus on clarity and accuracy.
 
-1. HEADER FORMAT
-   • Use the exact event title provided.
-   • Create a NAVSEA-style header line formatted as:
-       [TITLE IN ALL CAPS] – [MONTH WRITTEN AS TEXT, NO PERIOD] [DAY]
-     Example: 
-       DEOCS SURVEY EXTENDED – NOV 30
+Input:
 
-2. DATE HANDLING
-   • Extract the date from the input text or CSV summary.
-   • Use the MONTH spelled out ("NOV", "DEC", "JAN") with no punctuation.
-   • Use the DAY number only (no leading zeros).
+${sourceText}`
 
-3. POC FORMAT
-   • Show POC in *italics* using markdown.
-   • Format as: *POC: [name & email]*
-   • If multiple POCs, list each on its own line.
-   • If no POC found, use: *POC: Not specified*
+    // Add feedback if provided
+    if (feedback && feedback.trim().length > 0) {
+      prompt += `\n\nIf user feedback is provided, incorporate it:
 
-4. SUMMARY STYLE
-   • Lead with what's important or what the workforce must DO.
-   • Use action-oriented present-tense language (e.g., "Submit…", "Complete…", "Take…").
-   • Keep it concise, direct, and workforce-focused (2-4 sentences).
-   • If the system detects the item has appeared before, refresh phrasing so it is not repetitive.
-     (Use synonyms, reorder content, or tighten clarity.)
-   • Maintain NAVSEA voice: neutral, informative, operationally focused.
-   • If relevant, include:
-       – deadlines
-       – what the employee is expected to do
-       – what system or link is used
-       – any major changes (extended, updated, shifted timelines)
+${feedback}`
+    }
 
-5. PROHIBITED
-   • No hype language ("exciting," "great opportunity," "don't miss").
-   • No emojis.
-   • No exclamation points.
-   • Do not editorialize.
-
-Return ONLY valid JSON in this exact structure:
+    prompt += `\n\nReturn ONLY valid JSON in this exact structure:
 {
   "header": "[TITLE IN ALL CAPS] – [MONTH] [DAY]",
   "poc": "*POC: [name & email]*",
-  "summary": "2-4 sentence summary in NAVSEA tone, action-oriented, present-tense",
+  "summary": "2-4 sentence summary in plain language, action-oriented, present-tense",
   "title": "Original title for reference",
   "deadline": "MM/DD/YYYY or null if no deadline",
   "contactInfo": {
@@ -103,23 +84,14 @@ Return ONLY valid JSON in this exact structure:
   },
   "relatedLinks": ["URL1", "URL2"] or [],
   "tags": ["keyword1", "keyword2"] or []
-}
-
-OUTPUT FORMAT (in this exact order):
-[HEADER LINE]
-
-*POC: [name & email]*
-
-[2–4 sentence summary in NAVSEA tone]
-
-Return valid JSON only, no markdown formatting outside of the poc field.`
+}`
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini', // Use mini for cost efficiency
       messages: [
         {
           role: 'system',
-          content: 'You are a NAVSEA Internal Communications writer. Always return valid JSON only. Follow NAVSEA formatting rules strictly: neutral tone, action-oriented, no hype language, no emojis, no exclamation points.',
+          content: 'You are an internal communications writer. Always return valid JSON only. Use plain language, neutral tone, action-oriented, no hype language, no emojis, no exclamation points. Focus on clarity and accuracy.',
         },
         {
           role: 'user',

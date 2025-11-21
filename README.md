@@ -67,3 +67,18 @@ Notes:
 
 Workme repo for mvp1
 
+## Architecture Principle
+
+**Identity-First Architecture:**
+
+- **WorkMeID = identity only** (not a tenant or workspace). WorkMe contains user profile fields, tasks/goals/achievements relations, and companyId relation. No other relations on WorkMe.
+
+- **Companies are independent entities** with no dependency on WorkMe. Company is a standalone table (name, city, type, etc.). WorkMe references Company via `companyId`, but Company does NOT reference WorkMe.
+
+- **Work outputs use `originatorId`** for all "work output" models (WorkSupport, WorkforceComms, NTKEdition, OrgCampaign, etc.). This allows:
+  - MVP1 single-user workflows
+  - Future multi-originator workflows  
+  - Future company/group routing
+
+Work outputs reference WorkMe via `originatorId` for MVP1, and will move into the Workbench repository for collaboration in Phase 2.
+

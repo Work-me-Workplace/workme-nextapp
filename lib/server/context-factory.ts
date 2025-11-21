@@ -64,7 +64,7 @@ export async function createTypedContext(
         data: {
           ...data,
           companyId,
-          createdByWorkMeId: workMeId,
+          originatorId: workMeId,
         },
       })
 
@@ -74,7 +74,7 @@ export async function createTypedContext(
           type,
           typeRefId: typed.id,
           companyId,
-          createdByWorkMeId: workMeId,
+          originatorId: workMeId,
         },
       })
 
@@ -151,7 +151,7 @@ export async function updateTypedContext(
         where: { 
           id: workContextId,
           companyId, // Multi-tenant: ensure same company
-          createdByWorkMeId: workMeId,
+          originatorId: workMeId,
           type, // Ensure type matches
         },
       })
@@ -292,7 +292,7 @@ export async function deleteTypedContext(
     where: { 
       id: workContextId,
       companyId, // Multi-tenant: ensure same company
-      createdByWorkMeId: workMeId,
+      originatorId: workMeId,
     },
   })
 

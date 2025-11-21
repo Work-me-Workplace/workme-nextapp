@@ -30,7 +30,7 @@ export async function deleteWorkContext(id: string) {
     }
 
     const existing = await prisma.workContext.findFirst({
-      where: { id, createdByWorkMeId: workMeId },
+      where: { id, originatorId: workMeId },
     })
 
     if (!existing) {
@@ -60,7 +60,7 @@ export async function getWorkContexts() {
     }
 
     const workContexts = await prisma.workContext.findMany({
-      where: { createdByWorkMeId: workMeId },
+      where: { originatorId: workMeId },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -98,7 +98,7 @@ export async function getWorkContext(id: string, clientWorkMeId?: string | null)
 
     // First try to find with workMeId filter
     let workContext = await prisma.workContext.findFirst({
-      where: { id, createdByWorkMeId: workMeId },
+      where: { id, originatorId: workMeId },
       include: {
         outputs: {
           orderBy: { updatedAt: 'desc' },
@@ -119,7 +119,7 @@ export async function getWorkContext(id: string, clientWorkMeId?: string | null)
       })
       
       if (workContext) {
-        console.error('[getWorkContext] Found but wrong workMeId. Context createdBy:', workContext.createdByWorkMeId, 'Query workMeId:', workMeId)
+        console.error('[getWorkContext] Found but wrong workMeId. Context originator:', workContext.originatorId, 'Query workMeId:', workMeId)
         return { success: false, error: 'Work context not found (authentication mismatch)' }
       }
     }

@@ -59,6 +59,9 @@ model WorkMe {
   createdCommsDrafts    WorkforceCommsDraft[]
   createdCommsEditions  WorkforceCommsEdition[]
 
+  // NTK Edition Relations
+  createdNTKEditions NTKEdition[] @relation("NTKEditionOriginator")
+
   // connections Connection[]  // Commented out - not using
   // events      Event[]       // Commented out - not using
   // milestones  Milestone[]   // Commented out - not using
@@ -160,6 +163,9 @@ model Company {
   workforceComms WorkforceComms[]
   commsDrafts    WorkforceCommsDraft[]
   commsEditions  WorkforceCommsEdition[]
+
+  // NTK Edition Relations
+  ntkEditions NTKEdition[] @relation("NTKEditionCompany")
 
   @@unique([workMeCompanyId, name]) // Unique name per container
   @@index([workMeCompanyId]) // Index for directory lookups
@@ -617,7 +623,7 @@ model WorkOutputStandalone {
 }
 
 // ============================================
-// STANDALONE NTK MODEL
+// STANDALONE NTK MODEL (Legacy - preserved for backward compatibility)
 // ============================================
 model NTK {
   ntkId        String   @id @default(cuid()) @map("id") // Primary key as ntkId
@@ -644,6 +650,59 @@ model NTK {
   @@index([createdByWorkMeId])
   @@index([createdAt])
   @@map("ntk")
+}
+
+// ============================================
+// NTK EDITION & ITEM MODELS (New Pipeline)
+// ============================================
+enum NTKStatus {
+  PENDING
+  VALIDATED
+  GENERATED
+  REVIEWED
+  FINAL
+}
+
+model NTKEdition {
+  id            String       @id @default(uuid())
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  date          DateTime?
+  title         String?
+  originatorId  String?
+  originator    WorkMe?      @relation("NTKEditionOriginator", fields: [originatorId], references: [id], onDelete: SetNull)
+
+  companyId     String
+  company       Company      @relation("NTKEditionCompany", fields: [companyId], references: [id], onDelete: Cascade)
+
+  items         NTKItem[]
+
+  @@index([companyId])
+  @@index([originatorId])
+  @@index([createdAt])
+  @@map("ntk_editions")
+}
+
+model NTKItem {
+  id            String       @id @default(uuid())
+  editionId     String
+  edition       NTKEdition   @relation(fields: [editionId], references: [id], onDelete: Cascade)
+
+  inputId       String       // Stable per-row identifier
+  rawFields     Json         // Store uploaded CSV row as JSON
+  validated     Boolean      @default(false)
+
+  plainLanguage String?      // GPT output (plain text)
+  feedback      String?      // For regenerating with user feedback
+  status        NTKStatus    @default(PENDING)
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([editionId])
+  @@index([inputId])
+  @@index([status])
+  @@map("ntk_items")
 }
 
 // ============================================

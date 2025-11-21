@@ -78,7 +78,7 @@ export async function createWorkSupport(data: z.infer<typeof workSupportSchema>)
         evolvingInfo: validated.evolvingInfo ?? undefined,
         assets: validated.assets ?? undefined,
         companyId,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
       },
       include: {
         context: true,
@@ -108,7 +108,7 @@ export async function updateWorkSupport(id: string, data: Partial<z.infer<typeof
       where: { 
         id,
         companyId, // Multi-tenant: ensure same company
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
       },
     })
 
@@ -227,7 +227,7 @@ export async function deleteWorkSupport(id: string) {
       where: { 
         id,
         companyId, // Multi-tenant: ensure same company
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
       },
     })
 

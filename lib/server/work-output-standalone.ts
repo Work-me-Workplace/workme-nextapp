@@ -57,7 +57,7 @@ export async function createStandaloneOutput(
       data: {
         ...validated,
         companyId,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
       },
     })
 
@@ -118,8 +118,8 @@ export async function updateStandaloneOutput(
       throw new Error("Output not found or unauthorized")
     }
 
-    if (existing.createdByWorkMeId !== workMeId) {
-      console.error(`[StandaloneOutput UPDATE] ERROR: Unauthorized id=${id} workMeId=${workMeId} owner=${existing.createdByWorkMeId} companyId=${companyId}`)
+    if (existing.originatorId !== workMeId) {
+      console.error(`[StandaloneOutput UPDATE] ERROR: Unauthorized id=${id} workMeId=${workMeId} owner=${existing.originatorId} companyId=${companyId}`)
       throw new Error("Unauthorized")
     }
 
@@ -259,8 +259,8 @@ export async function deleteStandaloneOutput(
       throw new Error("Output not found or unauthorized")
     }
 
-    if (existing.createdByWorkMeId !== workMeId) {
-      console.error(`[StandaloneOutput DELETE] ERROR: Unauthorized id=${id} workMeId=${workMeId} owner=${existing.createdByWorkMeId} companyId=${companyId}`)
+    if (existing.originatorId !== workMeId) {
+      console.error(`[StandaloneOutput DELETE] ERROR: Unauthorized id=${id} workMeId=${workMeId} owner=${existing.originatorId} companyId=${companyId}`)
       throw new Error("Unauthorized")
     }
 

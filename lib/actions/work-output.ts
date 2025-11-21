@@ -52,7 +52,7 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
           dataJson: validated.dataJson ?? undefined,
           status: (validated.status || 'draft') as 'draft' | 'final',
           companyId,
-          createdByWorkMeId: workMeId,
+          originatorId: workMeId,
         },
         include: {
           context: true,
@@ -92,7 +92,7 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
           dataJson: validated.dataJson ?? undefined,
           status: (validated.status || 'draft') as 'draft' | 'final',
           companyId,
-          createdByWorkMeId: workMeId,
+          originatorId: workMeId,
         },
         include: {
           context: true,
@@ -126,7 +126,7 @@ export async function updateWorkOutput(id: string, data: Partial<Pick<z.infer<ty
       where: { 
         id,
         companyId, // Multi-tenant: ensure same company
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
       },
     })
 
@@ -169,7 +169,7 @@ export async function deleteWorkOutput(id: string) {
       where: { 
         id,
         companyId, // Multi-tenant: ensure same company
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
       },
     })
 

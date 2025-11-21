@@ -102,7 +102,7 @@ export async function createWorkforceCommsProduct(data: z.infer<typeof workforce
         type: validated.type || 'email',
         name: validated.name,
         description: validated.description ?? undefined,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
       },
     })
@@ -197,7 +197,7 @@ export async function createWorkforceCommsDraft(data: z.infer<typeof workforceCo
         whatChanged: validated.whatChanged ?? undefined,
         priorityNotes: validated.priorityNotes ?? undefined,
         status: validated.status || 'drafting',
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
       },
       include: {
@@ -302,7 +302,7 @@ export async function createWorkforceCommsEdition(data: z.infer<typeof workforce
         subject: validated.subject,
         body: validated.body,
         sentAt: validated.sentAt ?? undefined,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
       },
       include: {

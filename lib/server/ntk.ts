@@ -61,7 +61,7 @@ export async function createNTK(
       draftContent: validated.draftContent ?? undefined,
       metadata: validated.metadata ?? undefined,
       companyId,
-      createdByWorkMeId: workMeId,
+      originatorId: workMeId,
     },
   })
 
@@ -98,7 +98,7 @@ export async function updateNTK(
     where: {
       ntkId,
       companyId,
-      createdByWorkMeId: workMeId,
+      originatorId: workMeId,
     },
   })
 
@@ -139,7 +139,7 @@ export async function getNTK(ntkId: string, workMeId: string, companyId: string)
   }
 
   // Optional: verify ownership (or allow company-wide access)
-  // if (ntk.createdByWorkMeId !== workMeId) {
+  // if (ntk.originatorId !== workMeId) {
   //   throw new Error('NTK not found or unauthorized')
   // }
 
@@ -170,7 +170,7 @@ export async function listNTKs(companyId: string) {
       summary: true,
       createdAt: true,
       updatedAt: true,
-      createdByWorkMeId: true,
+      originatorId: true,
     },
   })
 
@@ -195,7 +195,7 @@ export async function deleteNTK(ntkId: string, workMeId: string, companyId: stri
     where: {
       ntkId,
       companyId,
-      createdByWorkMeId: workMeId,
+      originatorId: workMeId,
     },
   })
 

@@ -120,7 +120,7 @@ export async function createCampaign(data: z.infer<typeof campaignSchema>, clien
     const campaign = await prisma.workContextCampaign.create({
       data: {
         ...validated,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
         description: validated.description ?? undefined,
         windowStart: validated.windowStart ?? undefined,
@@ -139,7 +139,7 @@ export async function createCampaign(data: z.infer<typeof campaignSchema>, clien
       data: {
         type: 'campaign',
         typeRefId: campaign.id,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
       },
     })
@@ -165,7 +165,7 @@ export async function createImpactEvent(data: z.infer<typeof impactEventSchema>)
     const impactEvent = await prisma.workContextImpactEvent.create({
       data: {
         ...validated,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
         description: validated.description ?? undefined,
         effectiveDate: validated.effectiveDate ?? undefined,
@@ -182,7 +182,7 @@ export async function createImpactEvent(data: z.infer<typeof impactEventSchema>)
       data: {
         type: 'impact_event',
         typeRefId: impactEvent.id,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
       },
     })
@@ -208,7 +208,7 @@ export async function createTraining(data: z.infer<typeof trainingSchema>) {
     const training = await prisma.workContextTraining.create({
       data: {
         ...validated,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
         description: validated.description ?? undefined,
         trainingDate: validated.trainingDate ?? undefined,
@@ -227,7 +227,7 @@ export async function createTraining(data: z.infer<typeof trainingSchema>) {
       data: {
         type: 'training',
         typeRefId: training.id,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
       },
     })
@@ -253,7 +253,7 @@ export async function createEvent(data: z.infer<typeof eventSchema>) {
     const event = await prisma.workContextEvent.create({
       data: {
         ...validated,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
         description: validated.description ?? undefined,
         startDate: validated.startDate ?? undefined,
@@ -271,7 +271,7 @@ export async function createEvent(data: z.infer<typeof eventSchema>) {
       data: {
         type: 'event',
         typeRefId: event.id,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
       },
     })
@@ -297,7 +297,7 @@ export async function createCommunityOpportunity(data: z.infer<typeof communityO
     const opportunity = await prisma.workContextCommunity.create({
       data: {
         ...validated,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
         description: validated.description ?? undefined,
         date: validated.date ?? undefined,
@@ -315,7 +315,7 @@ export async function createCommunityOpportunity(data: z.infer<typeof communityO
       data: {
         type: 'community',
         typeRefId: opportunity.id,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
       },
     })
@@ -368,7 +368,7 @@ export async function createCareer(data: z.infer<typeof careerSchema>) {
         pocEmail: validated.pocEmail ?? undefined,
         pocPhone: validated.pocPhone ?? undefined,
         pocDepartment: validated.pocDepartment ?? undefined,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
       },
     })
@@ -377,7 +377,7 @@ export async function createCareer(data: z.infer<typeof careerSchema>) {
       data: {
         type: 'career',
         typeRefId: career.id,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
       },
     })
@@ -403,7 +403,7 @@ export async function createBenefits(data: z.infer<typeof benefitsSchema>) {
     const benefits = await prisma.workContextBenefits.create({
       data: {
         ...validated,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
         description: validated.description ?? undefined,
         windowStart: validated.windowStart ?? undefined,
@@ -425,7 +425,7 @@ export async function createBenefits(data: z.infer<typeof benefitsSchema>) {
       data: {
         type: 'benefits',
         typeRefId: benefits.id,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
       },
     })
@@ -464,7 +464,7 @@ export async function createEmployeeCause(data: z.infer<typeof employeeCauseSche
         pocEmail: validated.pocEmail ?? undefined,
         pocPhone: validated.pocPhone ?? undefined,
         sponsoringDepartment: validated.sponsoringDepartment ?? undefined,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
       },
     })
@@ -473,7 +473,7 @@ export async function createEmployeeCause(data: z.infer<typeof employeeCauseSche
       data: {
         type: 'employee_cause',
         typeRefId: employeeCause.id,
-        createdByWorkMeId: workMeId,
+        originatorId: workMeId,
         companyId: companyId,
       },
     })
@@ -498,7 +498,7 @@ export async function updateCampaign(workContextId: string, data: z.infer<typeof
 
     // Get WorkContext to find typeRefId and validate ownership
     const workContext = await prisma.workContext.findFirst({
-      where: { id: workContextId, createdByWorkMeId: workMeId },
+      where: { id: workContextId, originatorId: workMeId },
     })
 
     if (!workContext || workContext.type !== 'campaign') {
@@ -538,7 +538,7 @@ export async function updateImpactEvent(workContextId: string, data: z.infer<typ
     const { workMeId } = await verifyAuth()
 
     const workContext = await prisma.workContext.findFirst({
-      where: { id: workContextId, createdByWorkMeId: workMeId },
+      where: { id: workContextId, originatorId: workMeId },
     })
 
     if (!workContext || workContext.type !== 'impact_event') {
@@ -576,7 +576,7 @@ export async function updateTraining(workContextId: string, data: z.infer<typeof
     const { workMeId } = await verifyAuth()
 
     const workContext = await prisma.workContext.findFirst({
-      where: { id: workContextId, createdByWorkMeId: workMeId },
+      where: { id: workContextId, originatorId: workMeId },
     })
 
     if (!workContext || workContext.type !== 'training') {
@@ -616,7 +616,7 @@ export async function updateEvent(workContextId: string, data: z.infer<typeof ev
     const { workMeId } = await verifyAuth()
 
     const workContext = await prisma.workContext.findFirst({
-      where: { id: workContextId, createdByWorkMeId: workMeId },
+      where: { id: workContextId, originatorId: workMeId },
     })
 
     if (!workContext || workContext.type !== 'event') {
@@ -655,7 +655,7 @@ export async function updateCommunityOpportunity(workContextId: string, data: z.
     const { workMeId } = await verifyAuth()
 
     const workContext = await prisma.workContext.findFirst({
-      where: { id: workContextId, createdByWorkMeId: workMeId },
+      where: { id: workContextId, originatorId: workMeId },
     })
 
     if (!workContext || workContext.type !== 'community') {
@@ -694,7 +694,7 @@ export async function updateBenefits(workContextId: string, data: z.infer<typeof
     const { workMeId } = await verifyAuth()
 
     const workContext = await prisma.workContext.findFirst({
-      where: { id: workContextId, createdByWorkMeId: workMeId },
+      where: { id: workContextId, originatorId: workMeId },
     })
 
     if (!workContext || workContext.type !== 'benefits') {
@@ -737,7 +737,7 @@ export async function updateCareer(workContextId: string, data: z.infer<typeof c
     const { workMeId } = await verifyAuth()
 
     const workContext = await prisma.workContext.findFirst({
-      where: { id: workContextId, createdByWorkMeId: workMeId },
+      where: { id: workContextId, originatorId: workMeId },
     })
 
     if (!workContext || workContext.type !== 'career') {
@@ -776,7 +776,7 @@ export async function updateEmployeeCause(workContextId: string, data: z.infer<t
     const { workMeId } = await verifyAuth()
 
     const workContext = await prisma.workContext.findFirst({
-      where: { id: workContextId, createdByWorkMeId: workMeId },
+      where: { id: workContextId, originatorId: workMeId },
     })
 
     if (!workContext || workContext.type !== 'employee_cause') {
