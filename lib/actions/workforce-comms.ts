@@ -216,7 +216,7 @@ export async function updateWorkforceCommsDraft(
       where: { draftId },
       data: {
         contextIds: data.contextIds !== undefined ? (data.contextIds || null) : undefined,
-        lastEditionId: data.lastEditionId !== undefined ? (data.lastEditionId || null) : undefined,
+        lastEditionId: data.lastEditionId !== undefined ? (data.lastEditionId || undefined) : undefined,
         authorNotes: data.authorNotes !== undefined ? (data.authorNotes ?? undefined) : undefined,
         whatChanged: data.whatChanged !== undefined ? (data.whatChanged ?? undefined) : undefined,
         priorityNotes: data.priorityNotes !== undefined ? (data.priorityNotes ?? undefined) : undefined,
