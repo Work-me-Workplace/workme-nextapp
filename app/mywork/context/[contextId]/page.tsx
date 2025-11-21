@@ -239,6 +239,50 @@ export default function WorkContextDetailPage() {
                 )}
               </>
             )}
+            {workContext.type === 'benefits' && workContext.typedData && (
+              <>
+                {workContext.typedData.windowStart && (
+                  <div>
+                    <span className="font-medium text-gray-700">Enrollment Start:</span>
+                    <span className="ml-2 text-gray-600">{new Date(workContext.typedData.windowStart).toLocaleString()}</span>
+                  </div>
+                )}
+                {workContext.typedData.windowEnd && (
+                  <div>
+                    <span className="font-medium text-gray-700">Enrollment End:</span>
+                    <span className="ml-2 text-gray-600">{new Date(workContext.typedData.windowEnd).toLocaleString()}</span>
+                  </div>
+                )}
+                {workContext.typedData.annualRecurrence && (
+                  <div>
+                    <span className="font-medium text-gray-700">Annual Recurrence:</span>
+                    <span className="ml-2 text-gray-600">Yes</span>
+                  </div>
+                )}
+                {(workContext.typedData.fehbLink || workContext.typedData.fedvipLink || workContext.typedData.fsafedsLink) && (
+                  <div className="col-span-2">
+                    <span className="font-medium text-gray-700">Enrollment Links:</span>
+                    <div className="mt-2 space-y-1">
+                      {workContext.typedData.fehbLink && (
+                        <div><a href={workContext.typedData.fehbLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">FEHB</a></div>
+                      )}
+                      {workContext.typedData.fedvipLink && (
+                        <div><a href={workContext.typedData.fedvipLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">FEDVIP</a></div>
+                      )}
+                      {workContext.typedData.fsafedsLink && (
+                        <div><a href={workContext.typedData.fsafedsLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">FSAFEDS</a></div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {workContext.typedData.pocDepartment && (
+                  <div>
+                    <span className="font-medium text-gray-700">Department:</span>
+                    <span className="ml-2 text-gray-600">{workContext.typedData.pocDepartment}</span>
+                  </div>
+                )}
+              </>
+            )}
             {workContext.typedData?.pocLastName && (
               <div>
                 <span className="font-medium text-gray-700">POC:</span>

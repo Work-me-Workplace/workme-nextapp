@@ -41,6 +41,13 @@ const contextTypes = [
     icon: '🤝',
     formPath: '/mywork/context/new/community',
   },
+  {
+    type: 'benefits',
+    name: 'Company Benefits',
+    description: 'Benefits enrollment window (e.g., Open Season)',
+    icon: '🎁',
+    formPath: '/mywork/context/new/benefits',
+  },
 ]
 
 export default function NewWorkContextPage() {

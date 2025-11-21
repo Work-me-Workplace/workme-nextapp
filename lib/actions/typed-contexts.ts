@@ -59,6 +59,21 @@ const communityOpportunitySchema = z.object({
   pocLastName: z.string().optional().nullable(),
 })
 
+// Benefits Schema
+const benefitsSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional().nullable(),
+  windowStart: z.date().optional().nullable(),
+  windowEnd: z.date().optional().nullable(),
+  fehbLink: z.string().url().optional().nullable(),
+  fedvipLink: z.string().url().optional().nullable(),
+  fsafedsLink: z.string().url().optional().nullable(),
+  faqLink: z.string().url().optional().nullable(),
+  pocLastName: z.string().optional().nullable(),
+  pocDepartment: z.string().optional().nullable(),
+  annualRecurrence: z.boolean().default(false),
+})
+
 // Create Campaign
 export async function createCampaign(data: z.infer<typeof campaignSchema>) {
   try {
@@ -260,6 +275,50 @@ export async function createCommunityOpportunity(data: z.infer<typeof communityO
   }
 }
 
+// Create Benefits
+export async function createBenefits(data: z.infer<typeof benefitsSchema>) {
+  try {
+    const validated = benefitsSchema.parse(data)
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const benefits = await prisma.workContextBenefits.create({
+      data: {
+        ...validated,
+        createdByWorkMeId: workMeId,
+        description: validated.description ?? undefined,
+        windowStart: validated.windowStart ?? undefined,
+        windowEnd: validated.windowEnd ?? undefined,
+        fehbLink: validated.fehbLink ?? undefined,
+        fedvipLink: validated.fedvipLink ?? undefined,
+        fsafedsLink: validated.fsafedsLink ?? undefined,
+        faqLink: validated.faqLink ?? undefined,
+        pocLastName: validated.pocLastName ?? undefined,
+        pocDepartment: validated.pocDepartment ?? undefined,
+        annualRecurrence: validated.annualRecurrence ?? false,
+      },
+    })
+
+    const workContext = await prisma.workContext.create({
+      data: {
+        type: 'benefits',
+        typeRefId: benefits.id,
+        createdByWorkMeId: workMeId,
+      },
+    })
+
+    return { success: true, benefits, workContext }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors }
+    }
+    return { success: false, error: 'Failed to create benefits context' }
+  }
+}
+
 // Get typed context data by WorkContext
 export async function getTypedContext(workContext: { type: string; typeRefId: string }) {
   try {
@@ -293,6 +352,12 @@ export async function getTypedContext(workContext: { type: string; typeRefId: st
           where: { id: workContext.typeRefId },
         })
         return { success: true, data: opportunity, title: opportunity?.title || '' }
+      
+      case 'benefits':
+        const benefits = await prisma.workContextBenefits.findUnique({
+          where: { id: workContext.typeRefId },
+        })
+        return { success: true, data: benefits, title: benefits?.title || '' }
       
       default:
         return { success: false, error: 'Unknown context type' }
