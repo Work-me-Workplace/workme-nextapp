@@ -18,7 +18,7 @@ export default function NewNTKPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [savedOutputId, setSavedOutputId] = useState<string | null>(null)
+  const [savedNTKId, setSavedNTKId] = useState<string | null>(null)
 
   const handleGenerate = async () => {
     const textToUse = inputMode === 'csv' ? csvContent : sourceText
@@ -66,11 +66,11 @@ export default function NewNTKPage() {
         save: true, // Save this time
       })
 
-      if (response.data.success && response.data.outputId) {
-        setSavedOutputId(response.data.outputId)
+      if (response.data.success && response.data.ntkId) {
+        setSavedNTKId(response.data.ntkId)
         // Redirect to detail page after a short delay
         setTimeout(() => {
-          router.push(`/ntk/${response.data.outputId}`)
+          router.push(`/ntk/${response.data.ntkId}`)
         }, 1500)
       } else {
         setError('Failed to save NTK')
@@ -101,7 +101,7 @@ export default function NewNTKPage() {
     }
   }
 
-  if (savedOutputId) {
+  if (savedNTKId) {
     return (
       <div className="max-w-4xl mx-auto p-8">
         <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">

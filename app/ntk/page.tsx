@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
 
 interface NTKListItem {
-  id: string
-  title: string
-  description?: string
+  ntkId: string
+  header: string
+  summary: string
   createdAt: string
   updatedAt: string
 }
@@ -24,14 +24,10 @@ export default function NTKListPage() {
       setError(null)
 
       try {
-        const response = await api.get('/api/output-standalone')
+        const response = await api.get('/api/ntk')
 
         if (response.data.success && response.data.data) {
-          // Filter to only NTK outputs
-          const ntkOutputs = response.data.data.filter(
-            (output: any) => output.outputType === 'ntk'
-          )
-          setNtks(ntkOutputs)
+          setNtks(response.data.data)
         } else {
           setError(response.data.error || 'Failed to load NTKs')
         }
@@ -46,15 +42,15 @@ export default function NTKListPage() {
     loadNTKs()
   }, [])
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (ntkId: string) => {
     if (!confirm('Are you sure you want to delete this NTK?')) return
 
     try {
-      const response = await api.delete(`/api/output-standalone/${id}`)
+      const response = await api.delete(`/api/ntk/${ntkId}`)
 
       if (response.data.success) {
         // Remove from list
-        setNtks(ntks.filter((ntk) => ntk.id !== id))
+        setNtks(ntks.filter((ntk) => ntk.ntkId !== ntkId))
       } else {
         setError('Failed to delete NTK')
       }
@@ -113,20 +109,20 @@ export default function NTKListPage() {
         <div className="space-y-4">
           {ntks.map((ntk) => (
             <div
-              key={ntk.id}
+              key={ntk.ntkId}
               className="border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors"
             >
               <div className="flex items-start justify-between">
                 <div
                   className="flex-1 cursor-pointer"
-                  onClick={() => router.push(`/ntk/${ntk.id}`)}
+                  onClick={() => router.push(`/ntk/${ntk.ntkId}`)}
                 >
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    {ntk.title}
+                    {ntk.header}
                   </h3>
-                  {ntk.description && (
+                  {ntk.summary && (
                     <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-                      {ntk.description}
+                      {ntk.summary}
                     </p>
                   )}
                   <p className="text-xs text-gray-500">
@@ -139,14 +135,14 @@ export default function NTKListPage() {
                 <div className="flex items-center gap-2 ml-4">
                   <button
                     type="button"
-                    onClick={() => router.push(`/ntk/${ntk.id}`)}
+                    onClick={() => router.push(`/ntk/${ntk.ntkId}`)}
                     className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     View
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDelete(ntk.id)}
+                    onClick={() => handleDelete(ntk.ntkId)}
                     className="px-3 py-1 text-sm text-red-600 border border-red-300 rounded-lg hover:bg-red-50"
                   >
                     Delete

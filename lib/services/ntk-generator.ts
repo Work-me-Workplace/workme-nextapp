@@ -4,9 +4,8 @@
  * Uses OpenAI to normalize unstructured text into structured NTK format
  * 
  * ⚠️ SERVER-ONLY - Never import in client components
+ * This file is only used in API routes (/app/api/**)
  */
-
-'use server'
 
 import OpenAI from 'openai'
 
@@ -17,13 +16,15 @@ const openai = new OpenAI({
 
 /**
  * NTK Structure
- * Standard format for Need-to-Know communications
+ * NAVSEA-style format for Need-to-Know communications
  */
 export interface NTKStructure {
-  title: string
-  summary: string // Brief overview (2-3 sentences)
-  keyPoints: string[] // 3-7 bullet points
-  actionItems: string[] // What readers need to do
+  header: string // [TITLE IN ALL CAPS] – [MONTH] [DAY] format
+  poc: string // POC in markdown italics format: *POC: name & email*
+  summary: string // 2-4 sentence summary in NAVSEA tone
+  title: string // Original title (for compatibility)
+  keyPoints?: string[] // Optional: 3-7 bullet points
+  actionItems?: string[] // Optional: What readers need to do
   deadline?: string // Optional deadline
   contactInfo?: {
     name?: string
@@ -54,21 +55,56 @@ export async function generateNTK(sourceText: string): Promise<NTKStructure> {
   })
 
   try {
-    const prompt = `You are an expert at normalizing workplace communications into clear, structured "Need to Know" (NTK) format.
-
-Analyze the following text and extract key information into a structured NTK format:
+    const prompt = `You are a NAVSEA Internal Communications writer supporting the weekly "Need to Know" workforce email. Rewrite the following item into a short, clear blurb following these rules:
 
 ---
 ${sourceText}
 ---
 
+1. HEADER FORMAT
+   • Use the exact event title provided.
+   • Create a NAVSEA-style header line formatted as:
+       [TITLE IN ALL CAPS] – [MONTH WRITTEN AS TEXT, NO PERIOD] [DAY]
+     Example: 
+       DEOCS SURVEY EXTENDED – NOV 30
+
+2. DATE HANDLING
+   • Extract the date from the input text or CSV summary.
+   • Use the MONTH spelled out ("NOV", "DEC", "JAN") with no punctuation.
+   • Use the DAY number only (no leading zeros).
+
+3. POC FORMAT
+   • Show POC in *italics* using markdown.
+   • Format as: *POC: [name & email]*
+   • If multiple POCs, list each on its own line.
+   • If no POC found, use: *POC: Not specified*
+
+4. SUMMARY STYLE
+   • Lead with what's important or what the workforce must DO.
+   • Use action-oriented present-tense language (e.g., "Submit…", "Complete…", "Take…").
+   • Keep it concise, direct, and workforce-focused (2-4 sentences).
+   • If the system detects the item has appeared before, refresh phrasing so it is not repetitive.
+     (Use synonyms, reorder content, or tighten clarity.)
+   • Maintain NAVSEA voice: neutral, informative, operationally focused.
+   • If relevant, include:
+       – deadlines
+       – what the employee is expected to do
+       – what system or link is used
+       – any major changes (extended, updated, shifted timelines)
+
+5. PROHIBITED
+   • No hype language ("exciting," "great opportunity," "don't miss").
+   • No emojis.
+   • No exclamation points.
+   • Do not editorialize.
+
 Return ONLY valid JSON in this exact structure:
 {
-  "title": "Clear, concise title (5-10 words)",
-  "summary": "Brief overview in 2-3 sentences explaining the key message",
-  "keyPoints": ["First key point", "Second key point", "Third key point"],
-  "actionItems": ["Action item 1", "Action item 2"],
-  "deadline": "MM/DD/YYYY or 'None' if no deadline",
+  "header": "[TITLE IN ALL CAPS] – [MONTH] [DAY]",
+  "poc": "*POC: [name & email]*",
+  "summary": "2-4 sentence summary in NAVSEA tone, action-oriented, present-tense",
+  "title": "Original title for reference",
+  "deadline": "MM/DD/YYYY or null if no deadline",
   "contactInfo": {
     "name": "Name or null",
     "email": "Email or null",
@@ -78,22 +114,21 @@ Return ONLY valid JSON in this exact structure:
   "tags": ["keyword1", "keyword2"] or []
 }
 
-Rules:
-- Include 3-7 key points (most important information)
-- Include action items only if the text explicitly states what readers must do
-- Extract deadlines in MM/DD/YYYY format or return "None"
-- Extract contact info if mentioned, otherwise use null
-- Extract URLs if mentioned, otherwise return empty array
-- Tags should be relevant keywords (3-5 max)
-- Keep language clear and professional
-- Return valid JSON only, no markdown formatting`
+OUTPUT FORMAT (in this exact order):
+[HEADER LINE]
+
+*POC: [name & email]*
+
+[2–4 sentence summary in NAVSEA tone]
+
+Return valid JSON only, no markdown formatting outside of the poc field.`
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini', // Use mini for cost efficiency
       messages: [
         {
           role: 'system',
-          content: 'You are a workplace communication expert. Always return valid JSON only.',
+          content: 'You are a NAVSEA Internal Communications writer. Always return valid JSON only. Follow NAVSEA formatting rules strictly: neutral tone, action-oriented, no hype language, no emojis, no exclamation points.',
         },
         {
           role: 'user',
@@ -119,9 +154,14 @@ Rules:
       throw new Error('Failed to parse OpenAI response as JSON')
     }
 
-    // Validate required fields
-    if (!ntk.title || !ntk.summary || !Array.isArray(ntk.keyPoints)) {
-      throw new Error('OpenAI returned invalid NTK structure')
+    // Validate required fields (NAVSEA format)
+    if (!ntk.header || !ntk.poc || !ntk.summary) {
+      throw new Error('OpenAI returned invalid NTK structure - missing required NAVSEA fields')
+    }
+
+    // Ensure title exists (for compatibility, use header if title missing)
+    if (!ntk.title) {
+      ntk.title = ntk.header
     }
 
     // Clean up deadline - convert "None" to undefined
@@ -129,15 +169,17 @@ Rules:
       ntk.deadline = undefined
     }
 
-    // Ensure arrays are defined
+    // Ensure arrays are defined (optional fields)
+    ntk.keyPoints = ntk.keyPoints || []
     ntk.actionItems = ntk.actionItems || []
     ntk.relatedLinks = ntk.relatedLinks || []
     ntk.tags = ntk.tags || []
 
     console.log('[NTK Generator] SUCCESS', {
+      header: ntk.header,
       title: ntk.title,
-      keyPointsCount: ntk.keyPoints.length,
-      actionItemsCount: ntk.actionItems.length,
+      hasPoc: !!ntk.poc,
+      summaryLength: ntk.summary.length,
     })
 
     return ntk
@@ -159,17 +201,4 @@ Rules:
   }
 }
 
-/**
- * Parse CSV text into sourceText
- * Simple CSV parser for NTK input
- */
-export function parseCSVToText(csvContent: string): string {
-  const lines = csvContent.trim().split('\n')
-  
-  // Skip header row if it exists
-  const dataLines = lines.slice(1).filter(line => line.trim().length > 0)
-  
-  // Join all rows into text
-  return dataLines.join('\n\n')
-}
 

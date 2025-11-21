@@ -19,11 +19,28 @@ export default function NTKPreview({
 }: NTKPreviewProps) {
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="border-b pb-4">
-        <h2 className="text-2xl font-bold text-gray-900">{ntk.title}</h2>
+      {/* NAVSEA Format: Header, POC, Summary */}
+      <div className="border-b pb-4 space-y-3">
+        {/* Header Line (NAVSEA format) */}
+        {ntk.header ? (
+          <h2 className="text-2xl font-bold text-gray-900 uppercase tracking-tight">
+            {ntk.header}
+          </h2>
+        ) : (
+          <h2 className="text-2xl font-bold text-gray-900">{ntk.title}</h2>
+        )}
+
+        {/* POC (in markdown italics) */}
+        {ntk.poc && (
+          <div 
+            className="text-gray-700"
+            dangerouslySetInnerHTML={{ __html: ntk.poc.replace(/\*(.*?)\*/g, '<em>$1</em>') }}
+          />
+        )}
+
+        {/* Summary (NAVSEA tone, 2-4 sentences) */}
         {ntk.summary && (
-          <p className="mt-2 text-gray-600">{ntk.summary}</p>
+          <p className="text-gray-700 leading-relaxed">{ntk.summary}</p>
         )}
       </div>
 

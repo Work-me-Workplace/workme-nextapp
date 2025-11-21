@@ -6,13 +6,14 @@ import api from '@/lib/api'
 import NTKPreview from '@/components/ntk/NTKPreview'
 import type { NTKStructure } from '@/lib/services/ntk-generator'
 
-interface NTKOutput {
-  id: string
-  title: string
-  description?: string
+interface NTKData {
+  ntkId: string
+  header: string
+  poc: string
+  summary: string
+  sourceText?: string
   draftContent?: NTKStructure
   metadata?: {
-    sourceText?: string
     isCSV?: boolean
     generatedAt?: string
   }
@@ -25,7 +26,7 @@ export default function NTKDetailPage() {
   const router = useRouter()
   const id = params?.id as string
 
-  const [ntkOutput, setNtkOutput] = useState<NTKOutput | null>(null)
+  const [ntkData, setNtkData] = useState<NTKData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -38,18 +39,10 @@ export default function NTKDetailPage() {
       setError(null)
 
       try {
-        const response = await api.get(`/api/output-standalone/${id}`)
+        const response = await api.get(`/api/ntk/${id}`)
 
-        if (response.data.success && response.data.data) {
-          const data = response.data.data
-
-          // Verify this is an NTK output
-          if (data.outputType !== 'ntk') {
-            setError('This is not an NTK output')
-            return
-          }
-
-          setNtkOutput(data)
+        if (response.data.success && response.data.ntk) {
+          setNtkData(response.data.ntk)
         } else {
           setError(response.data.error || 'Failed to load NTK')
         }
@@ -65,23 +58,24 @@ export default function NTKDetailPage() {
   }, [id])
 
   const handleSave = async () => {
-    if (!ntkOutput || !ntkOutput.draftContent) return
+    if (!ntkData) return
 
     setIsSaving(true)
     setError(null)
 
     try {
-      const response = await api.put(`/api/output-standalone/${id}`, {
-        title: ntkOutput.draftContent.title,
-        description: ntkOutput.draftContent.summary,
-        draftContent: ntkOutput.draftContent,
+      const response = await api.put(`/api/ntk/${id}`, {
+        header: ntkData.header,
+        poc: ntkData.poc,
+        summary: ntkData.summary,
+        sourceText: ntkData.sourceText,
       })
 
       if (response.data.success) {
         // Reload to get updated data
-        const reloadResponse = await api.get(`/api/output-standalone/${id}`)
+        const reloadResponse = await api.get(`/api/ntk/${id}`)
         if (reloadResponse.data.success) {
-          setNtkOutput(reloadResponse.data.data)
+          setNtkData(reloadResponse.data.ntk)
         }
       } else {
         setError('Failed to save changes')
@@ -104,7 +98,7 @@ export default function NTKDetailPage() {
     )
   }
 
-  if (error || !ntkOutput) {
+  if (error || !ntkData) {
     return (
       <div className="max-w-4xl mx-auto p-8">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
@@ -123,10 +117,9 @@ export default function NTKDetailPage() {
     )
   }
 
-  const ntkData = ntkOutput.draftContent
-  const sourceText = ntkOutput.metadata?.sourceText
+  const sourceText = ntkData.sourceText
 
-  if (!ntkData) {
+  if (!ntkData.header || !ntkData.poc || !ntkData.summary) {
     return (
       <div className="max-w-4xl mx-auto p-8">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
@@ -149,11 +142,11 @@ export default function NTKDetailPage() {
           >
             ← Back to NTK List
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">{ntkOutput.title}</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{ntkData.header}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Created {new Date(ntkOutput.createdAt).toLocaleDateString()}
-            {ntkOutput.updatedAt !== ntkOutput.createdAt && (
-              <span> • Updated {new Date(ntkOutput.updatedAt).toLocaleDateString()}</span>
+            Created {new Date(ntkData.createdAt).toLocaleDateString()}
+            {ntkData.updatedAt !== ntkData.createdAt && (
+              <span> • Updated {new Date(ntkData.updatedAt).toLocaleDateString()}</span>
             )}
           </p>
         </div>
@@ -172,14 +165,34 @@ export default function NTKDetailPage() {
         </div>
       )}
 
-      <div className="border border-gray-200 rounded-lg p-6 bg-white">
-        <NTKPreview
-          ntk={ntkData}
-          sourceText={sourceText}
-          onSave={handleSave}
-          isLoading={isSaving}
-        />
-      </div>
+      {ntkData.draftContent ? (
+        <div className="border border-gray-200 rounded-lg p-6 bg-white">
+          <NTKPreview
+            ntk={ntkData.draftContent}
+            sourceText={ntkData.sourceText}
+            onSave={handleSave}
+            isLoading={isSaving}
+          />
+        </div>
+      ) : (
+        <div className="border border-gray-200 rounded-lg p-6 bg-white space-y-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 uppercase">{ntkData.header}</h2>
+            <div className="mt-2 text-gray-700" dangerouslySetInnerHTML={{ __html: ntkData.poc.replace(/\*(.*?)\*/g, '<em>$1</em>') }} />
+            <p className="mt-2 text-gray-700 leading-relaxed">{ntkData.summary}</p>
+          </div>
+          {ntkData.sourceText && (
+            <details className="border-t pt-4">
+              <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+                View Source Text
+              </summary>
+              <div className="mt-2 p-4 bg-gray-50 rounded-lg">
+                <pre className="whitespace-pre-wrap text-sm text-gray-700">{ntkData.sourceText}</pre>
+              </div>
+            </details>
+          )}
+        </div>
+      )}
     </div>
   )
 }

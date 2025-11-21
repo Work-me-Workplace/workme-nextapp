@@ -1,7 +1,21 @@
 import { NextResponse } from 'next/server'
-import { generateNTK, parseCSVToText } from '@/lib/services/ntk-generator'
+import { generateNTK } from '@/lib/services/ntk-generator'
 import { verifyAuth } from '@/lib/server/verifyAuth'
-import { createStandaloneOutput } from '@/lib/server/work-output-standalone'
+import { createNTK } from '@/lib/server/ntk'
+
+/**
+ * Parse CSV text into sourceText
+ * Simple CSV parser for NTK input
+ */
+function parseCSVToText(csvContent: string): string {
+  const lines = csvContent.trim().split('\n')
+  
+  // Skip header row if it exists
+  const dataLines = lines.slice(1).filter(line => line.trim().length > 0)
+  
+  // Join all rows into text
+  return dataLines.join('\n\n')
+}
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -62,22 +76,22 @@ export async function POST(request: Request) {
     const ntk = await generateNTK(processedText)
 
     console.log('[API POST /api/ntk/generate] NTK generated', {
-      title: ntk.title,
-      keyPointsCount: ntk.keyPoints.length,
+      header: ntk.header,
+      poc: ntk.poc,
     })
 
-    let outputId: string | undefined
+    let ntkId: string | undefined
 
     // Save to database if requested
     if (save) {
-      const result = await createStandaloneOutput(
+      const result = await createNTK(
         {
-          outputType: 'ntk',
-          title: ntk.title,
-          description: ntk.summary,
-          draftContent: ntk, // Store structured NTK in draftContent
+          header: ntk.header,
+          poc: ntk.poc,
+          summary: ntk.summary,
+          sourceText: processedText,
+          draftContent: ntk, // Store full structure
           metadata: {
-            sourceText: processedText, // Store original source in metadata
             isCSV,
             generatedAt: new Date().toISOString(),
           },
@@ -86,17 +100,17 @@ export async function POST(request: Request) {
         companyId,
       )
 
-      outputId = result.outputId
+      ntkId = result.ntkId
 
       console.log('[API POST /api/ntk/generate] Saved to database', {
-        outputId,
+        ntkId,
       })
     }
 
     return NextResponse.json({
       success: true,
       ntk,
-      outputId,
+      ntkId,
     })
   } catch (error: any) {
     console.error('❌ POST /api/ntk/generate error:', error)

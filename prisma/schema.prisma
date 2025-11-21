@@ -37,6 +37,7 @@ model WorkMe {
   createdSupports          WorkSupport[]
   createdOutputs           WorkOutput[]
   createdStandaloneOutputs WorkOutputStandalone[]
+  createdNTKs NTK[]
 
   // Typed Context Relations (created by this WorkMe)
   createdCampaignContexts      WorkContextCampaign[]
@@ -138,6 +139,7 @@ model Company {
   supports          WorkSupport[]
   outputs           WorkOutput[]
   standaloneOutputs WorkOutputStandalone[]
+  ntks              NTK[]
 
   // Typed Context Relations
   campaignContexts      WorkContextCampaign[]
@@ -612,6 +614,36 @@ model WorkOutputStandalone {
   @@index([outputType])
   @@index([updatedAt])
   @@index([workSupportId])
+}
+
+// ============================================
+// STANDALONE NTK MODEL
+// ============================================
+model NTK {
+  ntkId        String   @id @default(cuid()) @map("id") // Primary key as ntkId
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // NAVSEA NTK Structure
+  header       String   // [TITLE IN ALL CAPS] – [MONTH] [DAY]
+  poc          String   // *POC: [name & email]*
+  summary      String   // 2-4 sentence summary in NAVSEA tone
+  sourceText   String?  // Original source text (manual entry, CSV, etc.)
+
+  // Optional structured data
+  draftContent Json?    // Full NTK structure for future use
+  metadata     Json?    // Additional metadata (isCSV, generatedAt, etc.)
+
+  // Multi-tenant scoping
+  companyId         String
+  company           Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation(fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([createdByWorkMeId])
+  @@index([createdAt])
+  @@map("ntk")
 }
 
 // ============================================

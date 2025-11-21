@@ -16,9 +16,9 @@ export default function SigninContent() {
 
   const createOrFindWorkMe = async (payload: any) => {
     const response = await api.post('/api/workme/create', payload)
-    const { workMe } = response || {}
+    const workMe = response.data?.workMe || response.data?.data?.workMe
     if (!workMe) {
-      throw new Error('WorkMe creation failed - no workMe returned')
+      throw new Error('WorkMe creation failed - no workMe returned in response.data')
     }
     return workMe
   }
