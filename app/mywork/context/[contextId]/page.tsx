@@ -473,7 +473,7 @@ export default function WorkContextDetailPage() {
               {workContext.outputs.map((output: any) => (
                 <Link
                   key={output.id}
-                  href={`/mywork/outputs/${contextId}/${output.outputType}`}
+                  href={`/mywork/outputs/builder/${output.id}`}
                   className="block border-l-4 border-blue-600 pl-4 py-2 hover:bg-gray-50 rounded-r"
                 >
                   <div className="flex items-center justify-between">

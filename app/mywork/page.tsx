@@ -242,7 +242,7 @@ export default function MyWorkPage() {
                             <p className="text-sm text-gray-500 capitalize">{output.outputType.replace('_', ' ')}</p>
                           </div>
                           <Link
-                            href={`/mywork/outputs/${output.contextId}/${output.outputType}`}
+                            href={`/mywork/outputs/builder/${output.id}`}
                             className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                           >
                             View →
