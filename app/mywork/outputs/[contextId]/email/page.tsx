@@ -94,6 +94,7 @@ export default function EmailOutputPage() {
           contextId,
           outputType: 'email',
           dataJson,
+          status: 'draft',
         })
         if (result.success && result.workOutput) {
           alert('Email output created!')
