@@ -1,17 +1,8 @@
 import { NextResponse } from 'next/server'
-import { getWorkMeId } from '@/lib/getWorkMeId.server'
-import { getWorkContext, deleteWorkContext } from '@/lib/actions/work-context'
-import { getTypedContext } from '@/lib/actions/typed-contexts'
-import {
-  updateCampaign,
-  updateImpactEvent,
-  updateTraining,
-  updateEvent,
-  updateCommunityOpportunity,
-  updateBenefits,
-  updateCareer,
-  updateEmployeeCause,
-} from '@/lib/actions/typed-contexts'
+import { getWorkContext } from '@/lib/server/get-work-context'
+import { updateTypedContext, deleteTypedContext } from '@/lib/server/context-factory'
+import { SCHEMA_MAP } from '@/lib/server/context-schemas'
+import type { ContextType } from '@prisma/client'
 
 /**
  * GET /api/context/[contextId]
@@ -23,14 +14,6 @@ export async function GET(
 ) {
   try {
     const { contextId } = await params
-    const workMeId = await getWorkMeId()
-
-    if (!workMeId) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 },
-      )
-    }
 
     if (!contextId) {
       return NextResponse.json(
@@ -39,38 +22,19 @@ export async function GET(
       )
     }
 
-    // Get WorkContext router entry
-    const result = await getWorkContext(contextId)
+    // Get WorkContext with enrichment (uses factory pattern)
+    const workContext = await getWorkContext(contextId)
 
-    if (!result.success || !result.workContext) {
+    if (!workContext) {
       return NextResponse.json(
-        { success: false, error: result.error || 'Context not found' },
-        { status: 404 },
-      )
-    }
-
-    const workContext = result.workContext
-
-    // Enrich with typed data
-    const typedResult = await getTypedContext({
-      type: workContext.type,
-      typeRefId: workContext.typeRefId,
-    })
-
-    if (!typedResult.success) {
-      return NextResponse.json(
-        { success: false, error: typedResult.error || 'Failed to fetch typed context' },
+        { success: false, error: 'Context not found or unauthorized' },
         { status: 404 },
       )
     }
 
     return NextResponse.json({
       success: true,
-      workContext: {
-        ...workContext,
-        typedData: typedResult.data,
-        title: typedResult.title,
-      },
+      workContext,
     })
   } catch (error: any) {
     console.error('❌ GET /api/context/[contextId] error:', error)
@@ -87,10 +51,11 @@ export async function GET(
 
 /**
  * PUT /api/context/[contextId]
- * Update a WorkContext's typed data
+ * Update a WorkContext's typed data using factory pattern
  * 
- * Body: { ...typedContextData }
+ * Body: { ...typedContextData } (validated against schema)
  * Updates the typed model, not the router entry
+ * Type comes from router.type, not request body
  */
 export async function PUT(
   request: Request,
@@ -98,15 +63,7 @@ export async function PUT(
 ) {
   try {
     const { contextId } = await params
-    const workMeId = await getWorkMeId()
     const body = await request.json()
-
-    if (!workMeId) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 },
-      )
-    }
 
     if (!contextId) {
       return NextResponse.json(
@@ -115,70 +72,59 @@ export async function PUT(
       )
     }
 
-    // Get WorkContext to find type and typeRefId
-    const workContextResult = await getWorkContext(contextId)
+    // Get WorkContext to determine type (uses factory enrichment)
+    const workContext = await getWorkContext(contextId)
 
-    if (!workContextResult.success || !workContextResult.workContext) {
+    if (!workContext) {
       return NextResponse.json(
-        { success: false, error: 'Context not found' },
+        { success: false, error: 'Context not found or unauthorized' },
         { status: 404 },
       )
     }
 
-    const workContext = workContextResult.workContext
-
-    // Update the typed model based on type
-    let result
-    switch (workContext.type) {
-      case 'campaign':
-        result = await updateCampaign(contextId, body)
-        break
-      
-      case 'impact_event':
-        result = await updateImpactEvent(contextId, body)
-        break
-      
-      case 'training':
-        result = await updateTraining(contextId, body)
-        break
-      
-      case 'event':
-        result = await updateEvent(contextId, body)
-        break
-      
-      case 'community':
-        result = await updateCommunityOpportunity(contextId, body)
-        break
-      
-      case 'benefits':
-        result = await updateBenefits(contextId, body)
-        break
-      
-      case 'career':
-        result = await updateCareer(contextId, body)
-        break
-      
-      case 'employee_cause':
-        result = await updateEmployeeCause(contextId, body)
-        break
-      
-      default:
-        return NextResponse.json(
-          { success: false, error: 'Unknown context type' },
-          { status: 400 },
-        )
-    }
-
-    if (!result.success) {
+    // Get schema for validation based on context type
+    const schema = SCHEMA_MAP[workContext.type as keyof typeof SCHEMA_MAP]
+    if (!schema) {
       return NextResponse.json(
-        { success: false, error: result.error || 'Failed to update context' },
+        { success: false, error: 'No schema found for context type' },
         { status: 400 },
       )
     }
 
+    // Validate and parse data
+    const validated = schema.parse(body)
+
+    // Clean up data for Prisma (convert null to undefined)
+    const cleanData = Object.fromEntries(
+      Object.entries(validated).map(([key, value]) => [
+        key,
+        value === null ? undefined : value,
+      ])
+    )
+
+    // Update using factory (includes transaction and ownership validation)
+    const result = await updateTypedContext(
+      contextId,
+      workContext.type,
+      cleanData
+    )
+
     return NextResponse.json(result)
   } catch (error: any) {
     console.error('❌ PUT /api/context/[contextId] error:', error)
+    
+    // Handle Zod validation errors
+    if (error.name === 'ZodError') {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Validation failed',
+          details: error.errors,
+        },
+        { status: 400 },
+      )
+    }
+
     return NextResponse.json(
       { 
         success: false, 
@@ -192,7 +138,8 @@ export async function PUT(
 
 /**
  * DELETE /api/context/[contextId]
- * Delete a WorkContext and its typed data
+ * Delete a WorkContext and its typed data using factory pattern
+ * Validates ownership and deletes both atomically
  */
 export async function DELETE(
   request: Request,
@@ -200,14 +147,6 @@ export async function DELETE(
 ) {
   try {
     const { contextId } = await params
-    const workMeId = await getWorkMeId()
-
-    if (!workMeId) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 },
-      )
-    }
 
     if (!contextId) {
       return NextResponse.json(
@@ -216,14 +155,8 @@ export async function DELETE(
       )
     }
 
-    const result = await deleteWorkContext(contextId)
-
-    if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error || 'Failed to delete context' },
-        { status: 400 },
-      )
-    }
+    // Delete using factory (includes transaction and ownership validation)
+    await deleteTypedContext(contextId)
 
     return NextResponse.json({
       success: true,

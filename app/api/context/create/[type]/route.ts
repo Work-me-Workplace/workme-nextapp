@@ -1,17 +1,9 @@
 import { NextResponse } from 'next/server'
-import { getWorkMeId } from '@/lib/getWorkMeId.server'
-import {
-  createCampaign,
-  createImpactEvent,
-  createTraining,
-  createEvent,
-  createCommunityOpportunity,
-  createBenefits,
-  createCareer,
-  createEmployeeCause,
-} from '@/lib/actions/typed-contexts'
+import { ContextType } from '@prisma/client'
+import { createTypedContext } from '@/lib/server/context-factory'
+import { SCHEMA_MAP } from '@/lib/server/context-schemas'
 
-const VALID_TYPES = [
+const VALID_TYPES: ContextType[] = [
   'campaign',
   'impact_event',
   'training',
@@ -20,21 +12,19 @@ const VALID_TYPES = [
   'benefits',
   'career',
   'employee_cause',
-] as const
-
-type ContextType = typeof VALID_TYPES[number]
+]
 
 /**
  * POST /api/context/create/[type]
- * Create a new typed context
+ * Create a new typed context using factory pattern
  * 
  * Examples:
  * - POST /api/context/create/campaign
  * - POST /api/context/create/event
  * - POST /api/context/create/training
  * 
- * Body: { ...typedContextData }
- * Returns: { success: true, campaign/event/etc, workContext }
+ * Body: { ...typedContextData } (validated against schema)
+ * Returns: { success: true, typed, router }
  */
 export async function POST(
   request: Request,
@@ -42,16 +32,9 @@ export async function POST(
 ) {
   try {
     const { type } = await params
-    const workMeId = await getWorkMeId()
     const body = await request.json()
 
-    if (!workMeId) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 },
-      )
-    }
-
+    // Validate type
     if (!type || !VALID_TYPES.includes(type as ContextType)) {
       return NextResponse.json(
         { 
@@ -62,58 +45,45 @@ export async function POST(
       )
     }
 
-    let result
-
-    switch (type as ContextType) {
-      case 'campaign':
-        result = await createCampaign(body, workMeId)
-        break
-      
-      case 'impact_event':
-        result = await createImpactEvent(body)
-        break
-      
-      case 'training':
-        result = await createTraining(body)
-        break
-      
-      case 'event':
-        result = await createEvent(body)
-        break
-      
-      case 'community':
-        result = await createCommunityOpportunity(body)
-        break
-      
-      case 'benefits':
-        result = await createBenefits(body)
-        break
-      
-      case 'career':
-        result = await createCareer(body)
-        break
-      
-      case 'employee_cause':
-        result = await createEmployeeCause(body)
-        break
-      
-      default:
-        return NextResponse.json(
-          { success: false, error: 'Unknown context type' },
-          { status: 400 },
-        )
-    }
-
-    if (!result.success) {
+    // Get schema for validation
+    const schema = SCHEMA_MAP[type as keyof typeof SCHEMA_MAP]
+    if (!schema) {
       return NextResponse.json(
-        { success: false, error: result.error || 'Failed to create context' },
+        { success: false, error: 'No schema found for context type' },
         { status: 400 },
       )
     }
 
+    // Validate and parse data
+    const validated = schema.parse(body)
+
+    // Clean up data for Prisma (convert null to undefined)
+    const cleanData = Object.fromEntries(
+      Object.entries(validated).map(([key, value]) => [
+        key,
+        value === null ? undefined : value,
+      ])
+    )
+
+    // Create using factory (includes transaction)
+    const result = await createTypedContext(type as ContextType, cleanData)
+
     return NextResponse.json(result)
   } catch (error: any) {
     console.error('❌ POST /api/context/create/[type] error:', error)
+    
+    // Handle Zod validation errors
+    if (error.name === 'ZodError') {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Validation failed',
+          details: error.errors,
+        },
+        { status: 400 },
+      )
+    }
+
     return NextResponse.json(
       { 
         success: false, 

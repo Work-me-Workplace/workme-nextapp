@@ -199,13 +199,25 @@ model Achievement {
 // ============================================
 // WORK ARCHITECTURE MODELS
 // ============================================
+
+enum ContextType {
+  campaign
+  impact_event
+  training
+  event
+  community
+  benefits
+  career
+  employee_cause
+}
+
 // Router model - references typed context models
 model WorkContext {
-  id                String   @id @default(cuid())
-  createdAt         DateTime @default(now())
-  type              String // "campaign" | "impact_event" | "training" | "event" | "community" | "benefits" | "career" | "employee_cause"
-  typeRefId         String // references the typed context model
-  createdByWorkMeId String // References WorkMe.id
+  id                String      @id @default(cuid())
+  createdAt         DateTime    @default(now())
+  type              ContextType
+  typeRefId         String      // references the typed context model
+  createdByWorkMeId String      // References WorkMe.id
 
   outputs WorkOutput[]
   supports WorkSupport[]

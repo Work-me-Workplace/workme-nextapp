@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getWorkMeId } from '@/lib/getWorkMeId.server'
-import { getWorkContext, getWorkContexts } from '@/lib/actions/work-context'
 
 /**
  * GET /api/context
  * List all WorkContexts for the authenticated user
+ * Uses new factory pattern for enrichment
  */
 export async function GET(request: Request) {
   try {
@@ -18,18 +18,34 @@ export async function GET(request: Request) {
       )
     }
 
-    const result = await getWorkContexts()
+    // Get all WorkContexts for user
+    const workContexts = await prisma.workContext.findMany({
+      where: { createdByWorkMeId: workMeId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        outputs: {
+          orderBy: { updatedAt: 'desc' },
+        },
+      },
+    })
 
-    if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: 400 },
-      )
-    }
+    // Enrich with typed data using factory
+    const { getTypedContext } = await import('@/lib/server/context-factory')
+    
+    const enrichedContexts = await Promise.all(
+      workContexts.map(async (ctx) => {
+        const typed = await getTypedContext(ctx.type, ctx.typeRefId)
+        return {
+          ...ctx,
+          typedData: typed,
+          title: typed?.title ?? '',
+        }
+      })
+    )
 
     return NextResponse.json({
       success: true,
-      workContexts: result.workContexts || [],
+      workContexts: enrichedContexts,
     })
   } catch (error: any) {
     console.error('❌ GET /api/context error:', error)
