@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { getWorkMeId } from '@/lib/getWorkMeId.server'
 import { getWorkContext, deleteWorkContext } from '@/lib/actions/work-context'
 import { getTypedContext } from '@/lib/actions/typed-contexts'
-import { z } from 'zod'
+import {
+  updateCampaign,
+  updateImpactEvent,
+  updateTraining,
+  updateEvent,
+  updateCommunityOpportunity,
+  updateBenefits,
+  updateCareer,
+  updateEmployeeCause,
+} from '@/lib/actions/typed-contexts'
 
 /**
  * GET /api/context/[contextId]
@@ -120,63 +128,39 @@ export async function PUT(
     const workContext = workContextResult.workContext
 
     // Update the typed model based on type
-    let updatedTypedData
+    let result
     switch (workContext.type) {
       case 'campaign':
-        // TODO: Implement updateCampaign
-        return NextResponse.json(
-          { success: false, error: 'Update not yet implemented for campaign' },
-          { status: 501 },
-        )
+        result = await updateCampaign(contextId, body)
+        break
       
       case 'impact_event':
-        // TODO: Implement updateImpactEvent
-        return NextResponse.json(
-          { success: false, error: 'Update not yet implemented for impact_event' },
-          { status: 501 },
-        )
+        result = await updateImpactEvent(contextId, body)
+        break
       
       case 'training':
-        // TODO: Implement updateTraining
-        return NextResponse.json(
-          { success: false, error: 'Update not yet implemented for training' },
-          { status: 501 },
-        )
+        result = await updateTraining(contextId, body)
+        break
       
       case 'event':
-        // TODO: Implement updateEvent
-        return NextResponse.json(
-          { success: false, error: 'Update not yet implemented for event' },
-          { status: 501 },
-        )
+        result = await updateEvent(contextId, body)
+        break
       
       case 'community':
-        // TODO: Implement updateCommunity
-        return NextResponse.json(
-          { success: false, error: 'Update not yet implemented for community' },
-          { status: 501 },
-        )
+        result = await updateCommunityOpportunity(contextId, body)
+        break
       
       case 'benefits':
-        // TODO: Implement updateBenefits
-        return NextResponse.json(
-          { success: false, error: 'Update not yet implemented for benefits' },
-          { status: 501 },
-        )
+        result = await updateBenefits(contextId, body)
+        break
       
       case 'career':
-        // TODO: Implement updateCareer
-        return NextResponse.json(
-          { success: false, error: 'Update not yet implemented for career' },
-          { status: 501 },
-        )
+        result = await updateCareer(contextId, body)
+        break
       
       case 'employee_cause':
-        // TODO: Implement updateEmployeeCause
-        return NextResponse.json(
-          { success: false, error: 'Update not yet implemented for employee_cause' },
-          { status: 501 },
-        )
+        result = await updateEmployeeCause(contextId, body)
+        break
       
       default:
         return NextResponse.json(
@@ -184,6 +168,15 @@ export async function PUT(
           { status: 400 },
         )
     }
+
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error || 'Failed to update context' },
+        { status: 400 },
+      )
+    }
+
+    return NextResponse.json(result)
   } catch (error: any) {
     console.error('❌ PUT /api/context/[contextId] error:', error)
     return NextResponse.json(

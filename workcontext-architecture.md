@@ -108,45 +108,34 @@ When reading a WorkContext:
    }
    ```
 
-### UPDATE Flow ⚠️ **CURRENTLY MISSING**
+### UPDATE Flow ✅ **IMPLEMENTED**
 
-**Problem**: We created models but didn't implement update/upsert functions!
+When updating a typed context:
 
-When updating a typed context, we need:
+1. **Get WorkContext** → `prisma.workContext.findFirst({ where: { id, createdByWorkMeId } })`
+   - Validates ownership and gets `type` and `typeRefId`
 
-1. **Update Typed Model** → `prisma.workContextCampaign.update(...)`
-   - Update the actual data fields
-   - Keep the same ID
+2. **Validate Type** → Ensure WorkContext type matches expected type
 
-2. **WorkContext Router** → No changes needed
+3. **Update Typed Model** → `prisma.workContextCampaign.update(...)`
+   - Uses `typeRefId` to update the actual data fields
+   - Validates data with Zod schema
+   - Keeps the same ID
+
+4. **WorkContext Router** → No changes needed
    - The router entry stays the same
    - Only the typed data changes
 
-**Required Implementation**:
-```typescript
-export async function updateCampaign(
-  workContextId: string,  // The WorkContext router ID
-  data: CampaignUpdateData
-) {
-  // 1. Get WorkContext to find typeRefId
-  const workContext = await prisma.workContext.findFirst({
-    where: { id: workContextId, createdByWorkMeId }
-  })
-  
-  if (!workContext || workContext.type !== 'campaign') {
-    return { success: false, error: 'Invalid context type' }
-  }
-
-  // 2. Update typed model using typeRefId
-  const campaign = await prisma.workContextCampaign.update({
-    where: { id: workContext.typeRefId },
-    data: { ...validated }
-  })
-
-  // 3. Return enriched context
-  return { success: true, campaign, workContext }
-}
-```
+**Implementation**:
+All update functions follow this pattern in `lib/actions/typed-contexts.ts`:
+- `updateCampaign(workContextId, data)` ✅
+- `updateImpactEvent(workContextId, data)` ✅
+- `updateTraining(workContextId, data)` ✅
+- `updateEvent(workContextId, data)` ✅
+- `updateCommunityOpportunity(workContextId, data)` ✅
+- `updateBenefits(workContextId, data)` ✅
+- `updateCareer(workContextId, data)` ✅
+- `updateEmployeeCause(workContextId, data)` ✅
 
 ### DELETE Flow
 
@@ -186,21 +175,23 @@ All API routes use server-side authentication via `getWorkMeId()` and return `Ne
 - `createCareer(data)`
 - `createEmployeeCause(data)`
 
-#### ❌ UPDATE Routes - **NOT IMPLEMENTED**
+#### ✅ UPDATE Routes - **IMPLEMENTED**
 
 - **PUT** `/api/context/[contextId]` - Update a WorkContext's typed data
-  - Currently returns 501 (Not Implemented)
-  - **Missing**: Update functions for each typed context type
+  - Validates ownership via `createdByWorkMeId`
+  - Updates the typed model based on WorkContext type
+  - Returns: `{ success: true, campaign/event/etc, workContext }`
+  - Body: Typed context data (matches Zod schema for each type)
 
-**Required Implementation**:
-- `updateCampaign(workContextId, data)` in `lib/actions/typed-contexts.ts`
-- `updateImpactEvent(workContextId, data)`
-- `updateTraining(workContextId, data)`
-- `updateEvent(workContextId, data)`
-- `updateCommunityOpportunity(workContextId, data)`
-- `updateBenefits(workContextId, data)`
-- `updateCareer(workContextId, data)`
-- `updateEmployeeCause(workContextId, data)`
+**Server Actions (All Implemented)**:
+- `updateCampaign(workContextId, data)` in `lib/actions/typed-contexts.ts` ✅
+- `updateImpactEvent(workContextId, data)` ✅
+- `updateTraining(workContextId, data)` ✅
+- `updateEvent(workContextId, data)` ✅
+- `updateCommunityOpportunity(workContextId, data)` ✅
+- `updateBenefits(workContextId, data)` ✅
+- `updateCareer(workContextId, data)` ✅
+- `updateEmployeeCause(workContextId, data)` ✅
 
 **Implementation Pattern**:
 ```typescript
@@ -208,22 +199,25 @@ export async function updateCampaign(
   workContextId: string,
   data: CampaignUpdateData
 ) {
-  // 1. Get WorkContext to find typeRefId
+  // 1. Validate data with Zod schema
+  const validated = campaignSchema.parse(data)
+  
+  // 2. Get WorkContext to find typeRefId and validate ownership
   const workContext = await prisma.workContext.findFirst({
     where: { id: workContextId, createdByWorkMeId }
   })
   
   if (!workContext || workContext.type !== 'campaign') {
-    return { success: false, error: 'Invalid context type' }
+    return { success: false, error: 'Invalid context type or not found' }
   }
 
-  // 2. Update typed model using typeRefId
+  // 3. Update typed model using typeRefId
   const campaign = await prisma.workContextCampaign.update({
     where: { id: workContext.typeRefId },
     data: { ...validated }
   })
 
-  // 3. Return enriched context
+  // 4. Return updated data
   return { success: true, campaign, workContext }
 }
 ```
@@ -294,17 +288,19 @@ Merge into enriched object → display
 
 ## Current Issues
 
-### 1. Missing Update Functions ❌
+### 1. Missing Update Functions ✅ **RESOLVED**
 
-**Problem**: No `updateCampaign`, `updateTraining`, etc. functions exist.
+**Status**: All update functions have been implemented.
 
-**Impact**: Users can't edit existing WorkContexts. They have to delete and recreate.
-
-**Solution**: Implement update functions for each typed context type:
-- `updateCampaign(workContextId, data)`
-- `updateTraining(workContextId, data)`
-- `updateEvent(workContextId, data)`
-- ... etc.
+**Implemented Functions**:
+- `updateCampaign(workContextId, data)` ✅
+- `updateImpactEvent(workContextId, data)` ✅
+- `updateTraining(workContextId, data)` ✅
+- `updateEvent(workContextId, data)` ✅
+- `updateCommunityOpportunity(workContextId, data)` ✅
+- `updateBenefits(workContextId, data)` ✅
+- `updateCareer(workContextId, data)` ✅
+- `updateEmployeeCause(workContextId, data)` ✅
 
 ### 2. Authentication Mismatch 🔧 **PARTIALLY FIXED**
 
@@ -369,7 +365,7 @@ if (existing.success) {
 ```
 lib/actions/
   ├── work-context.ts          # WorkContext router CRUD
-  ├── typed-contexts.ts        # Typed context CRUD (CREATE only currently)
+  ├── typed-contexts.ts        # Typed context CRUD (CREATE, READ, UPDATE)
   ├── work-support.ts          # WorkSupport CRUD
   └── work-output.ts           # WorkOutput CRUD
 
@@ -386,7 +382,7 @@ app/mywork/
 
 ## Next Steps
 
-1. **Implement UPDATE functions** for all typed contexts
+1. ✅ ~~**Implement UPDATE functions** for all typed contexts~~ **DONE**
 2. **Add upsert logic** to forms (check existence before create)
 3. **Add better error logging** throughout the flow
 4. **Add transaction support** for create operations (rollback on failure)

@@ -494,6 +494,360 @@ export async function createEmployeeCause(data: z.infer<typeof employeeCauseSche
   }
 }
 
+// Update Campaign
+export async function updateCampaign(workContextId: string, data: z.infer<typeof campaignSchema>) {
+  try {
+    const validated = campaignSchema.parse(data)
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    // Get WorkContext to find typeRefId and validate ownership
+    const workContext = await prisma.workContext.findFirst({
+      where: { id: workContextId, createdByWorkMeId: workMeId },
+    })
+
+    if (!workContext || workContext.type !== 'campaign') {
+      return { success: false, error: 'Invalid context type or not found' }
+    }
+
+    // Update typed model using typeRefId
+    const campaign = await prisma.workContextCampaign.update({
+      where: { id: workContext.typeRefId },
+      data: {
+        ...validated,
+        description: validated.description ?? undefined,
+        windowStart: validated.windowStart ?? undefined,
+        windowEnd: validated.windowEnd ?? undefined,
+        ctaLink: validated.ctaLink ?? undefined,
+        sponsor: validated.sponsor ?? undefined,
+        pocFirstName: validated.pocFirstName ?? undefined,
+        pocLastName: validated.pocLastName ?? undefined,
+        pocEmail: validated.pocEmail ?? undefined,
+        pocPhone: validated.pocPhone ?? undefined,
+      },
+    })
+
+    return { success: true, campaign, workContext }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors }
+    }
+    return { success: false, error: 'Failed to update campaign' }
+  }
+}
+
+// Update Impact Event
+export async function updateImpactEvent(workContextId: string, data: z.infer<typeof impactEventSchema>) {
+  try {
+    const validated = impactEventSchema.parse(data)
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const workContext = await prisma.workContext.findFirst({
+      where: { id: workContextId, createdByWorkMeId: workMeId },
+    })
+
+    if (!workContext || workContext.type !== 'impact_event') {
+      return { success: false, error: 'Invalid context type or not found' }
+    }
+
+    const impactEvent = await prisma.workContextImpactEvent.update({
+      where: { id: workContext.typeRefId },
+      data: {
+        ...validated,
+        description: validated.description ?? undefined,
+        effectiveDate: validated.effectiveDate ?? undefined,
+        impactedPopulation: validated.impactedPopulation ?? undefined,
+        urgency: validated.urgency ?? undefined,
+        pocFirstName: validated.pocFirstName ?? undefined,
+        pocLastName: validated.pocLastName ?? undefined,
+        pocEmail: validated.pocEmail ?? undefined,
+        pocPhone: validated.pocPhone ?? undefined,
+      },
+    })
+
+    return { success: true, impactEvent, workContext }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors }
+    }
+    return { success: false, error: 'Failed to update impact event' }
+  }
+}
+
+// Update Training
+export async function updateTraining(workContextId: string, data: z.infer<typeof trainingSchema>) {
+  try {
+    const validated = trainingSchema.parse(data)
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const workContext = await prisma.workContext.findFirst({
+      where: { id: workContextId, createdByWorkMeId: workMeId },
+    })
+
+    if (!workContext || workContext.type !== 'training') {
+      return { success: false, error: 'Invalid context type or not found' }
+    }
+
+    const training = await prisma.workContextTraining.update({
+      where: { id: workContext.typeRefId },
+      data: {
+        ...validated,
+        description: validated.description ?? undefined,
+        trainingDate: validated.trainingDate ?? undefined,
+        deadline: validated.deadline ?? undefined,
+        link: validated.link ?? undefined,
+        mandatory: validated.mandatory ?? false,
+        sponsoringOffice: validated.sponsoringOffice ?? undefined,
+        pocFirstName: validated.pocFirstName ?? undefined,
+        pocLastName: validated.pocLastName ?? undefined,
+        pocEmail: validated.pocEmail ?? undefined,
+        pocPhone: validated.pocPhone ?? undefined,
+      },
+    })
+
+    return { success: true, training, workContext }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors }
+    }
+    return { success: false, error: 'Failed to update training' }
+  }
+}
+
+// Update Event
+export async function updateEvent(workContextId: string, data: z.infer<typeof eventSchema>) {
+  try {
+    const validated = eventSchema.parse(data)
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const workContext = await prisma.workContext.findFirst({
+      where: { id: workContextId, createdByWorkMeId: workMeId },
+    })
+
+    if (!workContext || workContext.type !== 'event') {
+      return { success: false, error: 'Invalid context type or not found' }
+    }
+
+    const event = await prisma.workContextEvent.update({
+      where: { id: workContext.typeRefId },
+      data: {
+        ...validated,
+        description: validated.description ?? undefined,
+        startDate: validated.startDate ?? undefined,
+        endDate: validated.endDate ?? undefined,
+        location: validated.location ?? undefined,
+        eventCategory: validated.eventCategory ?? undefined,
+        pocFirstName: validated.pocFirstName ?? undefined,
+        pocLastName: validated.pocLastName ?? undefined,
+        pocEmail: validated.pocEmail ?? undefined,
+        pocPhone: validated.pocPhone ?? undefined,
+      },
+    })
+
+    return { success: true, event, workContext }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors }
+    }
+    return { success: false, error: 'Failed to update event' }
+  }
+}
+
+// Update Community Opportunity
+export async function updateCommunityOpportunity(workContextId: string, data: z.infer<typeof communityOpportunitySchema>) {
+  try {
+    const validated = communityOpportunitySchema.parse(data)
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const workContext = await prisma.workContext.findFirst({
+      where: { id: workContextId, createdByWorkMeId: workMeId },
+    })
+
+    if (!workContext || workContext.type !== 'community') {
+      return { success: false, error: 'Invalid context type or not found' }
+    }
+
+    const opportunity = await prisma.workContextCommunity.update({
+      where: { id: workContext.typeRefId },
+      data: {
+        ...validated,
+        description: validated.description ?? undefined,
+        date: validated.date ?? undefined,
+        location: validated.location ?? undefined,
+        signUpLink: validated.signUpLink ?? undefined,
+        partnerOrg: validated.partnerOrg ?? undefined,
+        pocFirstName: validated.pocFirstName ?? undefined,
+        pocLastName: validated.pocLastName ?? undefined,
+        pocEmail: validated.pocEmail ?? undefined,
+        pocPhone: validated.pocPhone ?? undefined,
+      },
+    })
+
+    return { success: true, opportunity, workContext }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors }
+    }
+    return { success: false, error: 'Failed to update community opportunity' }
+  }
+}
+
+// Update Benefits
+export async function updateBenefits(workContextId: string, data: z.infer<typeof benefitsSchema>) {
+  try {
+    const validated = benefitsSchema.parse(data)
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const workContext = await prisma.workContext.findFirst({
+      where: { id: workContextId, createdByWorkMeId: workMeId },
+    })
+
+    if (!workContext || workContext.type !== 'benefits') {
+      return { success: false, error: 'Invalid context type or not found' }
+    }
+
+    const benefits = await prisma.workContextBenefits.update({
+      where: { id: workContext.typeRefId },
+      data: {
+        ...validated,
+        description: validated.description ?? undefined,
+        windowStart: validated.windowStart ?? undefined,
+        windowEnd: validated.windowEnd ?? undefined,
+        fehbLink: validated.fehbLink ?? undefined,
+        fedvipLink: validated.fedvipLink ?? undefined,
+        fsafedsLink: validated.fsafedsLink ?? undefined,
+        faqLink: validated.faqLink ?? undefined,
+        pocFirstName: validated.pocFirstName ?? undefined,
+        pocLastName: validated.pocLastName ?? undefined,
+        pocEmail: validated.pocEmail ?? undefined,
+        pocPhone: validated.pocPhone ?? undefined,
+        pocDepartment: validated.pocDepartment ?? undefined,
+        annualRecurrence: validated.annualRecurrence ?? false,
+      },
+    })
+
+    return { success: true, benefits, workContext }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors }
+    }
+    return { success: false, error: 'Failed to update benefits' }
+  }
+}
+
+// Update Career
+export async function updateCareer(workContextId: string, data: z.infer<typeof careerSchema>) {
+  try {
+    const validated = careerSchema.parse(data)
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const workContext = await prisma.workContext.findFirst({
+      where: { id: workContextId, createdByWorkMeId: workMeId },
+    })
+
+    if (!workContext || workContext.type !== 'career') {
+      return { success: false, error: 'Invalid context type or not found' }
+    }
+
+    const career = await prisma.workContextCareer.update({
+      where: { id: workContext.typeRefId },
+      data: {
+        title: validated.title,
+        description: validated.description ?? undefined,
+        deadlines: validated.deadlines ? validated.deadlines : undefined,
+        supervisorName: validated.supervisorName ?? undefined,
+        resourceLink: validated.resourceLink ?? undefined,
+        pocFirstName: validated.pocFirstName ?? undefined,
+        pocLastName: validated.pocLastName ?? undefined,
+        pocEmail: validated.pocEmail ?? undefined,
+        pocPhone: validated.pocPhone ?? undefined,
+        pocDepartment: validated.pocDepartment ?? undefined,
+      },
+    })
+
+    return { success: true, career, workContext }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors }
+    }
+    return { success: false, error: 'Failed to update career' }
+  }
+}
+
+// Update Employee Cause
+export async function updateEmployeeCause(workContextId: string, data: z.infer<typeof employeeCauseSchema>) {
+  try {
+    const validated = employeeCauseSchema.parse(data)
+    const workMeId = await getWorkMeId()
+
+    if (!workMeId) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const workContext = await prisma.workContext.findFirst({
+      where: { id: workContextId, createdByWorkMeId: workMeId },
+    })
+
+    if (!workContext || workContext.type !== 'employee_cause') {
+      return { success: false, error: 'Invalid context type or not found' }
+    }
+
+    const employeeCause = await prisma.workContextEmployeeCause.update({
+      where: { id: workContext.typeRefId },
+      data: {
+        title: validated.title,
+        description: validated.description ?? undefined,
+        partnerOrg: validated.partnerOrg ?? undefined,
+        windowStart: validated.windowStart ?? undefined,
+        windowEnd: validated.windowEnd ?? undefined,
+        location: validated.location ?? undefined,
+        neededItems: validated.neededItems || [],
+        collectionPoints: validated.collectionPoints || [],
+        signUpLink: validated.signUpLink ?? undefined,
+        pocFirstName: validated.pocFirstName ?? undefined,
+        pocLastName: validated.pocLastName ?? undefined,
+        pocEmail: validated.pocEmail ?? undefined,
+        pocPhone: validated.pocPhone ?? undefined,
+        sponsoringDepartment: validated.sponsoringDepartment ?? undefined,
+      },
+    })
+
+    return { success: true, employeeCause, workContext }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors }
+    }
+    return { success: false, error: 'Failed to update employee cause' }
+  }
+}
+
 // Get typed context data by WorkContext
 export async function getTypedContext(workContext: { type: string; typeRefId: string }) {
   try {
