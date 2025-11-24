@@ -87,7 +87,7 @@ export default function WorkSupportSetupPage() {
       } else {
         // Create new
         const result = await createWorkSupport({
-          contextId,
+          eventRouterId: contextId, // contextId is actually the eventRouterId
           selectedOutputs,
           status: selectedOutputs.length > 0 ? 'in_progress' : 'draft',
         })

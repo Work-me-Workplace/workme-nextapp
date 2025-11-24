@@ -29,7 +29,7 @@ export const INTERNAL_COMMS_MODULES = [
 ]
 
 const workSupportSchema = z.object({
-  contextId: z.string().min(1, 'Context ID is required'),
+  eventRouterId: z.string().min(1, 'Event Router ID is required'), // Renamed from contextId
   supportType: z.string().optional().nullable(),
   selectedOutputs: z.array(z.enum(WORK_OUTPUT_TYPE_VALUES as [string, ...string[]])).optional().default([]),
   evolvingInfo: z.any().optional().nullable(),
@@ -46,33 +46,33 @@ export async function createWorkSupport(data: z.infer<typeof workSupportSchema>)
       return { success: false, error: 'Not authenticated or user must belong to a company' }
     }
 
-    // Check if WorkSupport already exists for this context
+    // Check if WorkSupport already exists for this eventRouter
     const existing = await prisma.workSupport.findFirst({
       where: { 
-        contextId: validated.contextId,
+        eventRouterId: validated.eventRouterId,
         companyId, // Multi-tenant: ensure same company
       },
     })
 
     if (existing) {
-      return { success: false, error: 'WorkSupport already exists for this context' }
+      return { success: false, error: 'WorkSupport already exists for this event router' }
     }
 
-    // Verify context exists and belongs to user's company
-    const context = await prisma.workContext.findFirst({
+    // Verify eventRouter exists and belongs to user's company
+    const eventRouter = await prisma.workEventRouter.findFirst({
       where: { 
-        id: validated.contextId,
+        id: validated.eventRouterId,
         companyId, // Multi-tenant: ensure same company
       },
     })
 
-    if (!context) {
-      return { success: false, error: 'WorkContext not found or unauthorized' }
+    if (!eventRouter) {
+      return { success: false, error: 'WorkEventRouter not found or unauthorized' }
     }
 
     const support = await prisma.workSupport.create({
       data: {
-        ...validated,
+        eventRouterId: validated.eventRouterId,
         supportType: validated.supportType ?? undefined,
         selectedOutputs: validated.selectedOutputs || [],
         evolvingInfo: validated.evolvingInfo ?? undefined,
@@ -81,7 +81,7 @@ export async function createWorkSupport(data: z.infer<typeof workSupportSchema>)
         originatorId: workMeId,
       },
       include: {
-        context: true,
+        eventRouter: true,
       },
     })
 
@@ -174,7 +174,7 @@ export async function getWorkSupport(id: string) {
   }
 }
 
-export async function getWorkSupportByContext(contextId: string) {
+export async function getWorkSupportByContext(eventRouterId: string) {
   try {
     const { workMeId, companyId } = await verifyAuth()
 
@@ -182,25 +182,25 @@ export async function getWorkSupportByContext(contextId: string) {
       return { success: false, error: 'Not authenticated or user must belong to a company' }
     }
 
-    // Verify context belongs to user's company
-    const context = await prisma.workContext.findFirst({
+    // Verify eventRouter belongs to user's company
+    const eventRouter = await prisma.workEventRouter.findFirst({
       where: { 
-        id: contextId,
+        id: eventRouterId,
         companyId, // Multi-tenant: ensure same company
       },
     })
 
-    if (!context) {
-      return { success: false, error: 'WorkContext not found or unauthorized' }
+    if (!eventRouter) {
+      return { success: false, error: 'WorkEventRouter not found or unauthorized' }
     }
 
     const support = await prisma.workSupport.findFirst({
       where: { 
-        contextId,
+        eventRouterId,
         companyId, // Multi-tenant: ensure same company
       },
       include: {
-        context: true,
+        eventRouter: true,
         outputs: {
           orderBy: { createdAt: 'desc' },
         },
