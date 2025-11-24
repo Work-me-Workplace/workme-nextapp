@@ -46,7 +46,7 @@ export default function NewDraftPage({ params }: { params: Promise<{ productId: 
     try {
       const result = await createWorkforceCommsDraft({
         workforceCommsId: productId,
-        contextIds: formData.contextIds.length > 0 ? formData.contextIds : null,
+        eventRouterIds: formData.contextIds.length > 0 ? formData.contextIds : null,
         authorNotes: formData.authorNotes || null,
         whatChanged: formData.whatChanged || null,
         priorityNotes: formData.priorityNotes || null,
