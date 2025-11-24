@@ -127,7 +127,7 @@ export async function updateWorkSupport(id: string, data: Partial<z.infer<typeof
       where: { id },
       data: updateData,
       include: {
-        context: true,
+        eventRouter: true,
         outputs: true,
       },
     })
@@ -156,7 +156,7 @@ export async function getWorkSupport(id: string) {
         companyId, // Multi-tenant: ensure same company
       },
       include: {
-        context: true,
+        eventRouter: true,
         outputs: {
           orderBy: { createdAt: 'desc' },
         },
