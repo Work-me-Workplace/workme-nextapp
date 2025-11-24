@@ -3,6 +3,7 @@
 import { prisma } from '../prisma'
 import { z } from 'zod'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { eventSchema } from '@/lib/server/context-schemas'
 
 // Campaign Schema
 const campaignSchema = z.object({
