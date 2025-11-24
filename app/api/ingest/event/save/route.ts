@@ -43,8 +43,10 @@ export async function POST(request: Request) {
     // Create WorkEvent and EventItems in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create WorkEvent
+      // Exclude createdAt/updatedAt - Prisma handles these automatically
+      const { createdAt, updatedAt, ...eventCreateData } = normalized.eventData as any
       const workEvent = await tx.workEvent.create({
-        data: normalized.eventData,
+        data: eventCreateData,
       })
 
       console.log('[API POST /api/ingest/event/save] WorkEvent created', {
