@@ -29,6 +29,9 @@ export async function GET(request: Request) {
       include: {
         outputs: {
           orderBy: { updatedAt: 'desc' },
+          include: {
+            workforceComms: true,
+          },
         },
       },
     })

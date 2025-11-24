@@ -114,55 +114,112 @@ function normalizeFoodProvided(value: string | null | undefined): string | null 
 
 /**
  * Normalize eventCategory to EventCategory enum
- * Maps string values to enum values
+ * Maps string values to enum values (case-insensitive, handles variations)
  */
 function normalizeEventCategory(value: string | EventCategory | null | undefined): EventCategory | null {
   if (!value) return null
-  const strValue = typeof value === 'string' ? value.trim().toUpperCase() : value
   
-  // Direct enum match
-  if (Object.values(EventCategory).includes(strValue as EventCategory)) {
-    return strValue as EventCategory
+  // If already an enum, return it
+  if (typeof value !== 'string') {
+    if (Object.values(EventCategory).includes(value)) {
+      return value
+    }
+    return null
   }
   
-  // Map common string variations to enum
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  
+  const upperValue = trimmed.toUpperCase()
+  
+  // Direct enum match (uppercase)
+  if (Object.values(EventCategory).includes(upperValue as EventCategory)) {
+    return upperValue as EventCategory
+  }
+  
+  // Map common string variations to enum (case-insensitive matching)
   const categoryMap: Record<string, EventCategory> = {
+    // Direct matches (uppercase)
     'CELEBRATION': EventCategory.CELEBRATION,
     'HERITAGE': EventCategory.HERITAGE,
     'COMMUNITY': EventCategory.COMMUNITY,
     'RECOGNITION': EventCategory.RECOGNITION,
     'APPRECIATION': EventCategory.APPRECIATION,
     'FAMILY': EventCategory.FAMILY,
+    // Variations
     'CELEBRATING': EventCategory.CELEBRATION,
     'HERITAGE_MONTH': EventCategory.HERITAGE,
     'COMMUNITY_OUTREACH': EventCategory.COMMUNITY,
     'AWARDS': EventCategory.RECOGNITION,
+    'AWARD': EventCategory.RECOGNITION,
     'THANK_YOU': EventCategory.APPRECIATION,
+    'THANKS': EventCategory.APPRECIATION,
     'FAMILY_DAY': EventCategory.FAMILY,
   }
   
-  return categoryMap[strValue] || null
+  // Check map with uppercase value
+  if (categoryMap[upperValue]) {
+    return categoryMap[upperValue]
+  }
+  
+  // Fuzzy matching for common patterns
+  const lowerValue = trimmed.toLowerCase()
+  if (lowerValue.includes('celebration') || lowerValue.includes('holiday')) {
+    return EventCategory.CELEBRATION
+  }
+  if (lowerValue.includes('heritage') || lowerValue.includes('dei') || lowerValue.includes('cultural')) {
+    return EventCategory.HERITAGE
+  }
+  if (lowerValue.includes('community') || lowerValue.includes('outreach') || lowerValue.includes('external')) {
+    return EventCategory.COMMUNITY
+  }
+  if (lowerValue.includes('recognition') || lowerValue.includes('award')) {
+    return EventCategory.RECOGNITION
+  }
+  if (lowerValue.includes('appreciation') || lowerValue.includes('thank') || lowerValue.includes('morale')) {
+    return EventCategory.APPRECIATION
+  }
+  if (lowerValue.includes('family')) {
+    return EventCategory.FAMILY
+  }
+  
+  console.warn(`[normalizeEventCategory] Could not map value: "${value}" (normalized: "${upperValue}")`)
+  return null
 }
 
 /**
  * Normalize audience to EventAudience enum
- * Maps string values to enum values
+ * Maps string values to enum values (case-insensitive, handles variations)
  */
 function normalizeAudience(value: string | EventAudience | null | undefined): EventAudience | null {
   if (!value) return null
-  const strValue = typeof value === 'string' ? value.trim().toUpperCase() : value
   
-  // Direct enum match
-  if (Object.values(EventAudience).includes(strValue as EventAudience)) {
-    return strValue as EventAudience
+  // If already an enum, return it
+  if (typeof value !== 'string') {
+    if (Object.values(EventAudience).includes(value)) {
+      return value
+    }
+    return null
   }
   
-  // Map common string variations to enum
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  
+  const upperValue = trimmed.toUpperCase()
+  
+  // Direct enum match (uppercase)
+  if (Object.values(EventAudience).includes(upperValue as EventAudience)) {
+    return upperValue as EventAudience
+  }
+  
+  // Map common string variations to enum (case-insensitive matching)
   const audienceMap: Record<string, EventAudience> = {
+    // Direct matches
     'ALL_WORKFORCE': EventAudience.ALL_WORKFORCE,
     'LEADERS': EventAudience.LEADERS,
     'WORKFORCE_AND_FAMILIES': EventAudience.WORKFORCE_AND_FAMILIES,
     'COMMUNITY': EventAudience.COMMUNITY,
+    // Variations
     'ALL_EMPLOYEES': EventAudience.ALL_WORKFORCE,
     'WORKFORCE': EventAudience.ALL_WORKFORCE,
     'SUPERVISORS': EventAudience.LEADERS,
@@ -172,7 +229,28 @@ function normalizeAudience(value: string | EventAudience | null | undefined): Ev
     'LOCAL_COMMUNITY': EventAudience.COMMUNITY,
   }
   
-  return audienceMap[strValue] || null
+  // Check map with uppercase value
+  if (audienceMap[upperValue]) {
+    return audienceMap[upperValue]
+  }
+  
+  // Fuzzy matching for common patterns
+  const lowerValue = trimmed.toLowerCase()
+  if (lowerValue.includes('all') && (lowerValue.includes('workforce') || lowerValue.includes('employee'))) {
+    return EventAudience.ALL_WORKFORCE
+  }
+  if (lowerValue.includes('leader') || lowerValue.includes('supervisor') || lowerValue.includes('command')) {
+    return EventAudience.LEADERS
+  }
+  if (lowerValue.includes('family') || lowerValue.includes('open house') || lowerValue.includes('kids')) {
+    return EventAudience.WORKFORCE_AND_FAMILIES
+  }
+  if (lowerValue.includes('community') || lowerValue.includes('partner') || lowerValue.includes('visitor')) {
+    return EventAudience.COMMUNITY
+  }
+  
+  console.warn(`[normalizeAudience] Could not map value: "${value}" (normalized: "${upperValue}")`)
+  return null
 }
 
 /**

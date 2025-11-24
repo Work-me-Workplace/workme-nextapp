@@ -700,6 +700,9 @@ model WorkOutput {
   supportId String?
   support   WorkSupport? @relation(fields: [supportId], references: [id], onDelete: Cascade)
 
+  workforceCommsId String?
+  workforceComms   WorkforceComms? @relation("WorkOutputWorkforceComms", fields: [workforceCommsId], references: [workforceCommsId], onDelete: SetNull)
+
   companyId    String
   company      Company @relation("WorkOutputCompany", fields: [companyId], references: [id], onDelete: Cascade)
   originatorId String
@@ -712,6 +715,7 @@ model WorkOutput {
 
   @@index([eventRouterId])
   @@index([supportId])
+  @@index([workforceCommsId])
   @@index([companyId])
   @@index([originatorId])
   @@index([outputType])
@@ -867,6 +871,7 @@ model WorkforceComms {
 
   editions WorkforceCommsEdition[] @relation("WorkforceCommsEditions")
   drafts   WorkforceCommsDraft[]   @relation("WorkforceCommsDrafts")
+  workOutputs WorkOutput[]         @relation("WorkOutputWorkforceComms")
 
   @@index([companyId])
   @@index([originatorId])

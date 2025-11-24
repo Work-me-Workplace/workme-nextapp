@@ -9,6 +9,7 @@ import { WORK_OUTPUT_TYPE_VALUES } from './work-support'
 const workOutputSchema = z.object({
   eventRouterId: z.string().optional().nullable(), // Renamed from contextId
   supportId: z.string().optional().nullable(),
+  workforceCommsId: z.string().uuid().optional().nullable(), // FK to WorkforceComms
   outputType: z.enum(WORK_OUTPUT_TYPE_VALUES as [string, ...string[]]),
   dataJson: z.any().optional().nullable(),
   status: z.enum(['draft', 'final']).optional().default('draft'),
@@ -48,6 +49,7 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
         data: {
           eventRouterId: eventRouterIdToUse,
           supportId: validated.supportId,
+          workforceCommsId: validated.workforceCommsId ?? undefined,
           outputType: validated.outputType,
           dataJson: validated.dataJson ?? undefined,
           status: (validated.status || 'draft') as 'draft' | 'final',
@@ -57,6 +59,7 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
         include: {
           eventRouter: true,
           support: true,
+          workforceComms: true,
         },
       })
 
@@ -88,6 +91,7 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
       const workOutput = await prisma.workOutput.create({
         data: {
           eventRouterId: validated.eventRouterId,
+          workforceCommsId: validated.workforceCommsId ?? undefined,
           outputType: validated.outputType,
           dataJson: validated.dataJson ?? undefined,
           status: (validated.status || 'draft') as 'draft' | 'final',
@@ -97,6 +101,7 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
         include: {
           eventRouter: true,
           support: true,
+          workforceComms: true,
         },
       })
 
@@ -113,9 +118,9 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
   }
 }
 
-export async function updateWorkOutput(id: string, data: Partial<Pick<z.infer<typeof workOutputSchema>, 'dataJson' | 'status'>>) {
+export async function updateWorkOutput(id: string, data: Partial<Pick<z.infer<typeof workOutputSchema>, 'dataJson' | 'status' | 'workforceCommsId'>>) {
   try {
-    const validated = workOutputSchema.pick({ dataJson: true, status: true }).partial().parse(data)
+    const validated = workOutputSchema.pick({ dataJson: true, status: true, workforceCommsId: true }).partial().parse(data)
     const { workMeId, companyId } = await verifyAuth()
 
     if (!workMeId || !companyId) {
@@ -137,6 +142,7 @@ export async function updateWorkOutput(id: string, data: Partial<Pick<z.infer<ty
     const updateData: any = {}
     if (validated.dataJson !== undefined) updateData.dataJson = validated.dataJson ?? undefined
     if (validated.status !== undefined) updateData.status = validated.status
+    if (validated.workforceCommsId !== undefined) updateData.workforceCommsId = validated.workforceCommsId ?? undefined
 
     const workOutput = await prisma.workOutput.update({
       where: { id },
@@ -144,6 +150,7 @@ export async function updateWorkOutput(id: string, data: Partial<Pick<z.infer<ty
       include: {
         eventRouter: true,
         support: true,
+        workforceComms: true,
       },
     })
 
@@ -240,6 +247,7 @@ export async function getWorkOutputs(workMeId?: string) {
       include: {
         eventRouter: true,
         support: true,
+        workforceComms: true,
       },
       orderBy: { updatedAt: 'desc' },
     })
@@ -267,6 +275,7 @@ export async function getWorkOutput(id: string) {
       include: {
         eventRouter: true,
         support: true,
+        workforceComms: true,
       },
     })
 
@@ -309,6 +318,7 @@ export async function getWorkOutputsByRouter(routerId: string) {
       include: {
         eventRouter: true,
         support: true,
+        workforceComms: true,
       },
       orderBy: { updatedAt: 'desc' },
     })
