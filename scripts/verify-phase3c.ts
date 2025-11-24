@@ -27,7 +27,7 @@ async function verifyPhase3C() {
   try {
     // 1. Check WorkContext has companyId required
     console.log('📊 1. Checking Prisma Schema...')
-    const workContextSample = await prisma.workContext.findFirst({
+    const workContextSample = await prisma.workEventRouter.findFirst({
       select: { id: true, companyId: true, originatorId: true },
     })
 

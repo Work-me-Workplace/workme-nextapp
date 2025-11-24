@@ -61,7 +61,7 @@ async function backfillCompanyId() {
         continue
       }
 
-      await prisma.workContext.update({
+      await prisma.workEventRouter.update({
         where: { id: ctx.id },
         data: { companyId: creator.companyId },
       })
@@ -153,7 +153,7 @@ async function backfillCompanyId() {
       let companyId: string | null = null
 
       if (support.contextId) {
-        const context = await prisma.workContext.findUnique({
+        const context = await prisma.workEventRouter.findUnique({
           where: { id: support.contextId },
           select: { companyId: true },
         })
@@ -205,7 +205,7 @@ async function backfillCompanyId() {
 
       // Try context first
       if (output.contextId) {
-        const context = await prisma.workContext.findUnique({
+        const context = await prisma.workEventRouter.findUnique({
           where: { id: output.contextId },
           select: { companyId: true },
         })
