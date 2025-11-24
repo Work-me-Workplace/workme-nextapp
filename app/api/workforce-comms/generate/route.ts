@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getWorkforceCommsDraft } from '@/lib/actions/workforce-comms'
-import { getWorkContexts } from '@/lib/actions/work-context'
-import { getTypedContext } from '@/lib/actions/typed-contexts'
-import { createWorkforceCommsEdition } from '@/lib/actions/workforce-comms'
+import { verifyAuth } from '@/lib/server/verifyAuth'
+import { prisma } from '@/lib/prisma'
+import { getTypedContext } from '@/lib/server/context-factory'
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
 
 // AI Generation endpoint
 // This is a placeholder - you'll need to integrate with OpenAI or your AI service
 export async function POST(request: NextRequest) {
   try {
+    // Verify Firebase token and get authenticated context
+    const { workMeId, companyId } = await verifyAuth(request)
+
     const { draftId, productId } = await request.json()
 
     if (!draftId || !productId) {
@@ -17,30 +22,64 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch draft
-    const draftResult = await getWorkforceCommsDraft(draftId)
-    if (!draftResult.success || !draftResult.draft) {
+    // Fetch draft directly from Prisma (not using server action)
+    const draft = await prisma.workforceCommsDraft.findUnique({
+      where: { draftId },
+      include: {
+        product: true,
+        lastEdition: true,
+      },
+    })
+
+    if (!draft) {
       return NextResponse.json(
         { success: false, error: 'Draft not found' },
         { status: 404 }
       )
     }
 
-    const draft = draftResult.draft
+    // Verify draft belongs to user's company
+    const product = await prisma.workforceComms.findUnique({
+      where: { workforceCommsId: productId },
+      select: { companyId: true },
+    })
 
-    // Fetch work contexts
-    // Note: contextIds may not exist on draft type, so we safely access it
-    const contextIds = Array.isArray((draft as any).contextIds) ? (draft as any).contextIds : []
+    if (!product || product.companyId !== companyId) {
+      return NextResponse.json(
+        { success: false, error: 'Draft not found or unauthorized' },
+        { status: 404 }
+      )
+    }
+
+    // Fetch work contexts using eventRouterIds (not contextIds)
+    const eventRouterIds = Array.isArray(draft.eventRouterIds) 
+      ? (draft.eventRouterIds as string[]).filter((id): id is string => typeof id === 'string')
+      : []
     const contexts: any[] = []
     
-    if (contextIds.length > 0) {
-      const contextsResult = await getWorkContexts()
-      if (contextsResult.success && contextsResult.workContexts) {
-        const matching = contextsResult.workContexts.filter((c: any) => 
-          contextIds.includes(c.id)
-        )
-        contexts.push(...matching)
-      }
+    if (eventRouterIds.length > 0) {
+      // Get work event routers for the user's company
+      const workEventRouters = await prisma.workEventRouter.findMany({
+        where: { 
+          id: { in: eventRouterIds },
+          companyId, // Multi-tenant security
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+
+      // Enrich with typed context data using factory
+      const enrichedContexts = await Promise.all(
+        workEventRouters.map(async (router) => {
+          const typed = await getTypedContext(router.type, router.eventRefId, companyId)
+          return {
+            ...router,
+            typedData: typed,
+            title: typed?.title ?? '',
+          }
+        })
+      )
+
+      contexts.push(...enrichedContexts)
     }
 
     // Build prompt for AI
@@ -50,24 +89,21 @@ export async function POST(request: NextRequest) {
     // For now, return a placeholder response
     const generatedContent = await generateEmailContent(prompt)
 
-    // Create edition
-    const editionResult = await createWorkforceCommsEdition({
-      workforceCommsId: productId,
-      subject: generatedContent.subject,
-      body: generatedContent.body,
-      sentAt: null,
+    // Create edition directly using Prisma (not using server action)
+    const edition = await prisma.workforceCommsEdition.create({
+      data: {
+        workforceCommsId: productId,
+        subject: generatedContent.subject,
+        body: generatedContent.body,
+        sentAt: null,
+        originatorId: workMeId,
+        companyId: companyId,
+      },
     })
-
-    if (!editionResult.success || !editionResult.edition) {
-      return NextResponse.json(
-        { success: false, error: 'Failed to create edition' },
-        { status: 500 }
-      )
-    }
 
     return NextResponse.json({
       success: true,
-      edition: editionResult.edition,
+      edition,
     })
   } catch (error) {
     console.error('Error generating edition:', error)
