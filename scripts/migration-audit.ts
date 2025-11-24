@@ -42,7 +42,7 @@ async function auditDatabase() {
 
     // 2. Check WorkContext
     console.log('📊 Auditing WorkContext...')
-    const workContexts = await prisma.workContext.findMany({
+    const workContexts = await prisma.workEventRouter.findMany({
       select: { id: true },
     })
     console.log(`  Total WorkContext records: ${workContexts.length}`)

@@ -53,7 +53,7 @@ async function detailedAudit() {
 
     // 3. Check WorkContext records and their relationships
     console.log('📊 3. WORKCONTEXT RECORDS\n')
-    const workContexts = await prisma.workContext.findMany({
+    const workContexts = await prisma.workEventRouter.findMany({
       include: {
         // Note: originatorId relation doesn't exist yet in current schema
       },

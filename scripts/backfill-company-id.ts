@@ -34,7 +34,7 @@ async function backfillCompanyId() {
     console.log('📊 Backfilling WorkContext...')
     // Note: Since companyId is now required, this backfill script is obsolete
     // All records should already have companyId set
-    const workContexts = await prisma.workContext.findMany({
+    const workContexts = await prisma.workEventRouter.findMany({
       where: { companyId: { equals: null } as any }, // Type assertion for legacy script
       select: { id: true, originatorId: true },
     })

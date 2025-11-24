@@ -32,7 +32,7 @@ async function verifyCompanyId() {
     // 1. WorkContext
     // ============================================================
     console.log('📊 Verifying WorkContext...')
-    const workContexts = await prisma.workContext.findMany({
+    const workContexts = await prisma.workEventRouter.findMany({
       select: { id: true, companyId: true, originatorId: true },
     })
     
