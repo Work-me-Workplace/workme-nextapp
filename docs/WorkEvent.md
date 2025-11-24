@@ -1,7 +1,113 @@
 # WorkEvent Architecture
 
-**Last Updated:** 2025-01-24  
+**Last Updated:** 2025-11-24  
+**Status:** ⚠️ **SCHEMA MISMATCH DETECTED** - Database has both old and new columns  
 **Purpose:** Create shared awareness and specific work-related products for company events
+
+---
+
+## ⚠️ **CRITICAL: Current Schema Status**
+
+### Database Reality (from `prisma db pull`)
+
+The database currently has **BOTH old and new columns**, creating confusion:
+
+**OLD Columns (should be removed eventually):**
+- `startDate` (DateTime?)
+- `endDate` (DateTime?)
+- `location` (String?)
+- `pocFirstName` (String?)
+- `pocLastName` (String?)
+- `promotionNeeds` (String[])
+
+**NEW Columns (current schema):**
+- `updatedAt` (DateTime @updatedAt) ✅
+- `theme` (String?) ✅
+- `audience` (String?) ✅
+- `vibe` (String?) ✅
+- `perks` (String[] @default([])) ✅
+- `participation` (String[] @default([])) ✅
+
+### Prisma Schema Definition
+
+**Location:** `prisma/schema.prisma` (lines 446-494)
+
+```prisma
+model WorkEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Core identity
+  title       String
+  theme       String? // NEW (tagline / theme)
+  description String?
+
+  // Timing
+  eventDate DateTime?
+  startTime String?
+  endTime   String?
+
+  // Category (string, validated by mapper)
+  eventCategory String?
+
+  // Registration
+  registrationRequired String?
+  registrationLink     String?
+
+  // Highlights extracted from GPT
+  audience      String?
+  vibe          String?
+  perks         String[] @default([])      // ⚠️ ARRAY TYPE
+  participation String[] @default([])      // ⚠️ ARRAY TYPE
+
+  // Food
+  foodProvided String?
+  foodTypes    String?
+
+  // Speaker + POC
+  speakers String[] @default([])
+  pocEmail String?
+  pocPhone String?
+
+  companyId    String
+  company      Company @relation("WorkEventCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originatorId String
+  originator   WorkMe  @relation("WorkEventOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
+
+  // Relations
+  eventItems           EventItem[]
+  promotionalWorkItems PromotionalWorkItem[]
+
+  @@index([companyId])
+  @@index([originatorId])
+}
+```
+
+### ⚠️ **TYPE MISMATCH ISSUE**
+
+**Problem:** `perks` and `participation` are defined as **arrays** (`String[]`) in Prisma schema, but some forms and PromotionalWorkItem are treating them as **strings**.
+
+**Where the mismatch occurs:**
+1. **PromotionalWorkItem schema** (`lib/actions/promotional-work-item.ts`):
+   - `perks: z.string().optional().nullable()` ❌ Should be array
+   - `participation: z.string().optional().nullable()` ❌ Should be array
+
+2. **Promo scratch form** (`app/attention/events/[eventId]/promo/new/scratch/page.tsx`):
+   - Uses text inputs instead of array inputs ❌
+
+3. **Promo AI ingest** (`app/api/ingest/promotional/ai/route.ts`):
+   - Returns `perks: string | null` ❌ Should be array
+
+**Correct Type:**
+- `perks: String[]` - Array of perk strings (e.g., `["Free lunch", "Raffle prizes", "Live music"]`)
+- `participation: String[]` - Array of participation strings (e.g., `["Bring a dish", "RSVP required", "Family welcome"]`)
+
+**Fix Needed:**
+1. Update PromotionalWorkItem schema to use arrays
+2. Update promo forms to handle arrays (tag input or multi-select)
+3. Update AI ingest to return arrays
+4. Consider migration to remove old columns from database
 
 ---
 
@@ -34,61 +140,28 @@ The WorkEvent system uses a **container-item pattern**:
 
 ## Data Models
 
-### WorkEvent Model
-
-**Location:** `prisma/schema.prisma` (lines 446-480)
-
-```prisma
-model WorkEvent {
-  id            String    @id @default(cuid())
-  createdAt     DateTime  @default(now())
-  title         String
-  description   String?
-  startDate     DateTime?
-  endDate       DateTime?
-  location      String?
-  eventCategory String?
-  pocFirstName  String?
-  pocLastName   String?
-  pocEmail      String?
-  pocPhone      String?
-
-  // Event-specific fields
-  eventDate         DateTime?
-  startTime         String?
-  endTime           String?
-  registrationRequired String? // "Yes" or "No"
-  registrationLink String?
-  speakers          String[] @default([])
-  foodProvided     String? // "Yes" or "No"
-  foodTypes         String? // free text
-  promotionNeeds   String[] @default([]) // checkbox string values
-
-  companyId    String
-  company      Company @relation("WorkEventCompany", fields: [companyId], references: [id], onDelete: Cascade)
-  originatorId String
-  originator   WorkMe  @relation("WorkEventOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
-
-  items EventItem[]
-
-  @@index([companyId])
-  @@index([originatorId])
-}
-```
+### WorkEvent Model - CURRENT SCHEMA
 
 **Key Fields:**
-- **Container Identity:** `id` (eventId) - Unique identifier for the event
-- **Event Details:** `title`, `description`, `location`, `eventCategory`
-- **Timing:** `startDate`, `endDate`, `eventDate`, `startTime`, `endTime`
+- **Identity:** `id` (cuid), `createdAt`, `updatedAt`
+- **Core Details:** `title`, `theme`, `description`
+- **Timing:** `eventDate`, `startTime`, `endTime`
+- **Category:** `eventCategory` (String, validated by mapper)
 - **Registration:** `registrationRequired`, `registrationLink`
-- **Logistics:** `speakers[]`, `foodProvided`, `foodTypes`
-- **Promotion:** `promotionNeeds[]` - Array of promotion requirements
-- **POC:** Point of contact fields (firstName, lastName, email, phone)
-- **Relations:** `items EventItem[]` - Child items
+- **Highlights (from GPT):** `audience`, `vibe`, `perks[]`, `participation[]`
+- **Food:** `foodProvided`, `foodTypes`
+- **Speakers:** `speakers[]` (String array)
+- **POC:** `pocEmail`, `pocPhone`
+- **Relations:** `eventItems EventItem[]`, `promotionalWorkItems PromotionalWorkItem[]`
+
+**Important Notes:**
+- `perks` and `participation` are **String arrays**, not strings
+- `speakers` is a **String array**
+- Old fields (`startDate`, `endDate`, `location`, `pocFirstName`, `pocLastName`, `promotionNeeds`) exist in database but are NOT in Prisma schema
 
 ### EventItem Model
 
-**Location:** `prisma/schema.prisma` (lines 482-495)
+**Location:** `prisma/schema.prisma` (lines 496-514)
 
 ```prisma
 model EventItem {
@@ -200,6 +273,14 @@ model WorkOutput {
 
 ### Creation
 
+**API Route:** `POST /api/ingest/event/save`  
+**Location:** `app/api/ingest/event/save/route.ts`
+
+Creates:
+1. `WorkEvent` (typed data)
+2. `EventItems` (from ingestion)
+3. `WorkEventRouter` (router entry)
+
 **Server Action:** `createWorkEvent(data)`  
 **Location:** `lib/actions/typed-contexts.ts`
 
@@ -207,13 +288,10 @@ Creates both:
 1. `WorkEvent` (typed data)
 2. `WorkEventRouter` (router entry)
 
-**API Route:** `POST /api/context/create/event`  
-**Location:** `app/api/context/create/[type]/route.ts`
-
 ### Retrieval
 
-**Server Action:** `getWorkContext(id)`  
-**Location:** `lib/actions/work-context.ts`
+**Server Action:** `getWorkEventRouter(id)`  
+**Location:** `lib/server/get-work-context.ts`
 
 Enriches WorkEventRouter with WorkEvent data via factory pattern.
 
@@ -222,13 +300,11 @@ Enriches WorkEventRouter with WorkEvent data via factory pattern.
 
 ### EventItem Management
 
-**Current Status:** EventItem model exists but CRUD operations not yet implemented.
+**Current Status:** EventItem model exists and is created during event ingestion.
 
-**Planned Operations:**
-- `createEventItem(eventId, data)` - Add item to event
-- `updateEventItem(eventItemId, data)` - Update item
-- `deleteEventItem(eventItemId)` - Remove item
-- `getEventItems(eventId)` - Get all items for an event
+**Operations:**
+- Created automatically during AI ingestion
+- Can be queried via `event.eventItems` relation
 
 ---
 
@@ -247,17 +323,17 @@ Three creation paths:
 - `EventCreationFork` - Fork selection UI
 - `EventManualForm` - Standard event form with all fields
 - `EventAIForm` - AI parsing interface
-- `EventTemplatePicker` - Previous event selector
+- `EventReviewScreen` - Review and save parsed event
 
 ### Form Fields
 
 The event creation form includes:
-- Basic: title, description, location, category
-- Dates/Times: startDate, endDate, eventDate, startTime, endTime
+- Basic: title, theme, description, category
+- Dates/Times: eventDate, startTime, endTime
 - Registration: registrationRequired, registrationLink
-- Logistics: speakers[], foodProvided, foodTypes
-- Promotion: promotionNeeds[]
-- POC: firstName, lastName, email, phone
+- Logistics: speakers[] (array), foodProvided, foodTypes
+- Highlights: audience, vibe, perks[] (array), participation[] (array)
+- POC: email, phone
 
 ---
 
@@ -267,15 +343,18 @@ The event creation form includes:
 
 **WorkEvent Container:**
 - `title`: "Holiday Open House 2025"
+- `theme`: "Celebrating the Force Behind the Fleet"
 - `eventDate`: 2025-12-15
 - `startTime`: "5:00 PM"
 - `endTime`: "8:00 PM"
-- `location`: "Main Auditorium"
 - `registrationRequired`: "Yes"
 - `registrationLink`: "https://..."
 - `foodProvided`: "Yes"
 - `foodTypes`: "Vegetarian, Gluten-free options"
-- `promotionNeeds`: ["Email announcement", "Digital signage", "Intranet post"]
+- `perks`: ["Free lunch", "Raffle prizes", "Live music"]
+- `participation`: ["Bring a dish", "RSVP required", "Family welcome"]
+- `audience`: "All employees and families"
+- `vibe`: "Festive and inclusive"
 
 **EventItems:**
 - Agenda item: "Welcome & Introductions"
@@ -288,12 +367,12 @@ The event creation form includes:
 
 **WorkEvent Container:**
 - `title`: "Q1 All-Hands Meeting"
+- `theme`: "Looking Forward Together"
 - `eventDate`: 2025-03-15
 - `startTime`: "10:00 AM"
 - `endTime`: "11:30 AM"
-- `location`: "Virtual - Teams"
 - `speakers`: ["CEO", "CFO", "VP Engineering"]
-- `promotionNeeds`: ["Calendar invite", "Slack announcement"]
+- `perks`: ["Lunch provided", "Q&A session"]
 
 **EventItems:**
 - Agenda: "Q1 Results Review"
@@ -305,24 +384,28 @@ The event creation form includes:
 
 ## Data Flow
 
-### Creating an Event
+### Creating an Event (AI Ingest)
 
 ```
-1. User fills event form (Manual/AI/Template)
-2. Frontend calls createWorkEvent(data)
-3. Server creates WorkEvent (typed data)
-4. Server creates WorkEventRouter (router entry)
-5. Returns { success: true, event, workEventRouter }
-6. Frontend redirects to event detail page
+1. User pastes event text into EventAIForm
+2. Frontend calls POST /api/ingest/event/ai with rawText
+3. AI parses and returns structured JSON
+4. User reviews parsed data in EventReviewScreen
+5. User clicks "Save Event"
+6. Frontend calls POST /api/ingest/event/save with parsed data
+7. Server normalizes GPT output via gptJsonMapperService
+8. Server creates WorkEvent + EventItems + WorkEventRouter in transaction
+9. Returns { success: true, eventId: routerId }
+10. Frontend redirects to /mywork/context/{eventId}/success
 ```
 
 ### Adding EventItems
 
 ```
-1. User creates EventItem via form/API
-2. Server creates EventItem with eventId reference
-3. EventItem stored with title, description, metadata
-4. Items can be queried by eventId
+1. EventItems are created automatically during AI ingestion
+2. Items extracted from GPT parsing of event text
+3. Stored with title, description, metadata
+4. Items can be queried via event.eventItems relation
 ```
 
 ### Generating Work Products
@@ -337,7 +420,35 @@ The event creation form includes:
 
 ---
 
+## Schema Migration Notes
+
+### Completed Migrations
+
+1. **20251124180629_add_updated_at_to_work_event**
+   - Added `updatedAt` column
+
+2. **20251124181000_sync_workevent_schema**
+   - Added `theme`, `audience`, `vibe`, `perks[]`, `participation[]` columns
+   - Ensured all required columns exist
+
+### Pending Cleanup
+
+The database still has **old columns** that should be removed in a future migration:
+- `startDate`, `endDate`, `location` (replaced by `eventDate`, `startTime`, `endTime`)
+- `pocFirstName`, `pocLastName` (replaced by `pocEmail`, `pocPhone`)
+- `promotionNeeds` (replaced by promotional work items system)
+
+**⚠️ DO NOT remove these columns yet** - they may contain data. Plan a data migration first.
+
+---
+
 ## Future Enhancements
+
+### Schema Cleanup
+
+- [ ] Migrate data from old columns to new columns
+- [ ] Remove old columns (`startDate`, `endDate`, `location`, `pocFirstName`, `pocLastName`, `promotionNeeds`)
+- [ ] Fix type mismatch for `perks`/`participation` in PromotionalWorkItem
 
 ### EventItem Categories
 
@@ -382,8 +493,13 @@ Support for recurring events:
 - WorkSupport for event support workflows
 - WorkOutput for generating event deliverables
 - EventItem for flexible event-specific items
+- PromotionalWorkItem for CVI-ready promotional materials
+
+**⚠️ Known Issues:**
+- Schema mismatch: `perks`/`participation` are arrays in WorkEvent but strings in PromotionalWorkItem
+- Old columns still exist in database (plan cleanup migration)
+- Promo forms need to be updated to handle array types
 
 ---
 
 **End of WorkEvent Architecture Documentation**
-
