@@ -108,7 +108,7 @@ export default function MyWorkPage() {
             <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-8 text-white mb-8">
               <h3 className="text-2xl font-bold mb-4">Let's Work</h3>
               <p className="text-blue-100 mb-6">
-                Start by creating or selecting a WorkContext. Then fork to WorkSupport or build WorkOutputs.
+                Build company-level impact events that may lead to your personal workflow.
               </p>
               <Link 
                 href="/mywork/context" 
