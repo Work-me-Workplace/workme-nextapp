@@ -18,13 +18,8 @@ export default function EventAIForm({ onBack }: EventAIFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
   
-  // Optional user context fields
-  const [userContext, setUserContext] = useState({
-    eventDate: '',
-    category: '',
-    startTime: '',
-    endTime: '',
-  })
+  // Optional user context - free text for human notes/instructions
+  const [userContext, setUserContext] = useState('')
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -47,24 +42,14 @@ export default function EventAIForm({ onBack }: EventAIFormProps) {
       // Build request body
       const requestBody: {
         rawText: string
-        userContext?: {
-          eventDate?: string
-          category?: string
-          startTime?: string
-          endTime?: string
-        }
+        userContext?: string
       } = {
         rawText: pastedText.trim(),
       }
 
-      // Add user context if any fields are provided
-      const hasUserContext = userContext.eventDate || userContext.category || userContext.startTime || userContext.endTime
-      if (hasUserContext) {
-        requestBody.userContext = {}
-        if (userContext.eventDate) requestBody.userContext.eventDate = userContext.eventDate
-        if (userContext.category) requestBody.userContext.category = userContext.category
-        if (userContext.startTime) requestBody.userContext.startTime = userContext.startTime
-        if (userContext.endTime) requestBody.userContext.endTime = userContext.endTime
+      // Add user context if provided (free text for human notes/instructions)
+      if (userContext.trim()) {
+        requestBody.userContext = userContext.trim()
       }
 
       const response = await fetch('/api/ingest/event/ai', {
@@ -135,60 +120,20 @@ export default function EventAIForm({ onBack }: EventAIFormProps) {
         </div>
 
         <div className="border-t pt-4">
-          <p className="text-sm font-medium text-gray-700 mb-3">Optional Context (help AI infer missing details)</p>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="userContextEventDate" className="block text-xs text-gray-600 mb-1">
-                Event Date
-              </label>
-              <input
-                type="date"
-                id="userContextEventDate"
-                value={userContext.eventDate}
-                onChange={(e) => setUserContext({ ...userContext, eventDate: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              />
-            </div>
-            <div>
-              <label htmlFor="userContextCategory" className="block text-xs text-gray-600 mb-1">
-                Category
-              </label>
-              <input
-                type="text"
-                id="userContextCategory"
-                value={userContext.category}
-                onChange={(e) => setUserContext({ ...userContext, category: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                placeholder="e.g., All-hands, Town Hall"
-              />
-            </div>
-            <div>
-              <label htmlFor="userContextStartTime" className="block text-xs text-gray-600 mb-1">
-                Start Time
-              </label>
-              <input
-                type="text"
-                id="userContextStartTime"
-                value={userContext.startTime}
-                onChange={(e) => setUserContext({ ...userContext, startTime: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                placeholder="e.g., 11:30 a.m."
-              />
-            </div>
-            <div>
-              <label htmlFor="userContextEndTime" className="block text-xs text-gray-600 mb-1">
-                End Time
-              </label>
-              <input
-                type="text"
-                id="userContextEndTime"
-                value={userContext.endTime}
-                onChange={(e) => setUserContext({ ...userContext, endTime: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                placeholder="e.g., 1:30 p.m."
-              />
-            </div>
-          </div>
+          <label htmlFor="userContext" className="block text-sm font-medium text-gray-700 mb-2">
+            Optional Context (help AI infer missing details)
+          </label>
+          <textarea
+            id="userContext"
+            value={userContext}
+            onChange={(e) => setUserContext(e.target.value)}
+            rows={4}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            placeholder="Add any additional context, notes, or instructions to help the AI parse the event (e.g., 'This is a company-wide event', 'Focus on the keynote speaker', etc.)"
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            Optional: Provide additional context or instructions to guide the AI's interpretation
+          </p>
         </div>
 
         <div>

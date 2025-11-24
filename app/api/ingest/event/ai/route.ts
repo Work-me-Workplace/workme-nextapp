@@ -103,21 +103,8 @@ Return only:
     // Build user prompt
     let userPrompt = `Parse this event announcement:\n\n${rawText}`
     
-    if (userContext) {
-      userPrompt += `\n\nUser-provided context:\n`
-      if (userContext.eventDate) {
-        userPrompt += `- Event Date: ${userContext.eventDate}\n`
-      }
-      if (userContext.category) {
-        userPrompt += `- Category: ${userContext.category}\n`
-      }
-      if (userContext.startTime) {
-        userPrompt += `- Start Time: ${userContext.startTime}\n`
-      }
-      if (userContext.endTime) {
-        userPrompt += `- End Time: ${userContext.endTime}\n`
-      }
-      userPrompt += `\nUse this context to infer missing information where obvious.`
+    if (userContext && userContext.trim()) {
+      userPrompt += `\n\nAdditional context/instructions from user:\n${userContext.trim()}\n\nUse this context to guide your interpretation and infer missing information where appropriate.`
     }
 
     // Call OpenAI

@@ -134,18 +134,18 @@ export default function WorkContextSuccessPage() {
               </button>
             ) : (
               /* Build WorkSupport */
-              <Link
-                href={`/mywork/support/${contextId}/setup`}
-                className="block p-6 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition text-center"
-              >
-                <div className="mb-3">
-                  <svg className="h-10 w-10 text-blue-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Set Up WorkSupport</h3>
-                <p className="text-sm text-gray-600">Choose which outputs you need for this context</p>
-              </Link>
+            <Link
+              href={`/mywork/support/${contextId}/setup`}
+              className="block p-6 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition text-center"
+            >
+              <div className="mb-3">
+                <svg className="h-10 w-10 text-blue-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">Set Up WorkSupport</h3>
+              <p className="text-sm text-gray-600">Choose which outputs you need for this context</p>
+            </Link>
             )}
 
             {/* View WorkContext */}

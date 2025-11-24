@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
             title: typed?.title ?? '',
           }
         })
-      )
+        )
 
       contexts.push(...enrichedContexts)
     }
@@ -92,10 +92,10 @@ export async function POST(request: NextRequest) {
     // Create edition directly using Prisma (not using server action)
     const edition = await prisma.workforceCommsEdition.create({
       data: {
-        workforceCommsId: productId,
-        subject: generatedContent.subject,
-        body: generatedContent.body,
-        sentAt: null,
+      workforceCommsId: productId,
+      subject: generatedContent.subject,
+      body: generatedContent.body,
+      sentAt: null,
         originatorId: workMeId,
         companyId: companyId,
       },

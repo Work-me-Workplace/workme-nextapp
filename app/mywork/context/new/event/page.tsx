@@ -29,7 +29,7 @@ export default function NewEventPage() {
 
   const handleSelectMode = (selectedMode: 'manual' | 'ai' | 'template') => {
     setMode(selectedMode)
-  }
+      }
 
   const handleBackToFork = () => {
     setMode('fork')

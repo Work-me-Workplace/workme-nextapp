@@ -4,12 +4,7 @@
 
 export interface EventIngestionRequest {
   rawText: string
-  userContext?: {
-    eventDate?: string
-    category?: string
-    startTime?: string
-    endTime?: string
-  }
+  userContext?: string // Free text for human notes/instructions
 }
 
 export interface ParsedEventItem {
