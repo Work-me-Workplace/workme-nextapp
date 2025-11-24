@@ -69,7 +69,7 @@ export default function WorkSupportPage() {
 
     try {
       const result = await createWorkOutput({
-        contextId,
+        eventRouterId: contextId, // contextId is actually the eventRouterId
         supportId: workSupport.id,
         outputType,
         status: 'draft',
