@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createWorkEventFromIngest } from '@/lib/actions/event-ingestion'
+import api from '@/lib/api'
 import type { EventIngestionResponse, ParsedEventItem } from '@/lib/types/event-ingestion'
 
 interface EventReviewScreenProps {
@@ -21,18 +21,18 @@ export default function EventReviewScreen({ ingestionData, onBack, onEdit }: Eve
     setError(null)
 
     try {
-      const result = await createWorkEventFromIngest(ingestionData)
+      const response = await api.post('/api/ingest/event/save', ingestionData)
 
-      if (result.success) {
+      if (response.data.success) {
         // Navigate to success screen
-        router.push(`/mywork/context/${result.eventId}/success`)
+        router.push(`/mywork/context/${response.data.eventId}/success`)
       } else {
-        setError(result.error || 'Failed to save event')
+        setError(response.data.error || 'Failed to save event')
         setSaving(false)
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving event:', err)
-      setError('Failed to save event. Please try again.')
+      setError(err.response?.data?.error || 'Failed to save event. Please try again.')
       setSaving(false)
     }
   }
