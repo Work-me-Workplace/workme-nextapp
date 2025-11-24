@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
+import api from '@/lib/api'
 
 export default function CreateEmailPage() {
   const router = useRouter()
@@ -34,25 +35,17 @@ export default function CreateEmailPage() {
     setError(null)
 
     try {
-      const response = await fetch('/api/output-standalone/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          outputType: 'workforce_comms_email',
-          title: formData.title,
-          description: formData.description || undefined,
-          draftContent: formData.draftContent ? { content: formData.draftContent } : undefined,
-        }),
+      const response = await api.post('/api/output-standalone/create', {
+        outputType: 'workforce_comms_email',
+        title: formData.title,
+        description: formData.description || undefined,
+        draftContent: formData.draftContent ? { content: formData.draftContent } : undefined,
       })
 
-      const result = await response.json()
-
-      if (result.success) {
-        router.push(`/mywork/outputs/${result.outputId}`)
+      if (response.data.success) {
+        router.push(`/mywork/outputs/${response.data.outputId}`)
       } else {
-        setError(result.error || 'Failed to create email')
+        setError(response.data.error || 'Failed to create email')
       }
     } catch (err: any) {
       console.error('Failed to create email:', err)

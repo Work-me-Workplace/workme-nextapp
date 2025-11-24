@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { ParsedNTKInput } from '@/lib/ntk/ntkTypes'
+import api from '@/lib/api'
 
 interface NtkInputFormProps {
   onParsed: (data: ParsedNTKInput) => void
@@ -22,19 +23,13 @@ export default function NtkInputForm({ onParsed }: NtkInputFormProps) {
     setError(null)
 
     try {
-      const res = await fetch('/api/ntk/parse', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      })
+      const response = await api.post('/api/ntk/parse', { text })
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to parse text')
+      if (response.data.error) {
+        throw new Error(response.data.error || 'Failed to parse text')
       }
 
-      onParsed(data as ParsedNTKInput)
+      onParsed(response.data as ParsedNTKInput)
     } catch (err: any) {
       console.error('Parse error:', err)
       setError(err.message || 'Failed to parse text. Please try again.')

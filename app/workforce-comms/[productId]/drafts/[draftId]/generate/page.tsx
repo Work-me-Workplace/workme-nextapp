@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { use, useState, useEffect } from 'react'
 import { getWorkforceCommsDraft } from '@/lib/actions/workforce-comms'
+import api from '@/lib/api'
 
 export default function GenerateEditionPage({ params }: { params: Promise<{ productId: string; draftId: string }> }) {
   const router = useRouter()
@@ -26,17 +27,12 @@ export default function GenerateEditionPage({ params }: { params: Promise<{ prod
   const handleGenerate = async () => {
     setGenerating(true)
     try {
-      const response = await fetch('/api/workforce-comms/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ draftId, productId }),
-      })
+      const response = await api.post('/api/workforce-comms/generate', { draftId, productId })
 
-      const result = await response.json()
-      if (result.success && result.edition) {
-        setEdition(result.edition)
+      if (response.data.success && response.data.edition) {
+        setEdition(response.data.edition)
       } else {
-        alert('Failed to generate edition: ' + (result.error || 'Unknown error'))
+        alert('Failed to generate edition: ' + (response.data.error || 'Unknown error'))
         setGenerating(false)
       }
     } catch (error) {

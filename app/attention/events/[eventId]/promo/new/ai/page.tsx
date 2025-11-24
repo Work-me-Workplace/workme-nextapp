@@ -4,6 +4,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useState } from 'react'
 import Link from 'next/link'
 import { createPromotionalWorkItem } from '@/lib/actions/promotional-work-item'
+import api from '@/lib/api'
 
 export default function PromotionalProductAIPage() {
   const router = useRouter()
@@ -28,24 +29,16 @@ export default function PromotionalProductAIPage() {
     setError(null)
 
     try {
-      const response = await fetch('/api/ingest/promotional/ai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: productType,
-          rawText: rawText.trim(),
-        }),
+      const response = await api.post('/api/ingest/promotional/ai', {
+        type: productType,
+        rawText: rawText.trim(),
       })
 
-      const result = await response.json()
-
-      if (result.success && result.data) {
-        setParsedData(result.data)
-        setEditedData(result.data)
+      if (response.data.success && response.data.data) {
+        setParsedData(response.data.data)
+        setEditedData(response.data.data)
       } else {
-        setError(result.error || 'Failed to parse with AI')
+        setError(response.data.error || 'Failed to parse with AI')
       }
     } catch (err) {
       console.error('Error parsing with AI:', err)
