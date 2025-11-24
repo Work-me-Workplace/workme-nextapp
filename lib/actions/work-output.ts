@@ -7,7 +7,7 @@ import { getWorkMeId } from '@/lib/getWorkMeId.server'
 import { WORK_OUTPUT_TYPE_VALUES } from './work-support'
 
 const workOutputSchema = z.object({
-  contextId: z.string().optional().nullable(),
+  eventRouterId: z.string().optional().nullable(), // Renamed from contextId
   supportId: z.string().optional().nullable(),
   outputType: z.enum(WORK_OUTPUT_TYPE_VALUES as [string, ...string[]]),
   dataJson: z.any().optional().nullable(),
@@ -23,9 +23,9 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
       return { success: false, error: 'Not authenticated or user must belong to a company' }
     }
 
-    // Verify at least one of contextId or supportId is provided
-    if (!validated.contextId && !validated.supportId) {
-      return { success: false, error: 'Either contextId or supportId is required' }
+    // Verify at least one of eventRouterId or supportId is provided
+    if (!validated.eventRouterId && !validated.supportId) {
+      return { success: false, error: 'Either eventRouterId or supportId is required' }
     }
 
     // If supportId provided, verify it exists and belongs to user's company
@@ -41,12 +41,12 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
         return { success: false, error: 'WorkSupport not found or unauthorized' }
       }
 
-      // Use support's contextId if contextId not provided
-      const contextIdToUse = validated.contextId || support.contextId
+      // Use support's eventRouterId if eventRouterId not provided
+      const eventRouterIdToUse = validated.eventRouterId || support.eventRouterId
 
       const workOutput = await prisma.workOutput.create({
         data: {
-          contextId: contextIdToUse,
+          eventRouterId: eventRouterIdToUse,
           supportId: validated.supportId,
           outputType: validated.outputType,
           dataJson: validated.dataJson ?? undefined,
@@ -55,7 +55,7 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
           originatorId: workMeId,
         },
         include: {
-          context: true,
+          eventRouter: true,
           support: true,
         },
       })
@@ -72,22 +72,22 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
       return { success: true, workOutput }
     }
 
-    // If only contextId provided, verify it exists and belongs to user's company
-    if (validated.contextId) {
-      const context = await prisma.workContext.findFirst({
+    // If only eventRouterId provided, verify it exists and belongs to user's company
+    if (validated.eventRouterId) {
+      const eventRouter = await prisma.workEventRouter.findFirst({
         where: { 
-          id: validated.contextId,
+          id: validated.eventRouterId,
           companyId, // Multi-tenant: ensure same company
         },
       })
 
-      if (!context) {
-        return { success: false, error: 'Work context not found or unauthorized' }
+      if (!eventRouter) {
+        return { success: false, error: 'Work event router not found or unauthorized' }
       }
 
       const workOutput = await prisma.workOutput.create({
         data: {
-          contextId: validated.contextId,
+          eventRouterId: validated.eventRouterId,
           outputType: validated.outputType,
           dataJson: validated.dataJson ?? undefined,
           status: (validated.status || 'draft') as 'draft' | 'final',
@@ -95,7 +95,7 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
           originatorId: workMeId,
         },
         include: {
-          context: true,
+          eventRouter: true,
           support: true,
         },
       })
@@ -142,7 +142,7 @@ export async function updateWorkOutput(id: string, data: Partial<Pick<z.infer<ty
       where: { id },
       data: updateData,
       include: {
-        context: true,
+        eventRouter: true,
         support: true,
       },
     })
@@ -238,7 +238,7 @@ export async function getWorkOutputs(workMeId?: string) {
         companyId, // Multi-tenant: filter by company
       },
       include: {
-        context: true,
+        eventRouter: true,
         support: true,
       },
       orderBy: { updatedAt: 'desc' },
@@ -265,7 +265,7 @@ export async function getWorkOutput(id: string) {
         companyId, // Multi-tenant: ensure same company
       },
       include: {
-        context: true,
+        eventRouter: true,
         support: true,
       },
     })
@@ -288,25 +288,25 @@ export async function getWorkOutputsByContext(contextId: string) {
       return { success: false, error: 'Not authenticated or user must belong to a company', workOutputs: [] }
     }
 
-    // Verify context belongs to user's company
-    const context = await prisma.workContext.findFirst({
+    // Verify eventRouter belongs to user's company
+    const eventRouter = await prisma.workEventRouter.findFirst({
       where: { 
         id: contextId,
         companyId, // Multi-tenant: ensure same company
       },
     })
 
-    if (!context) {
-      return { success: false, error: 'Work context not found or unauthorized', workOutputs: [] }
+    if (!eventRouter) {
+      return { success: false, error: 'Work event router not found or unauthorized', workOutputs: [] }
     }
 
     const workOutputs = await prisma.workOutput.findMany({
       where: { 
-        contextId,
+        eventRouterId: contextId,
         companyId, // Multi-tenant: ensure same company
       },
       include: {
-        context: true,
+        eventRouter: true,
         support: true,
       },
       orderBy: { updatedAt: 'desc' },
