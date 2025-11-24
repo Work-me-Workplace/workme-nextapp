@@ -3,10 +3,9 @@
 import { prisma } from '../prisma'
 import { z } from 'zod'
 import { verifyAuth } from '@/lib/server/verifyAuth'
-import { eventSchema } from '@/lib/server/context-schemas'
+import { eventSchema, campaignSchema, impactEventSchema, trainingSchema, communityOpportunitySchema, benefitsSchema, careerSchema, employeeCauseSchema } from '@/lib/server/context-schemas'
 
-// Campaign Schema
-const campaignSchema = z.object({
+// Note: All schemas are now imported from context-schemas.ts
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional().nullable(),
   windowStart: z.date().optional().nullable(),
@@ -47,29 +46,7 @@ const trainingSchema = z.object({
   pocPhone: z.string().optional().nullable(),
 })
 
-// Event Schema
-const eventSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional().nullable(),
-  startDate: z.date().optional().nullable(),
-  endDate: z.date().optional().nullable(),
-  location: z.string().optional().nullable(),
-  eventCategory: z.string().optional().nullable(),
-  pocFirstName: z.string().optional().nullable(),
-  pocLastName: z.string().optional().nullable(),
-  pocEmail: z.string().email().optional().nullable(),
-  pocPhone: z.string().optional().nullable(),
-  // New event fields
-  eventDate: z.date().optional().nullable(),
-  startTime: z.string().optional().nullable(),
-  endTime: z.string().optional().nullable(),
-  registrationRequired: z.string().optional().nullable(),
-  registrationLink: z.string().url().optional().nullable(),
-  speakers: z.array(z.string()).optional().nullable(),
-  foodProvided: z.string().optional().nullable(),
-  foodTypes: z.string().optional().nullable(),
-  promotionNeeds: z.array(z.string()).optional().nullable(),
-})
+// Event Schema is imported from context-schemas.ts (with audience enum)
 
 // Community Opportunity Schema
 const communityOpportunitySchema = z.object({
