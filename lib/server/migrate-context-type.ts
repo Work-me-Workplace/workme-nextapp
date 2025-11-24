@@ -28,7 +28,7 @@ async function migrateContextType() {
   console.log('🔍 Checking existing WorkContext types...')
   
   // Get all unique type values
-  const contexts = await prisma.workContext.findMany({
+  const contexts = await prisma.workEventRouter.findMany({
     select: { type: true },
     distinct: ['type'],
   })
