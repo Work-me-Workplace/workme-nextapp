@@ -20,8 +20,8 @@ export async function GET(request: Request) {
       companyId,
     })
 
-    // Get all WorkContexts for user's company (multi-tenant scoping)
-    const workContexts = await prisma.workContext.findMany({
+    // Get all WorkEventRouters for user's company (multi-tenant scoping)
+    const workEventRouters = await prisma.workEventRouter.findMany({
       where: { 
         companyId, // Multi-tenant: filter by company
       },
@@ -37,8 +37,8 @@ export async function GET(request: Request) {
     const { getTypedContext } = await import('@/lib/server/context-factory')
     
     const enrichedContexts = await Promise.all(
-      workContexts.map(async (ctx) => {
-        const typed = await getTypedContext(ctx.type, ctx.typeRefId, companyId)
+      workEventRouters.map(async (ctx) => {
+        const typed = await getTypedContext(ctx.type, ctx.eventRefId, companyId)
         return {
           ...ctx,
           typedData: typed,

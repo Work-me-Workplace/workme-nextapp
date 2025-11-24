@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { createEvent } from '@/lib/actions/typed-contexts'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
+import type { ParsedEventItem } from '@/lib/types/event-ingestion'
 
 interface EventFormData {
   title: string
@@ -31,12 +32,14 @@ interface EventFormData {
 
 interface EventManualFormProps {
   initialData?: Partial<EventFormData>
+  initialEventItems?: ParsedEventItem[]
   onBack?: () => void
 }
 
-export default function EventManualForm({ initialData, onBack }: EventManualFormProps) {
+export default function EventManualForm({ initialData, initialEventItems, onBack }: EventManualFormProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [eventItems, setEventItems] = useState<ParsedEventItem[]>(initialEventItems || [])
   const [formData, setFormData] = useState<EventFormData>({
     title: initialData?.title || '',
     description: initialData?.description || '',
@@ -138,7 +141,7 @@ export default function EventManualForm({ initialData, onBack }: EventManualForm
 
   return (
     <div className="bg-white rounded-lg shadow p-8">
-      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Create New Event</h2>
         {onBack && (
           <button
@@ -149,6 +152,27 @@ export default function EventManualForm({ initialData, onBack }: EventManualForm
           </button>
         )}
       </div>
+
+      {eventItems.length > 0 && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm font-medium text-blue-900 mb-2">
+            Event Items Found ({eventItems.length})
+          </p>
+          <div className="space-y-2 max-h-40 overflow-y-auto">
+            {eventItems.map((item, index) => (
+              <div key={index} className="text-sm text-blue-800">
+                <span className="font-medium">• {item.title}</span>
+                {item.description && (
+                  <span className="text-blue-600 ml-2">- {item.description.substring(0, 60)}...</span>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-blue-600 mt-2">
+            Note: Event items will be saved when you create the event.
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>

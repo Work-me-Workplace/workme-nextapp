@@ -29,7 +29,8 @@ export async function POST(request: NextRequest) {
     const draft = draftResult.draft
 
     // Fetch work contexts
-    const contextIds = Array.isArray(draft.contextIds) ? draft.contextIds : []
+    // Note: contextIds may not exist on draft type, so we safely access it
+    const contextIds = Array.isArray((draft as any).contextIds) ? (draft as any).contextIds : []
     const contexts: any[] = []
     
     if (contextIds.length > 0) {

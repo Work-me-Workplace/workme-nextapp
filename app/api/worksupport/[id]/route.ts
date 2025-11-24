@@ -26,7 +26,7 @@ export async function GET(
         companyId,
       },
       include: {
-        context: true,
+        eventRouter: true,
         outputs: {
           orderBy: { createdAt: 'desc' },
         },

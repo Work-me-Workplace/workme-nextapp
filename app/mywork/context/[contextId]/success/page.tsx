@@ -12,6 +12,8 @@ export default function WorkContextSuccessPage() {
   const contextId = params.contextId as string
   const [workContext, setWorkContext] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [isEvent, setIsEvent] = useState(false)
+  const [promotionNeeds, setPromotionNeeds] = useState<string[]>([])
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -32,6 +34,15 @@ export default function WorkContextSuccessPage() {
       const result = await getWorkContext(contextId, clientWorkMeId)
       if (result.success && result.workContext) {
         setWorkContext(result.workContext)
+        
+        // Check if this is an event and extract promotionNeeds
+        if (result.workContext.type === 'event') {
+          setIsEvent(true)
+          const typedData = result.workContext.typedData
+          if (typedData?.promotionNeeds && Array.isArray(typedData.promotionNeeds) && typedData.promotionNeeds.length > 0) {
+            setPromotionNeeds(typedData.promotionNeeds)
+          }
+        }
       } else {
         // If context not found, redirect to detail page
         router.push(`/mywork/context/${contextId}`)
@@ -79,10 +90,15 @@ export default function WorkContextSuccessPage() {
               </svg>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              WorkContext Created!
+              {isEvent ? '🎉 Event Created Successfully!' : 'WorkContext Created!'}
             </h1>
             <p className="text-lg text-gray-600 mb-4">
-              <span className="font-semibold">{workContext.title || 'Your WorkContext'}</span> has been created successfully.
+              <span className="font-semibold">{workContext.title || (isEvent ? 'Your Event' : 'Your WorkContext')}</span> has been created successfully.
+              {isEvent && workContext.typedData && (
+                <span className="block mt-2 text-base">
+                  Your event and agenda items have been saved.
+                </span>
+              )}
             </p>
             <p className="text-sm text-gray-500 mb-8">
               What would you like to do next?
@@ -91,19 +107,46 @@ export default function WorkContextSuccessPage() {
 
           {/* Action Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            {/* Build WorkSupport */}
-            <Link
-              href={`/mywork/support/${contextId}/setup`}
-              className="block p-6 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition text-center"
-            >
-              <div className="mb-3">
-                <svg className="h-10 w-10 text-blue-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Set Up WorkSupport</h3>
-              <p className="text-sm text-gray-600">Choose which outputs you need for this context</p>
-            </Link>
+            {/* Event-specific: Continue Setup */}
+            {isEvent ? (
+              <button
+                onClick={() => {
+                  // Route based on promotionNeeds
+                  if (promotionNeeds.length === 0) {
+                    // No promotion needs → go to support setup (promotion page doesn't exist yet)
+                    router.push(`/mywork/support/${contextId}/setup`)
+                  } else {
+                    // Has promotion needs → go to support
+                    router.push(`/mywork/support/${contextId}`)
+                  }
+                }}
+                className="block p-6 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition text-center w-full"
+              >
+                <div className="mb-3">
+                  <svg className="h-10 w-10 text-blue-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Continue Setup</h3>
+                <p className="text-sm text-gray-600">
+                  Set up support and outputs for this event
+                </p>
+              </button>
+            ) : (
+              /* Build WorkSupport */
+              <Link
+                href={`/mywork/support/${contextId}/setup`}
+                className="block p-6 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition text-center"
+              >
+                <div className="mb-3">
+                  <svg className="h-10 w-10 text-blue-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Set Up WorkSupport</h3>
+                <p className="text-sm text-gray-600">Choose which outputs you need for this context</p>
+              </Link>
+            )}
 
             {/* View WorkContext */}
             <Link

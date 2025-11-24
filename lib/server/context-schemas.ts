@@ -42,7 +42,7 @@ export const trainingSchema = z.object({
   pocPhone: z.string().optional().nullable(),
 })
 
-// Event Schema
+// Event Schema (WorkEvent)
 export const eventSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional().nullable(),
@@ -54,6 +54,16 @@ export const eventSchema = z.object({
   pocLastName: z.string().optional().nullable(),
   pocEmail: z.string().email().optional().nullable(),
   pocPhone: z.string().optional().nullable(),
+  // New event fields
+  eventDate: z.date().optional().nullable(),
+  startTime: z.string().optional().nullable(),
+  endTime: z.string().optional().nullable(),
+  registrationRequired: z.string().optional().nullable(), // "Yes" or "No"
+  registrationLink: z.string().url().optional().nullable(),
+  speakers: z.array(z.string()).optional().nullable(),
+  foodProvided: z.string().optional().nullable(), // "Yes" or "No"
+  foodTypes: z.string().optional().nullable(), // free text
+  promotionNeeds: z.array(z.string()).optional().nullable(), // checkbox string values
 })
 
 // Community Opportunity Schema

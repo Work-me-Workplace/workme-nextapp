@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
         companyId,
       },
       include: {
-        context: true,
+        eventRouter: true,
         outputs: {
           orderBy: { createdAt: 'desc' },
         },

@@ -1,18 +1,30 @@
 'use client'
 
 import { useState } from 'react'
-import EventManualForm from './EventManualForm'
+import EventReviewScreen from './EventReviewScreen'
+import type { EventIngestionResponse } from '@/lib/types/event-ingestion'
+
+type ViewMode = 'input' | 'review'
 
 interface EventAIFormProps {
   onBack: () => void
 }
 
 export default function EventAIForm({ onBack }: EventAIFormProps) {
+  const [viewMode, setViewMode] = useState<ViewMode>('input')
   const [pastedText, setPastedText] = useState('')
   const [parsing, setParsing] = useState(false)
-  const [parsedData, setParsedData] = useState<any>(null)
+  const [ingestionData, setIngestionData] = useState<EventIngestionResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
+  
+  // Optional user context fields
+  const [userContext, setUserContext] = useState({
+    eventDate: '',
+    category: '',
+    startTime: '',
+    endTime: '',
+  })
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -32,23 +44,42 @@ export default function EventAIForm({ onBack }: EventAIFormProps) {
     setError(null)
 
     try {
-      const formData = new FormData()
-      if (pastedText) {
-        formData.append('text', pastedText)
-      }
-      if (file) {
-        formData.append('file', file)
+      // Build request body
+      const requestBody: {
+        rawText: string
+        userContext?: {
+          eventDate?: string
+          category?: string
+          startTime?: string
+          endTime?: string
+        }
+      } = {
+        rawText: pastedText.trim(),
       }
 
-      const response = await fetch('/api/ai/parse-event', {
+      // Add user context if any fields are provided
+      const hasUserContext = userContext.eventDate || userContext.category || userContext.startTime || userContext.endTime
+      if (hasUserContext) {
+        requestBody.userContext = {}
+        if (userContext.eventDate) requestBody.userContext.eventDate = userContext.eventDate
+        if (userContext.category) requestBody.userContext.category = userContext.category
+        if (userContext.startTime) requestBody.userContext.startTime = userContext.startTime
+        if (userContext.endTime) requestBody.userContext.endTime = userContext.endTime
+      }
+
+      const response = await fetch('/api/ingest/event/ai', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
       })
 
       const result = await response.json()
 
       if (result.success && result.data) {
-        setParsedData(result.data)
+        setIngestionData(result.data)
+        setViewMode('review')
       } else {
         setError(result.error || 'Failed to parse event data')
       }
@@ -60,39 +91,18 @@ export default function EventAIForm({ onBack }: EventAIFormProps) {
     }
   }
 
-  // If data is parsed, show the form with pre-filled data
-  if (parsedData) {
-    const formData = {
-      title: parsedData.title || '',
-      description: parsedData.description || '',
-      startDate: parsedData.startDate ? new Date(parsedData.startDate).toISOString().split('T')[0] : '',
-      startTime: parsedData.startTime || '',
-      endDate: parsedData.endDate ? new Date(parsedData.endDate).toISOString().split('T')[0] : '',
-      endTime: parsedData.endTime || '',
-      location: parsedData.location || '',
-      eventCategory: parsedData.eventCategory || '',
-      pocFirstName: parsedData.pocFirstName || '',
-      pocLastName: parsedData.pocLastName || '',
-      pocEmail: parsedData.pocEmail || '',
-      pocPhone: parsedData.pocPhone || '',
-      eventDate: parsedData.eventDate ? new Date(parsedData.eventDate).toISOString().split('T')[0] : '',
-      registrationRequired: parsedData.registrationRequired || '',
-      registrationLink: parsedData.registrationLink || '',
-      speakers: parsedData.speakers || [],
-      foodProvided: parsedData.foodProvided || '',
-      foodTypes: parsedData.foodTypes || '',
-      promotionNeeds: parsedData.promotionNeeds || [],
-    }
-
+  // Show review screen if data is parsed
+  if (viewMode === 'review' && ingestionData) {
     return (
-      <div>
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-sm text-green-800">
-            ✓ Event data parsed successfully! Review and edit the fields below before submitting.
-          </p>
-        </div>
-        <EventManualForm initialData={formData} onBack={onBack} />
-      </div>
+      <EventReviewScreen
+        ingestionData={ingestionData}
+        onBack={() => setViewMode('input')}
+        onEdit={() => {
+          // For now, just go back to input to re-parse
+          // Future: could show editable form
+          setViewMode('input')
+        }}
+      />
     )
   }
 
@@ -111,7 +121,7 @@ export default function EventAIForm({ onBack }: EventAIFormProps) {
       <div className="space-y-6">
         <div>
           <label htmlFor="pastedText" className="block text-sm font-medium text-gray-700 mb-2">
-            Paste Event Text
+            Paste Event Text <span className="text-red-500">*</span>
           </label>
           <textarea
             id="pastedText"
@@ -120,7 +130,65 @@ export default function EventAIForm({ onBack }: EventAIFormProps) {
             rows={10}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
             placeholder="Paste event announcement, email, or any unstructured event text here..."
+            required
           />
+        </div>
+
+        <div className="border-t pt-4">
+          <p className="text-sm font-medium text-gray-700 mb-3">Optional Context (help AI infer missing details)</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="userContextEventDate" className="block text-xs text-gray-600 mb-1">
+                Event Date
+              </label>
+              <input
+                type="date"
+                id="userContextEventDate"
+                value={userContext.eventDate}
+                onChange={(e) => setUserContext({ ...userContext, eventDate: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="userContextCategory" className="block text-xs text-gray-600 mb-1">
+                Category
+              </label>
+              <input
+                type="text"
+                id="userContextCategory"
+                value={userContext.category}
+                onChange={(e) => setUserContext({ ...userContext, category: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                placeholder="e.g., All-hands, Town Hall"
+              />
+            </div>
+            <div>
+              <label htmlFor="userContextStartTime" className="block text-xs text-gray-600 mb-1">
+                Start Time
+              </label>
+              <input
+                type="text"
+                id="userContextStartTime"
+                value={userContext.startTime}
+                onChange={(e) => setUserContext({ ...userContext, startTime: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                placeholder="e.g., 11:30 a.m."
+              />
+            </div>
+            <div>
+              <label htmlFor="userContextEndTime" className="block text-xs text-gray-600 mb-1">
+                End Time
+              </label>
+              <input
+                type="text"
+                id="userContextEndTime"
+                value={userContext.endTime}
+                onChange={(e) => setUserContext({ ...userContext, endTime: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                placeholder="e.g., 1:30 p.m."
+              />
+            </div>
+          </div>
         </div>
 
         <div>

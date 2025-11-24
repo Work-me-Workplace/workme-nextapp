@@ -4,36 +4,36 @@ import { prisma } from "@/lib/prisma"
 import { getTypedContext } from "./context-factory"
 
 /**
- * Get and enrich a WorkContext with typed data
+ * Get and enrich a WorkEventRouter with typed data
  * Filters by companyId for multi-tenant security
  * Returns null if not found or unauthorized
  * 
- * @param id - The WorkContext router ID
+ * @param id - The WorkEventRouter router ID
  * @param companyId - The company ID to scope the query (required for multi-tenant)
  */
-export async function getWorkContext(
+export async function getWorkEventRouter(
   id: string,
   companyId: string
 ) {
-  console.log('[WorkContext GET]', {
-    contextId: id,
+  console.log('[WorkEventRouter GET]', {
+    routerId: id,
     companyId,
   })
 
   if (!companyId) {
-    console.error('[WorkContext GET] ERROR: No companyId - user must belong to a company', {
-      contextId: id,
+    console.error('[WorkEventRouter GET] ERROR: No companyId - user must belong to a company', {
+      routerId: id,
     })
     return null
   }
 
-  console.log('[WorkContext GET] Looking up router', {
-    contextId: id,
+  console.log('[WorkEventRouter GET] Looking up router', {
+    routerId: id,
     companyId,
   })
 
   // Get router entry with company scoping (multi-tenant security)
-  const router = await prisma.workContext.findFirst({
+  const router = await prisma.workEventRouter.findFirst({
     where: { 
       id,
       companyId, // Multi-tenant: ensure same company
@@ -46,23 +46,23 @@ export async function getWorkContext(
   })
 
   if (!router) {
-    console.error('[WorkContext GET] ERROR: Router not found', {
-      contextId: id,
+    console.error('[WorkEventRouter GET] ERROR: Router not found', {
+      routerId: id,
       companyId,
     })
     return null
   }
 
-  console.log('[WorkContext GET] Router found', {
-    contextId: id,
+  console.log('[WorkEventRouter GET] Router found', {
+    routerId: id,
     routerId: router.id,
     type: router.type,
-    typeRefId: router.typeRefId,
+    eventRefId: router.eventRefId,
     companyId,
   })
 
   // Enrich with typed data (filtered by companyId)
-  const typed = await getTypedContext(router.type, router.typeRefId, companyId)
+  const typed = await getTypedContext(router.type, router.eventRefId, companyId)
 
   const result = {
     ...router,
@@ -70,8 +70,8 @@ export async function getWorkContext(
     title: typed?.title ?? "",
   }
 
-  console.log('[WorkContext GET] SUCCESS', {
-    contextId: id,
+  console.log('[WorkEventRouter GET] SUCCESS', {
+    routerId: id,
     routerId: router.id,
     type: router.type,
     title: result.title,
@@ -80,4 +80,7 @@ export async function getWorkContext(
 
   return result
 }
+
+// Legacy alias for backward compatibility during migration
+export const getWorkContext = getWorkEventRouter
 

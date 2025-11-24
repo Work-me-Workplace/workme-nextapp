@@ -1,0 +1,56 @@
+/**
+ * TypeScript types for Event AI Ingestion
+ */
+
+export interface EventIngestionRequest {
+  rawText: string
+  userContext?: {
+    eventDate?: string
+    category?: string
+    startTime?: string
+    endTime?: string
+  }
+}
+
+export interface ParsedEventItem {
+  title: string
+  description: string | null
+  metadata: Record<string, any> | null
+}
+
+export interface ParsedWorkEvent {
+  title: string
+  description: string | null
+  
+  eventDate: string | null           // "2025-12-17"
+  startTime: string | null           // "11:30 a.m."
+  endTime: string | null              // "1:30 p.m."
+  
+  eventCategory: string | null
+  
+  registrationRequired: string | null // "Yes" or "No"
+  registrationLink: string | null
+  
+  speakers: string[] | null
+  
+  foodProvided: string | null         // "Yes" or "No"
+  foodTypes: string | null
+  
+  promotionNeeds: string[] | null
+}
+
+export interface EventIngestionResponse {
+  event: ParsedWorkEvent
+  items: ParsedEventItem[]
+}
+
+export interface EventIngestionAPIResponse {
+  success: true
+  data: EventIngestionResponse
+}
+
+export interface EventIngestionAPIError {
+  success: false
+  error: string
+}
+
