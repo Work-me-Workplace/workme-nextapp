@@ -70,7 +70,6 @@ export async function getWorkEventRouter(
   }
 
   console.log('[WorkEventRouter GET] SUCCESS', {
-    routerId: id,
     routerId: router.id,
     type: router.type,
     title: result.title,
