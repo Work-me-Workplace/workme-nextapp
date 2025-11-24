@@ -354,9 +354,9 @@ enum ContextType {
 
 // Router model - references typed context models
 model WorkEventRouter {
-  id        String      @id @default(cuid())
-  createdAt DateTime    @default(now())
-  type      ContextType
+  id         String      @id @default(cuid())
+  createdAt  DateTime    @default(now())
+  type       ContextType
   eventRefId String // references the typed context model
 
   companyId    String
@@ -444,45 +444,59 @@ model WorkContextTraining {
 }
 
 model WorkEvent {
-  id            String    @id @default(cuid())
-  createdAt     DateTime  @default(now())
-  title         String
-  description   String?
-  startDate     DateTime?
-  endDate       DateTime?
-  location      String?
-  eventCategory String?
-  pocFirstName  String?
-  pocLastName   String?
-  pocEmail      String?
-  pocPhone      String?
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // New event fields
-  eventDate         DateTime?
-  startTime         String?
-  endTime           String?
-  registrationRequired String? // "Yes" or "No"
-  registrationLink String?
-  speakers          String[] @default([])
-  foodProvided     String? // "Yes" or "No"
-  foodTypes         String? // free text
-  promotionNeeds   String[] @default([]) // checkbox string values
+  // Core identity
+  title       String
+  theme       String? // NEW (tagline / theme)
+  description String?
+
+  // Timing
+  eventDate DateTime?
+  startTime String?
+  endTime   String?
+
+  // Category (string, validated by mapper)
+  eventCategory String?
+
+  // Registration
+  registrationRequired String?
+  registrationLink     String?
+
+  // Highlights extracted from GPT
+  audience      String?
+  vibe          String?
+  perks         String[] @default([])
+  participation String[] @default([])
+
+  // Food
+  foodProvided String?
+  foodTypes    String?
+
+  // Speaker + POC
+  speakers String[] @default([])
+  pocEmail String?
+  pocPhone String?
 
   companyId    String
   company      Company @relation("WorkEventCompany", fields: [companyId], references: [id], onDelete: Cascade)
   originatorId String
   originator   WorkMe  @relation("WorkEventOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
-  items EventItem[]
+  // Relations
+  eventItems           EventItem[]
+  promotionalWorkItems PromotionalWorkItem[]
 
   @@index([companyId])
   @@index([originatorId])
 }
 
 model EventItem {
-  id        String   @id @default(cuid())
-  eventId   String
-  event     WorkEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  id      String    @id @default(cuid())
+  eventId String
+  event   WorkEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   title       String
   description String?
@@ -490,6 +504,36 @@ model EventItem {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+}
+
+model PromotionalWorkItem {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  eventId String
+  event   WorkEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  name String
+  type String // poster_22x26, flyer_8x11, etc.
+
+  // CVI text blocks
+  title          String?
+  headline       String?
+  subheadline    String?
+  details        String?
+  perks          String?
+  participation  String?
+  foodProvided   String?
+  foodTypes      String?
+  theme          String?
+  eventDateBlock String?
+  eventTimeBlock String?
+  rsvpLink       String?
+
+  metadata Json?
 
   @@index([eventId])
 }

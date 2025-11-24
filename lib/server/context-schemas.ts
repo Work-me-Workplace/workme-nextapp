@@ -45,25 +45,23 @@ export const trainingSchema = z.object({
 // Event Schema (WorkEvent)
 export const eventSchema = z.object({
   title: z.string().min(1, 'Title is required'),
+  theme: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
-  startDate: z.date().optional().nullable(),
-  endDate: z.date().optional().nullable(),
-  location: z.string().optional().nullable(),
-  eventCategory: z.string().optional().nullable(),
-  pocFirstName: z.string().optional().nullable(),
-  pocLastName: z.string().optional().nullable(),
-  pocEmail: z.string().email().optional().nullable(),
-  pocPhone: z.string().optional().nullable(),
-  // New event fields
   eventDate: z.date().optional().nullable(),
   startTime: z.string().optional().nullable(),
   endTime: z.string().optional().nullable(),
+  eventCategory: z.string().optional().nullable(),
   registrationRequired: z.string().optional().nullable(), // "Yes" or "No"
   registrationLink: z.string().url().optional().nullable(),
   speakers: z.array(z.string()).optional().nullable(),
   foodProvided: z.string().optional().nullable(), // "Yes" or "No"
   foodTypes: z.string().optional().nullable(), // free text
-  promotionNeeds: z.array(z.string()).optional().nullable(), // checkbox string values
+  audience: z.string().optional().nullable(),
+  vibe: z.string().optional().nullable(),
+  perks: z.array(z.string()).optional().nullable(),
+  participation: z.array(z.string()).optional().nullable(),
+  pocEmail: z.string().email().optional().nullable(),
+  pocPhone: z.string().optional().nullable(),
 })
 
 // Community Opportunity Schema

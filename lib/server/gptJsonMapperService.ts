@@ -7,6 +7,7 @@
 
 interface GPTEventOutput {
   title?: string
+  theme?: string | null
   description?: string | null
   eventDate?: string | null
   startTime?: string | null
@@ -17,7 +18,10 @@ interface GPTEventOutput {
   speakers?: string[] | null
   foodProvided?: string | null
   foodTypes?: string | null
-  promotionNeeds?: string[] | null
+  audience?: string | null
+  vibe?: string | null
+  perks?: string[] | null
+  participation?: string[] | null
 }
 
 interface GPTItemOutput {
@@ -33,6 +37,7 @@ interface GPTIngestionOutput {
 
 interface NormalizedEventData {
   title: string
+  theme: string | null
   description: string | null
   eventDate: Date | null
   startTime: string | null
@@ -43,7 +48,12 @@ interface NormalizedEventData {
   speakers: string[]
   foodProvided: string | null
   foodTypes: string | null
-  promotionNeeds: string[]
+  audience: string | null
+  vibe: string | null
+  perks: string[]
+  participation: string[]
+  pocEmail: string | null
+  pocPhone: string | null
   companyId: string
   originatorId: string
 }
@@ -166,6 +176,7 @@ export function normalizeGPTIngestionOutput(
   // Normalize event data
   const eventData: NormalizedEventData = {
     title: normalizeString(event.title) || 'Untitled Event',
+    theme: normalizeString(event.theme),
     description: normalizeString(event.description),
     eventDate: parseEventDate(event.eventDate),
     startTime: normalizeString(event.startTime),
@@ -176,7 +187,12 @@ export function normalizeGPTIngestionOutput(
     speakers: normalizeArray(event.speakers),
     foodProvided: normalizeFoodProvided(event.foodProvided),
     foodTypes: normalizeString(event.foodTypes),
-    promotionNeeds: normalizeArray(event.promotionNeeds),
+    audience: normalizeString(event.audience),
+    vibe: normalizeString(event.vibe),
+    perks: normalizeArray(event.perks),
+    participation: normalizeArray(event.participation),
+    pocEmail: null, // Not in GPT output, can be added later
+    pocPhone: null, // Not in GPT output, can be added later
     companyId,
     originatorId,
   }

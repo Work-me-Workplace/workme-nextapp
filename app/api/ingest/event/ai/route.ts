@@ -51,43 +51,54 @@ export async function POST(request: Request) {
     }
 
     // Build system prompt (exact as specified)
-    const systemPrompt = `You convert messy government or corporate event announcements into structured data.
-Parse high-level details into a WorkEvent object and break any agenda blocks into EventItems.
-- NEVER return IDs (backend generates them)
-- Use null for missing fields
-- Use human-readable times ("11:30 a.m.")
-- Dates must be YYYY-MM-DD when extractable
-- speakers[] must be array or null
-- foodProvided must be "Yes" or "No"
-- eventCategory must be one of: Celebration, Heritage, Community, Recognition, Appreciation, Family
-- If category does not match, use "Unknown"
-- Return ONLY JSON matching this structure:
+    const systemPrompt = `You convert messy government or corporate event announcements into structured
+event JSON. Return ONLY JSON with the exact structure below.
+
+Extract:
+
+1. Core details — title, theme, description, date, times
+2. Category — must be Celebration, Heritage, Community, Recognition, Appreciation, Family or Unknown
+3. Attendance — registrationRequired, registrationLink
+4. Food details
+5. Speakers (array)
+6. Agenda blocks → items[]
+7. Highlights inferred from tone/context:
+   - audience: string
+   - participation: string[]
+   - perks: string[]
+   - vibe: string
+
+NEVER return IDs.
+
+Return only:
 
 {
   "event": {
-    "title": string,
-    "description": string | null,
-    "eventDate": string | null,
-    "startTime": string | null,
-    "endTime": string | null,
-    "eventCategory": string | null,
-    "registrationRequired": string | null,
-    "registrationLink": string | null,
-    "speakers": string[] | null,
-    "foodProvided": string | null,
-    "foodTypes": string | null,
-    "promotionNeeds": string[] | null
+    "title": "",
+    "theme": "",
+    "description": "",
+    "eventDate": "",
+    "startTime": "",
+    "endTime": "",
+    "eventCategory": "",
+    "registrationRequired": "",
+    "registrationLink": "",
+    "speakers": [],
+    "foodProvided": "",
+    "foodTypes": "",
+    "audience": "",
+    "participation": [],
+    "perks": [],
+    "vibe": ""
   },
   "items": [
     {
-      "title": string,
-      "description": string | null,
-      "metadata": object | null
+      "title": "",
+      "description": "",
+      "metadata": {}
     }
   ]
-}
-
-Return clean JSON only with no extra commentary.`
+}`
 
     // Build user prompt
     let userPrompt = `Parse this event announcement:\n\n${rawText}`
@@ -172,6 +183,7 @@ Return clean JSON only with no extra commentary.`
       data: {
         event: {
           title: parsedData.event.title || '',
+          theme: parsedData.event.theme || null,
           description: parsedData.event.description || null,
           eventDate: parsedData.event.eventDate || null,
           startTime: parsedData.event.startTime || null,
@@ -179,10 +191,13 @@ Return clean JSON only with no extra commentary.`
           eventCategory: parsedData.event.eventCategory || null,
           registrationRequired: parsedData.event.registrationRequired || null,
           registrationLink: parsedData.event.registrationLink || null,
-          speakers: Array.isArray(parsedData.event.speakers) ? parsedData.event.speakers : null,
+          speakers: Array.isArray(parsedData.event.speakers) ? parsedData.event.speakers : [],
           foodProvided: parsedData.event.foodProvided || null,
           foodTypes: parsedData.event.foodTypes || null,
-          promotionNeeds: Array.isArray(parsedData.event.promotionNeeds) ? parsedData.event.promotionNeeds : null,
+          audience: parsedData.event.audience || null,
+          participation: Array.isArray(parsedData.event.participation) ? parsedData.event.participation : [],
+          perks: Array.isArray(parsedData.event.perks) ? parsedData.event.perks : [],
+          vibe: parsedData.event.vibe || null,
         },
         items: parsedData.items.map((item: any) => ({
           title: item.title || '',

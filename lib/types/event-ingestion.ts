@@ -20,6 +20,7 @@ export interface ParsedEventItem {
 
 export interface ParsedWorkEvent {
   title: string
+  theme: string | null
   description: string | null
   
   eventDate: string | null           // "2025-12-17"
@@ -31,12 +32,15 @@ export interface ParsedWorkEvent {
   registrationRequired: string | null // "Yes" or "No"
   registrationLink: string | null
   
-  speakers: string[] | null
+  speakers: string[]
   
   foodProvided: string | null         // "Yes" or "No"
   foodTypes: string | null
   
-  promotionNeeds: string[] | null
+  audience: string | null
+  vibe: string | null
+  perks: string[]
+  participation: string[]
 }
 
 export interface EventIngestionResponse {

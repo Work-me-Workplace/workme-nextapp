@@ -162,19 +162,56 @@ export default function EventReviewScreen({ ingestionData, onBack, onEdit }: Eve
             </div>
           )}
 
-          {event.promotionNeeds && event.promotionNeeds.length > 0 && (
+          {event.perks && event.perks.length > 0 && (
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Promotion Needs</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Perks</label>
               <div className="flex flex-wrap gap-2">
-                {event.promotionNeeds.map((need, index) => (
+                {event.perks.map((perk, index) => (
                   <span
                     key={index}
                     className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
                   >
-                    {need}
+                    {perk}
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {event.participation && event.participation.length > 0 && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Participation</label>
+              <div className="flex flex-wrap gap-2">
+                {event.participation.map((item, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {event.audience && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Audience</label>
+              <p className="text-sm text-gray-900">{event.audience}</p>
+            </div>
+          )}
+
+          {event.vibe && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Vibe</label>
+              <p className="text-sm text-gray-900">{event.vibe}</p>
+            </div>
+          )}
+
+          {event.theme && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Theme</label>
+              <p className="text-sm text-gray-900">{event.theme}</p>
             </div>
           )}
         </div>
