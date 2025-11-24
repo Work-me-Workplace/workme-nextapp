@@ -54,7 +54,6 @@ export async function getWorkEventRouter(
   }
 
   console.log('[WorkEventRouter GET] Router found', {
-    routerId: id,
     routerId: router.id,
     type: router.type,
     eventRefId: router.eventRefId,
