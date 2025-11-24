@@ -17,7 +17,7 @@ export default function SidebarNav() {
       <nav className="space-y-6">
         <div>
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-            MyWork
+            WorkforceAttention
           </h3>
           <div className="space-y-1">
             <Link
