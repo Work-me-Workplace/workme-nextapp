@@ -10,7 +10,6 @@ export default function PromotionalProductViewPage() {
   const params = useParams()
   const eventId = params.eventId as string
   const promoId = params.promoId as string
-  // Note: Using promoId to avoid conflict with [itemId] routes
   const [item, setItem] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState<string | null>(null)

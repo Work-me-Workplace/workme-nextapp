@@ -141,7 +141,7 @@ async function backfillCompanyId() {
     console.log('📊 Backfilling WorkSupport...')
     const workSupports = await prisma.workSupport.findMany({
       where: { companyId: null as any }, // Type assertion for legacy script
-      select: { id: true, originatorId: true, contextId: true },
+      select: { id: true, originatorId: true, eventRouterId: true },
     })
 
     let supportUpdated = 0
@@ -149,15 +149,15 @@ async function backfillCompanyId() {
     const supportErrors: string[] = []
 
     for (const support of workSupports) {
-      // Try to get companyId from context first
+      // Try to get companyId from eventRouter first
       let companyId: string | null = null
 
-      if (support.contextId) {
-        const context = await prisma.workEventRouter.findUnique({
-          where: { id: support.contextId },
+      if (support.eventRouterId) {
+        const eventRouter = await prisma.workEventRouter.findUnique({
+          where: { id: support.eventRouterId },
           select: { companyId: true },
         })
-        companyId = context?.companyId || null
+        companyId = eventRouter?.companyId || null
       }
 
       // Fallback to creator's companyId
@@ -193,7 +193,7 @@ async function backfillCompanyId() {
     console.log('📊 Backfilling WorkOutput...')
     const workOutputs = await prisma.workOutput.findMany({
       where: { companyId: null as any }, // Type assertion for legacy script
-      select: { id: true, originatorId: true, contextId: true, supportId: true },
+      select: { id: true, originatorId: true, eventRouterId: true, supportId: true },
     })
 
     let outputUpdated = 0
@@ -203,13 +203,13 @@ async function backfillCompanyId() {
     for (const output of workOutputs) {
       let companyId: string | null = null
 
-      // Try context first
-      if (output.contextId) {
-        const context = await prisma.workEventRouter.findUnique({
-          where: { id: output.contextId },
+      // Try eventRouter first
+      if (output.eventRouterId) {
+        const eventRouter = await prisma.workEventRouter.findUnique({
+          where: { id: output.eventRouterId },
           select: { companyId: true },
         })
-        companyId = context?.companyId || null
+        companyId = eventRouter?.companyId || null
       }
 
       // Try support

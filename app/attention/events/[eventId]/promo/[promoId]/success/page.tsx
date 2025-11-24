@@ -7,7 +7,7 @@ export default function PromotionalProductSuccessPage() {
   const router = useRouter()
   const params = useParams()
   const eventId = params.eventId as string
-  const itemId = params.itemId as string
+  const promoId = params.promoId as string
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -41,10 +41,10 @@ export default function PromotionalProductSuccessPage() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href={`/mywork/context/${eventId}`}
+              href={`/attention/events/${eventId}/promo/${promoId}`}
               className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition"
             >
-              Return to Event
+              View Product
             </Link>
             <button
               onClick={() => router.push(`/attention/events/${eventId}/promo/new`)}
@@ -58,4 +58,3 @@ export default function PromotionalProductSuccessPage() {
     </div>
   )
 }
-

@@ -199,7 +199,7 @@ async function verifyPhase3C() {
     console.log('📊 6. Checking companyId field requirements...')
     
     const modelChecks = [
-      { name: 'WorkContext', model: prisma.workContext },
+      { name: 'WorkEventRouter', model: prisma.workEventRouter },
       { name: 'WorkSupport', model: prisma.workSupport },
       { name: 'WorkOutput', model: prisma.workOutput },
       { name: 'WorkOutputStandalone', model: prisma.workOutputStandalone },

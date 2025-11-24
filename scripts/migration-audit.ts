@@ -59,7 +59,7 @@ async function auditDatabase() {
     // 3. Check WorkSupport
     console.log('📊 Auditing WorkSupport...')
     const workSupports = await prisma.workSupport.findMany({
-      select: { id: true, contextId: true },
+      select: { id: true, eventRouterId: true },
     })
     console.log(`  Total WorkSupport records: ${workSupports.length}`)
     audits.push({
@@ -75,7 +75,7 @@ async function auditDatabase() {
     // 4. Check WorkOutput
     console.log('📊 Auditing WorkOutput...')
     const workOutputs = await prisma.workOutput.findMany({
-      select: { id: true, contextId: true },
+      select: { id: true, eventRouterId: true },
     })
     console.log(`  Total WorkOutput records: ${workOutputs.length}`)
     audits.push({

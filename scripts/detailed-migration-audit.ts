@@ -63,7 +63,7 @@ async function detailedAudit() {
     for (const ctx of workContexts) {
       console.log(`   - WorkContext ID: ${ctx.id}`)
       console.log(`     Type: ${ctx.type}`)
-      console.log(`     TypeRefId: ${ctx.typeRefId}`)
+      console.log(`     EventRefId: ${ctx.eventRefId}`)
       console.log(`     CreatedByWorkMeId: ${ctx.originatorId}`)
       console.log(`     CreatedAt: ${ctx.createdAt}`)
       
