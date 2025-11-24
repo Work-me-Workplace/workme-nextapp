@@ -159,7 +159,7 @@ async function verifyPhase3C() {
       { name: 'WorkContextCampaign', model: prisma.workContextCampaign },
       { name: 'WorkContextImpactEvent', model: prisma.workContextImpactEvent },
       { name: 'WorkContextTraining', model: prisma.workContextTraining },
-      { name: 'WorkContextEvent', model: prisma.workContextEvent },
+      { name: 'WorkEvent', model: prisma.workEvent },
       { name: 'WorkContextCommunity', model: prisma.workContextCommunity },
       { name: 'WorkContextBenefits', model: prisma.workContextBenefits },
       { name: 'WorkContextCareer', model: prisma.workContextCareer },
