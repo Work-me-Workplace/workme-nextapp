@@ -563,7 +563,7 @@ export async function updateImpactEvent(workContextId: string, data: z.infer<typ
       where: { id: workContextId, originatorId: workMeId },
     })
 
-    if (!workContext || workContext.type !== 'impact_event') {
+    if (!workEventRouter || workEventRouter.type !== 'impact_event') {
       return { success: false, error: 'Invalid context type or not found' }
     }
 
@@ -601,7 +601,7 @@ export async function updateTraining(workContextId: string, data: z.infer<typeof
       where: { id: workContextId, originatorId: workMeId },
     })
 
-    if (!workContext || workContext.type !== 'training') {
+    if (!workEventRouter || workEventRouter.type !== 'training') {
       return { success: false, error: 'Invalid context type or not found' }
     }
 
@@ -692,7 +692,7 @@ export async function updateCommunityOpportunity(workContextId: string, data: z.
       where: { id: workContextId, originatorId: workMeId },
     })
 
-    if (!workContext || workContext.type !== 'community') {
+    if (!workEventRouter || workEventRouter.type !== 'community') {
       return { success: false, error: 'Invalid context type or not found' }
     }
 
@@ -731,7 +731,7 @@ export async function updateBenefits(workContextId: string, data: z.infer<typeof
       where: { id: workContextId, originatorId: workMeId },
     })
 
-    if (!workContext || workContext.type !== 'benefits') {
+    if (!workEventRouter || workEventRouter.type !== 'benefits') {
       return { success: false, error: 'Invalid context type or not found' }
     }
 
@@ -774,7 +774,7 @@ export async function updateCareer(workContextId: string, data: z.infer<typeof c
       where: { id: workContextId, originatorId: workMeId },
     })
 
-    if (!workContext || workContext.type !== 'career') {
+    if (!workEventRouter || workEventRouter.type !== 'career') {
       return { success: false, error: 'Invalid context type or not found' }
     }
 
@@ -813,7 +813,7 @@ export async function updateEmployeeCause(workContextId: string, data: z.infer<t
       where: { id: workContextId, originatorId: workMeId },
     })
 
-    if (!workContext || workContext.type !== 'employee_cause') {
+    if (!workEventRouter || workEventRouter.type !== 'employee_cause') {
       return { success: false, error: 'Invalid context type or not found' }
     }
 
@@ -852,49 +852,49 @@ export async function getTypedContext(workContext: { type: string; typeRefId: st
     switch (workContext.type) {
       case 'campaign':
         const campaign = await prisma.workContextCampaign.findUnique({
-          where: { id: workEventRouter.eventRefId },
+          where: { id: workContext.typeRefId },
         })
         return { success: true, data: campaign, title: campaign?.title || '' }
       
       case 'impact_event':
         const impactEvent = await prisma.workContextImpactEvent.findUnique({
-          where: { id: workEventRouter.eventRefId },
+          where: { id: workContext.typeRefId },
         })
         return { success: true, data: impactEvent, title: impactEvent?.title || '' }
       
       case 'training':
         const training = await prisma.workContextTraining.findUnique({
-          where: { id: workEventRouter.eventRefId },
+          where: { id: workContext.typeRefId },
         })
         return { success: true, data: training, title: training?.title || '' }
       
       case 'event':
         const event = await prisma.workEvent.findUnique({
-          where: { id: workEventRouter.eventRefId },
+          where: { id: workContext.typeRefId },
         })
         return { success: true, data: event, title: event?.title || '' }
       
       case 'community':
         const opportunity = await prisma.workContextCommunity.findUnique({
-          where: { id: workEventRouter.eventRefId },
+          where: { id: workContext.typeRefId },
         })
         return { success: true, data: opportunity, title: opportunity?.title || '' }
       
       case 'benefits':
         const benefits = await prisma.workContextBenefits.findUnique({
-          where: { id: workEventRouter.eventRefId },
+          where: { id: workContext.typeRefId },
         })
         return { success: true, data: benefits, title: benefits?.title || '' }
       
       case 'career':
         const career = await prisma.workContextCareer.findUnique({
-          where: { id: workEventRouter.eventRefId },
+          where: { id: workContext.typeRefId },
         })
         return { success: true, data: career, title: career?.title || '' }
       
       case 'employee_cause':
         const employeeCause = await prisma.workContextEmployeeCause.findUnique({
-          where: { id: workEventRouter.eventRefId },
+          where: { id: workContext.typeRefId },
         })
         return { success: true, data: employeeCause, title: employeeCause?.title || '' }
       
