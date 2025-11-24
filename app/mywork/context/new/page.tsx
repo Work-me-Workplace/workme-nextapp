@@ -92,12 +92,12 @@ export default function NewWorkContextPage() {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link href="/mywork/context" className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm">
-          ← Back to WorkContexts
+          ← Back to Events
         </Link>
 
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New WorkContext</h1>
-          <p className="text-gray-600">Choose the type of work context you want to create</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Event</h1>
+          <p className="text-gray-600">Build company-level impact events that may lead to your personal workflow</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

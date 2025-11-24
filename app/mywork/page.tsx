@@ -114,7 +114,7 @@ export default function MyWorkPage() {
                 href="/mywork/context" 
                 className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition inline-block"
               >
-                Go to WorkContext →
+                Go to Events →
               </Link>
             </div>
 
@@ -165,7 +165,7 @@ export default function MyWorkPage() {
               {/* Recent WorkContexts */}
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Recent WorkContexts</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Recent Events</h3>
                   <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
