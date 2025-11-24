@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import EventReviewScreen from './EventReviewScreen'
 import type { EventIngestionResponse } from '@/lib/types/event-ingestion'
+import api from '@/lib/api'
 
 type ViewMode = 'input' | 'review'
 
@@ -52,21 +53,13 @@ export default function EventAIForm({ onBack }: EventAIFormProps) {
         requestBody.userContext = userContext.trim()
       }
 
-      const response = await fetch('/api/ingest/event/ai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      })
+      const response = await api.post('/api/ingest/event/ai', requestBody)
 
-      const result = await response.json()
-
-      if (result.success && result.data) {
-        setIngestionData(result.data)
+      if (response.data.success && response.data.data) {
+        setIngestionData(response.data.data)
         setViewMode('review')
       } else {
-        setError(result.error || 'Failed to parse event data')
+        setError(response.data.error || 'Failed to parse event data')
       }
     } catch (err) {
       console.error('Error parsing event:', err)
