@@ -5,6 +5,8 @@
  * Handles string trimming, null conversion, array normalization, and type coercion
  */
 
+import { EventAudience, EventCategory } from "@prisma/client"
+
 interface GPTEventOutput {
   title?: string
   theme?: string | null
@@ -18,7 +20,7 @@ interface GPTEventOutput {
   speakers?: string[] | null
   foodProvided?: string | null
   foodTypes?: string | null
-  audience?: string | null
+  audience?: EventAudience | null
   vibe?: string | null
   perks?: string[] | null
   participation?: string[] | null
@@ -42,13 +44,13 @@ interface NormalizedEventData {
   eventDate: Date | null
   startTime: string | null
   endTime: string | null
-  eventCategory: string | null
+  eventCategory: EventCategory | null
   registrationRequired: string | null
   registrationLink: string | null
   speakers: string[]
   foodProvided: string | null
   foodTypes: string | null
-  audience: string | null
+  audience: EventAudience | null
   vibe: string | null
   perks: string[]
   participation: string[]
@@ -68,16 +70,6 @@ interface NormalizedIngestionData {
   eventData: NormalizedEventData
   eventItemsData: NormalizedItemData[]
 }
-
-// Allowed event categories
-const ALLOWED_CATEGORIES = [
-  'Celebration',
-  'Heritage',
-  'Community',
-  'Recognition',
-  'Appreciation',
-  'Family'
-]
 
 /**
  * Normalize a string value
@@ -121,17 +113,66 @@ function normalizeFoodProvided(value: string | null | undefined): string | null 
 }
 
 /**
- * Normalize eventCategory
- * - Must be one of allowed categories
- * - If not matching, use "Unknown"
+ * Normalize eventCategory to EventCategory enum
+ * Maps string values to enum values
  */
-function normalizeEventCategory(value: string | null | undefined): string | null {
+function normalizeEventCategory(value: string | EventCategory | null | undefined): EventCategory | null {
   if (!value) return null
-  const trimmed = value.trim()
-  const normalized = ALLOWED_CATEGORIES.find(
-    cat => cat.toLowerCase() === trimmed.toLowerCase()
-  )
-  return normalized || 'Unknown'
+  const strValue = typeof value === 'string' ? value.trim().toUpperCase() : value
+  
+  // Direct enum match
+  if (Object.values(EventCategory).includes(strValue as EventCategory)) {
+    return strValue as EventCategory
+  }
+  
+  // Map common string variations to enum
+  const categoryMap: Record<string, EventCategory> = {
+    'CELEBRATION': EventCategory.CELEBRATION,
+    'HERITAGE': EventCategory.HERITAGE,
+    'COMMUNITY': EventCategory.COMMUNITY,
+    'RECOGNITION': EventCategory.RECOGNITION,
+    'APPRECIATION': EventCategory.APPRECIATION,
+    'FAMILY': EventCategory.FAMILY,
+    'CELEBRATING': EventCategory.CELEBRATION,
+    'HERITAGE_MONTH': EventCategory.HERITAGE,
+    'COMMUNITY_OUTREACH': EventCategory.COMMUNITY,
+    'AWARDS': EventCategory.RECOGNITION,
+    'THANK_YOU': EventCategory.APPRECIATION,
+    'FAMILY_DAY': EventCategory.FAMILY,
+  }
+  
+  return categoryMap[strValue] || null
+}
+
+/**
+ * Normalize audience to EventAudience enum
+ * Maps string values to enum values
+ */
+function normalizeAudience(value: string | EventAudience | null | undefined): EventAudience | null {
+  if (!value) return null
+  const strValue = typeof value === 'string' ? value.trim().toUpperCase() : value
+  
+  // Direct enum match
+  if (Object.values(EventAudience).includes(strValue as EventAudience)) {
+    return strValue as EventAudience
+  }
+  
+  // Map common string variations to enum
+  const audienceMap: Record<string, EventAudience> = {
+    'ALL_WORKFORCE': EventAudience.ALL_WORKFORCE,
+    'LEADERS': EventAudience.LEADERS,
+    'WORKFORCE_AND_FAMILIES': EventAudience.WORKFORCE_AND_FAMILIES,
+    'COMMUNITY': EventAudience.COMMUNITY,
+    'ALL_EMPLOYEES': EventAudience.ALL_WORKFORCE,
+    'WORKFORCE': EventAudience.ALL_WORKFORCE,
+    'SUPERVISORS': EventAudience.LEADERS,
+    'COMMAND_LEADERSHIP': EventAudience.LEADERS,
+    'FAMILIES': EventAudience.WORKFORCE_AND_FAMILIES,
+    'OPEN_HOUSE': EventAudience.WORKFORCE_AND_FAMILIES,
+    'LOCAL_COMMUNITY': EventAudience.COMMUNITY,
+  }
+  
+  return audienceMap[strValue] || null
 }
 
 /**
@@ -187,7 +228,7 @@ export function normalizeGPTIngestionOutput(
     speakers: normalizeArray(event.speakers),
     foodProvided: normalizeFoodProvided(event.foodProvided),
     foodTypes: normalizeString(event.foodTypes),
-    audience: normalizeString(event.audience),
+    audience: normalizeAudience(event.audience),
     vibe: normalizeString(event.vibe),
     perks: normalizeArray(event.perks),
     participation: normalizeArray(event.participation),

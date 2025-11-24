@@ -2,6 +2,8 @@
  * TypeScript types for Event AI Ingestion
  */
 
+import { EventAudience, EventCategory } from "@prisma/client"
+
 export interface EventIngestionRequest {
   rawText: string
   userContext?: string // Free text for human notes/instructions
@@ -22,7 +24,7 @@ export interface ParsedWorkEvent {
   startTime: string | null           // "11:30 a.m."
   endTime: string | null              // "1:30 p.m."
   
-  eventCategory: string | null
+  eventCategory: EventCategory | null
   
   registrationRequired: string | null // "Yes" or "No"
   registrationLink: string | null
@@ -32,7 +34,7 @@ export interface ParsedWorkEvent {
   foodProvided: string | null         // "Yes" or "No"
   foodTypes: string | null
   
-  audience: string | null
+  audience: EventAudience | null
   vibe: string | null
   perks: string[]
   participation: string[]

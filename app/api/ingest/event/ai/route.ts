@@ -50,20 +50,30 @@ export async function POST(request: Request) {
       )
     }
 
-    // Build system prompt (exact as specified)
+    // Build system prompt with enum values
     const systemPrompt = `You convert messy government or corporate event announcements into structured
 event JSON. Return ONLY JSON with the exact structure below.
 
 Extract:
 
 1. Core details — title, theme, description, date, times
-2. Category — must be Celebration, Heritage, Community, Recognition, Appreciation, Family or Unknown
-3. Attendance — registrationRequired, registrationLink
-4. Food details
-5. Speakers (array)
-6. Agenda blocks → items[]
-7. Highlights inferred from tone/context:
-   - audience: string
+2. Category — must be exactly one of: CELEBRATION, HERITAGE, COMMUNITY, RECOGNITION, APPRECIATION, FAMILY
+   - Holiday events → CELEBRATION
+   - Heritage / DEI / cultural → HERITAGE
+   - Outreach / impact / external → COMMUNITY
+   - Awards → RECOGNITION
+   - Thank-you or morale → APPRECIATION
+   - Family day events → FAMILY
+3. Audience — must be exactly one of: ALL_WORKFORCE, LEADERS, WORKFORCE_AND_FAMILIES, COMMUNITY
+   - "all directorates / workforce / NAVSEA employees" → ALL_WORKFORCE
+   - "leaders / supervisors / command leadership" → LEADERS
+   - mentions kids, families, or open house → WORKFORCE_AND_FAMILIES
+   - mentions local community, partners, visitors → COMMUNITY
+4. Attendance — registrationRequired, registrationLink
+5. Food details
+6. Speakers (array)
+7. Agenda blocks → items[]
+8. Highlights inferred from tone/context:
    - participation: string[]
    - perks: string[]
    - vibe: string
@@ -80,13 +90,13 @@ Return only:
     "eventDate": "",
     "startTime": "",
     "endTime": "",
-    "eventCategory": "",
+    "eventCategory": "CELEBRATION" | "HERITAGE" | "COMMUNITY" | "RECOGNITION" | "APPRECIATION" | "FAMILY",
     "registrationRequired": "",
     "registrationLink": "",
     "speakers": [],
     "foodProvided": "",
     "foodTypes": "",
-    "audience": "",
+    "audience": "ALL_WORKFORCE" | "LEADERS" | "WORKFORCE_AND_FAMILIES" | "COMMUNITY",
     "participation": [],
     "perks": [],
     "vibe": ""

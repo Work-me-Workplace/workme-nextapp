@@ -6,6 +6,9 @@ import { useState } from 'react'
 import { createEvent } from '@/lib/actions/typed-contexts'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import type { ParsedEventItem } from '@/lib/types/event-ingestion'
+import { EVENT_AUDIENCE_OPTIONS } from '@/config/event-audience'
+import { EVENT_CATEGORY_OPTIONS } from '@/config/event-category'
+import type { EventAudience, EventCategory } from '@prisma/client'
 
 interface EventFormData {
   title: string
@@ -15,7 +18,8 @@ interface EventFormData {
   endDate: string
   endTime: string
   location: string
-  eventCategory: string
+  eventCategory: EventCategory | ''
+  audience: EventAudience | ''
   pocFirstName: string
   pocLastName: string
   pocEmail: string
@@ -48,7 +52,8 @@ export default function EventManualForm({ initialData, initialEventItems, onBack
     endDate: initialData?.endDate || '',
     endTime: initialData?.endTime || '',
     location: initialData?.location || '',
-    eventCategory: initialData?.eventCategory || '',
+    eventCategory: (initialData?.eventCategory as EventCategory) || '',
+    audience: (initialData?.audience as EventAudience) || '',
     pocFirstName: initialData?.pocFirstName || '',
     pocLastName: initialData?.pocLastName || '',
     pocEmail: initialData?.pocEmail || '',
@@ -77,31 +82,18 @@ export default function EventManualForm({ initialData, initialEventItems, onBack
       const result = await createEvent({
         title: formData.title,
         description: formData.description || null,
-        startDate: formData.startDate && formData.startTime 
-          ? new Date(`${formData.startDate}T${formData.startTime}`)
-          : formData.startDate 
-          ? new Date(formData.startDate + 'T00:00:00')
-          : null,
-        endDate: formData.endDate && formData.endTime 
-          ? new Date(`${formData.endDate}T${formData.endTime}`)
-          : formData.endDate 
-          ? new Date(formData.endDate + 'T23:59:59')
-          : null,
-        location: formData.location || null,
-        eventCategory: formData.eventCategory || null,
-        pocFirstName: formData.pocFirstName || null,
-        pocLastName: formData.pocLastName || null,
-        pocEmail: formData.pocEmail || null,
-        pocPhone: formData.pocPhone || null,
         eventDate: formData.eventDate ? new Date(formData.eventDate) : null,
         startTime: formData.startTime || null,
         endTime: formData.endTime || null,
+        eventCategory: (formData.eventCategory || null) as EventCategory | null,
+        audience: (formData.audience || null) as EventAudience | null,
+        pocEmail: formData.pocEmail || null,
+        pocPhone: formData.pocPhone || null,
         registrationRequired: formData.registrationRequired || null,
         registrationLink: formData.registrationLink || null,
         speakers: formData.speakers.length > 0 ? formData.speakers : null,
         foodProvided: formData.foodProvided || null,
         foodTypes: formData.foodTypes || null,
-        promotionNeeds: formData.promotionNeeds.length > 0 ? formData.promotionNeeds : null,
       })
 
       if (result.success && result.workEventRouter) {
@@ -278,14 +270,38 @@ export default function EventManualForm({ initialData, initialEventItems, onBack
           <label htmlFor="eventCategory" className="block text-sm font-medium text-gray-700 mb-2">
             Event Category
           </label>
-          <input
-            type="text"
+          <select
             id="eventCategory"
             value={formData.eventCategory}
-            onChange={(e) => setFormData({ ...formData, eventCategory: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, eventCategory: e.target.value as EventCategory | '' })}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="e.g., All-hands, Town Hall, Workshop"
-          />
+          >
+            <option value="">Select category...</option>
+            {EVENT_CATEGORY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="audience" className="block text-sm font-medium text-gray-700 mb-2">
+            Target Audience
+          </label>
+          <select
+            id="audience"
+            value={formData.audience}
+            onChange={(e) => setFormData({ ...formData, audience: e.target.value as EventAudience | '' })}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Select audience...</option>
+            {EVENT_AUDIENCE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* New Fields */}

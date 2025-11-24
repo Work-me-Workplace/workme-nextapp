@@ -79,6 +79,22 @@ enum SalaryRange {
   ABOVE_200K
 }
 
+enum EventAudience {
+  ALL_WORKFORCE
+  LEADERS
+  WORKFORCE_AND_FAMILIES
+  COMMUNITY
+}
+
+enum EventCategory {
+  CELEBRATION
+  HERITAGE
+  COMMUNITY
+  RECOGNITION
+  APPRECIATION
+  FAMILY
+}
+
 // ============================================
 // WORKME COMPANY MODEL (Container/Tenant)
 // ============================================
@@ -458,15 +474,15 @@ model WorkEvent {
   startTime String?
   endTime   String?
 
-  // Category (string, validated by mapper)
-  eventCategory String?
+  // Category (enum)
+  eventCategory EventCategory?
 
   // Registration
   registrationRequired String?
   registrationLink     String?
 
   // Highlights extracted from GPT
-  audience      String?
+  audience      EventAudience?
   vibe          String?
   perks         String[] @default([])
   participation String[] @default([])

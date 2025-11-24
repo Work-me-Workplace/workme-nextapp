@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
 import type { EventIngestionResponse, ParsedEventItem } from '@/lib/types/event-ingestion'
+import { EVENT_AUDIENCE_OPTIONS } from '@/config/event-audience'
+import { EVENT_CATEGORY_OPTIONS } from '@/config/event-category'
 
 interface EventReviewScreenProps {
   ingestionData: EventIngestionResponse
@@ -79,7 +81,11 @@ export default function EventReviewScreen({ ingestionData, onBack, onEdit }: Eve
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-              <p className="text-sm text-gray-900">{event.eventCategory || '—'}</p>
+              <p className="text-sm text-gray-900">
+                {event.eventCategory 
+                  ? EVENT_CATEGORY_OPTIONS.find(opt => opt.value === event.eventCategory)?.label || event.eventCategory
+                  : '—'}
+              </p>
             </div>
 
             {event.eventDate && (
@@ -197,7 +203,9 @@ export default function EventReviewScreen({ ingestionData, onBack, onEdit }: Eve
           {event.audience && (
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">Audience</label>
-              <p className="text-sm text-gray-900">{event.audience}</p>
+              <p className="text-sm text-gray-900">
+                {EVENT_AUDIENCE_OPTIONS.find(opt => opt.value === event.audience)?.label || event.audience}
+              </p>
             </div>
           )}
 

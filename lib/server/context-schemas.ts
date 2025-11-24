@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { EventAudience, EventCategory } from "@prisma/client"
 
 // Campaign Schema
 export const campaignSchema = z.object({
@@ -50,13 +51,13 @@ export const eventSchema = z.object({
   eventDate: z.date().optional().nullable(),
   startTime: z.string().optional().nullable(),
   endTime: z.string().optional().nullable(),
-  eventCategory: z.string().optional().nullable(),
+  eventCategory: z.nativeEnum(EventCategory).optional().nullable(),
   registrationRequired: z.string().optional().nullable(), // "Yes" or "No"
   registrationLink: z.string().url().optional().nullable(),
   speakers: z.array(z.string()).optional().nullable(),
   foodProvided: z.string().optional().nullable(), // "Yes" or "No"
   foodTypes: z.string().optional().nullable(), // free text
-  audience: z.string().optional().nullable(),
+  audience: z.nativeEnum(EventAudience).optional().nullable(),
   vibe: z.string().optional().nullable(),
   perks: z.array(z.string()).optional().nullable(),
   participation: z.array(z.string()).optional().nullable(),
