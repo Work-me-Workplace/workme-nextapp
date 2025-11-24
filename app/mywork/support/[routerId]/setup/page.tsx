@@ -140,7 +140,7 @@ export default function WorkSupportSetupPage() {
           href={`/mywork/context/${routerId}`} 
           className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm"
         >
-          ← Back to WorkContext
+          ← Back to Events
         </Link>
 
         <div className="bg-white rounded-lg shadow p-8">

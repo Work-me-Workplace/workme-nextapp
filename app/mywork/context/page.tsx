@@ -192,7 +192,7 @@ export default function WorkContextListPage() {
                 href="/mywork/context/new"
                 className="rounded-lg bg-blue-600 text-white px-6 py-3 font-semibold hover:bg-blue-700 transition"
               >
-                Create New WorkContext
+                Create New Event
               </Link>
             </div>
 
