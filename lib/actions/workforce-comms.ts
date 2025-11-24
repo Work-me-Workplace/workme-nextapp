@@ -16,7 +16,7 @@ const workforceCommsProductSchema = z.object({
 
 const workforceCommsDraftSchema = z.object({
   workforceCommsId: z.string().uuid(),
-  contextIds: z.array(z.string()).optional().nullable(),
+  eventRouterIds: z.array(z.string()).optional().nullable(), // Renamed from contextIds
   lastEditionId: z.string().uuid().optional().nullable(),
   authorNotes: z.string().optional().nullable(),
   whatChanged: z.string().optional().nullable(),
@@ -191,7 +191,7 @@ export async function createWorkforceCommsDraft(data: z.infer<typeof workforceCo
     const draft = await prisma.workforceCommsDraft.create({
       data: {
         workforceCommsId: validated.workforceCommsId,
-        contextIds: validated.contextIds ? validated.contextIds : undefined,
+        eventRouterIds: validated.eventRouterIds ? validated.eventRouterIds : undefined,
         lastEditionId: lastEditionId || null,
         authorNotes: validated.authorNotes ?? undefined,
         whatChanged: validated.whatChanged ?? undefined,
@@ -224,7 +224,7 @@ export async function updateWorkforceCommsDraft(
     const draft = await prisma.workforceCommsDraft.update({
       where: { draftId },
       data: {
-        contextIds: data.contextIds !== undefined ? (data.contextIds || undefined) : undefined,
+        eventRouterIds: data.eventRouterIds !== undefined ? (data.eventRouterIds || undefined) : undefined,
         lastEditionId: data.lastEditionId !== undefined ? (data.lastEditionId || undefined) : undefined,
         authorNotes: data.authorNotes !== undefined ? (data.authorNotes ?? undefined) : undefined,
         whatChanged: data.whatChanged !== undefined ? (data.whatChanged ?? undefined) : undefined,
