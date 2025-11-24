@@ -2,69 +2,45 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-import { createEvent } from '@/lib/actions/typed-contexts'
+import { useState, useEffect } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
+import EventCreationFork from '@/components/events/EventCreationFork'
+import EventManualForm from '@/components/events/EventManualForm'
+import EventAIForm from '@/components/events/EventAIForm'
+import EventTemplatePicker from '@/components/events/EventTemplatePicker'
+
+type CreationMode = 'fork' | 'manual' | 'ai' | 'template'
 
 export default function NewEventPage() {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    startDate: '',
-    startTime: '',
-    endDate: '',
-    endTime: '',
-    location: '',
-    eventCategory: '',
-    pocFirstName: '',
-    pocLastName: '',
-    pocEmail: '',
-    pocPhone: '',
-  })
+  const [mode, setMode] = useState<CreationMode>('fork')
+  const [workMeId, setWorkMeId] = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!getWorkMeIdFromStorage()) {
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const id = getWorkMeIdFromStorage()
+      if (!id) {
       router.push('/signin')
-      return
-    }
-
-    setLoading(true)
-    try {
-      const result = await createEvent({
-        title: formData.title,
-        description: formData.description || null,
-        startDate: formData.startDate && formData.startTime 
-          ? new Date(`${formData.startDate}T${formData.startTime}`)
-          : formData.startDate 
-          ? new Date(formData.startDate + 'T00:00:00')
-          : null,
-        endDate: formData.endDate && formData.endTime 
-          ? new Date(`${formData.endDate}T${formData.endTime}`)
-          : formData.endDate 
-          ? new Date(formData.endDate + 'T23:59:59')
-          : null,
-        location: formData.location || null,
-        eventCategory: formData.eventCategory || null,
-        pocFirstName: formData.pocFirstName || null,
-        pocLastName: formData.pocLastName || null,
-        pocEmail: formData.pocEmail || null,
-        pocPhone: formData.pocPhone || null,
-      })
-
-      if (result.success && result.workContext) {
-        router.push(`/mywork/context/${result.workContext.id}/success`)
       } else {
-        alert('Failed to create Event: ' + (result.error || 'Unknown error'))
-        setLoading(false)
+        setWorkMeId(id)
       }
-    } catch (error) {
-      console.error('Error creating Event:', error)
-      alert('Failed to create Event')
-      setLoading(false)
     }
+  }, [router])
+
+  const handleSelectMode = (selectedMode: 'manual' | 'ai' | 'template') => {
+    setMode(selectedMode)
+  }
+
+  const handleBackToFork = () => {
+    setMode('fork')
+  }
+
+  if (!workMeId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   return (
@@ -89,202 +65,21 @@ export default function NewEventPage() {
           ← Back to Context Types
         </Link>
 
-        <div className="bg-white rounded-lg shadow p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Event</h2>
+        {mode === 'fork' && (
+          <EventCreationFork onSelectMode={handleSelectMode} />
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
+        {mode === 'manual' && (
+          <EventManualForm onBack={handleBackToFork} />
+        )}
 
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={4}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+        {mode === 'ai' && (
+          <EventAIForm onBack={handleBackToFork} />
+        )}
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    id="startDate"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-2">
-                    Start Time
-                  </label>
-                  <input
-                    type="time"
-                    id="startTime"
-                    value={formData.startTime}
-                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    id="endDate"
-                    value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-2">
-                    End Time
-                  </label>
-                  <input
-                    type="time"
-                    id="endTime"
-                    value={formData.endTime}
-                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
-                Location
-              </label>
-              <input
-                type="text"
-                id="location"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Physical location or virtual"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="eventCategory" className="block text-sm font-medium text-gray-700 mb-2">
-                Event Category
-              </label>
-              <input
-                type="text"
-                id="eventCategory"
-                value={formData.eventCategory}
-                onChange={(e) => setFormData({ ...formData, eventCategory: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., All-hands, Town Hall, Workshop"
-              />
-            </div>
-
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Point of Contact</h3>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="pocFirstName" className="block text-sm font-medium text-gray-700 mb-2">
-                    POC First Name
-                  </label>
-                  <input
-                    type="text"
-                    id="pocFirstName"
-                    value={formData.pocFirstName}
-                    onChange={(e) => setFormData({ ...formData, pocFirstName: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="pocLastName" className="block text-sm font-medium text-gray-700 mb-2">
-                    POC Last Name
-                  </label>
-                  <input
-                    type="text"
-                    id="pocLastName"
-                    value={formData.pocLastName}
-                    onChange={(e) => setFormData({ ...formData, pocLastName: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div>
-                  <label htmlFor="pocEmail" className="block text-sm font-medium text-gray-700 mb-2">
-                    POC Email
-                  </label>
-                  <input
-                    type="email"
-                    id="pocEmail"
-                    value={formData.pocEmail}
-                    onChange={(e) => setFormData({ ...formData, pocEmail: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="email@example.com"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="pocPhone" className="block text-sm font-medium text-gray-700 mb-2">
-                    POC Phone (optional)
-                  </label>
-                  <input
-                    type="tel"
-                    id="pocPhone"
-                    value={formData.pocPhone}
-                    onChange={(e) => setFormData({ ...formData, pocPhone: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="(555) 123-4567"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-4 pt-4">
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
-              >
-                {loading ? 'Creating...' : 'Create Event'}
-              </button>
-              <Link
-                href="/mywork/context/new"
-                className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition"
-              >
-                Cancel
-              </Link>
-            </div>
-          </form>
-        </div>
+        {mode === 'template' && (
+          <EventTemplatePicker onBack={handleBackToFork} />
+        )}
       </div>
     </div>
   )
