@@ -1,5 +1,3 @@
-"use server"
-
 import { prisma } from "@/lib/prisma"
 import { getTypedContext } from "./context-factory"
 
@@ -7,6 +5,9 @@ import { getTypedContext } from "./context-factory"
  * Get and enrich a WorkEventRouter with typed data
  * Filters by companyId for multi-tenant security
  * Returns null if not found or unauthorized
+ * 
+ * NOTE: This is NOT a server action (no "use server") to avoid conflicts.
+ * Use getWorkContext from lib/actions/work-context.ts for server actions.
  * 
  * @param id - The WorkEventRouter router ID
  * @param companyId - The company ID to scope the query (required for multi-tenant)
@@ -78,7 +79,4 @@ export async function getWorkEventRouter(
 
   return result
 }
-
-// Legacy alias for backward compatibility during migration
-export const getWorkContext = getWorkEventRouter
 

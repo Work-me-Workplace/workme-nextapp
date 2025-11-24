@@ -113,12 +113,26 @@ export async function getWorkContext(id: string, clientWorkMeId?: string | null)
 
     if (!workMeId) {
       console.error('[getWorkContext] No workMeId found. Client provided:', clientWorkMeId)
-      return { success: false, error: 'Not authenticated' }
+      return { success: false, error: 'Not authenticated', workContext: null }
+    }
+
+    // Get companyId from workMe
+    const workMe = await prisma.workMe.findUnique({
+      where: { id: workMeId },
+      select: { companyId: true },
+    })
+
+    if (!workMe?.companyId) {
+      return { success: false, error: 'User must belong to a company', workContext: null }
     }
 
     // First try to find with workMeId filter
     let workEventRouter = await prisma.workEventRouter.findFirst({
-      where: { id, originatorId: workMeId },
+      where: { 
+        id, 
+        originatorId: workMeId,
+        companyId: workMe.companyId, // Multi-tenant security
+      },
       include: {
         outputs: {
           orderBy: { updatedAt: 'desc' },
@@ -126,11 +140,14 @@ export async function getWorkContext(id: string, clientWorkMeId?: string | null)
       },
     })
 
-    // If not found with workMeId, try without (for debugging - remove in production)
+    // If not found with workMeId, try without originatorId (still filter by companyId)
     if (!workEventRouter) {
-      console.error('[getWorkContext] Not found with workMeId:', workMeId, 'Trying without filter...')
+      console.error('[getWorkContext] Not found with workMeId:', workMeId, 'Trying without originatorId filter...')
       workEventRouter = await prisma.workEventRouter.findFirst({
-        where: { id },
+        where: { 
+          id,
+          companyId: workMe.companyId, // Still enforce multi-tenant
+        },
         include: {
           outputs: {
             orderBy: { updatedAt: 'desc' },
@@ -140,13 +157,13 @@ export async function getWorkContext(id: string, clientWorkMeId?: string | null)
       
       if (workEventRouter) {
         console.error('[getWorkContext] Found but wrong workMeId. Context originator:', workEventRouter.originatorId, 'Query workMeId:', workMeId)
-        return { success: false, error: 'Work context not found (authentication mismatch)' }
+        return { success: false, error: 'Work context not found (authentication mismatch)', workContext: null }
       }
     }
 
     if (!workEventRouter) {
       console.error('[getWorkContext] Context not found at all. ID:', id)
-      return { success: false, error: 'Work context not found' }
+      return { success: false, error: 'Work context not found', workContext: null }
     }
 
     // Enrich with typed context data

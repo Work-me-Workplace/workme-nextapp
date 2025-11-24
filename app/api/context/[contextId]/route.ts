@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getWorkContext } from '@/lib/server/get-work-context'
+import { getWorkEventRouter } from '@/lib/server/get-work-context'
 import { updateTypedContext, deleteTypedContext } from '@/lib/server/context-factory'
 import { SCHEMA_MAP } from '@/lib/server/context-schemas'
 import { verifyAuth } from '@/lib/server/verifyAuth'
@@ -36,7 +36,7 @@ export async function GET(
     }
 
     // Get WorkContext with enrichment (uses factory pattern, filtered by companyId)
-    const workContext = await getWorkContext(contextId, companyId)
+    const workContext = await getWorkEventRouter(contextId, companyId)
 
     if (!workContext) {
       console.error('[API GET /api/context/[contextId]] ERROR: Context not found', {
@@ -106,7 +106,7 @@ export async function PUT(
     }
 
     // Get WorkContext to determine type (uses factory enrichment, filtered by companyId)
-    const workContext = await getWorkContext(contextId, companyId)
+    const workContext = await getWorkEventRouter(contextId, companyId)
 
     if (!workContext) {
       return NextResponse.json(
