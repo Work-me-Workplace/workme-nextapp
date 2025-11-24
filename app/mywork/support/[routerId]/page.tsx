@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkContext } from '@/lib/actions/work-context'
-import { getWorkSupportByContext, WORK_OUTPUT_TYPES, WORK_OUTPUT_TYPE_VALUES } from '@/lib/actions/work-support'
+import { getWorkSupportByRouter, WORK_OUTPUT_TYPES, WORK_OUTPUT_TYPE_VALUES } from '@/lib/actions/work-support'
 import { createWorkOutput } from '@/lib/actions/work-output'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
@@ -14,7 +14,7 @@ type WorkOutputType = typeof WORK_OUTPUT_TYPE_VALUES[number]
 export default function WorkSupportPage() {
   const router = useRouter()
   const params = useParams()
-  const contextId = params.contextId as string
+  const routerId = params.routerId as string
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [workContext, setWorkContext] = useState<any>(null)
   const [workSupport, setWorkSupport] = useState<any>(null)
@@ -30,16 +30,16 @@ export default function WorkSupportPage() {
         loadData()
       }
     }
-  }, [contextId, router])
+  }, [routerId, router])
 
   async function loadData() {
-    if (!contextId) return
+    if (!routerId) return
     setLoading(true)
     try {
       const clientWorkMeId = typeof window !== 'undefined' ? getWorkMeIdFromStorage() : null
       const [contextResult, supportResult] = await Promise.all([
-        getWorkContext(contextId, clientWorkMeId),
-        getWorkSupportByContext(contextId),
+        getWorkContext(routerId, clientWorkMeId),
+        getWorkSupportByRouter(routerId),
       ])
 
       if (contextResult.success && contextResult.workContext) {
@@ -54,7 +54,7 @@ export default function WorkSupportPage() {
         setWorkSupport(supportResult.support)
       } else {
         // No WorkSupport exists yet - redirect to setup
-        router.push(`/mywork/support/${contextId}/setup`)
+        router.push(`/mywork/support/${routerId}/setup`)
         return
       }
     } catch (error) {
@@ -69,7 +69,7 @@ export default function WorkSupportPage() {
 
     try {
       const result = await createWorkOutput({
-        eventRouterId: contextId, // contextId is actually the eventRouterId
+        eventRouterId: routerId, // routerId is the eventRouterId
         supportId: workSupport.id,
         outputType,
         status: 'draft',
@@ -123,7 +123,7 @@ export default function WorkSupportPage() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link 
-          href={`/mywork/context/${contextId}`} 
+          href={`/mywork/context/${routerId}`} 
           className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm"
         >
           ← Back to WorkContext
@@ -144,7 +144,7 @@ export default function WorkSupportPage() {
               </div>
             </div>
             <Link
-              href={`/mywork/support/${contextId}/setup`}
+              href={`/mywork/support/${routerId}/setup`}
               className="text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
               Edit Setup
@@ -167,7 +167,7 @@ export default function WorkSupportPage() {
             {selectedOutputTypes.length === 0 ? (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                 <p className="text-sm text-yellow-800">
-                  No outputs selected yet. <Link href={`/mywork/support/${contextId}/setup`} className="underline font-medium">Set up WorkSupport</Link> to select outputs.
+                  No outputs selected yet. <Link href={`/mywork/support/${routerId}/setup`} className="underline font-medium">Set up WorkSupport</Link> to select outputs.
                 </p>
               </div>
             ) : (
@@ -251,4 +251,3 @@ export default function WorkSupportPage() {
     </div>
   )
 }
-

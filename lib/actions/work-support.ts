@@ -174,7 +174,8 @@ export async function getWorkSupport(id: string) {
   }
 }
 
-export async function getWorkSupportByContext(eventRouterId: string) {
+// Renamed for clarity — still accepts eventRouterId
+export async function getWorkSupportByRouter(routerId: string) {
   try {
     const { workMeId, companyId } = await verifyAuth()
 
@@ -185,7 +186,7 @@ export async function getWorkSupportByContext(eventRouterId: string) {
     // Verify eventRouter belongs to user's company
     const eventRouter = await prisma.workEventRouter.findFirst({
       where: { 
-        id: eventRouterId,
+        id: routerId,
         companyId, // Multi-tenant: ensure same company
       },
     })
@@ -196,7 +197,7 @@ export async function getWorkSupportByContext(eventRouterId: string) {
 
     const support = await prisma.workSupport.findFirst({
       where: { 
-        eventRouterId,
+        eventRouterId: routerId,
         companyId, // Multi-tenant: ensure same company
       },
       include: {
@@ -209,10 +210,13 @@ export async function getWorkSupportByContext(eventRouterId: string) {
 
     return { success: true, support }
   } catch (error) {
-    console.error('Error fetching WorkSupport by context:', error)
+    console.error('Error fetching WorkSupport by router:', error)
     return { success: false, error: 'Failed to fetch WorkSupport' }
   }
 }
+
+// Legacy alias for backward compatibility
+export const getWorkSupportByContext = getWorkSupportByRouter
 
 export async function deleteWorkSupport(id: string) {
   try {

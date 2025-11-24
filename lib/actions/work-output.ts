@@ -280,7 +280,8 @@ export async function getWorkOutput(id: string) {
   }
 }
 
-export async function getWorkOutputsByContext(contextId: string) {
+// Renamed for clarity — still accepts eventRouterId
+export async function getWorkOutputsByRouter(routerId: string) {
   try {
     const { workMeId, companyId } = await verifyAuth()
 
@@ -291,7 +292,7 @@ export async function getWorkOutputsByContext(contextId: string) {
     // Verify eventRouter belongs to user's company
     const eventRouter = await prisma.workEventRouter.findFirst({
       where: { 
-        id: contextId,
+        id: routerId,
         companyId, // Multi-tenant: ensure same company
       },
     })
@@ -302,7 +303,7 @@ export async function getWorkOutputsByContext(contextId: string) {
 
     const workOutputs = await prisma.workOutput.findMany({
       where: { 
-        eventRouterId: contextId,
+        eventRouterId: routerId,
         companyId, // Multi-tenant: ensure same company
       },
       include: {
@@ -317,4 +318,7 @@ export async function getWorkOutputsByContext(contextId: string) {
     return { success: false, error: 'Failed to fetch work outputs', workOutputs: [] }
   }
 }
+
+// Legacy alias for backward compatibility
+export const getWorkOutputsByContext = getWorkOutputsByRouter
 
