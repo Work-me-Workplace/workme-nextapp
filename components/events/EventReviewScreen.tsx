@@ -26,8 +26,22 @@ export default function EventReviewScreen({ ingestionData, onBack, onEdit }: Eve
       const response = await api.post('/api/ingest/event/save', ingestionData)
 
       if (response.data.success) {
-        // Navigate to success screen
-        router.push(`/mywork/context/${response.data.eventId}/success`)
+        // Store in localStorage for instant hydration
+        const eventRouterId = response.data.eventId
+        if (typeof window !== 'undefined') {
+          // Store the event ID for quick access
+          localStorage.setItem('lastCreatedEventId', eventRouterId)
+          
+          // Refresh events list in background
+          const companyId = localStorage.getItem('companyId')
+          if (companyId) {
+            // Trigger hydration refresh
+            window.dispatchEvent(new CustomEvent('refreshEvents'))
+          }
+        }
+        
+        // Navigate directly to view page
+        router.push(`/attention/events/${eventRouterId}/view`)
       } else {
         setError(response.data.error || 'Failed to save event')
         setSaving(false)

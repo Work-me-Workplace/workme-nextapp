@@ -97,7 +97,20 @@ export default function EventManualForm({ initialData, initialEventItems, onBack
       })
 
       if (result.success && result.workEventRouter) {
-        router.push(`/mywork/context/${result.workEventRouter.id}/success`)
+        // Store in localStorage for instant hydration
+        const eventRouterId = result.workEventRouter.id
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('lastCreatedEventId', eventRouterId)
+          
+          // Refresh events list in background
+          const companyId = localStorage.getItem('companyId')
+          if (companyId) {
+            window.dispatchEvent(new CustomEvent('refreshEvents'))
+          }
+        }
+        
+        // Navigate directly to view page
+        router.push(`/attention/events/${eventRouterId}/view`)
       } else {
         alert('Failed to create Event: ' + (result.error || 'Unknown error'))
         setLoading(false)
