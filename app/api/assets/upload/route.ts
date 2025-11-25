@@ -51,21 +51,16 @@ export async function POST(request: Request) {
 
       // Generate filename
       fileName = generateHashedFilename(file.name, file.name)
-      const { path, publicUrl } = await downloadAndSaveImage(
-        `data:${file.type};base64,${buffer.toString('base64')}`,
-        category,
-        file.name,
-      )
 
       // Save file to disk
       const { writeFile } = await import('fs/promises')
       const { join } = await import('path')
-      const { ensureCategoryDirectory } = await import('@/lib/holiday/storage')
+      const { ensureCategoryDirectory, getAssetPublicUrl } = await import('@/lib/holiday/storage')
       await ensureCategoryDirectory(category)
       const filePath = join(process.cwd(), 'public', 'assets', category, fileName)
       await writeFile(filePath, buffer)
 
-      assetUrl = publicUrl
+      assetUrl = getAssetPublicUrl(category, fileName)
     } else if (url) {
       // Handle URL upload
       const result = await downloadAndSaveImage(url, category)

@@ -5,14 +5,23 @@ import { useParams } from 'next/navigation'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { TrendingUp, FileText, Plus, Calendar, ExternalLink } from 'lucide-react'
 
+interface Milestone {
+  id: string
+  title: string
+  description?: string
+  date?: string | null
+  sourceUrl?: string | null
+  createdAt: string
+}
+
 export default function MilestoneDetailPage() {
   const params = useParams()
   const milestoneId = params?.id as string
 
   // TODO: Load milestone data
-  const milestone = null
+  const milestoneData: Milestone | null = null
 
-  if (!milestone) {
+  if (!milestoneData) {
     return (
       <div className="min-h-screen bg-gray-50">
         <nav className="bg-white shadow-sm border-b">
@@ -74,32 +83,44 @@ export default function MilestoneDetailPage() {
             </Link>
 
             <div className="bg-white rounded-lg shadow p-8">
-              <div className="flex items-center mb-4">
-                <TrendingUp className="h-6 w-6 text-blue-600 mr-2" />
-                <span className="text-sm text-gray-500">
-                  {milestone.date ? new Date(milestone.date).toLocaleDateString() : 'No date'}
-                </span>
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">{milestone.title}</h1>
-              {milestone.description && (
-                <div className="prose max-w-none mb-6">
-                  <p className="text-gray-700">{milestone.description}</p>
-                </div>
-              )}
+              {/* TypeScript workaround: milestoneData is always null in current implementation */}
+              {milestoneData ? (() => {
+                const milestone = milestoneData as Milestone
+                return (
+                  <>
+                    <div className="flex items-center mb-4">
+                      <TrendingUp className="h-6 w-6 text-blue-600 mr-2" />
+                      <span className="text-sm text-gray-500">
+                        {milestone.date ? new Date(milestone.date).toLocaleDateString() : 'No date'}
+                      </span>
+                    </div>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-4">{milestone.title}</h1>
+                    {milestone.description && (
+                      <div className="prose max-w-none mb-6">
+                        <p className="text-gray-700">{milestone.description}</p>
+                      </div>
+                    )}
 
-              {milestone.sourceUrl && (
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center">
-                    <ExternalLink className="h-5 w-5 text-gray-500 mr-2" />
-                    <a
-                      href={milestone.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-700 font-medium"
-                    >
-                      View Source
-                    </a>
-                  </div>
+                    {milestone.sourceUrl && (
+                      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center">
+                          <ExternalLink className="h-5 w-5 text-gray-500 mr-2" />
+                          <a
+                            href={milestone.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-700 font-medium"
+                          >
+                            View Source
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )
+              })() : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Milestone data will be loaded here</p>
                 </div>
               )}
 

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Calendar, Filter, Archive, Clock, CheckCircle } from 'lucide-react'
+import { Calendar, Filter, Archive, Clock, CheckCircle, Users } from 'lucide-react'
 
 // Conceptual WorkforceStuffItem type (not yet in Prisma)
 interface WorkforceStuffItem {

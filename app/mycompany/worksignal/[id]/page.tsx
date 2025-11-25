@@ -3,16 +3,25 @@
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Sparkles, TrendingUp, Users, Plus } from 'lucide-react'
+import { Sparkles, TrendingUp, Users as UsersIcon, Plus } from 'lucide-react'
+
+interface WorkSignal {
+  id: string
+  type: 'meeting' | 'note' | 'leader_comment' | 'external_hint'
+  title: string
+  summary: string
+  source?: string
+  createdAt: string
+}
 
 export default function WorkSignalDetailPage() {
   const params = useParams()
   const signalId = params?.id as string
 
   // TODO: Load signal data
-  const signal = null
+  const signalData: WorkSignal | null = null
 
-  if (!signal) {
+  if (!signalData) {
     return (
       <div className="min-h-screen bg-gray-50">
         <nav className="bg-white shadow-sm border-b">
@@ -74,16 +83,28 @@ export default function WorkSignalDetailPage() {
             </Link>
 
             <div className="bg-white rounded-lg shadow p-8">
-              <div className="flex items-center mb-4">
-                <Sparkles className="h-6 w-6 text-purple-600 mr-2" />
-                <span className="text-xs font-medium text-gray-500 uppercase bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                  {signal.type.replace('_', ' ')}
-                </span>
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">{signal.title}</h1>
-              <div className="prose max-w-none mb-6">
-                <p className="text-gray-700">{signal.summary}</p>
-              </div>
+              {/* TypeScript workaround: signalData is always null in current implementation */}
+              {signalData ? (() => {
+                const signal = signalData as WorkSignal
+                return (
+                  <>
+                    <div className="flex items-center mb-4">
+                      <Sparkles className="h-6 w-6 text-purple-600 mr-2" />
+                      <span className="text-xs font-medium text-gray-500 uppercase bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                        {signal.type.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-4">{signal.title}</h1>
+                    <div className="prose max-w-none mb-6">
+                      <p className="text-gray-700">{signal.summary}</p>
+                    </div>
+                  </>
+                )
+              })() : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Signal data will be loaded here</p>
+                </div>
+              )}
 
               <div className="flex flex-wrap gap-4 pt-6 border-t">
                 <Link
@@ -97,7 +118,7 @@ export default function WorkSignalDetailPage() {
                   href={`/mycompany/workforcestuff/new?signalId=${signalId}`}
                   className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition"
                 >
-                  <Users className="h-5 w-5 mr-2" />
+                  <UsersIcon className="h-5 w-5 mr-2" />
                   Promote to WorkforceStuffItem
                 </Link>
                 <Link
