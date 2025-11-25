@@ -80,8 +80,8 @@ export default function NewCommunityPage() {
       </nav>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link href="/mywork/context/new" className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm">
-          ← Back to Context Types
+        <Link href="/mywork" className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm">
+          ← Back to WorkplaceSandbox
         </Link>
 
         <div className="bg-white rounded-lg shadow p-8">
@@ -256,7 +256,7 @@ export default function NewCommunityPage() {
                 {loading ? 'Creating...' : 'Create Community Opportunity'}
               </button>
               <Link
-                href="/mywork/context/new"
+                href="/mywork"
                 className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition"
               >
                 Cancel

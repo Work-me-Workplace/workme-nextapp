@@ -61,8 +61,8 @@ export default function NewEventPage() {
       </nav>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link href="/mywork/context/new" className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm">
-          ← Back to Context Types
+        <Link href="/mywork" className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm">
+          ← Back to WorkplaceSandbox
         </Link>
 
         {mode === 'fork' && (
