@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkContexts } from '@/lib/actions/work-context'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
+import { useEventHydration } from '@/lib/hooks/useEventHydration'
 import SidebarNav from '@/components/mywork/SidebarNav'
 
 const contextTypes = [
@@ -78,20 +79,48 @@ export default function WorkplaceSandboxPage() {
   const pathname = usePathname()
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
+  const [companyId, setCompanyId] = useState<string | null>(null)
   const [allContexts, setAllContexts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Use event hydration hook for instant event loading
+  const { events, eventRouters, hydrated: eventsHydrated, refresh: refreshEvents } = useEventHydration(companyId)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const id = getWorkMeIdFromStorage()
+      const storedCompanyId = localStorage.getItem('companyId')
       if (!id) {
         router.push('/signin')
       } else {
         setWorkMeId(id)
+        if (storedCompanyId) {
+          setCompanyId(storedCompanyId)
+        }
         loadContexts()
       }
     }
   }, [router])
+
+  // Hydrate events when companyId is available
+  useEffect(() => {
+    if (companyId && !eventsHydrated) {
+      refreshEvents()
+    }
+  }, [companyId, eventsHydrated, refreshEvents])
+
+  // Listen for refresh events (when new event is created)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handleRefresh = () => {
+      if (companyId) {
+        refreshEvents()
+        loadContexts() // Also refresh other contexts
+      }
+    }
+    window.addEventListener('refreshEvents', handleRefresh)
+    return () => window.removeEventListener('refreshEvents', handleRefresh)
+  }, [companyId, refreshEvents])
 
   async function loadContexts() {
     setLoading(true)
@@ -106,9 +135,30 @@ export default function WorkplaceSandboxPage() {
     setLoading(false)
   }
 
+  // Merge hydrated events with other contexts
+  const hydratedEvents = eventRouters.map((router) => {
+    const event = events.find((e) => e.id === router.eventRefId)
+    return {
+      id: router.id,
+      type: 'event',
+      title: router.title || event?.title || 'Untitled Event',
+      createdAt: router.createdAt,
+      typedData: event,
+      router,
+    }
+  })
+
+  // Combine hydrated events with other contexts (excluding events)
+  const nonEventContexts = allContexts.filter(ctx => ctx.type !== 'event')
+  const allContextsWithHydratedEvents = [...hydratedEvents, ...nonEventContexts]
+
   // Group contexts by type
   const contextsByType = contextTypes.reduce((acc, typeDef) => {
-    acc[typeDef.type] = allContexts.filter(ctx => ctx.type === typeDef.type)
+    if (typeDef.type === 'event') {
+      acc[typeDef.type] = hydratedEvents // Use hydrated events
+    } else {
+      acc[typeDef.type] = allContextsWithHydratedEvents.filter(ctx => ctx.type === typeDef.type)
+    }
     return acc
   }, {} as Record<string, any[]>)
 
@@ -224,35 +274,57 @@ export default function WorkplaceSandboxPage() {
                     </Link>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {typeContexts.map((context) => (
-                      <Link
-                        key={context.id}
-                        href={`/mywork/context/${context.id}`}
-                        className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-blue-500"
-                      >
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{context.title || 'Untitled'}</h3>
-                        {context.typedData?.description && (
-                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{context.typedData.description}</p>
-                        )}
-                        <p className="text-xs text-gray-400">
-                          Created {new Date(context.createdAt).toLocaleDateString()}
-                        </p>
-                      </Link>
-                    ))}
+                    {typeContexts.map((context) => {
+                      // For events, link to the new view page
+                      const viewUrl = context.type === 'event' 
+                        ? `/attention/events/${context.id}/view`
+                        : `/mywork/context/${context.id}`
+                      
+                      return (
+                        <div
+                          key={context.id}
+                          className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-blue-500"
+                        >
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">{context.title || 'Untitled'}</h3>
+                          {context.typedData?.description && (
+                            <p className="text-sm text-gray-600 mb-3 line-clamp-2">{context.typedData.description}</p>
+                          )}
+                          {context.type === 'event' && context.typedData?.theme && (
+                            <p className="text-sm text-gray-500 italic mb-3">"{context.typedData.theme}"</p>
+                          )}
+                          {context.type === 'event' && context.typedData?.eventDate && (
+                            <p className="text-xs text-gray-500 mb-2">
+                              📅 {new Date(context.typedData.eventDate).toLocaleDateString()}
+                            </p>
+                          )}
+                          <div className="flex items-center justify-between mt-4">
+                            <p className="text-xs text-gray-400">
+                              Created {new Date(context.createdAt).toLocaleDateString()}
+                            </p>
+                            <Link
+                              href={viewUrl}
+                              className="px-3 py-1 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition"
+                            >
+                              View →
+                            </Link>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )
             })}
 
             {/* Empty State */}
-            {allContexts.length === 0 && (
+            {allContextsWithHydratedEvents.length === 0 && (
               <div className="bg-white rounded-lg shadow p-12 text-center">
                 <p className="text-gray-500 mb-4">No happenings yet. Create your first one!</p>
                 <Link
-                  href="/mywork/context/new"
+                  href="/mywork/context/new/event"
                   className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
                 >
-                  Create Your First Happening
+                  Create Your First Event
                 </Link>
               </div>
             )}
