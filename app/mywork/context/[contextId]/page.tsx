@@ -471,21 +471,38 @@ export default function WorkContextDetailPage() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Existing WorkOutputs</h3>
             <div className="space-y-3">
               {workContext.outputs.map((output: any) => (
-                <Link
-                  key={output.id}
-                  href={`/mywork/outputs/builder/${output.id}`}
-                  className="block border-l-4 border-blue-600 pl-4 py-2 hover:bg-gray-50 rounded-r"
-                >
+                <div key={output.id} className="block border-l-4 border-blue-600 pl-4 py-2 hover:bg-gray-50 rounded-r">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900 capitalize">{output.outputType.replace('_', ' ')}</p>
+                    <div className="flex-1">
+                      <Link
+                        href={`/mywork/outputs/builder/${output.id}`}
+                        className="font-medium text-gray-900 capitalize hover:text-blue-600"
+                      >
+                        {output.outputType.replace('_', ' ')}
+                      </Link>
                       <p className="text-sm text-gray-500">
                         Updated {new Date(output.updatedAt).toLocaleDateString()}
                       </p>
+                      {output.workforceCommsId && (
+                        <Link
+                          href={`/workforce-comms/${output.workforceCommsId}`}
+                          className="text-xs text-blue-600 hover:text-blue-700 mt-1 inline-flex items-center"
+                        >
+                          <svg className="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          View Workforce Comms →
+                        </Link>
+                      )}
                     </div>
-                    <span className="text-blue-600 text-sm font-medium">View →</span>
+                    <Link
+                      href={`/mywork/outputs/builder/${output.id}`}
+                      className="text-blue-600 text-sm font-medium hover:text-blue-700"
+                    >
+                      View →
+                    </Link>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           </div>

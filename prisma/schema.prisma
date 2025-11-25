@@ -1024,3 +1024,33 @@ model WorkforceCommsEdition {
 //   SPEAKING_ENGAGEMENT
 //   OTHER
 // }
+
+// ============================================
+// HOLIDAY BUILDER SYSTEM MODELS
+// ============================================
+model Holiday {
+  id         String   @id @default(cuid())
+  name       String
+  slug       String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  assets     Asset[]
+
+  @@index([slug])
+}
+
+model Asset {
+  id          String   @id @default(cuid())
+  url         String
+  fileName    String
+  category    String   // "holiday", "workforce", "shipyard", "general"
+  holidaySlug String?
+  createdAt   DateTime @default(now())
+
+  holiday Holiday? @relation(fields: [holidaySlug], references: [slug], onDelete: SetNull)
+
+  @@index([category])
+  @@index([holidaySlug])
+}
