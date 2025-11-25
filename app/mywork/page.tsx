@@ -4,56 +4,113 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkContexts } from '@/lib/actions/work-context'
-import { getWorkOutputs } from '@/lib/actions/work-output'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 
-export default function MyWorkPage() {
+const contextTypes = [
+  {
+    type: 'event',
+    name: 'Event',
+    description: 'Company event or gathering',
+    icon: '🎉',
+    formPath: '/mywork/context/new/event',
+    color: 'blue',
+  },
+  {
+    type: 'campaign',
+    name: 'Campaign',
+    description: 'Company campaign or initiative',
+    icon: '📢',
+    formPath: '/mywork/context/new/campaign',
+    color: 'purple',
+  },
+  {
+    type: 'training',
+    name: 'Training',
+    description: 'Company training or learning program',
+    icon: '📚',
+    formPath: '/mywork/context/new/training',
+    color: 'green',
+  },
+  {
+    type: 'impact_event',
+    name: 'Impact',
+    description: 'Things that impact you - disruptions affecting workforce',
+    icon: '⚠️',
+    formPath: '/mywork/context/new/impact-event',
+    color: 'red',
+  },
+  {
+    type: 'community',
+    name: 'Community',
+    description: 'Community engagement opportunity',
+    icon: '🤝',
+    formPath: '/mywork/context/new/community',
+    color: 'orange',
+  },
+  {
+    type: 'benefits',
+    name: 'Benefits',
+    description: 'Benefits enrollment window (e.g., Open Season)',
+    icon: '🎁',
+    formPath: '/mywork/context/new/benefits',
+    color: 'pink',
+  },
+  {
+    type: 'career',
+    name: 'Career',
+    description: 'Performance reviews, assessments, career development',
+    icon: '📈',
+    formPath: '/mywork/context/new/career',
+    color: 'indigo',
+  },
+  {
+    type: 'employee_cause',
+    name: 'Cause',
+    description: 'Employee-driven causes, drives, or donation campaigns',
+    icon: '❤️',
+    formPath: '/mywork/context/new/employee-cause',
+    color: 'rose',
+  },
+]
+
+export default function WorkplaceSandboxPage() {
   const pathname = usePathname()
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
-  const [activeWorkOutputs, setActiveWorkOutputs] = useState<any[]>([])
-  const [recentContexts, setRecentContexts] = useState<any[]>([])
+  const [allContexts, setAllContexts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check for workMeId in localStorage
     if (typeof window !== 'undefined') {
       const id = getWorkMeIdFromStorage()
       if (!id) {
-        // No workMeId, redirect to signin
         router.push('/signin')
       } else {
         setWorkMeId(id)
-        loadData(id)
+        loadContexts()
       }
     }
   }, [router])
 
-  async function loadData(workMeId: string) {
+  async function loadContexts() {
     setLoading(true)
     try {
-      // Load work outputs (active ones)
-      const outputsResult = await getWorkOutputs(workMeId)
-      if (outputsResult.success) {
-        setActiveWorkOutputs(outputsResult.workOutputs || [])
-      }
-
-      // Load recent contexts
-      const contextsResult = await getWorkContexts()
-      if (contextsResult.success) {
-        setRecentContexts((contextsResult.workContexts || []).slice(0, 5))
+      const result = await getWorkContexts()
+      if (result.success) {
+        setAllContexts(result.workContexts || [])
       }
     } catch (error) {
-      console.error('Failed to load data:', error)
+      console.error('Failed to load contexts:', error)
     }
     setLoading(false)
   }
 
-  const isActive = (path: string) => {
-    if (path === '/mywork') return pathname === path
-    return pathname?.startsWith(path)
-  }
+  // Group contexts by type
+  const contextsByType = contextTypes.reduce((acc, typeDef) => {
+    acc[typeDef.type] = allContexts.filter(ctx => ctx.type === typeDef.type)
+    return acc
+  }, {} as Record<string, any[]>)
 
   if (!workMeId || loading) {
     return (
@@ -96,113 +153,112 @@ export default function MyWorkPage() {
         {/* Sidebar */}
         <SidebarNav />
 
-        {/* Main Content */}
+        {/* Main Content - Sandbox Hub */}
         <main className="flex-1">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="mb-8">
-              <h2 className="text-3xl font-bold text-gray-900">MyWork Dashboard</h2>
-              <p className="text-gray-600 mt-2">Manage your work contexts and outputs</p>
+              <h1 className="text-3xl font-bold text-gray-900">WorkplaceSandbox</h1>
+              <p className="text-gray-600 mt-2">Build and manage company-level happenings</p>
             </div>
 
-            {/* CTA Section */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-8 text-white mb-8">
-              <h3 className="text-2xl font-bold mb-4">Let's Work</h3>
-              <p className="text-blue-100 mb-6">
-                Build company-level impact events that may lead to your personal workflow.
-              </p>
-              <Link 
-                href="/mywork/context" 
-                className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition inline-block"
-              >
-                Go to Events →
-              </Link>
-            </div>
+            {/* Context Type Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+              {contextTypes.map((typeDef) => {
+                const typeContexts = contextsByType[typeDef.type] || []
+                const count = typeContexts.length
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Active WorkOutputs */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Active WorkOutputs</h3>
-                  <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                {activeWorkOutputs.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 mb-4">No active outputs yet</p>
-                    <Link
-                      href="/mywork/context"
-                      className="text-blue-600 hover:text-blue-700 font-medium text-sm"
-                    >
-                      Create your first output →
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {activeWorkOutputs.slice(0, 5).map((output) => (
-                      <div key={output.id} className="border-l-4 border-blue-600 pl-4 py-2">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-gray-900">{output.context?.title}</p>
-                            <p className="text-sm text-gray-500 capitalize">{output.outputType.replace('_', ' ')}</p>
-                          </div>
-                          <Link
-                            href={`/mywork/outputs/builder/${output.id}`}
-                            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                          >
-                            View →
-                          </Link>
+                return (
+                  <div key={typeDef.type} className="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center">
+                        <span className="text-3xl mr-3">{typeDef.icon}</span>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">{typeDef.name}</h3>
+                          {count > 0 && (
+                            <p className="text-sm text-gray-500">{count} {count === 1 ? 'item' : 'items'}</p>
+                          )}
                         </div>
-                        <p className="text-xs text-gray-400 mt-1">
-                          Updated {new Date(output.updatedAt).toLocaleDateString()}
-                        </p>
                       </div>
-                    ))}
+                    </div>
+                    <p className="text-sm text-gray-600 mb-4">{typeDef.description}</p>
+                    
+                    <div className="space-y-2">
+                      <Link
+                        href={typeDef.formPath}
+                        className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+                      >
+                        + Add {typeDef.name}
+                      </Link>
+                      {count > 0 && (
+                        <Link
+                          href={`#${typeDef.type}-section`}
+                          className="block w-full text-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm"
+                        >
+                          View All →
+                        </Link>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
+                )
+              })}
+            </div>
 
-              {/* Recent WorkContexts */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Recent Events</h3>
-                  <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </div>
-                {recentContexts.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 mb-4">No contexts yet</p>
+            {/* Existing Contexts by Type */}
+            {contextTypes.map((typeDef) => {
+              const typeContexts = contextsByType[typeDef.type] || []
+              
+              if (typeContexts.length === 0) return null
+
+              return (
+                <div key={typeDef.type} id={`${typeDef.type}-section`} className="mb-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                      <span className="text-2xl mr-2">{typeDef.icon}</span>
+                      {typeDef.name} ({typeContexts.length})
+                    </h2>
                     <Link
-                      href="/mywork/context/new"
+                      href={typeDef.formPath}
                       className="text-blue-600 hover:text-blue-700 font-medium text-sm"
                     >
-                      Create your first context →
+                      + Add More
                     </Link>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    {recentContexts.map((context) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {typeContexts.map((context) => (
                       <Link
                         key={context.id}
                         href={`/mywork/context/${context.id}`}
-                        className="block border-l-4 border-green-600 pl-4 py-2 hover:bg-gray-50 rounded-r"
+                        className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-blue-500"
                       >
-                        <p className="font-medium text-gray-900">{context.title}</p>
-                        <p className="text-sm text-gray-500 capitalize">{context.type}</p>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{context.title || 'Untitled'}</h3>
+                        {context.typedData?.description && (
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{context.typedData.description}</p>
+                        )}
+                        <p className="text-xs text-gray-400">
                           Created {new Date(context.createdAt).toLocaleDateString()}
                         </p>
                       </Link>
                     ))}
                   </div>
-                )}
+                </div>
+              )
+            })}
+
+            {/* Empty State */}
+            {allContexts.length === 0 && (
+              <div className="bg-white rounded-lg shadow p-12 text-center">
+                <p className="text-gray-500 mb-4">No happenings yet. Create your first one!</p>
+                <Link
+                  href="/mywork/context/new"
+                  className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+                >
+                  Create Your First Happening
+                </Link>
               </div>
-            </div>
+            )}
           </div>
         </main>
       </div>
     </div>
   )
 }
-
