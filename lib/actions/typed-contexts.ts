@@ -6,96 +6,11 @@ import { verifyAuth } from '@/lib/server/verifyAuth'
 import { eventSchema, campaignSchema, impactEventSchema, trainingSchema, communityOpportunitySchema, benefitsSchema, careerSchema, employeeCauseSchema } from '@/lib/server/context-schemas'
 
 // Note: All schemas are now imported from context-schemas.ts
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional().nullable(),
-  windowStart: z.date().optional().nullable(),
-  windowEnd: z.date().optional().nullable(),
-  ctaLink: z.string().url().optional().nullable(),
-  sponsor: z.string().optional().nullable(),
-  pocFirstName: z.string().optional().nullable(),
-  pocLastName: z.string().optional().nullable(),
-  pocEmail: z.string().email().optional().nullable(),
-  pocPhone: z.string().optional().nullable(),
-})
+// Local schema definitions removed - using imported schemas
 
-// Impact Event Schema
-const impactEventSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional().nullable(),
-  effectiveDate: z.date().optional().nullable(),
-  impactedPopulation: z.string().optional().nullable(),
-  urgency: z.string().optional().nullable(),
-  pocFirstName: z.string().optional().nullable(),
-  pocLastName: z.string().optional().nullable(),
-  pocEmail: z.string().email().optional().nullable(),
-  pocPhone: z.string().optional().nullable(),
-})
+// Campaign Schema (using imported schema)
 
-// Training Schema
-const trainingSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional().nullable(),
-  trainingDate: z.date().optional().nullable(),
-  deadline: z.date().optional().nullable(),
-  link: z.string().url().optional().nullable(),
-  mandatory: z.boolean().default(false),
-  sponsoringOffice: z.string().optional().nullable(),
-  pocFirstName: z.string().optional().nullable(),
-  pocLastName: z.string().optional().nullable(),
-  pocEmail: z.string().email().optional().nullable(),
-  pocPhone: z.string().optional().nullable(),
-})
-
-// Event Schema is imported from context-schemas.ts (with audience enum)
-
-// Community Opportunity Schema
-const communityOpportunitySchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional().nullable(),
-  partnerOrg: z.string().optional().nullable(),
-  date: z.date().optional().nullable(),
-  location: z.string().optional().nullable(),
-  signUpLink: z.string().url().optional().nullable(),
-  pocFirstName: z.string().optional().nullable(),
-  pocLastName: z.string().optional().nullable(),
-  pocEmail: z.string().email().optional().nullable(),
-  pocPhone: z.string().optional().nullable(),
-})
-
-// Benefits Schema
-const benefitsSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional().nullable(),
-  windowStart: z.date().optional().nullable(),
-  windowEnd: z.date().optional().nullable(),
-  fehbLink: z.string().url().optional().nullable(),
-  fedvipLink: z.string().url().optional().nullable(),
-  fsafedsLink: z.string().url().optional().nullable(),
-  faqLink: z.string().url().optional().nullable(),
-  pocFirstName: z.string().optional().nullable(),
-  pocLastName: z.string().optional().nullable(),
-  pocEmail: z.string().email().optional().nullable(),
-  pocPhone: z.string().optional().nullable(),
-  pocDepartment: z.string().optional().nullable(),
-  annualRecurrence: z.boolean().default(false),
-})
-
-// Career Schema (performance reviews, assessments, etc.)
-const careerSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional().nullable(),
-  deadlines: z.array(z.object({
-    label: z.string(),
-    date: z.date(),
-  })).optional().nullable(),
-  supervisorName: z.string().optional().nullable(),
-  resourceLink: z.string().url().optional().nullable(),
-  pocFirstName: z.string().optional().nullable(),
-  pocLastName: z.string().optional().nullable(),
-  pocEmail: z.string().email().optional().nullable(),
-  pocPhone: z.string().optional().nullable(),
-  pocDepartment: z.string().optional().nullable(),
-})
+// All schemas are imported from context-schemas.ts - no local definitions needed
 
 // Create Campaign
 export async function createCampaign(data: z.infer<typeof campaignSchema>, clientWorkMeId?: string | null) {
@@ -331,8 +246,8 @@ export async function createCommunityOpportunity(data: z.infer<typeof communityO
   }
 }
 
-// Employee Cause Schema
-const employeeCauseSchema = z.object({
+// Employee Cause Schema is imported from context-schemas.ts
+// Removing duplicate - using imported schema
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional().nullable(),
   partnerOrg: z.string().optional().nullable(),
