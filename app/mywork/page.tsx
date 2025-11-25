@@ -15,6 +15,7 @@ const contextTypes = [
     description: 'Company event or gathering',
     icon: '🎉',
     formPath: '/mywork/context/new/event',
+    landingPath: '/mywork/events', // Landing page that hydrates first
     color: 'blue',
   },
   {
@@ -233,7 +234,7 @@ export default function WorkplaceSandboxPage() {
                     <p className="text-sm text-gray-600 mb-4">{typeDef.description}</p>
                     
                     <Link
-                      href={`/mywork/${typeDef.type}`}
+                      href={typeDef.landingPath || `/mywork/${typeDef.type}`}
                       className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
                     >
                       Dive in
