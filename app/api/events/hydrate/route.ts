@@ -64,7 +64,6 @@ export async function GET(request: NextRequest) {
             companyId: targetCompanyId, // Ensure same company for security
           },
           include: {
-            promotionalWorkItems: true,
             eventItems: true,
           },
         })
