@@ -145,6 +145,34 @@ model Company {
   revenueRange RevenueRange?
   createdAt    DateTime      @default(now())
 
+  // Identity (Apollo Enrichment)
+  missionStatement    String?
+  vision              String?
+  values              String? // CSV string
+  brandTagline        String?
+  brandLogoUrl        String?
+  brandColorPrimary   String?
+  brandColorSecondary String?
+
+  // Leadership (Apollo Enrichment)
+  ceoName        String?
+  ceoTitle       String?
+  deputyName     String?
+  deputyTitle    String?
+  chiefOfStaff   String?
+
+  // Organization (Apollo Enrichment)
+  directorates   String[] @default([]) // e.g. ["SEA 02", "SEA 05", "SEA 10"]
+
+  // Social / Public (Apollo Enrichment)
+  linkedinUrl    String?
+  twitterUrl     String?
+  facebookUrl    String?
+  phone          String?
+
+  // Address (Apollo Enrichment)
+  country        String?
+
   // Relations
   employees WorkMe[]
 

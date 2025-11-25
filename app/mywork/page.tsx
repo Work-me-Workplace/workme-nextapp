@@ -232,22 +232,12 @@ export default function WorkplaceSandboxPage() {
                     </div>
                     <p className="text-sm text-gray-600 mb-4">{typeDef.description}</p>
                     
-                    <div className="space-y-2">
-                      <Link
-                        href={typeDef.formPath}
-                        className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-                      >
-                        + Add {typeDef.name}
-                      </Link>
-                      {count > 0 && (
-                        <Link
-                          href={`#${typeDef.type}-section`}
-                          className="block w-full text-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm"
-                        >
-                          View All →
-                        </Link>
-                      )}
-                    </div>
+                    <Link
+                      href={`/mywork/${typeDef.type}`}
+                      className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+                    >
+                      Dive in
+                    </Link>
                   </div>
                 )
               })}
