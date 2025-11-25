@@ -167,10 +167,10 @@ export async function createWorkEvent(data: z.infer<typeof eventSchema>) {
         speakers: validated.speakers ?? [],
         foodProvided: validated.foodProvided ?? undefined,
         foodTypes: validated.foodTypes ?? undefined,
-        audience: (validated as any).audience ?? undefined,
-        vibe: (validated as any).vibe ?? undefined,
-        perks: (validated as any).perks ?? [],
-        participation: (validated as any).participation ?? [],
+        audience: validated.audience ?? undefined,
+        vibe: validated.vibe ?? undefined,
+        perks: validated.perks ?? [],
+        participation: validated.participation ?? [],
         pocEmail: validated.pocEmail ?? undefined,
         pocPhone: validated.pocPhone ?? undefined,
         originatorId: workMeId,
@@ -247,22 +247,6 @@ export async function createCommunityOpportunity(data: z.infer<typeof communityO
 }
 
 // Employee Cause Schema is imported from context-schemas.ts
-// Removing duplicate - using imported schema
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional().nullable(),
-  partnerOrg: z.string().optional().nullable(),
-  windowStart: z.date().optional().nullable(),
-  windowEnd: z.date().optional().nullable(),
-  location: z.string().optional().nullable(),
-  neededItems: z.array(z.string()).default([]),
-  collectionPoints: z.array(z.string()).default([]),
-  signUpLink: z.string().url().optional().nullable(),
-  pocFirstName: z.string().optional().nullable(),
-  pocLastName: z.string().optional().nullable(),
-  pocEmail: z.string().email().optional().nullable(),
-  pocPhone: z.string().optional().nullable(),
-  sponsoringDepartment: z.string().optional().nullable(),
-})
 
 // Create Career
 export async function createCareer(data: z.infer<typeof careerSchema>) {
@@ -552,10 +536,10 @@ export async function updateWorkEvent(workEventRouterId: string, data: z.infer<t
         speakers: validated.speakers ?? [],
         foodProvided: validated.foodProvided ?? undefined,
         foodTypes: validated.foodTypes ?? undefined,
-        audience: (validated as any).audience ?? undefined,
-        vibe: (validated as any).vibe ?? undefined,
-        perks: (validated as any).perks ?? [],
-        participation: (validated as any).participation ?? [],
+        audience: validated.audience ?? undefined,
+        vibe: validated.vibe ?? undefined,
+        perks: validated.perks ?? [],
+        participation: validated.participation ?? [],
         pocEmail: validated.pocEmail ?? undefined,
         pocPhone: validated.pocPhone ?? undefined,
       },
