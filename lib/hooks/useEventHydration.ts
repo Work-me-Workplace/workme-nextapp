@@ -58,16 +58,7 @@ export function useEventHydration(companyId: string | null) {
     }
 
     setLoading(false)
-
-    // Listen for refresh events
-    const handleRefresh = () => {
-      if (companyId) {
-        refresh()
-      }
-    }
-    window.addEventListener('refreshEvents', handleRefresh)
-    return () => window.removeEventListener('refreshEvents', handleRefresh)
-  }, [companyId, refresh])
+  }, [companyId])
 
   // Refresh from API
   const refresh = useCallback(async () => {
@@ -130,6 +121,18 @@ export function useEventHydration(companyId: string | null) {
       setLoading(false)
     }
   }, [companyId])
+
+  // Listen for refresh events (after refresh is defined)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handleRefresh = () => {
+      if (companyId) {
+        refresh()
+      }
+    }
+    window.addEventListener('refreshEvents', handleRefresh)
+    return () => window.removeEventListener('refreshEvents', handleRefresh)
+  }, [companyId, refresh])
 
   // Helper to get a specific event by router ID (checks localStorage first)
   const getEventByRouterId = useCallback((routerId: string) => {
