@@ -96,7 +96,6 @@ export async function GET(request: NextRequest) {
         companyId: router.companyId,
         originatorId: router.originatorId,
         createdAt: router.createdAt,
-        updatedAt: router.updatedAt,
       }
     })
 
