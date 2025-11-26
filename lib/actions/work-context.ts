@@ -4,44 +4,23 @@ import { prisma } from '../prisma'
 import { z } from 'zod'
 import { getWorkMeId } from '../getWorkMeId.server'
 import { getTypedContext } from './typed-contexts'
+import type { ContextType } from '@prisma/client'
 
-// Helper to get typed context data
-async function enrichWorkContext(workEventRouter: any) {
-  if (!workEventRouter) return null
+// Helper to get typed context data from CompanyX models
+async function enrichCompanyX(companyX: any, type: ContextType) {
+  if (!companyX) return null
 
-  // Get companyId from workEventRouter or fetch it
-  let companyId = workEventRouter.companyId
-  if (!companyId) {
-    // Try to get it from the originator
-    const workMe = await prisma.workMe.findUnique({
-      where: { id: workEventRouter.originatorId },
-      select: { companyId: true },
-    })
-    companyId = workMe?.companyId || null
-  }
-
-  if (!companyId) {
-    console.error('[enrichWorkContext] No companyId found')
-    return {
-      ...workEventRouter,
-      typedData: null,
-      title: 'Unknown',
-    }
-  }
-
-  const typedResult = await getTypedContext({
-    type: workEventRouter.type,
-    typeRefId: workEventRouter.eventRefId, // Updated field name
-  })
+  const typedResult = await getTypedContext(type, companyX.id)
 
   return {
-    ...workEventRouter,
+    ...companyX,
+    type,
     typedData: typedResult.success ? typedResult.data : null,
-    title: typedResult.success ? typedResult.title : 'Unknown',
+    title: typedResult.success ? typedResult.title : companyX.title || 'Unknown',
   }
 }
 
-export async function deleteWorkContext(id: string) {
+export async function deleteWorkContext(id: string, type: ContextType) {
   try {
     const workMeId = await getWorkMeId()
 
@@ -49,24 +28,44 @@ export async function deleteWorkContext(id: string) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    const existing = await prisma.workEventRouter.findFirst({
-      where: { id, originatorId: workMeId },
+    // Get companyId for multi-tenant security
+    const workMe = await prisma.workMe.findUnique({
+      where: { id: workMeId },
+      select: { companyId: true },
     })
 
-    if (!existing) {
-      return { success: false, error: 'Work context not found' }
+    if (!workMe?.companyId) {
+      return { success: false, error: 'User must belong to a company' }
     }
 
-    // Delete typed context model based on type
-    // Note: This should be done via database cascade or manually for each type
-    // For now, we'll just delete the WorkEventRouter (outputs cascade)
-    
-    await prisma.workEventRouter.delete({
-      where: { id },
+    // Delete CompanyX model directly based on type
+    const modelMap: Record<ContextType, string> = {
+      campaign: 'companyCampaign',
+      impact_event: 'companyImpactEvent',
+      training: 'companyTraining',
+      event: 'companyEvent',
+      community: 'companyCommunity',
+      benefits: 'companyBenefits',
+      career: 'companyCareer',
+      employee_cause: 'companyEmployeeCause',
+    }
+
+    const modelName = modelMap[type]
+    if (!modelName) {
+      return { success: false, error: 'Invalid context type' }
+    }
+
+    await (prisma as any)[modelName].delete({
+      where: { 
+        id,
+        companyId: workMe.companyId,
+        originatorId: workMeId,
+      },
     })
 
     return { success: true }
   } catch (error) {
+    console.error('[deleteWorkContext] Error:', error)
     return { success: false, error: 'Failed to delete work context' }
   }
 }
@@ -79,23 +78,86 @@ export async function getWorkContexts() {
       return { success: false, error: 'Not authenticated', workContexts: [] }
     }
 
-    const workEventRouters = await prisma.workEventRouter.findMany({
-      where: { originatorId: workMeId },
-      orderBy: { createdAt: 'desc' },
+    // Get companyId for multi-tenant security
+    const workMe = await prisma.workMe.findUnique({
+      where: { id: workMeId },
+      select: { companyId: true },
     })
 
-    // Enrich with typed context data
-    const enrichedContexts = await Promise.all(
-      workEventRouters.map((ctx) => enrichWorkContext(ctx))
-    )
+    if (!workMe?.companyId) {
+      return { success: false, error: 'User must belong to a company', workContexts: [] }
+    }
 
-    return { success: true, workContexts: enrichedContexts.filter(Boolean) }
+    // Fetch all CompanyX models for this user
+    const [campaigns, impactEvents, trainings, events, communities, benefits, careers, employeeCauses] = await Promise.all([
+      prisma.companyCampaign.findMany({
+        where: { originatorId: workMeId, companyId: workMe.companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyImpactEvent.findMany({
+        where: { originatorId: workMeId, companyId: workMe.companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyTraining.findMany({
+        where: { originatorId: workMeId, companyId: workMe.companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyEvent.findMany({
+        where: { originatorId: workMeId, companyId: workMe.companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyCommunity.findMany({
+        where: { originatorId: workMeId, companyId: workMe.companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyBenefits.findMany({
+        where: { originatorId: workMeId, companyId: workMe.companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyCareer.findMany({
+        where: { originatorId: workMeId, companyId: workMe.companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyEmployeeCause.findMany({
+        where: { originatorId: workMeId, companyId: workMe.companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ])
+
+    // Combine and enrich all contexts
+    const allContexts = [
+      ...campaigns.map(c => ({ ...c, type: 'campaign' as ContextType })),
+      ...impactEvents.map(e => ({ ...e, type: 'impact_event' as ContextType })),
+      ...trainings.map(t => ({ ...t, type: 'training' as ContextType })),
+      ...events.map(e => ({ ...e, type: 'event' as ContextType })),
+      ...communities.map(c => ({ ...c, type: 'community' as ContextType })),
+      ...benefits.map(b => ({ ...b, type: 'benefits' as ContextType })),
+      ...careers.map(c => ({ ...c, type: 'career' as ContextType })),
+      ...employeeCauses.map(e => ({ ...e, type: 'employee_cause' as ContextType })),
+    ]
+
+    // Sort by createdAt descending
+    allContexts.sort((a, b) => {
+      const aDate = a.createdAt?.getTime() || 0
+      const bDate = b.createdAt?.getTime() || 0
+      return bDate - aDate
+    })
+
+    // Enrich with typed context data (already have the data, just format it)
+    const enrichedContexts = allContexts.map(ctx => ({
+      ...ctx,
+      typedData: ctx,
+      title: ctx.title || 'Unknown',
+    }))
+
+    return { success: true, workContexts: enrichedContexts }
   } catch (error) {
+    console.error('[getWorkContexts] Error:', error)
     return { success: false, error: 'Failed to fetch work contexts', workContexts: [] }
   }
 }
 
-export async function getWorkContext(id: string, clientWorkMeId?: string | null) {
+export async function getWorkContext(id: string, type: ContextType, clientWorkMeId?: string | null) {
   try {
     let workMeId = await getWorkMeId()
 
@@ -126,48 +188,39 @@ export async function getWorkContext(id: string, clientWorkMeId?: string | null)
       return { success: false, error: 'User must belong to a company', workContext: null }
     }
 
-    // First try to find with workMeId filter
-    let workEventRouter = await prisma.workEventRouter.findFirst({
+    // Map type to model name
+    const modelMap: Record<ContextType, string> = {
+      campaign: 'companyCampaign',
+      impact_event: 'companyImpactEvent',
+      training: 'companyTraining',
+      event: 'companyEvent',
+      community: 'companyCommunity',
+      benefits: 'companyBenefits',
+      career: 'companyCareer',
+      employee_cause: 'companyEmployeeCause',
+    }
+
+    const modelName = modelMap[type]
+    if (!modelName) {
+      return { success: false, error: 'Invalid context type', workContext: null }
+    }
+
+    // Find CompanyX model directly
+    const companyX = await (prisma as any)[modelName].findFirst({
       where: { 
-        id, 
-        originatorId: workMeId,
+        id,
         companyId: workMe.companyId, // Multi-tenant security
-      },
-      include: {
-        outputs: {
-          orderBy: { updatedAt: 'desc' },
-        },
+        originatorId: workMeId, // Ensure ownership
       },
     })
 
-    // If not found with workMeId, try without originatorId (still filter by companyId)
-    if (!workEventRouter) {
-      console.error('[getWorkContext] Not found with workMeId:', workMeId, 'Trying without originatorId filter...')
-      workEventRouter = await prisma.workEventRouter.findFirst({
-        where: { 
-          id,
-          companyId: workMe.companyId, // Still enforce multi-tenant
-        },
-        include: {
-          outputs: {
-            orderBy: { updatedAt: 'desc' },
-          },
-        },
-      })
-      
-      if (workEventRouter) {
-        console.error('[getWorkContext] Found but wrong workMeId. Context originator:', workEventRouter.originatorId, 'Query workMeId:', workMeId)
-        return { success: false, error: 'Work context not found (authentication mismatch)', workContext: null }
-      }
-    }
-
-    if (!workEventRouter) {
-      console.error('[getWorkContext] Context not found at all. ID:', id)
+    if (!companyX) {
+      console.error('[getWorkContext] Context not found. ID:', id, 'Type:', type)
       return { success: false, error: 'Work context not found', workContext: null }
     }
 
     // Enrich with typed context data
-    const enriched = await enrichWorkContext(workEventRouter)
+    const enriched = await enrichCompanyX(companyX, type)
 
     return { success: true, workContext: enriched }
   } catch (error) {
