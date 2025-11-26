@@ -20,7 +20,7 @@ export async function createCampaign(data: z.infer<typeof campaignSchema>, clien
     // Use verifyAuth to get workMeId and companyId
     const { workMeId, companyId } = await verifyAuth()
 
-    const campaign = await prisma.workContextCampaign.create({
+    const campaign = await prisma.companyCampaign.create({
       data: {
         ...validated,
         originatorId: workMeId,
@@ -37,17 +37,7 @@ export async function createCampaign(data: z.infer<typeof campaignSchema>, clien
       },
     })
 
-    // Create WorkEventRouter router entry
-    const workEventRouter = await prisma.workEventRouter.create({
-      data: {
-        type: 'campaign',
-        eventRefId: campaign.id,
-        originatorId: workMeId,
-        companyId: companyId,
-      },
-    })
-
-    return { success: true, campaign, workContext: workEventRouter }
+    return { success: true, campaign }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -65,7 +55,7 @@ export async function createImpactEvent(data: z.infer<typeof impactEventSchema>)
     const validated = impactEventSchema.parse(data)
     const { workMeId, companyId } = await verifyAuth()
 
-    const impactEvent = await prisma.workContextImpactEvent.create({
+    const impactEvent = await prisma.companyImpactEvent.create({
       data: {
         ...validated,
         originatorId: workMeId,
@@ -81,16 +71,7 @@ export async function createImpactEvent(data: z.infer<typeof impactEventSchema>)
       },
     })
 
-    const workEventRouter = await prisma.workEventRouter.create({
-      data: {
-        type: 'impact_event',
-        eventRefId: impactEvent.id,
-        originatorId: workMeId,
-        companyId: companyId,
-      },
-    })
-
-    return { success: true, impactEvent, workContext: workEventRouter }
+    return { success: true, impactEvent }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -108,7 +89,7 @@ export async function createTraining(data: z.infer<typeof trainingSchema>) {
     const validated = trainingSchema.parse(data)
     const { workMeId, companyId } = await verifyAuth()
 
-    const training = await prisma.workContextTraining.create({
+    const training = await prisma.companyTraining.create({
       data: {
         ...validated,
         originatorId: workMeId,
@@ -126,16 +107,7 @@ export async function createTraining(data: z.infer<typeof trainingSchema>) {
       },
     })
 
-    const workEventRouter = await prisma.workEventRouter.create({
-      data: {
-        type: 'training',
-        eventRefId: training.id,
-        originatorId: workMeId,
-        companyId: companyId,
-      },
-    })
-
-    return { success: true, training, workContext: workEventRouter }
+    return { success: true, training }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -153,7 +125,7 @@ export async function createWorkEvent(data: z.infer<typeof eventSchema>) {
     const validated = eventSchema.parse(data)
     const { workMeId, companyId } = await verifyAuth()
 
-    const event = await prisma.workEvent.create({
+    const event = await prisma.companyEvent.create({
       data: {
         title: validated.title,
         theme: (validated as any).theme ?? undefined,
@@ -178,16 +150,7 @@ export async function createWorkEvent(data: z.infer<typeof eventSchema>) {
       },
     })
 
-    const workEventRouter = await prisma.workEventRouter.create({
-      data: {
-        type: 'event',
-        eventRefId: event.id,
-        originatorId: workMeId,
-        companyId: companyId,
-      },
-    })
-
-    return { success: true, event, workEventRouter }
+    return { success: true, event }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -208,7 +171,7 @@ export async function createCommunityOpportunity(data: z.infer<typeof communityO
     const validated = communityOpportunitySchema.parse(data)
     const { workMeId, companyId } = await verifyAuth()
 
-    const opportunity = await prisma.workContextCommunity.create({
+    const opportunity = await prisma.companyCommunity.create({
       data: {
         ...validated,
         originatorId: workMeId,
@@ -225,16 +188,7 @@ export async function createCommunityOpportunity(data: z.infer<typeof communityO
       },
     })
 
-    const workEventRouter = await prisma.workEventRouter.create({
-      data: {
-        type: 'community',
-        eventRefId: opportunity.id,
-        originatorId: workMeId,
-        companyId: companyId,
-      },
-    })
-
-    return { success: true, opportunity, workContext: workEventRouter }
+    return { success: true, opportunity }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -254,7 +208,7 @@ export async function createCareer(data: z.infer<typeof careerSchema>) {
     const validated = careerSchema.parse(data)
     const { workMeId, companyId } = await verifyAuth()
 
-    const career = await prisma.workContextCareer.create({
+    const career = await prisma.companyCareer.create({
       data: {
         title: validated.title,
         description: validated.description ?? undefined,
@@ -271,16 +225,7 @@ export async function createCareer(data: z.infer<typeof careerSchema>) {
       },
     })
 
-    const workEventRouter = await prisma.workEventRouter.create({
-      data: {
-        type: 'career',
-        eventRefId: career.id,
-        originatorId: workMeId,
-        companyId: companyId,
-      },
-    })
-
-    return { success: true, career, workContext: workEventRouter }
+    return { success: true, career }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -298,7 +243,7 @@ export async function createBenefits(data: z.infer<typeof benefitsSchema>) {
     const validated = benefitsSchema.parse(data)
     const { workMeId, companyId } = await verifyAuth()
 
-    const benefits = await prisma.workContextBenefits.create({
+    const benefits = await prisma.companyBenefits.create({
       data: {
         ...validated,
         originatorId: workMeId,
@@ -319,16 +264,7 @@ export async function createBenefits(data: z.infer<typeof benefitsSchema>) {
       },
     })
 
-    const workEventRouter = await prisma.workEventRouter.create({
-      data: {
-        type: 'benefits',
-        eventRefId: benefits.id,
-        originatorId: workMeId,
-        companyId: companyId,
-      },
-    })
-
-    return { success: true, benefits, workContext: workEventRouter }
+    return { success: true, benefits }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -346,7 +282,7 @@ export async function createEmployeeCause(data: z.infer<typeof employeeCauseSche
     const validated = employeeCauseSchema.parse(data)
     const { workMeId, companyId } = await verifyAuth()
 
-    const employeeCause = await prisma.workContextEmployeeCause.create({
+    const employeeCause = await prisma.companyEmployeeCause.create({
       data: {
         title: validated.title,
         description: validated.description ?? undefined,
@@ -367,16 +303,7 @@ export async function createEmployeeCause(data: z.infer<typeof employeeCauseSche
       },
     })
 
-    const workEventRouter = await prisma.workEventRouter.create({
-      data: {
-        type: 'employee_cause',
-        eventRefId: employeeCause.id,
-        originatorId: workMeId,
-        companyId: companyId,
-      },
-    })
-
-    return { success: true, employeeCause, workContext: workEventRouter }
+    return { success: true, employeeCause }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -389,23 +316,18 @@ export async function createEmployeeCause(data: z.infer<typeof employeeCauseSche
 }
 
 // Update Campaign
-export async function updateCampaign(workContextId: string, data: z.infer<typeof campaignSchema>) {
+export async function updateCampaign(companyCampaignId: string, data: z.infer<typeof campaignSchema>) {
   try {
     const validated = campaignSchema.parse(data)
-    const { workMeId } = await verifyAuth()
+    const { workMeId, companyId } = await verifyAuth()
 
-    // Get WorkContext to find typeRefId and validate ownership
-    const workEventRouter = await prisma.workEventRouter.findFirst({
-      where: { id: workContextId, originatorId: workMeId },
-    })
-
-    if (!workEventRouter || workEventRouter.type !== 'campaign') {
-      return { success: false, error: 'Invalid context type or not found' }
-    }
-
-    // Update typed model using typeRefId
-    const campaign = await prisma.workContextCampaign.update({
-      where: { id: workEventRouter.eventRefId },
+    // Update CompanyCampaign directly (validate ownership via companyId and originatorId)
+    const campaign = await prisma.companyCampaign.update({
+      where: { 
+        id: companyCampaignId,
+        companyId,
+        originatorId: workMeId,
+      },
       data: {
         ...validated,
         description: validated.description ?? undefined,
@@ -420,7 +342,7 @@ export async function updateCampaign(workContextId: string, data: z.infer<typeof
       },
     })
 
-    return { success: true, campaign, workContext: workEventRouter }
+    return { success: true, campaign }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -430,21 +352,17 @@ export async function updateCampaign(workContextId: string, data: z.infer<typeof
 }
 
 // Update Impact Event
-export async function updateImpactEvent(workContextId: string, data: z.infer<typeof impactEventSchema>) {
+export async function updateImpactEvent(companyImpactEventId: string, data: z.infer<typeof impactEventSchema>) {
   try {
     const validated = impactEventSchema.parse(data)
-    const { workMeId } = await verifyAuth()
+    const { workMeId, companyId } = await verifyAuth()
 
-    const workEventRouter = await prisma.workEventRouter.findFirst({
-      where: { id: workContextId, originatorId: workMeId },
-    })
-
-    if (!workEventRouter || workEventRouter.type !== 'impact_event') {
-      return { success: false, error: 'Invalid context type or not found' }
-    }
-
-    const impactEvent = await prisma.workContextImpactEvent.update({
-      where: { id: workEventRouter.eventRefId },
+    const impactEvent = await prisma.companyImpactEvent.update({
+      where: { 
+        id: companyImpactEventId,
+        companyId,
+        originatorId: workMeId,
+      },
       data: {
         ...validated,
         description: validated.description ?? undefined,
@@ -458,7 +376,7 @@ export async function updateImpactEvent(workContextId: string, data: z.infer<typ
       },
     })
 
-    return { success: true, impactEvent, workContext: workEventRouter }
+    return { success: true, impactEvent }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -468,21 +386,17 @@ export async function updateImpactEvent(workContextId: string, data: z.infer<typ
 }
 
 // Update Training
-export async function updateTraining(workContextId: string, data: z.infer<typeof trainingSchema>) {
+export async function updateTraining(companyTrainingId: string, data: z.infer<typeof trainingSchema>) {
   try {
     const validated = trainingSchema.parse(data)
-    const { workMeId } = await verifyAuth()
+    const { workMeId, companyId } = await verifyAuth()
 
-    const workEventRouter = await prisma.workEventRouter.findFirst({
-      where: { id: workContextId, originatorId: workMeId },
-    })
-
-    if (!workEventRouter || workEventRouter.type !== 'training') {
-      return { success: false, error: 'Invalid context type or not found' }
-    }
-
-    const training = await prisma.workContextTraining.update({
-      where: { id: workEventRouter.eventRefId },
+    const training = await prisma.companyTraining.update({
+      where: { 
+        id: companyTrainingId,
+        companyId,
+        originatorId: workMeId,
+      },
       data: {
         ...validated,
         description: validated.description ?? undefined,
@@ -498,7 +412,7 @@ export async function updateTraining(workContextId: string, data: z.infer<typeof
       },
     })
 
-    return { success: true, training, workContext: workEventRouter }
+    return { success: true, training }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -507,22 +421,18 @@ export async function updateTraining(workContextId: string, data: z.infer<typeof
   }
 }
 
-// Update WorkEvent
-export async function updateWorkEvent(workEventRouterId: string, data: z.infer<typeof eventSchema>) {
+// Update CompanyEvent
+export async function updateWorkEvent(companyEventId: string, data: z.infer<typeof eventSchema>) {
   try {
     const validated = eventSchema.parse(data)
-    const { workMeId } = await verifyAuth()
+    const { workMeId, companyId } = await verifyAuth()
 
-    const workEventRouter = await prisma.workEventRouter.findFirst({
-      where: { id: workEventRouterId, originatorId: workMeId },
-    })
-
-    if (!workEventRouter || workEventRouter.type !== 'event') {
-      return { success: false, error: 'Invalid router type or not found' }
-    }
-
-    const event = await prisma.workEvent.update({
-      where: { id: workEventRouter.eventRefId },
+    const event = await prisma.companyEvent.update({
+      where: { 
+        id: companyEventId,
+        companyId,
+        originatorId: workMeId,
+      },
       data: {
         title: validated.title,
         theme: (validated as any).theme ?? undefined,
@@ -545,7 +455,7 @@ export async function updateWorkEvent(workEventRouterId: string, data: z.infer<t
       },
     })
 
-    return { success: true, event, workEventRouter }
+    return { success: true, event }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -558,21 +468,17 @@ export async function updateWorkEvent(workEventRouterId: string, data: z.infer<t
 export const updateEvent = updateWorkEvent
 
 // Update Community Opportunity
-export async function updateCommunityOpportunity(workContextId: string, data: z.infer<typeof communityOpportunitySchema>) {
+export async function updateCommunityOpportunity(companyCommunityId: string, data: z.infer<typeof communityOpportunitySchema>) {
   try {
     const validated = communityOpportunitySchema.parse(data)
-    const { workMeId } = await verifyAuth()
+    const { workMeId, companyId } = await verifyAuth()
 
-    const workEventRouter = await prisma.workEventRouter.findFirst({
-      where: { id: workContextId, originatorId: workMeId },
-    })
-
-    if (!workEventRouter || workEventRouter.type !== 'community') {
-      return { success: false, error: 'Invalid context type or not found' }
-    }
-
-    const opportunity = await prisma.workContextCommunity.update({
-      where: { id: workEventRouter.eventRefId },
+    const opportunity = await prisma.companyCommunity.update({
+      where: { 
+        id: companyCommunityId,
+        companyId,
+        originatorId: workMeId,
+      },
       data: {
         ...validated,
         description: validated.description ?? undefined,
@@ -587,7 +493,7 @@ export async function updateCommunityOpportunity(workContextId: string, data: z.
       },
     })
 
-    return { success: true, opportunity, workContext: workEventRouter }
+    return { success: true, opportunity }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -597,21 +503,17 @@ export async function updateCommunityOpportunity(workContextId: string, data: z.
 }
 
 // Update Benefits
-export async function updateBenefits(workContextId: string, data: z.infer<typeof benefitsSchema>) {
+export async function updateBenefits(companyBenefitsId: string, data: z.infer<typeof benefitsSchema>) {
   try {
     const validated = benefitsSchema.parse(data)
-    const { workMeId } = await verifyAuth()
+    const { workMeId, companyId } = await verifyAuth()
 
-    const workEventRouter = await prisma.workEventRouter.findFirst({
-      where: { id: workContextId, originatorId: workMeId },
-    })
-
-    if (!workEventRouter || workEventRouter.type !== 'benefits') {
-      return { success: false, error: 'Invalid context type or not found' }
-    }
-
-    const benefits = await prisma.workContextBenefits.update({
-      where: { id: workEventRouter.eventRefId },
+    const benefits = await prisma.companyBenefits.update({
+      where: { 
+        id: companyBenefitsId,
+        companyId,
+        originatorId: workMeId,
+      },
       data: {
         ...validated,
         description: validated.description ?? undefined,
@@ -630,7 +532,7 @@ export async function updateBenefits(workContextId: string, data: z.infer<typeof
       },
     })
 
-    return { success: true, benefits, workContext: workEventRouter }
+    return { success: true, benefits }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -640,21 +542,17 @@ export async function updateBenefits(workContextId: string, data: z.infer<typeof
 }
 
 // Update Career
-export async function updateCareer(workContextId: string, data: z.infer<typeof careerSchema>) {
+export async function updateCareer(companyCareerId: string, data: z.infer<typeof careerSchema>) {
   try {
     const validated = careerSchema.parse(data)
-    const { workMeId } = await verifyAuth()
+    const { workMeId, companyId } = await verifyAuth()
 
-    const workEventRouter = await prisma.workEventRouter.findFirst({
-      where: { id: workContextId, originatorId: workMeId },
-    })
-
-    if (!workEventRouter || workEventRouter.type !== 'career') {
-      return { success: false, error: 'Invalid context type or not found' }
-    }
-
-    const career = await prisma.workContextCareer.update({
-      where: { id: workEventRouter.eventRefId },
+    const career = await prisma.companyCareer.update({
+      where: { 
+        id: companyCareerId,
+        companyId,
+        originatorId: workMeId,
+      },
       data: {
         title: validated.title,
         description: validated.description ?? undefined,
@@ -669,7 +567,7 @@ export async function updateCareer(workContextId: string, data: z.infer<typeof c
       },
     })
 
-    return { success: true, career, workContext: workEventRouter }
+    return { success: true, career }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -679,21 +577,17 @@ export async function updateCareer(workContextId: string, data: z.infer<typeof c
 }
 
 // Update Employee Cause
-export async function updateEmployeeCause(workContextId: string, data: z.infer<typeof employeeCauseSchema>) {
+export async function updateEmployeeCause(companyEmployeeCauseId: string, data: z.infer<typeof employeeCauseSchema>) {
   try {
     const validated = employeeCauseSchema.parse(data)
-    const { workMeId } = await verifyAuth()
+    const { workMeId, companyId } = await verifyAuth()
 
-    const workEventRouter = await prisma.workEventRouter.findFirst({
-      where: { id: workContextId, originatorId: workMeId },
-    })
-
-    if (!workEventRouter || workEventRouter.type !== 'employee_cause') {
-      return { success: false, error: 'Invalid context type or not found' }
-    }
-
-    const employeeCause = await prisma.workContextEmployeeCause.update({
-      where: { id: workEventRouter.eventRefId },
+    const employeeCause = await prisma.companyEmployeeCause.update({
+      where: { 
+        id: companyEmployeeCauseId,
+        companyId,
+        originatorId: workMeId,
+      },
       data: {
         title: validated.title,
         description: validated.description ?? undefined,
@@ -712,7 +606,7 @@ export async function updateEmployeeCause(workContextId: string, data: z.infer<t
       },
     })
 
-    return { success: true, employeeCause, workContext: workEventRouter }
+    return { success: true, employeeCause }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -721,55 +615,55 @@ export async function updateEmployeeCause(workContextId: string, data: z.infer<t
   }
 }
 
-// Get typed context data by WorkContext
-export async function getTypedContext(workContext: { type: string; typeRefId: string }) {
+// Get typed context data by CompanyX ID and type
+export async function getTypedContext(type: string, companyXId: string) {
   try {
-    switch (workContext.type) {
+    switch (type) {
       case 'campaign':
-        const campaign = await prisma.workContextCampaign.findUnique({
-          where: { id: workContext.typeRefId },
+        const campaign = await prisma.companyCampaign.findUnique({
+          where: { id: companyXId },
         })
         return { success: true, data: campaign, title: campaign?.title || '' }
       
       case 'impact_event':
-        const impactEvent = await prisma.workContextImpactEvent.findUnique({
-          where: { id: workContext.typeRefId },
+        const impactEvent = await prisma.companyImpactEvent.findUnique({
+          where: { id: companyXId },
         })
         return { success: true, data: impactEvent, title: impactEvent?.title || '' }
       
       case 'training':
-        const training = await prisma.workContextTraining.findUnique({
-          where: { id: workContext.typeRefId },
+        const training = await prisma.companyTraining.findUnique({
+          where: { id: companyXId },
         })
         return { success: true, data: training, title: training?.title || '' }
       
       case 'event':
-        const event = await prisma.workEvent.findUnique({
-          where: { id: workContext.typeRefId },
+        const event = await prisma.companyEvent.findUnique({
+          where: { id: companyXId },
         })
         return { success: true, data: event, title: event?.title || '' }
       
       case 'community':
-        const opportunity = await prisma.workContextCommunity.findUnique({
-          where: { id: workContext.typeRefId },
+        const opportunity = await prisma.companyCommunity.findUnique({
+          where: { id: companyXId },
         })
         return { success: true, data: opportunity, title: opportunity?.title || '' }
       
       case 'benefits':
-        const benefits = await prisma.workContextBenefits.findUnique({
-          where: { id: workContext.typeRefId },
+        const benefits = await prisma.companyBenefits.findUnique({
+          where: { id: companyXId },
         })
         return { success: true, data: benefits, title: benefits?.title || '' }
       
       case 'career':
-        const career = await prisma.workContextCareer.findUnique({
-          where: { id: workContext.typeRefId },
+        const career = await prisma.companyCareer.findUnique({
+          where: { id: companyXId },
         })
         return { success: true, data: career, title: career?.title || '' }
       
       case 'employee_cause':
-        const employeeCause = await prisma.workContextEmployeeCause.findUnique({
-          where: { id: workContext.typeRefId },
+        const employeeCause = await prisma.companyEmployeeCause.findUnique({
+          where: { id: companyXId },
         })
         return { success: true, data: employeeCause, title: employeeCause?.title || '' }
       

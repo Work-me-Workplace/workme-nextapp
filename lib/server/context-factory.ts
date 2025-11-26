@@ -4,23 +4,22 @@ import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import type { ContextType } from "@prisma/client"
 
-// Model map for typed context models
+// Model map for CompanyX models
 const MODEL_MAP = {
-  campaign: "workContextCampaign",
-  impact_event: "workContextImpactEvent",
-  training: "workContextTraining",
-  event: "workEvent",
-  community: "workContextCommunity",
-  benefits: "workContextBenefits",
-  career: "workContextCareer",
-  employee_cause: "workContextEmployeeCause",
+  campaign: "companyCampaign",
+  impact_event: "companyImpactEvent",
+  training: "companyTraining",
+  event: "companyEvent",
+  community: "companyCommunity",
+  benefits: "companyBenefits",
+  career: "companyCareer",
+  employee_cause: "companyEmployeeCause",
 } as const
 
 type ModelMapKey = keyof typeof MODEL_MAP
 
 /**
- * Create a typed context with transaction safety
- * Creates both the typed model and the WorkEventRouter router entry atomically
+ * Create a CompanyX model directly (no router needed)
  * 
  * @param type - The context type (campaign, event, etc.)
  * @param data - The typed context data (validated by schema)
@@ -33,7 +32,7 @@ export async function createTypedContext(
   workMeId: string,
   companyId: string
 ) {
-  console.log('[WorkEventRouter CREATE]', {
+  console.log('[CompanyX CREATE]', {
     type,
     payload: data,
     workMeId,
@@ -41,57 +40,42 @@ export async function createTypedContext(
   })
 
   if (!workMeId) {
-    console.error('[WorkEventRouter CREATE] ERROR: No WorkMeId - not authenticated')
+    console.error('[CompanyX CREATE] ERROR: No WorkMeId - not authenticated')
     throw new Error("No WorkMeId - not authenticated")
   }
 
   if (!companyId) {
-    console.error('[WorkEventRouter CREATE] ERROR: No CompanyId - user must belong to a company')
+    console.error('[CompanyX CREATE] ERROR: No CompanyId - user must belong to a company')
     throw new Error("User must belong to a company")
   }
 
   if (!MODEL_MAP[type as ModelMapKey]) {
-    console.error('[WorkEventRouter CREATE] ERROR: Invalid context type', { type })
+    console.error('[CompanyX CREATE] ERROR: Invalid context type', { type })
     throw new Error(`Invalid context type: ${type}`)
   }
 
   const modelName = MODEL_MAP[type as ModelMapKey]
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
-      // Create typed model
-      const typed = await (tx as any)[modelName].create({
-        data: {
-          ...data,
-          companyId,
-          originatorId: workMeId,
-        },
-      })
-
-      // Create WorkEventRouter router entry
-      const router = await tx.workEventRouter.create({
-        data: {
-          type,
-          eventRefId: typed.id,
-          companyId,
-          originatorId: workMeId,
-        },
-      })
-
-      return { typed, router, success: true as const }
+    // Create CompanyX model directly
+    const typed = await (prisma as any)[modelName].create({
+      data: {
+        ...data,
+        companyId,
+        originatorId: workMeId,
+      },
     })
 
-    console.log('[WorkEventRouter CREATE] SUCCESS', {
+    console.log('[CompanyX CREATE] SUCCESS', {
       type,
-      typedId: result.typed.id,
-      routerId: result.router.id,
+      typedId: typed.id,
       workMeId,
       companyId,
     })
 
-    return result
+    return { typed, success: true as const }
   } catch (error: any) {
-    console.error('[WorkEventRouter CREATE] ERROR', {
+    console.error('[CompanyX CREATE] ERROR', {
       type,
       workMeId,
       companyId,
@@ -103,24 +87,24 @@ export async function createTypedContext(
 }
 
 /**
- * Update a typed context with transaction safety
+ * Update a CompanyX model directly
  * Validates ownership and company scoping before updating
  * 
- * @param workEventRouterId - The WorkEventRouter router ID
- * @param type - The context type (must match router.type)
+ * @param companyXId - The CompanyX model ID
+ * @param type - The context type
  * @param data - The updated typed context data (validated by schema)
  * @param workMeId - The authenticated user's WorkMe ID
  * @param companyId - The authenticated user's Company ID (required for multi-tenant)
  */
 export async function updateTypedContext(
-  workEventRouterId: string,
+  companyXId: string,
   type: ContextType,
   data: Record<string, any>,
   workMeId: string,
   companyId: string
 ) {
-  console.log('[WorkEventRouter UPDATE]', {
-    workEventRouterId,
+  console.log('[CompanyX UPDATE]', {
+    companyXId,
     type,
     payload: data,
     workMeId,
@@ -128,66 +112,45 @@ export async function updateTypedContext(
   })
 
   if (!workMeId) {
-    console.error('[WorkEventRouter UPDATE] ERROR: No WorkMeId - not authenticated')
+    console.error('[CompanyX UPDATE] ERROR: No WorkMeId - not authenticated')
     throw new Error("No WorkMeId - not authenticated")
   }
 
   if (!companyId) {
-    console.error('[WorkEventRouter UPDATE] ERROR: No CompanyId - user must belong to a company')
+    console.error('[CompanyX UPDATE] ERROR: No CompanyId - user must belong to a company')
     throw new Error("User must belong to a company")
   }
 
   if (!MODEL_MAP[type as ModelMapKey]) {
-    console.error('[WorkEventRouter UPDATE] ERROR: Invalid context type', { type })
+    console.error('[CompanyX UPDATE] ERROR: Invalid context type', { type })
     throw new Error(`Invalid context type: ${type}`)
   }
 
   const modelName = MODEL_MAP[type as ModelMapKey]
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
-      // Validate ownership, company scoping, and get router entry
-      const router = await tx.workEventRouter.findFirst({
-        where: { 
-          id: workEventRouterId,
-          companyId, // Multi-tenant: ensure same company
-          originatorId: workMeId,
-          type, // Ensure type matches
-        },
-      })
-
-      if (!router) {
-        console.error('[WorkEventRouter UPDATE] ERROR: Router not found or unauthorized', {
-          workEventRouterId,
-          workMeId,
-          companyId,
-          type,
-        })
-        throw new Error("Router not found or unauthorized")
-      }
-
-      // Update typed model
-      const typed = await (tx as any)[modelName].update({
-        where: { id: router.eventRefId },
-        data,
-      })
-
-      return { router, typed, success: true as const }
+    // Update CompanyX model directly (validate ownership via companyId and originatorId)
+    const typed = await (prisma as any)[modelName].update({
+      where: { 
+        id: companyXId,
+        companyId, // Multi-tenant: ensure same company
+        originatorId: workMeId, // Ensure ownership
+      },
+      data,
     })
 
-    console.log('[WorkEventRouter UPDATE] SUCCESS', {
-      workEventRouterId,
+    console.log('[CompanyX UPDATE] SUCCESS', {
+      companyXId,
       type,
-      typedId: result.typed.id,
-      routerId: result.router.id,
+      typedId: typed.id,
       workMeId,
       companyId,
     })
 
-    return result
+    return { typed, success: true as const }
   } catch (error: any) {
-    console.error('[WorkEventRouter UPDATE] ERROR', {
-      workEventRouterId,
+    console.error('[CompanyX UPDATE] ERROR', {
+      companyXId,
       type,
       workMeId,
       companyId,
@@ -199,31 +162,31 @@ export async function updateTypedContext(
 }
 
 /**
- * Get typed context data by type and eventRefId
+ * Get CompanyX model data by type and ID
  * Filters by companyId for multi-tenant security
  * 
  * @param type - The context type
- * @param eventRefId - The typed context model ID
+ * @param companyXId - The CompanyX model ID
  * @param companyId - The company ID to scope the query (required for multi-tenant)
  */
 export async function getTypedContext(
   type: ContextType,
-  eventRefId: string,
+  companyXId: string,
   companyId: string
 ) {
-  console.log('[WorkEventRouter GET_TYPED]', {
+  console.log('[CompanyX GET_TYPED]', {
     type,
-    eventRefId,
+    companyXId,
     companyId,
   })
 
   if (!companyId) {
-    console.error('[WorkEventRouter GET_TYPED] ERROR: No CompanyId - user must belong to a company')
+    console.error('[CompanyX GET_TYPED] ERROR: No CompanyId - user must belong to a company')
     throw new Error("User must belong to a company")
   }
 
   if (!MODEL_MAP[type as ModelMapKey]) {
-    console.error('[WorkEventRouter GET_TYPED] ERROR: Invalid context type', { type })
+    console.error('[CompanyX GET_TYPED] ERROR: Invalid context type', { type })
     throw new Error(`Invalid context type: ${type}`)
   }
 
@@ -232,14 +195,14 @@ export async function getTypedContext(
   try {
     const typed = await (prisma as any)[modelName].findFirst({
       where: { 
-        id: eventRefId,
+        id: companyXId,
         companyId, // Multi-tenant: ensure same company
       },
     })
 
-    console.log('[WorkEventRouter GET_TYPED] SUCCESS', {
+    console.log('[CompanyX GET_TYPED] SUCCESS', {
       type,
-      eventRefId,
+      companyXId,
       companyId,
       found: !!typed,
       title: typed?.title || 'N/A',
@@ -247,9 +210,9 @@ export async function getTypedContext(
 
     return typed
   } catch (error: any) {
-    console.error('[WorkEventRouter GET_TYPED] ERROR', {
+    console.error('[CompanyX GET_TYPED] ERROR', {
       type,
-      eventRefId,
+      companyXId,
       companyId,
       error: error.message,
       stack: error.stack,
@@ -259,92 +222,71 @@ export async function getTypedContext(
 }
 
 /**
- * Delete a typed context with transaction safety
- * Validates ownership, company scoping, and deletes both router and typed model atomically
+ * Delete a CompanyX model directly
+ * Validates ownership and company scoping before deleting
  * 
- * @param workEventRouterId - The WorkEventRouter router ID
+ * @param companyXId - The CompanyX model ID
+ * @param type - The context type
  * @param workMeId - The authenticated user's WorkMe ID
  * @param companyId - The authenticated user's Company ID (required for multi-tenant)
  */
 export async function deleteTypedContext(
-  workEventRouterId: string,
+  companyXId: string,
+  type: ContextType,
   workMeId: string,
   companyId: string
 ) {
-  console.log('[WorkEventRouter DELETE]', {
-    workEventRouterId,
+  console.log('[CompanyX DELETE]', {
+    companyXId,
+    type,
     workMeId,
     companyId,
   })
 
   if (!workMeId) {
-    console.error('[WorkEventRouter DELETE] ERROR: No WorkMeId - not authenticated')
+    console.error('[CompanyX DELETE] ERROR: No WorkMeId - not authenticated')
     throw new Error("No WorkMeId - not authenticated")
   }
 
   if (!companyId) {
-    console.error('[WorkEventRouter DELETE] ERROR: No CompanyId - user must belong to a company')
+    console.error('[CompanyX DELETE] ERROR: No CompanyId - user must belong to a company')
     throw new Error("User must belong to a company")
   }
 
-  // Get router entry to determine type (with company scoping)
-  const router = await prisma.workEventRouter.findFirst({
-    where: { 
-      id: workEventRouterId,
-      companyId, // Multi-tenant: ensure same company
-      originatorId: workMeId,
-    },
-  })
-
-  if (!router) {
-    console.error('[WorkEventRouter DELETE] ERROR: Router not found or unauthorized', {
-      workEventRouterId,
-      workMeId,
-      companyId,
+  if (!MODEL_MAP[type as ModelMapKey]) {
+    console.error('[CompanyX DELETE] ERROR: Invalid context type', {
+      companyXId,
+      type,
     })
-    throw new Error("Router not found or unauthorized")
+    throw new Error(`Invalid context type: ${type}`)
   }
 
-  if (!MODEL_MAP[router.type as ModelMapKey]) {
-    console.error('[WorkEventRouter DELETE] ERROR: Invalid context type', {
-      workEventRouterId,
-      type: router.type,
-    })
-    throw new Error(`Invalid context type: ${router.type}`)
-  }
-
-  const modelName = MODEL_MAP[router.type as ModelMapKey]
+  const modelName = MODEL_MAP[type as ModelMapKey]
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
-      // Delete typed model first (child)
-      await (tx as any)[modelName].delete({
-        where: { id: router.eventRefId },
-      })
-
-      // Delete router entry (parent)
-      await tx.workEventRouter.delete({
-        where: { id: workEventRouterId },
-      })
-
-      return { success: true as const }
+    // Delete CompanyX model directly (validate ownership via companyId and originatorId)
+    await (prisma as any)[modelName].delete({
+      where: { 
+        id: companyXId,
+        companyId, // Multi-tenant: ensure same company
+        originatorId: workMeId, // Ensure ownership
+      },
     })
 
-    console.log('[WorkEventRouter DELETE] SUCCESS', {
-      workEventRouterId,
-      type: router.type,
-      typedId: router.eventRefId,
+    console.log('[CompanyX DELETE] SUCCESS', {
+      companyXId,
+      type,
       workMeId,
       companyId,
     })
 
-    return result
+    return { success: true as const }
   } catch (error: any) {
-    console.error('[WorkEventRouter DELETE] ERROR', {
-      workEventRouterId,
+    console.error('[CompanyX DELETE] ERROR', {
+      companyXId,
+      type,
       workMeId,
       companyId,
-      type: router.type,
       error: error.message,
       stack: error.stack,
     })
