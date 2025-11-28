@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
-import { getSections } from '@/lib/workstuff/redis'
+import { getSections } from '@/lib/workstuff/sections-store'
 import { storeHydratedModel } from '@/lib/redis'
 import OpenAI from 'openai'
 

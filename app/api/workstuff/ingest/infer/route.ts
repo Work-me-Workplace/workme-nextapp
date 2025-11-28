@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
-import { setSections } from '@/lib/workstuff/redis'
+import { setSections } from '@/lib/workstuff/sections-store'
 import { storeRawBlob } from '@/lib/redis'
 import { inferCompanyXType } from '@/lib/services/companyx-topic-inference'
 import { randomUUID } from 'crypto'
