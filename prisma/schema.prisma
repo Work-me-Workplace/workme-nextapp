@@ -43,7 +43,6 @@ model WorkMe {
   originatedAchievements           Achievement[]           @relation("AchievementOriginator")
   originatedCompanyCampaigns       CompanyCampaign[]       @relation("CompanyCampaignOriginator")
   originatedCompanyImpactEvents    CompanyImpactEvent[]    @relation("CompanyImpactEventOriginator")
-  originatedCompanyTrainings       CompanyTraining[]       @relation("CompanyTrainingOriginator")
   originatedCompanyEvents          CompanyEvent[]          @relation("CompanyEventOriginator")
   originatedCompanyCommunities     CompanyCommunity[]      @relation("CompanyCommunityOriginator")
   originatedCompanyBenefits        CompanyBenefits[]       @relation("CompanyBenefitsOriginator")
@@ -438,29 +437,46 @@ model CompanyImpactEvent {
 }
 
 model CompanyTraining {
-  id               String    @id @default(cuid())
-  createdAt        DateTime  @default(now())
-  title            String
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+
+  // Core
+  title            String?
+  topic            String?
   description      String?
-  trainingDate     DateTime?
-  deadline         DateTime?
-  link             String?
   mandatory        Boolean   @default(false)
   sponsoringOffice String?
+
+  // Date / Time
+  trainingDate     DateTime?
+  startTime        String?
+  endTime          String?
+
+  // Format / Location
+  location         String?
+  format           String?
+  link             String?
+
+  // POC
   pocFirstName     String?
   pocLastName      String?
   pocEmail         String?
   pocPhone         String?
+  pocRankOrTitle   String?
 
-  companyId    String
-  company      Company @relation("CompanyTrainingCompany", fields: [companyId], references: [id], onDelete: Cascade)
-  originatorId String
-  originator   WorkMe  @relation("CompanyTrainingOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
+  // Stage 1 Ingest Snapshot
+  ingestRawText    String?
+  ingestType       String?
+  ingestStatus     String? @default("pending")
+  ingestCreatedAt  DateTime? @default(now())
+
+  // Relations
+  companyId  String
+  company    Company @relation("CompanyTrainingCompany", fields: [companyId], references: [id], onDelete: Cascade)
 
   links CompanyWorkLink[]
 
   @@index([companyId])
-  @@index([originatorId])
 }
 
 model CompanyEvent {
