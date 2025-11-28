@@ -4,8 +4,21 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { verifyAuth } from '@/lib/server/verifyAuth'
 import { getWorkMeId } from '@/lib/getWorkMeId.server'
+import type { WorkCommsProductType } from '@prisma/client'
 
-// WorkOutput types registry (moved from work-support.ts which was deleted)
+// Map old output types to WorkCommsProductType
+const OUTPUT_TYPE_MAP: Record<string, WorkCommsProductType> = {
+  'ntk_snippet': 'ntk',
+  'talking_points': 'talking_points',
+  'digital_signage': 'digital_sign',
+  'print_product': 'poster', // Default print products to poster
+  'sharepoint_block': 'sharepoint',
+  'quick_blurb': 'talking_points', // Quick blurbs are talking points
+  'event_kit': 'poster', // Event kits default to poster
+  'photo_video': 'photo_video',
+}
+
+// Legacy output types (for backward compatibility)
 export const WORK_OUTPUT_TYPE_VALUES = [
   'ntk_snippet',
   'talking_points',
@@ -17,112 +30,177 @@ export const WORK_OUTPUT_TYPE_VALUES = [
   'photo_video',
 ] as [string, ...string[]]
 
-const workOutputSchema = z.object({
-  eventRouterId: z.string().optional().nullable(), // Renamed from contextId
-  supportId: z.string().optional().nullable(),
-  workforceCommsId: z.string().uuid().optional().nullable(), // FK to WorkforceComms
-  outputType: z.enum(WORK_OUTPUT_TYPE_VALUES as [string, ...string[]]),
-  dataJson: z.any().optional().nullable(),
-  status: z.enum(['draft', 'final']).optional().default('draft'),
+const workProductSchema = z.object({
+  // CompanyX linking - one of these should be provided
+  companyEventId: z.string().optional().nullable(),
+  companyCampaignId: z.string().optional().nullable(),
+  companyTrainingId: z.string().optional().nullable(),
+  companyBenefitsId: z.string().optional().nullable(),
+  companyImpactEventId: z.string().optional().nullable(),
+  companyCommunityId: z.string().optional().nullable(),
+  companyCareerId: z.string().optional().nullable(),
+  companyEmployeeCauseId: z.string().optional().nullable(),
+  
+  // Product data
+  type: z.enum(['email', 'poster', 'ntk', 'digital_sign', 'exec_email', 'flyer', 'sharepoint', 'photo_video', 'talking_points']),
+  data: z.any().optional().nullable(),
+  metadata: z.any().optional().nullable(),
+  
+  // Legacy support (for migration)
+  legacyOutputType: z.enum(WORK_OUTPUT_TYPE_VALUES as [string, ...string[]]).optional().nullable(),
 })
 
-export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
+/**
+ * Create a WorkCommsProduct (replaces WorkOutput)
+ * Automatically creates CompanyWorkLink if CompanyX ID provided
+ */
+export async function createWorkOutput(data: z.infer<typeof workProductSchema>) {
   try {
-    const validated = workOutputSchema.parse(data)
+    const validated = workProductSchema.parse(data)
     const { workMeId, companyId } = await verifyAuth()
 
     if (!workMeId || !companyId) {
       return { success: false, error: 'Not authenticated or user must belong to a company' }
     }
 
-    // NOTE: WorkSupport and WorkEventRouter have been removed.
-    // This function is kept for backward compatibility but should be migrated to use WorkCommsProduct.
-    // For now, we require workforceCommsId or eventRouterId (legacy support).
+    // Determine product type
+    let productType: WorkCommsProductType = validated.type
     
-    if (!validated.workforceCommsId && !validated.eventRouterId) {
-      return { success: false, error: 'Either workforceCommsId or eventRouterId is required' }
+    // If legacy outputType provided, map it
+    if (validated.legacyOutputType && !validated.type) {
+      productType = OUTPUT_TYPE_MAP[validated.legacyOutputType] || 'poster'
     }
 
-    // Legacy: If eventRouterId provided, verify it exists (WorkEventRouter was removed, this will fail)
-    // TODO: Migrate to use CompanyWorkLink and WorkCommsProduct
-    if (validated.eventRouterId) {
-      // WorkEventRouter no longer exists - this is legacy code
-      return { success: false, error: 'WorkEventRouter has been removed. Please use WorkCommsProduct instead.' }
+    // Verify at least one CompanyX ID is provided
+    const companyXIds = {
+      companyEventId: validated.companyEventId,
+      companyCampaignId: validated.companyCampaignId,
+      companyTrainingId: validated.companyTrainingId,
+      companyBenefitsId: validated.companyBenefitsId,
+      companyImpactEventId: validated.companyImpactEventId,
+      companyCommunityId: validated.companyCommunityId,
+      companyCareerId: validated.companyCareerId,
+      companyEmployeeCauseId: validated.companyEmployeeCauseId,
     }
 
-    // If only workforceCommsId provided, create output linked to WorkforceComms
-    if (validated.workforceCommsId) {
-      const workOutput = await prisma.workOutput.create({
-        data: {
-          workforceCommsId: validated.workforceCommsId,
-          outputType: validated.outputType,
-          dataJson: validated.dataJson ?? undefined,
-          status: (validated.status || 'draft') as 'draft' | 'final',
-          companyId,
-          originatorId: workMeId,
-        },
-        include: {
-          workforceComms: true,
-        },
-      })
+    const hasCompanyXLink = Object.values(companyXIds).some(id => id !== null && id !== undefined)
 
-      return { success: true, workOutput }
+    if (!hasCompanyXLink) {
+      return { success: false, error: 'At least one CompanyX ID (companyEventId, companyCampaignId, etc.) is required' }
     }
 
-    return { success: false, error: 'Invalid input' }
+    // Create WorkCommsProduct
+    const product = await prisma.workCommsProduct.create({
+      data: {
+        type: productType,
+        data: validated.data ?? undefined,
+        metadata: validated.metadata ?? undefined,
+        companyId,
+        createdById: workMeId,
+      },
+    })
+
+    // Create CompanyWorkLink for each provided CompanyX ID
+    const links = []
+    for (const [key, value] of Object.entries(companyXIds)) {
+      if (value) {
+        const link = await prisma.companyWorkLink.create({
+          data: {
+            [key]: value,
+            workCommsProductId: product.id,
+            companyId,
+          },
+        })
+        links.push(link)
+      }
+    }
+
+    return { 
+      success: true, 
+      workOutput: {
+        // Return in legacy format for backward compatibility
+        id: product.id,
+        outputType: validated.legacyOutputType || productType,
+        dataJson: product.data,
+        status: 'draft',
+        createdAt: product.createdAt,
+        updatedAt: product.createdAt,
+        links,
+      },
+      product, // Also return new format
+    }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
     }
-    console.error('Error creating WorkOutput:', error)
-    return { success: false, error: 'Failed to create work output' }
+    console.error('Error creating WorkCommsProduct:', error)
+    return { success: false, error: 'Failed to create work product' }
   }
 }
 
-export async function updateWorkOutput(id: string, data: Partial<Pick<z.infer<typeof workOutputSchema>, 'dataJson' | 'status' | 'workforceCommsId'>>) {
+/**
+ * Update a WorkCommsProduct
+ */
+export async function updateWorkOutput(id: string, data: { data?: any; metadata?: any; dataJson?: any }) {
   try {
-    const validated = workOutputSchema.pick({ dataJson: true, status: true, workforceCommsId: true }).partial().parse(data)
+    const validated = workProductSchema.pick({ data: true, metadata: true }).partial().parse(data)
     const { workMeId, companyId } = await verifyAuth()
 
     if (!workMeId || !companyId) {
       return { success: false, error: 'Not authenticated or user must belong to a company' }
     }
 
-    const existing = await prisma.workOutput.findFirst({
+    const existing = await prisma.workCommsProduct.findFirst({
       where: { 
         id,
         companyId, // Multi-tenant: ensure same company
-        originatorId: workMeId,
+        createdById: workMeId,
       },
     })
 
     if (!existing) {
-      return { success: false, error: 'Work output not found' }
+      return { success: false, error: 'Work product not found' }
     }
 
     const updateData: any = {}
-    if (validated.dataJson !== undefined) updateData.dataJson = validated.dataJson ?? undefined
-    if (validated.status !== undefined) updateData.status = validated.status
-    if (validated.workforceCommsId !== undefined) updateData.workforceCommsId = validated.workforceCommsId ?? undefined
+    // Support both 'data' and legacy 'dataJson' for backward compatibility
+    if (data.data !== undefined) updateData.data = data.data ?? undefined
+    if (data.dataJson !== undefined) updateData.data = data.dataJson ?? undefined
+    if (data.metadata !== undefined) updateData.metadata = data.metadata ?? undefined
 
-    const workOutput = await prisma.workOutput.update({
+    const product = await prisma.workCommsProduct.update({
       where: { id },
       data: updateData,
       include: {
-        workforceComms: true,
+        links: true,
       },
     })
 
-    return { success: true, workOutput }
+    return { 
+      success: true, 
+      workOutput: {
+        id: product.id,
+        outputType: product.type,
+        dataJson: product.data,
+        status: 'draft',
+        createdAt: product.createdAt,
+        updatedAt: product.createdAt,
+      },
+      product,
+    }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
     }
-    console.error('Error updating WorkOutput:', error)
-    return { success: false, error: 'Failed to update work output' }
+    console.error('Error updating WorkCommsProduct:', error)
+    return { success: false, error: 'Failed to update work product' }
   }
 }
 
+/**
+ * Delete a WorkCommsProduct
+ * CompanyWorkLinks are cascade deleted automatically
+ */
 export async function deleteWorkOutput(id: string) {
   try {
     const { workMeId, companyId } = await verifyAuth()
@@ -131,36 +209,36 @@ export async function deleteWorkOutput(id: string) {
       return { success: false, error: 'Not authenticated or user must belong to a company' }
     }
 
-    const existing = await prisma.workOutput.findFirst({
+    const existing = await prisma.workCommsProduct.findFirst({
       where: { 
         id,
         companyId, // Multi-tenant: ensure same company
-        originatorId: workMeId,
+        createdById: workMeId,
       },
     })
 
     if (!existing) {
-      return { success: false, error: 'Work output not found' }
+      return { success: false, error: 'Work product not found' }
     }
 
-    await prisma.workOutput.delete({
+    await prisma.workCommsProduct.delete({
       where: { id },
     })
 
     return { success: true }
   } catch (error) {
-    return { success: false, error: 'Failed to delete work output' }
+    return { success: false, error: 'Failed to delete work product' }
   }
 }
 
+/**
+ * Get all WorkCommsProducts for the current user
+ */
 export async function getWorkOutputs(workMeId?: string) {
   try {
-    // Try to get workMeId from server (cookies/headers) first
     let userId = await getWorkMeId()
     
-    // Fallback to provided workMeId if server can't get it
     if (!userId && workMeId) {
-      // Verify the workMeId exists in the database for security
       const workMe = await prisma.workMe.findUnique({
         where: { id: workMeId },
         select: { id: true, companyId: true },
@@ -170,7 +248,6 @@ export async function getWorkOutputs(workMeId?: string) {
       }
     }
 
-    // If still no userId, try verifyAuth as last resort (requires Firebase token)
     let companyId: string | null = null
     if (!userId) {
       try {
@@ -178,7 +255,7 @@ export async function getWorkOutputs(workMeId?: string) {
         userId = auth.workMeId
         companyId = auth.companyId
       } catch (authError) {
-        // verifyAuth failed, but that's okay if we have userId from other sources
+        // verifyAuth failed
       }
     }
 
@@ -186,7 +263,6 @@ export async function getWorkOutputs(workMeId?: string) {
       return { success: false, error: 'Not authenticated', workOutputs: [] }
     }
 
-    // Get companyId from WorkMe if we don't have it yet
     if (!companyId) {
       const workMe = await prisma.workMe.findUnique({
         where: { id: userId },
@@ -199,23 +275,48 @@ export async function getWorkOutputs(workMeId?: string) {
       return { success: false, error: 'User must belong to a company', workOutputs: [] }
     }
 
-    const workOutputs = await prisma.workOutput.findMany({
+    const products = await prisma.workCommsProduct.findMany({
       where: { 
         companyId, // Multi-tenant: filter by company
       },
       include: {
-        workforceComms: true,
+        links: {
+          include: {
+            companyEvent: true,
+            companyCampaign: true,
+            companyTraining: true,
+            companyBenefits: true,
+            companyImpactEvent: true,
+            companyCommunity: true,
+            companyCareer: true,
+            companyEmployeeCause: true,
+          },
+        },
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { createdAt: 'desc' },
     })
 
-    return { success: true, workOutputs }
+    // Transform to legacy format for backward compatibility
+    const workOutputs = products.map(product => ({
+      id: product.id,
+      outputType: product.type,
+      dataJson: product.data,
+      status: 'draft',
+      createdAt: product.createdAt,
+      updatedAt: product.createdAt,
+      links: product.links,
+    }))
+
+    return { success: true, workOutputs, products }
   } catch (error) {
     console.error('[getWorkOutputs] Error:', error)
-    return { success: false, error: 'Failed to fetch work outputs', workOutputs: [] }
+    return { success: false, error: 'Failed to fetch work products', workOutputs: [] }
   }
 }
 
+/**
+ * Get a single WorkCommsProduct by ID
+ */
 export async function getWorkOutput(id: string) {
   try {
     const { workMeId, companyId } = await verifyAuth()
@@ -224,28 +325,54 @@ export async function getWorkOutput(id: string) {
       return { success: false, error: 'Not authenticated or user must belong to a company' }
     }
 
-    const workOutput = await prisma.workOutput.findFirst({
+    const product = await prisma.workCommsProduct.findFirst({
       where: { 
         id,
         companyId, // Multi-tenant: ensure same company
       },
       include: {
-        workforceComms: true,
+        links: {
+          include: {
+            companyEvent: true,
+            companyCampaign: true,
+            companyTraining: true,
+            companyBenefits: true,
+            companyImpactEvent: true,
+            companyCommunity: true,
+            companyCareer: true,
+            companyEmployeeCause: true,
+          },
+        },
       },
     })
 
-    if (!workOutput) {
-      return { success: false, error: 'Work output not found' }
+    if (!product) {
+      return { success: false, error: 'Work product not found' }
     }
 
-    return { success: true, workOutput }
+    return { 
+      success: true, 
+      workOutput: {
+        id: product.id,
+        outputType: product.type,
+        dataJson: product.data,
+        status: 'draft',
+        createdAt: product.createdAt,
+        updatedAt: product.createdAt,
+        links: product.links,
+      },
+      product,
+    }
   } catch (error) {
-    return { success: false, error: 'Failed to fetch work output' }
+    return { success: false, error: 'Failed to fetch work product' }
   }
 }
 
-// Renamed for clarity — still accepts eventRouterId
-export async function getWorkOutputsByRouter(routerId: string) {
+/**
+ * Get WorkCommsProducts linked to a CompanyX model via CompanyWorkLink
+ * Replaces getWorkOutputsByRouter
+ */
+export async function getWorkOutputsByRouter(companyXId: string, companyXType: 'event' | 'campaign' | 'training' | 'benefits' | 'impact_event' | 'community' | 'career' | 'employee_cause') {
   try {
     const { workMeId, companyId } = await verifyAuth()
 
@@ -253,15 +380,65 @@ export async function getWorkOutputsByRouter(routerId: string) {
       return { success: false, error: 'Not authenticated or user must belong to a company', workOutputs: [] }
     }
 
-    // NOTE: WorkEventRouter has been removed. This function is legacy.
-    // TODO: Migrate to use CompanyWorkLink and WorkCommsProduct
-    // Return empty array for now
-    return { success: true, workOutputs: [] }
+    // Build where clause based on type
+    const whereClause: any = {
+      companyId,
+    }
+
+    switch (companyXType) {
+      case 'event':
+        whereClause.companyEventId = companyXId
+        break
+      case 'campaign':
+        whereClause.companyCampaignId = companyXId
+        break
+      case 'training':
+        whereClause.companyTrainingId = companyXId
+        break
+      case 'benefits':
+        whereClause.companyBenefitsId = companyXId
+        break
+      case 'impact_event':
+        whereClause.companyImpactEventId = companyXId
+        break
+      case 'community':
+        whereClause.companyCommunityId = companyXId
+        break
+      case 'career':
+        whereClause.companyCareerId = companyXId
+        break
+      case 'employee_cause':
+        whereClause.companyEmployeeCauseId = companyXId
+        break
+    }
+
+    const links = await prisma.companyWorkLink.findMany({
+      where: whereClause,
+      include: {
+        workCommsProduct: {
+          include: {
+            links: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    const workOutputs = links.map(link => ({
+      id: link.workCommsProduct.id,
+      outputType: link.workCommsProduct.type,
+      dataJson: link.workCommsProduct.data,
+      status: 'draft',
+      createdAt: link.workCommsProduct.createdAt,
+      updatedAt: link.workCommsProduct.createdAt,
+      links: [link],
+    }))
+
+    return { success: true, workOutputs }
   } catch (error) {
-    return { success: false, error: 'Failed to fetch work outputs', workOutputs: [] }
+    return { success: false, error: 'Failed to fetch work products', workOutputs: [] }
   }
 }
 
 // Legacy alias for backward compatibility
 export const getWorkOutputsByContext = getWorkOutputsByRouter
-

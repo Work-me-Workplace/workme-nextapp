@@ -13,42 +13,42 @@ const outputTypes = [
     name: 'Workforce Comms Email',
     description: 'Internal workforce communications and email content',
     icon: '📧',
-    route: '/mywork/outputs/email/new',
+    route: '/mywork/products/email/new',
   },
   {
     value: 'messaging_talking_points',
     name: 'Messaging & Talking Points',
     description: 'Key messages and talking points for communications',
     icon: '💬',
-    route: '/mywork/outputs/talking-points/new', // Placeholder - create later
+    route: '/mywork/products/talking-points/new', // Placeholder - create later
   },
   {
     value: 'digital_product',
     name: 'Digital Product',
     description: 'Digital signage, web content, and online materials',
     icon: '💻',
-    route: '/mywork/outputs/digital/new', // Placeholder - create later
+    route: '/mywork/products/digital/new', // Placeholder - create later
   },
   {
     value: 'print_product',
     name: 'Print Product',
     description: 'Print materials, flyers, posters, and physical deliverables',
     icon: '🖨️',
-    route: '/mywork/outputs/print/new', // Placeholder - create later
+    route: '/mywork/products/print/new', // Placeholder - create later
   },
   {
     value: 'sharepoint_update',
     name: 'SharePoint Update',
     description: 'SharePoint blocks and web publishing content',
     icon: '🔗',
-    route: '/mywork/outputs/sharepoint/new', // Placeholder - create later
+    route: '/mywork/products/sharepoint/new', // Placeholder - create later
   },
   {
     value: 'photo_video_support',
     name: 'Photo & Video Support',
     description: 'Photography and videography deliverables',
     icon: '📸',
-    route: '/mywork/outputs/photo-video/new', // Placeholder - create later
+    route: '/mywork/products/photo-video/new', // Placeholder - create later
   },
 ]
 

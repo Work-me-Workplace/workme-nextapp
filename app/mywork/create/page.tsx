@@ -43,7 +43,7 @@ export default function CreateOutputPage() {
     setSelectedSource(sourceId)
     setStep('hydrate')
     // Navigate to output builder
-    router.push(`/mywork/outputs/builder/new?type=${selectedType}&sourceId=${sourceId}`)
+    router.push(`/mywork/products/builder/new?type=${selectedType}&sourceId=${sourceId}`)
   }
 
   if (!workMeId) {
@@ -129,7 +129,7 @@ export default function CreateOutputPage() {
                     <h3 className="font-semibold text-gray-900 mb-3">Insert My Own</h3>
                     <p className="text-sm text-gray-600 mb-4">Create output from scratch without a source</p>
                     <button
-                      onClick={() => router.push(`/mywork/outputs/builder/new?type=${selectedType}`)}
+                      onClick={() => router.push(`/mywork/products/builder/new?type=${selectedType}`)}
                       className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition"
                     >
                       Create from Scratch

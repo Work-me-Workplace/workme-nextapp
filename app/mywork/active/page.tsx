@@ -99,7 +99,7 @@ export default function StuffImWorkingOnPage() {
                   {activeOutputs.map(output => (
                     <Link
                       key={output.id}
-                      href={`/mywork/outputs/${output.id}`}
+                      href={`/mywork/products/${output.id}`}
                       className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-blue-500"
                     >
                       <div className="flex items-center justify-between mb-2">
@@ -148,7 +148,7 @@ export default function StuffImWorkingOnPage() {
                   {archivedOutputs.map(output => (
                     <Link
                       key={output.id}
-                      href={`/mywork/outputs/${output.id}`}
+                      href={`/mywork/products/${output.id}`}
                       className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-gray-300 opacity-75"
                     >
                       <span className="text-xs font-medium text-gray-500 uppercase bg-gray-100 text-gray-800 px-2 py-1 rounded mb-2 inline-block">

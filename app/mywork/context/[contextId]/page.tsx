@@ -462,7 +462,7 @@ export default function WorkContextDetailPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Create Output */}
             <Link
-              href={`/mywork/outputs?companyXId=${contextId}&type=${workContext.type}`}
+              href={`/mywork/products?companyXId=${contextId}&type=${workContext.type}`}
               className="bg-white rounded-lg shadow p-8 hover:shadow-lg transition border-2 border-transparent hover:border-blue-500"
             >
               <div className="flex items-center mb-4">

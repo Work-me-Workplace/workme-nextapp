@@ -129,7 +129,7 @@ export default function ViewEditOutputPage() {
         <div className="text-center">
           <p className="text-gray-600 mb-4">{error || 'Output not found'}</p>
           <Link
-            href="/mywork/outputs"
+            href="/mywork/products"
             className="text-blue-600 hover:text-blue-700 font-medium"
           >
             ← Back to Outputs
@@ -177,7 +177,7 @@ export default function ViewEditOutputPage() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="mb-8">
               <Link
-                href="/mywork/outputs"
+                href="/mywork/products"
                 className="text-blue-600 hover:text-blue-700 text-sm font-medium mb-4 inline-block"
               >
                 ← Back to Outputs

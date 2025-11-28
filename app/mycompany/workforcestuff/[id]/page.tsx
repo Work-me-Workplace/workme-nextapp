@@ -194,7 +194,7 @@ export default function WorkforceStuffDetailPage() {
                   Add Notes
                 </button>
                 <Link
-                  href={`/mywork/outputs?sourceId=${item.id}`}
+                  href={`/mywork/products?sourceId=${item.id}`}
                   className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition"
                 >
                   View Related Outputs

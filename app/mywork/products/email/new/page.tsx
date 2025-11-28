@@ -43,7 +43,7 @@ export default function CreateEmailPage() {
       })
 
       if (response.data.success) {
-        router.push(`/mywork/outputs/${response.data.outputId}`)
+        router.push(`/mywork/products/${response.data.outputId}`)
       } else {
         setError(response.data.error || 'Failed to create email')
       }
@@ -101,7 +101,7 @@ export default function CreateEmailPage() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="mb-8">
               <Link
-                href="/mywork/outputs"
+                href="/mywork/products"
                 className="text-blue-600 hover:text-blue-700 text-sm font-medium mb-4 inline-block"
               >
                 ← Back to Outputs
@@ -167,7 +167,7 @@ export default function CreateEmailPage() {
 
               <div className="mt-8 flex items-center justify-end space-x-4">
                 <Link
-                  href="/mywork/outputs"
+                  href="/mywork/products"
                   className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
                 >
                   Cancel

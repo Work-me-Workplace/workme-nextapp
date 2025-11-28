@@ -16,7 +16,9 @@ const workforceCommsProductSchema = z.object({
 
 const workforceCommsDraftSchema = z.object({
   workforceCommsId: z.string().uuid(),
-  eventRouterIds: z.array(z.string()).optional().nullable(), // Renamed from contextIds
+  // DEPRECATED: eventRouterIds - use CompanyWorkLink instead
+  // eventRouterIds: z.array(z.string()).optional().nullable(),
+  // CompanyX linking via CompanyWorkLink (not in draft, but can be queried)
   lastEditionId: z.string().uuid().optional().nullable(),
   authorNotes: z.string().optional().nullable(),
   whatChanged: z.string().optional().nullable(),
@@ -191,7 +193,7 @@ export async function createWorkforceCommsDraft(data: z.infer<typeof workforceCo
     const draft = await prisma.workforceCommsDraft.create({
       data: {
         workforceCommsId: validated.workforceCommsId,
-        eventRouterIds: validated.eventRouterIds ? validated.eventRouterIds : undefined,
+        // eventRouterIds removed - use CompanyWorkLink instead (field kept in schema for backward compat)
         lastEditionId: lastEditionId || null,
         authorNotes: validated.authorNotes ?? undefined,
         whatChanged: validated.whatChanged ?? undefined,
@@ -224,7 +226,7 @@ export async function updateWorkforceCommsDraft(
     const draft = await prisma.workforceCommsDraft.update({
       where: { draftId },
       data: {
-        eventRouterIds: data.eventRouterIds !== undefined ? (data.eventRouterIds || undefined) : undefined,
+        // eventRouterIds removed - use CompanyWorkLink instead (field kept in schema for backward compat)
         lastEditionId: data.lastEditionId !== undefined ? (data.lastEditionId || undefined) : undefined,
         authorNotes: data.authorNotes !== undefined ? (data.authorNotes ?? undefined) : undefined,
         whatChanged: data.whatChanged !== undefined ? (data.whatChanged ?? undefined) : undefined,

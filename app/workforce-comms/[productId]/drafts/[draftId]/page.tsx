@@ -50,7 +50,7 @@ export default function DraftEditPage({ params }: { params: Promise<{ productId:
     setLoading(true)
     try {
       const result = await updateWorkforceCommsDraft(draftId, {
-        eventRouterIds: formData.contextIds.length > 0 ? formData.contextIds : null,
+        // eventRouterIds removed - use CompanyWorkLink instead
         authorNotes: formData.authorNotes || null,
         whatChanged: formData.whatChanged || null,
         priorityNotes: formData.priorityNotes || null,

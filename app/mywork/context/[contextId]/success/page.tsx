@@ -151,7 +151,7 @@ export default function WorkContextSuccessPage() {
             ) : (
               /* Create Output */
             <Link
-              href={`/mywork/outputs?companyXId=${contextId}&type=${workContext.type}`}
+              href={`/mywork/products?companyXId=${contextId}&type=${workContext.type}`}
               className="block p-6 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition text-center"
             >
               <div className="mb-3">
