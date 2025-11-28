@@ -61,8 +61,8 @@ export default function WorkforceMapperPage() {
           const rawBlobResponse = await api.get('/api/workstuff/raw-blob')
           if (rawBlobResponse.data.success && rawBlobResponse.data.blob) {
             // Infer type for fallback section - ALWAYS run inference
-            const { default: inferService } = await import('@/lib/services/companyx-topic-inference')
-            const inference = await inferService.inferCompanyXType(rawBlobResponse.data.blob)
+            const { inferCompanyXType } = await import('@/lib/services/companyx-topic-inference')
+            const inference = await inferCompanyXType(rawBlobResponse.data.blob)
             
             const fallbackSection: Section = {
               id: `fallback_${Date.now()}`,
@@ -102,8 +102,8 @@ export default function WorkforceMapperPage() {
           const rawBlobResponse = await api.get('/api/workstuff/raw-blob')
           if (rawBlobResponse.data.success && rawBlobResponse.data.blob) {
             // ALWAYS infer type - never use placeholder
-            const { default: inferService } = await import('@/lib/services/companyx-topic-inference')
-            const inference = await inferService.inferCompanyXType(rawBlobResponse.data.blob)
+            const { inferCompanyXType } = await import('@/lib/services/companyx-topic-inference')
+            const inference = await inferCompanyXType(rawBlobResponse.data.blob)
             
             const fallbackSection: Section = {
               id: `fallback_${Date.now()}`,
@@ -208,9 +208,15 @@ export default function WorkforceMapperPage() {
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Raw Section Text</h2>
               <div className="mb-4">
-                <span className="text-xs font-medium text-gray-500 uppercase bg-gray-100 px-2 py-1 rounded">
-                  {currentSection.heading}
-                </span>
+                {currentSection.heading ? (
+                  <span className="text-xs font-medium text-gray-500 uppercase bg-gray-100 px-2 py-1 rounded">
+                    {currentSection.heading}
+                  </span>
+                ) : (
+                  <span className="text-xs font-medium text-gray-500 uppercase bg-gray-100 px-2 py-1 rounded">
+                    Section {currentSectionIndex + 1}
+                  </span>
+                )}
               </div>
               <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
                 <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
@@ -316,7 +322,9 @@ export default function WorkforceMapperPage() {
                   <div className="h-5 w-5 rounded-full border-2 border-gray-400" />
                 )}
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900">{section.heading}</div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {section.heading || `Section ${index + 1}`}
+                  </div>
                   <div className="text-xs text-gray-500 capitalize">
                     {section.type || section.inferredType} {section.modelStatus && `• ${section.modelStatus}`}
                   </div>
