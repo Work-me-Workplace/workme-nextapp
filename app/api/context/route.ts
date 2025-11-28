@@ -20,42 +20,74 @@ export async function GET(request: Request) {
       companyId,
     })
 
-    // Get all WorkEventRouters for user's company (multi-tenant scoping)
-    const workEventRouters = await prisma.workEventRouter.findMany({
-      where: { 
-        companyId, // Multi-tenant: filter by company
-      },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        outputs: {
-          orderBy: { updatedAt: 'desc' },
-          include: {
-            workforceComms: true,
-          },
-        },
-      },
+    // Get all CompanyX models for user's company (multi-tenant scoping)
+    const [campaigns, impactEvents, trainings, events, communities, benefits, careers, employeeCauses] = await Promise.all([
+      prisma.companyCampaign.findMany({
+        where: { companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyImpactEvent.findMany({
+        where: { companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyTraining.findMany({
+        where: { companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyEvent.findMany({
+        where: { companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyCommunity.findMany({
+        where: { companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyBenefits.findMany({
+        where: { companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyCareer.findMany({
+        where: { companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyEmployeeCause.findMany({
+        where: { companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ])
+
+    // Combine all contexts with their types
+    const allContexts = [
+      ...campaigns.map(c => ({ ...c, type: 'campaign' as const })),
+      ...impactEvents.map(e => ({ ...e, type: 'impact_event' as const })),
+      ...trainings.map(t => ({ ...t, type: 'training' as const })),
+      ...events.map(e => ({ ...e, type: 'event' as const })),
+      ...communities.map(c => ({ ...c, type: 'community' as const })),
+      ...benefits.map(b => ({ ...b, type: 'benefits' as const })),
+      ...careers.map(c => ({ ...c, type: 'career' as const })),
+      ...employeeCauses.map(e => ({ ...e, type: 'employee_cause' as const })),
+    ]
+
+    // Sort by createdAt descending
+    allContexts.sort((a, b) => {
+      const aDate = a.createdAt?.getTime() || 0
+      const bDate = b.createdAt?.getTime() || 0
+      return bDate - aDate
     })
 
-    // Enrich with typed data using factory (filtered by companyId)
-    const { getTypedContext } = await import('@/lib/server/context-factory')
-    
-    const enrichedContexts = await Promise.all(
-      workEventRouters.map(async (ctx) => {
-        const typed = await getTypedContext(ctx.type, ctx.eventRefId, companyId)
-        return {
-          ...ctx,
-          typedData: typed,
-          title: typed?.title ?? '',
-        }
-      })
-    )
+    // Enrich with typed data (already have it, just format)
+    const enrichedContexts = allContexts.map(ctx => ({
+      ...ctx,
+      typedData: ctx,
+      title: ctx.title || 'Unknown',
+    }))
 
     console.log('[API GET /api/context] SUCCESS', {
       workMeId,
       companyId,
       count: enrichedContexts.length,
       contexts: enrichedContexts.map(c => ({
-        routerId: c.id,
+        id: c.id,
         type: c.type,
         title: c.title,
       })),

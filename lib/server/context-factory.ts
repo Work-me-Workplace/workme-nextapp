@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
-import type { ContextType } from "@prisma/client"
+import type { ContextType } from "@/lib/types/context-type"
 
 // Model map for CompanyX models
 const MODEL_MAP = {

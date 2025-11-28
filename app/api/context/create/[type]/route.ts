@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { ContextType } from '@prisma/client'
+import type { ContextType } from '@/lib/types/context-type'
 import { createTypedContext } from '@/lib/server/context-factory'
 import { SCHEMA_MAP } from '@/lib/server/context-schemas'
 import { verifyAuth } from '@/lib/server/verifyAuth'
@@ -85,10 +85,12 @@ export async function POST(
     console.log('[API POST /api/context/create/[type]] SUCCESS', {
       type,
       typedId: result.typed.id,
-      routerId: result.router.id,
     })
 
-    return NextResponse.json(result)
+    return NextResponse.json({
+      success: true,
+      typed: result.typed,
+    })
   } catch (error: any) {
     console.error('❌ POST /api/context/create/[type] error:', error)
     

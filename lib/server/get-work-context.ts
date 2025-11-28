@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { getTypedContext } from "./context-factory"
-import type { ContextType } from "@prisma/client"
+import type { ContextType } from "@/lib/types/context-type"
 
 /**
  * Get and enrich a CompanyX model with typed data

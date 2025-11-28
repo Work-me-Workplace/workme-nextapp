@@ -385,17 +385,8 @@ model Achievement {
 // ============================================
 // COMPANY MODELS (Renamed from WorkContext*)
 // ============================================
-
-enum ContextType {
-  campaign
-  impact_event
-  training
-  event
-  community
-  benefits
-  career
-  employee_cause
-}
+// NOTE: ContextType is now a TypeScript type in lib/types/context-type.ts
+// It's no longer a Prisma enum since WorkEventRouter was removed
 
 model CompanyCampaign {
   id           String    @id @default(cuid())

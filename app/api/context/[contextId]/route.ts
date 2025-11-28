@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
-import { getWorkEventRouter } from '@/lib/server/get-work-context'
+import { getCompanyX } from '@/lib/server/get-work-context'
 import { updateTypedContext, deleteTypedContext } from '@/lib/server/context-factory'
 import { SCHEMA_MAP } from '@/lib/server/context-schemas'
 import { verifyAuth } from '@/lib/server/verifyAuth'
-import type { ContextType } from '@prisma/client'
+import type { ContextType } from '@/lib/types/context-type'
+import { prisma } from '@/lib/prisma'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -35,10 +36,38 @@ export async function GET(
       )
     }
 
-    // Get WorkContext with enrichment (uses factory pattern, filtered by companyId)
-    const workContext = await getWorkEventRouter(contextId, companyId)
+    // Search across all CompanyX models to find the one with this ID
+    // Since we don't have the type, we need to check all models
+    const modelMap: Record<ContextType, string> = {
+      campaign: 'companyCampaign',
+      impact_event: 'companyImpactEvent',
+      training: 'companyTraining',
+      event: 'companyEvent',
+      community: 'companyCommunity',
+      benefits: 'companyBenefits',
+      career: 'companyCareer',
+      employee_cause: 'companyEmployeeCause',
+    }
 
-    if (!workContext) {
+    let workContext: any = null
+    let foundType: ContextType | null = null
+
+    // Try each model type until we find a match
+    for (const [type, modelName] of Object.entries(modelMap) as [ContextType, string][]) {
+      const result = await (prisma as any)[modelName].findFirst({
+        where: {
+          id: contextId,
+          companyId, // Multi-tenant security
+        },
+      })
+      if (result) {
+        workContext = result
+        foundType = type
+        break
+      }
+    }
+
+    if (!workContext || !foundType) {
       console.error('[API GET /api/context/[contextId]] ERROR: Context not found', {
         contextId,
       })
@@ -48,16 +77,18 @@ export async function GET(
       )
     }
 
+    // Enrich with typed data
+    const enriched = await getCompanyX(contextId, foundType, companyId)
+
     console.log('[API GET /api/context/[contextId]] SUCCESS', {
       contextId,
-      routerId: workContext.id,
-      type: workContext.type,
-      title: workContext.title,
+      type: foundType,
+      title: enriched?.title,
     })
 
     return NextResponse.json({
       success: true,
-      workContext,
+      workContext: enriched,
     })
   } catch (error: any) {
     console.error('❌ GET /api/context/[contextId] error:', error)
@@ -105,10 +136,35 @@ export async function PUT(
       )
     }
 
-    // Get WorkContext to determine type (uses factory enrichment, filtered by companyId)
-    const workContext = await getWorkEventRouter(contextId, companyId)
+    // Search across all CompanyX models to find the one with this ID
+    const modelMap: Record<ContextType, string> = {
+      campaign: 'companyCampaign',
+      impact_event: 'companyImpactEvent',
+      training: 'companyTraining',
+      event: 'companyEvent',
+      community: 'companyCommunity',
+      benefits: 'companyBenefits',
+      career: 'companyCareer',
+      employee_cause: 'companyEmployeeCause',
+    }
 
-    if (!workContext) {
+    let foundType: ContextType | null = null
+
+    // Try each model type until we find a match
+    for (const [type, modelName] of Object.entries(modelMap) as [ContextType, string][]) {
+      const result = await (prisma as any)[modelName].findFirst({
+        where: {
+          id: contextId,
+          companyId, // Multi-tenant security
+        },
+      })
+      if (result) {
+        foundType = type
+        break
+      }
+    }
+
+    if (!foundType) {
       return NextResponse.json(
         { success: false, error: 'Context not found or unauthorized' },
         { status: 404 },
@@ -116,7 +172,7 @@ export async function PUT(
     }
 
     // Get schema for validation based on context type
-    const schema = SCHEMA_MAP[workContext.type as keyof typeof SCHEMA_MAP]
+    const schema = SCHEMA_MAP[foundType as keyof typeof SCHEMA_MAP]
     if (!schema) {
       return NextResponse.json(
         { success: false, error: 'No schema found for context type' },
@@ -138,7 +194,7 @@ export async function PUT(
     // Update using factory (includes transaction and ownership validation)
     const result = await updateTypedContext(
       contextId,
-      workContext.type,
+      foundType,
       cleanData,
       workMeId,
       companyId
@@ -146,9 +202,8 @@ export async function PUT(
 
     console.log('[API PUT /api/context/[contextId]] SUCCESS', {
       contextId,
-      type: workContext.type,
+      type: foundType,
       typedId: result.typed.id,
-      routerId: result.router.id,
     })
 
     return NextResponse.json(result)
@@ -206,8 +261,43 @@ export async function DELETE(
       )
     }
 
+    // Search across all CompanyX models to find the one with this ID
+    const modelMap: Record<ContextType, string> = {
+      campaign: 'companyCampaign',
+      impact_event: 'companyImpactEvent',
+      training: 'companyTraining',
+      event: 'companyEvent',
+      community: 'companyCommunity',
+      benefits: 'companyBenefits',
+      career: 'companyCareer',
+      employee_cause: 'companyEmployeeCause',
+    }
+
+    let foundType: ContextType | null = null
+
+    // Try each model type until we find a match
+    for (const [type, modelName] of Object.entries(modelMap) as [ContextType, string][]) {
+      const result = await (prisma as any)[modelName].findFirst({
+        where: {
+          id: contextId,
+          companyId, // Multi-tenant security
+        },
+      })
+      if (result) {
+        foundType = type
+        break
+      }
+    }
+
+    if (!foundType) {
+      return NextResponse.json(
+        { success: false, error: 'Context not found or unauthorized' },
+        { status: 404 },
+      )
+    }
+
     // Delete using factory (includes transaction and ownership validation)
-    await deleteTypedContext(contextId, workMeId, companyId)
+    await deleteTypedContext(contextId, foundType, workMeId, companyId)
 
     console.log('[API DELETE /api/context/[contextId]] SUCCESS', {
       contextId,

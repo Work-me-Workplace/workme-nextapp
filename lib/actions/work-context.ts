@@ -4,7 +4,7 @@ import { prisma } from '../prisma'
 import { z } from 'zod'
 import { getWorkMeId } from '../getWorkMeId.server'
 import { getTypedContext } from './typed-contexts'
-import type { ContextType } from '@prisma/client'
+import type { ContextType } from '@/lib/types/context-type'
 
 // Helper to get typed context data from CompanyX models
 async function enrichCompanyX(companyX: any, type: ContextType) {
