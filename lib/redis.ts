@@ -220,6 +220,7 @@ export async function getPendingFieldGroups(workMeId: string): Promise<string[]>
 
 /**
  * Get sections array from Redis
+ * ALWAYS JSON-parsed
  */
 export async function getSections(workMeId: string): Promise<any[]> {
   try {
@@ -227,10 +228,47 @@ export async function getSections(workMeId: string): Promise<any[]> {
     const key = `workstuff:sections:${workMeId}`
     const result = await redisClient.get(key)
     if (!result) return []
-    return JSON.parse(result as string)
+    const parsed = JSON.parse(result as string)
+    return Array.isArray(parsed) ? parsed : []
   } catch (error: any) {
     console.error('❌ Redis get error:', error)
     return []
+  }
+}
+
+/**
+ * Update a single section in the sections array
+ * ALWAYS JSON-stringified
+ */
+export async function updateSection(
+  workMeId: string,
+  sectionId: string,
+  updates: { type?: string; status?: 'pending' | 'mapped' | 'hydrated' }
+): Promise<void> {
+  try {
+    const redisClient = getRedis()
+    const key = `workstuff:sections:${workMeId}`
+    const result = await redisClient.get(key)
+    const sections: any[] = result ? JSON.parse(result as string) : []
+    
+    // Find and update the section
+    const sectionIndex = sections.findIndex((s) => s.id === sectionId)
+    if (sectionIndex === -1) {
+      throw new Error(`Section ${sectionId} not found`)
+    }
+
+    // Update section
+    sections[sectionIndex] = {
+      ...sections[sectionIndex],
+      ...updates,
+    }
+
+    // Save back to Redis (JSON-stringified)
+    await redisClient.setex(key, 30 * 60, JSON.stringify(sections))
+    console.log(`✅ Updated section ${sectionId} in Redis`)
+  } catch (error: any) {
+    console.error('❌ Redis update error:', error)
+    throw error
   }
 }
 
