@@ -4,21 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
-import { CheckCircle, Edit, ArrowRight, Loader2 } from 'lucide-react'
-
-interface ProposedData {
-  type: string
-  confidence: number
-  reasoning: string
-  extractedData: any
-  metadata: any
-}
-
-interface ParsedData {
-  type: string
-  data: any
-  fieldGroups: Record<string, { status: string; completedAt?: string; data?: any }>
-}
+import { ArrowRight, Loader2 } from 'lucide-react'
 
 type SourceType = 'ntk' | 'email' | 'previous_workforce_comms' | 'previous_output' | 'other'
 
@@ -28,10 +14,7 @@ export default function WorkforceStuffIngestPage() {
   const [sourceType, setSourceType] = useState<SourceType | null>(null)
   const [rawBlob, setRawBlob] = useState('')
   const [loading, setLoading] = useState(false)
-  const [step, setStep] = useState<'source' | 'input' | 'proposed' | 'parsing' | 'workspace'>('source')
-  const [proposed, setProposed] = useState<ProposedData | null>(null)
-  const [parsedData, setParsedData] = useState<ParsedData | null>(null)
-  const [pendingGroups, setPendingGroups] = useState<string[]>([])
+  const [step, setStep] = useState<'source' | 'input'>('source')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -45,100 +28,8 @@ export default function WorkforceStuffIngestPage() {
     }
   }, [router])
 
-  async function checkExistingWorkspace(id: string) {
-    try {
-      const { default: api } = await import('@/lib/api')
-      const response = await api.get('/api/workforce-stuff/ingest/progressive')
-      if (response.data.success && response.data.parsedData) {
-        setParsedData(response.data.parsedData)
-        setPendingGroups(response.data.pending || [])
-        setStep('workspace')
-      }
-    } catch (error) {
-      console.error('Failed to check workspace:', error)
-    }
-  }
 
-  async function handleSupremeParse() {
-    if (!rawBlob.trim() || !workMeId || !sourceType) return
 
-    setLoading(true)
-    try {
-      // Use api client which automatically adds Firebase token
-      const { default: api } = await import('@/lib/api')
-      const response = await api.post('/api/workforce-stuff/ingest/supreme', {
-        rawBlob,
-        sourceType,
-      })
-
-      if (response.data.success) {
-        setProposed(response.data.proposed)
-        setStep('proposed')
-      } else {
-        alert('Failed to parse: ' + (response.data.error || 'Unknown error'))
-      }
-    } catch (error) {
-      console.error('Parse error:', error)
-      alert('Failed to parse content')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleConfirmProposed() {
-    if (!proposed || !workMeId) return
-
-    setLoading(true)
-    try {
-      // Initialize parsed data structure
-      const initialParsed: ParsedData = {
-        type: proposed.type,
-        data: proposed.extractedData,
-        fieldGroups: {
-          core: { status: 'pending' },
-          scheduling: { status: 'pending' },
-          audience: { status: 'pending' },
-          metadata: { status: 'pending' },
-          attachments: { status: 'pending' },
-        },
-      }
-
-      // Store initial pending groups
-      const allGroups = ['core', 'scheduling', 'audience', 'metadata', 'attachments']
-      setPendingGroups(allGroups)
-      setParsedData(initialParsed)
-      setStep('workspace')
-    } catch (error) {
-      console.error('Error:', error)
-      alert('Failed to initialize workspace')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handlePublish() {
-    if (!parsedData || !workMeId) return
-
-    if (confirm('Publish this to Workforce Stuff? This will finalize the item.')) {
-      setLoading(true)
-      try {
-        const { default: api } = await import('@/lib/api')
-        const response = await api.post('/api/workforce-stuff/ingest/publish', {})
-        
-        if (response.data.success) {
-          alert('Published successfully!')
-          router.push(`/mycompany/workforcestuff/${response.data.companyX.id}`)
-        } else {
-          alert('Failed to publish: ' + (response.data.error || 'Unknown error'))
-        }
-      } catch (error) {
-        console.error('Publish error:', error)
-        alert('Failed to publish')
-      } finally {
-        setLoading(false)
-      }
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">

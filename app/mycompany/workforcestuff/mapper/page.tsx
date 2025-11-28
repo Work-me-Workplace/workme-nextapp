@@ -53,16 +53,65 @@ export default function WorkforceMapperPage() {
       const { default: api } = await import('@/lib/api')
       const response = await api.get('/api/workstuff/map')
       if (response.data.success) {
-        setSections(response.data.sections || [])
-        // Initialize selected types from sections
-        const types: Record<string, string> = {}
-        response.data.sections.forEach((s: Section) => {
-          types[s.id] = s.type || s.inferredType
-        })
-        setSelectedTypes(types)
+        const loadedSections = response.data.sections || []
+        
+        // If no sections found, create fallback section from last pasted blob
+        if (loadedSections.length === 0) {
+          const rawBlobResponse = await api.get('/api/workstuff/raw-blob')
+          if (rawBlobResponse.data.success && rawBlobResponse.data.blob) {
+            // Create fallback section
+            const fallbackSection: Section = {
+              id: `fallback_${Date.now()}`,
+              rawText: rawBlobResponse.data.blob,
+              heading: 'General',
+              inferredType: 'training',
+              status: 'pending',
+            }
+            setSections([fallbackSection])
+            setSelectedTypes({ [fallbackSection.id]: 'training' })
+            
+            // Store fallback section in Redis
+            await api.post('/api/workstuff/map', {
+              sectionId: fallbackSection.id,
+              type: 'training',
+            })
+          } else {
+            // No blob either - redirect to ingest
+            router.push('/mycompany/workforcestuff/ingest')
+            return
+          }
+        } else {
+          setSections(loadedSections)
+          // Initialize selected types from sections
+          const types: Record<string, string> = {}
+          loadedSections.forEach((s: Section) => {
+            types[s.id] = s.type || s.inferredType
+          })
+          setSelectedTypes(types)
+        }
       }
     } catch (error) {
       console.error('Failed to load sections:', error)
+      // On error, try to create fallback
+      try {
+        const { default: api } = await import('@/lib/api')
+        const rawBlobResponse = await api.get('/api/workstuff/raw-blob')
+        if (rawBlobResponse.data.success && rawBlobResponse.data.blob) {
+          const fallbackSection: Section = {
+            id: `fallback_${Date.now()}`,
+            rawText: rawBlobResponse.data.blob,
+            heading: 'General',
+            inferredType: 'training',
+            status: 'pending',
+          }
+          setSections([fallbackSection])
+          setSelectedTypes({ [fallbackSection.id]: 'training' })
+        } else {
+          router.push('/mycompany/workforcestuff/ingest')
+        }
+      } catch (fallbackError) {
+        router.push('/mycompany/workforcestuff/ingest')
+      }
     } finally {
       setLoading(false)
     }
@@ -130,24 +179,7 @@ export default function WorkforceMapperPage() {
     )
   }
 
-  if (sections.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">No Sections Found</h2>
-            <p className="text-gray-600 mb-6">Please split a blob first using the ingestion pipeline.</p>
-            <Link
-              href="/mycompany/workforcestuff/ingest"
-              className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Go to Ingestion
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // No empty state - loadSections will create fallback or redirect
 
   return (
     <div className="min-h-screen bg-gray-50">
