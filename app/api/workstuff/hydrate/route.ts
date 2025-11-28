@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
-import { getSections, storeHydratedModel } from '@/lib/redis'
+import { getSections } from '@/lib/workstuff/redis'
+import { storeHydratedModel } from '@/lib/redis'
 import OpenAI from 'openai'
 
 // Force dynamic rendering

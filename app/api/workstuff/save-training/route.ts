@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
 import { prisma } from '@/lib/prisma'
-import { getSections } from '@/lib/redis'
+import { getSections } from '@/lib/workstuff/redis'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
