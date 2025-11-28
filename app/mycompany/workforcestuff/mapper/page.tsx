@@ -84,13 +84,13 @@ export default function WorkforceMapperPage() {
 
       if (response.data.success) {
         // Update local state
-        const updatedSections = sections.map((s) =>
+        const updatedSections = sections.map((s: Section) =>
           s.id === sectionId
             ? {
                 ...s,
                 type: selectedType,
-                status: 'mapped',
-                modelStatus: selectedType === 'training' ? 'pending' : 'coming_soon',
+                status: 'mapped' as const,
+                modelStatus: (selectedType === 'training' ? 'pending' : 'coming_soon') as 'pending' | 'coming_soon',
               }
             : s
         )
