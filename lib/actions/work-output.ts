@@ -15,7 +15,7 @@ export const WORK_OUTPUT_TYPE_VALUES = [
   'quick_blurb',
   'event_kit',
   'photo_video',
-] as const
+] as [string, ...string[]]
 
 const workOutputSchema = z.object({
   eventRouterId: z.string().optional().nullable(), // Renamed from contextId

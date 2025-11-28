@@ -24,7 +24,8 @@ const promotionalWorkItemSchema = z.object({
 })
 
 /**
- * Create a PromotionalWorkItem
+ * Create an EventItem (replaces PromotionalWorkItem)
+ * Stores promotional content as an EventItem with metadata
  */
 export async function createPromotionalWorkItem(
   data: z.infer<typeof promotionalWorkItemSchema>
@@ -41,7 +42,6 @@ export async function createPromotionalWorkItem(
     }
 
     // Verify event exists and belongs to user's company
-    // NOTE: WorkEvent renamed to CompanyEvent
     const event = await prisma.companyEvent.findFirst({
       where: {
         id: validated.eventId,
@@ -56,31 +56,44 @@ export async function createPromotionalWorkItem(
       }
     }
 
-    // Create PromotionalWorkItem
-    const promotionalWorkItem = await prisma.promotionalWorkItem.create({
+    // Create EventItem with promotional data stored in metadata
+    const eventItem = await prisma.eventItem.create({
       data: {
         eventId: validated.eventId,
-        name: validated.name,
-        type: validated.type,
-        title: validated.title ?? undefined,
-        headline: validated.headline ?? undefined,
-        subheadline: validated.subheadline ?? undefined,
-        details: validated.details ?? undefined,
-        perks: validated.perks ?? undefined,
-        participation: validated.participation ?? undefined,
-        foodProvided: validated.foodProvided ?? undefined,
-        foodTypes: validated.foodTypes ?? undefined,
-        theme: validated.theme ?? undefined,
-        eventDateBlock: validated.eventDateBlock ?? undefined,
-        eventTimeBlock: validated.eventTimeBlock ?? undefined,
-        rsvpLink: validated.rsvpLink ?? undefined,
-        metadata: validated.metadata ?? undefined,
+        title: validated.title || validated.name || 'Promotional Item',
+        description: validated.details || validated.headline || null,
+        metadata: {
+          // Store all promotional fields in metadata
+          name: validated.name,
+          type: validated.type,
+          headline: validated.headline,
+          subheadline: validated.subheadline,
+          details: validated.details,
+          perks: validated.perks,
+          participation: validated.participation,
+          foodProvided: validated.foodProvided,
+          foodTypes: validated.foodTypes,
+          theme: validated.theme,
+          eventDateBlock: validated.eventDateBlock,
+          eventTimeBlock: validated.eventTimeBlock,
+          rsvpLink: validated.rsvpLink,
+          // Merge with any existing metadata
+          ...(validated.metadata || {}),
+        },
       },
     })
 
     return {
       success: true as const,
-      promotionalWorkItem,
+      promotionalWorkItem: {
+        id: eventItem.id,
+        eventId: eventItem.eventId,
+        title: eventItem.title,
+        description: eventItem.description,
+        ...(eventItem.metadata as any), // Spread metadata fields for backward compatibility
+        createdAt: eventItem.createdAt,
+        updatedAt: eventItem.updatedAt,
+      },
     }
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -98,7 +111,7 @@ export async function createPromotionalWorkItem(
 }
 
 /**
- * Get a single PromotionalWorkItem by ID
+ * Get a single EventItem by ID (replaces PromotionalWorkItem)
  */
 export async function getPromotionalWorkItem(id: string) {
   try {
@@ -112,8 +125,8 @@ export async function getPromotionalWorkItem(id: string) {
       }
     }
 
-    // Get the promotional work item
-    const item = await prisma.promotionalWorkItem.findFirst({
+    // Get the event item
+    const eventItem = await prisma.eventItem.findFirst({
       where: {
         id,
       },
@@ -126,7 +139,7 @@ export async function getPromotionalWorkItem(id: string) {
       },
     })
 
-    if (!item) {
+    if (!eventItem) {
       return {
         success: false as const,
         error: 'Promotional work item not found',
@@ -135,12 +148,36 @@ export async function getPromotionalWorkItem(id: string) {
     }
 
     // Verify it belongs to user's company
-    if (item.event.companyId !== companyId) {
+    if (eventItem.event.companyId !== companyId) {
       return {
         success: false as const,
         error: 'Unauthorized',
         item: null,
       }
+    }
+
+    // Transform EventItem to match PromotionalWorkItem shape for backward compatibility
+    const metadata = (eventItem.metadata as any) || {}
+    const item = {
+      id: eventItem.id,
+      eventId: eventItem.eventId,
+      name: metadata.name || '',
+      type: metadata.type || '',
+      title: eventItem.title || metadata.title || '',
+      headline: metadata.headline || '',
+      subheadline: metadata.subheadline || '',
+      details: eventItem.description || metadata.details || '',
+      perks: metadata.perks || '',
+      participation: metadata.participation || '',
+      foodProvided: metadata.foodProvided || '',
+      foodTypes: metadata.foodTypes || '',
+      theme: metadata.theme || '',
+      eventDateBlock: metadata.eventDateBlock || '',
+      eventTimeBlock: metadata.eventTimeBlock || '',
+      rsvpLink: metadata.rsvpLink || '',
+      metadata: eventItem.metadata,
+      createdAt: eventItem.createdAt,
+      updatedAt: eventItem.updatedAt,
     }
 
     return {
@@ -158,7 +195,7 @@ export async function getPromotionalWorkItem(id: string) {
 }
 
 /**
- * Get all PromotionalWorkItems for an event
+ * Get all EventItems for an event (replaces PromotionalWorkItems)
  */
 export async function getPromotionalWorkItemsByEvent(eventId: string) {
   try {
@@ -173,7 +210,7 @@ export async function getPromotionalWorkItemsByEvent(eventId: string) {
     }
 
     // Verify event exists and belongs to user's company
-    const event = await prisma.workEvent.findFirst({
+    const event = await prisma.companyEvent.findFirst({
       where: {
         id: eventId,
         companyId,
@@ -188,14 +225,40 @@ export async function getPromotionalWorkItemsByEvent(eventId: string) {
       }
     }
 
-    // Get all promotional work items for this event
-    const items = await prisma.promotionalWorkItem.findMany({
+    // Get all event items for this event
+    const eventItems = await prisma.eventItem.findMany({
       where: {
         eventId,
       },
       orderBy: {
         createdAt: 'desc',
       },
+    })
+
+    // Transform EventItems to match PromotionalWorkItem shape for backward compatibility
+    const items = eventItems.map((eventItem) => {
+      const metadata = (eventItem.metadata as any) || {}
+      return {
+        id: eventItem.id,
+        eventId: eventItem.eventId,
+        name: metadata.name || '',
+        type: metadata.type || '',
+        title: eventItem.title || metadata.title || '',
+        headline: metadata.headline || '',
+        subheadline: metadata.subheadline || '',
+        details: eventItem.description || metadata.details || '',
+        perks: metadata.perks || '',
+        participation: metadata.participation || '',
+        foodProvided: metadata.foodProvided || '',
+        foodTypes: metadata.foodTypes || '',
+        theme: metadata.theme || '',
+        eventDateBlock: metadata.eventDateBlock || '',
+        eventTimeBlock: metadata.eventTimeBlock || '',
+        rsvpLink: metadata.rsvpLink || '',
+        metadata: eventItem.metadata,
+        createdAt: eventItem.createdAt,
+        updatedAt: eventItem.updatedAt,
+      }
     })
 
     return {
@@ -211,4 +274,3 @@ export async function getPromotionalWorkItemsByEvent(eventId: string) {
     }
   }
 }
-
