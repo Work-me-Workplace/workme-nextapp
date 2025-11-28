@@ -43,31 +43,16 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch all event routers for this company
-    const eventRouters = await prisma.workEventRouter.findMany({
+    // Fetch all CompanyEvent models for this company directly
+    const events = await prisma.companyEvent.findMany({
       where: {
-        companyId: targetCompanyId,
-        type: 'event',
+        companyId: targetCompanyId, // Multi-tenant security
       },
       orderBy: { createdAt: 'desc' },
+      include: {
+        eventItems: true,
+      },
     })
-
-    // Fetch all events referenced by routers
-    const eventRefIds = eventRouters
-      .map((router) => router.eventRefId)
-      .filter((id): id is string => !!id)
-
-    const events = eventRefIds.length > 0
-      ? await prisma.workEvent.findMany({
-          where: {
-            id: { in: eventRefIds },
-            companyId: targetCompanyId, // Ensure same company for security
-          },
-          include: {
-            eventItems: true,
-          },
-        })
-      : []
 
     // Calculate stats
     const now = new Date()
@@ -84,32 +69,19 @@ export async function GET(request: NextRequest) {
       pastCount,
     }
 
-    // Map routers to events for enriched response
-    const enrichedRouters = eventRouters.map((router) => {
-      const event = events.find((e) => e.id === router.eventRefId)
-      return {
-        id: router.id,
-        type: router.type,
-        title: event?.title || '',
-        eventRefId: router.eventRefId,
-        companyId: router.companyId,
-        originatorId: router.originatorId,
-        createdAt: router.createdAt,
-      }
-    })
-
-    // Format response
+    // Format response (events are already CompanyEvent models)
     const response = {
       success: true,
-      events,
-      eventRouters: enrichedRouters,
+      events: events.map(event => ({
+        ...event,
+        type: 'event' as const,
+      })),
       stats,
     }
 
     console.log('[API GET /api/events/hydrate] SUCCESS', {
       companyId: targetCompanyId,
       eventCount: events.length,
-      routerCount: eventRouters.length,
     })
 
     return NextResponse.json(response)

@@ -40,18 +40,18 @@ export async function POST(request: Request) {
       itemsCount: normalized.eventItemsData.length,
     })
 
-    // Create WorkEvent and EventItems in a transaction
+    // Create CompanyEvent and EventItems in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Create WorkEvent
+      // 1. Create CompanyEvent directly (no router needed)
       // Exclude createdAt/updatedAt - Prisma handles these automatically
       const { createdAt, updatedAt, ...eventCreateData } = normalized.eventData as any
-      const workEvent = await tx.workEvent.create({
+      const companyEvent = await tx.companyEvent.create({
         data: eventCreateData,
       })
 
-      console.log('[API POST /api/ingest/event/save] WorkEvent created', {
-        eventId: workEvent.id,
-        title: workEvent.title,
+      console.log('[API POST /api/ingest/event/save] CompanyEvent created', {
+        eventId: companyEvent.id,
+        title: companyEvent.title,
       })
 
       // 2. Create EventItems
@@ -62,42 +62,26 @@ export async function POST(request: Request) {
               title: itemData.title,
               description: itemData.description,
               metadata: itemData.metadata ?? undefined,
-              eventId: workEvent.id,
+              eventId: companyEvent.id,
             },
           })
         )
       )
 
       console.log('[API POST /api/ingest/event/save] EventItems created', {
-        eventId: workEvent.id,
+        eventId: companyEvent.id,
         itemsCount: eventItems.length,
       })
 
-      // 3. Create WorkEventRouter entry
-      const workEventRouter = await tx.workEventRouter.create({
-        data: {
-          type: 'event',
-          eventRefId: workEvent.id,
-          companyId,
-          originatorId: workMeId,
-        },
-      })
-
-      console.log('[API POST /api/ingest/event/save] WorkEventRouter created', {
-        routerId: workEventRouter.id,
-        eventId: workEvent.id,
-      })
-
       return {
-        workEvent,
+        companyEvent,
         eventItems,
-        workEventRouter,
       }
     })
 
     return NextResponse.json({
       success: true,
-      eventId: result.workEventRouter.id, // Return router ID for navigation
+      eventId: result.companyEvent.id, // Return CompanyEvent ID for navigation
       itemCount: result.eventItems.length,
     })
   } catch (error: any) {

@@ -51,35 +51,80 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch work contexts using eventRouterIds (not contextIds)
-    const eventRouterIds = Array.isArray(draft.eventRouterIds) 
-      ? (draft.eventRouterIds as string[]).filter((id): id is string => typeof id === 'string')
-      : []
+    // Fetch work contexts using CompanyWorkLink (eventRouterIds is deprecated)
+    // For now, get all CompanyX models linked to this WorkCommsProduct via CompanyWorkLink
+    const companyWorkLinks = await prisma.companyWorkLink.findMany({
+      where: {
+        workCommsProductId: productId,
+        companyId, // Multi-tenant security
+      },
+      include: {
+        companyEvent: true,
+        companyCampaign: true,
+        companyImpactEvent: true,
+        companyTraining: true,
+        companyCommunity: true,
+        companyBenefits: true,
+        companyCareer: true,
+        companyEmployeeCause: true,
+      },
+    })
+
     const contexts: any[] = []
     
-    if (eventRouterIds.length > 0) {
-      // Get work event routers for the user's company
-      const workEventRouters = await prisma.workEventRouter.findMany({
-        where: { 
-          id: { in: eventRouterIds },
-          companyId, // Multi-tenant security
-        },
-        orderBy: { createdAt: 'desc' },
-      })
+    // Extract CompanyX models from links and enrich them
+    for (const link of companyWorkLinks) {
+      let companyX: any = null
+      let type: string | null = null
 
-      // Enrich with typed context data using factory
-      const enrichedContexts = await Promise.all(
-        workEventRouters.map(async (router) => {
-          const typed = await getTypedContext(router.type, router.eventRefId, companyId)
-          return {
-            ...router,
-            typedData: typed,
-            title: typed?.title ?? '',
-          }
+      if (link.companyEvent) {
+        companyX = link.companyEvent
+        type = 'event'
+      } else if (link.companyCampaign) {
+        companyX = link.companyCampaign
+        type = 'campaign'
+      } else if (link.companyImpactEvent) {
+        companyX = link.companyImpactEvent
+        type = 'impact_event'
+      } else if (link.companyTraining) {
+        companyX = link.companyTraining
+        type = 'training'
+      } else if (link.companyCommunity) {
+        companyX = link.companyCommunity
+        type = 'community'
+      } else if (link.companyBenefits) {
+        companyX = link.companyBenefits
+        type = 'benefits'
+      } else if (link.companyCareer) {
+        companyX = link.companyCareer
+        type = 'career'
+      } else if (link.companyEmployeeCause) {
+        companyX = link.companyEmployeeCause
+        type = 'employee_cause'
+      }
+
+      if (companyX && type) {
+        contexts.push({
+          ...companyX,
+          type,
+          typedData: companyX,
+          title: companyX.title || 'Unknown',
         })
-        )
+      }
+    }
 
-      contexts.push(...enrichedContexts)
+    // Fallback: If no CompanyWorkLinks found, try using deprecated eventRouterIds
+    // This is for backward compatibility during migration
+    if (contexts.length === 0 && draft.eventRouterIds) {
+      const eventRouterIds = Array.isArray(draft.eventRouterIds) 
+        ? (draft.eventRouterIds as string[]).filter((id): id is string => typeof id === 'string')
+        : []
+      
+      if (eventRouterIds.length > 0) {
+        console.warn('[API POST /api/workforce-comms/generate] Using deprecated eventRouterIds field. Please migrate to CompanyWorkLink.')
+        // Note: Without WorkEventRouter, we can't resolve these IDs
+        // This is a migration issue that needs to be handled
+      }
     }
 
     // Build prompt for AI
