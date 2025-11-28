@@ -52,6 +52,26 @@ export default function WorkforceStuffPage() {
     }
   }
 
+  // Check for existing workspace on mount
+  useEffect(() => {
+    if (workMeId) {
+      checkWorkspace()
+    }
+  }, [workMeId])
+
+  async function checkWorkspace() {
+    try {
+      const { default: api } = await import('@/lib/api')
+      const response = await api.get('/api/workforce-stuff/ingest/progressive')
+      if (response.data.success && response.data.parsedData) {
+        // Show workspace indicator
+        console.log('Active workspace found')
+      }
+    } catch (error) {
+      // Ignore - no workspace is fine
+    }
+  }
+
   const categoryOptions = [
     { value: 'all', label: 'All Categories' },
     { value: 'event', label: 'Events' },
@@ -125,9 +145,20 @@ export default function WorkforceStuffPage() {
 
         <main className="flex-1">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">Workforce Stuff</h1>
-              <p className="text-gray-600 mt-2">All internal happenings and company activities</p>
+            <div className="mb-8 flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Workforce Stuff</h1>
+                <p className="text-gray-600 mt-2">All internal happenings and company activities</p>
+              </div>
+              <Link
+                href="/mycompany/workforcestuff/ingest"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition flex items-center gap-2"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Ingest Content
+              </Link>
             </div>
 
             {/* Filters */}
