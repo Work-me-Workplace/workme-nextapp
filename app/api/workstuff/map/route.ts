@@ -1,74 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
-import { getSections, storeSections } from '@/lib/redis'
+import { getSections, updateSection } from '@/lib/redis'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
 /**
- * STEP 2: Update section mapping
- * 
- * Updates a section's type and status in Redis
- */
-export async function POST(request: NextRequest) {
-  try {
-    const auth = await verifyAuth(request)
-
-    if (!auth.workMeId || !auth.companyId) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      )
-    }
-
-    const { workMeId } = auth
-    const { sectionId, type } = await request.json()
-
-    if (!sectionId || !type) {
-      return NextResponse.json(
-        { success: false, error: 'sectionId and type are required' },
-        { status: 400 }
-      )
-    }
-
-    // Get current sections
-    const sections = await getSections(workMeId)
-    
-    // Find and update the section
-    const sectionIndex = sections.findIndex((s: any) => s.id === sectionId)
-    if (sectionIndex === -1) {
-      return NextResponse.json(
-        { success: false, error: 'Section not found' },
-        { status: 404 }
-      )
-    }
-
-    // Update section
-    sections[sectionIndex] = {
-      ...sections[sectionIndex],
-      type,
-      status: 'mapped' as const,
-      modelStatus: type === 'training' ? 'pending' : 'coming_soon' as const,
-    }
-
-    // Save back to Redis
-    await storeSections(workMeId, sections)
-
-    return NextResponse.json({
-      success: true,
-      section: sections[sectionIndex],
-    })
-  } catch (error: any) {
-    console.error('[Map Section] Error:', error)
-    return NextResponse.json(
-      { success: false, error: error.message || 'Failed to map section' },
-      { status: 500 }
-    )
-  }
-}
-
-/**
- * GET: Retrieve all sections
+ * GET: Retrieve all sections for mapping
  */
 export async function GET(request: NextRequest) {
   try {
@@ -86,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      sections,
+      sections: sections || [],
     })
   } catch (error: any) {
     console.error('[Get Sections] Error:', error)
@@ -97,3 +35,68 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/**
+ * POST: Update section mapping
+ * 
+ * Accepts: { sectionId, type }
+ * Updates: section.type = type, section.status = "mapped"
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const auth = await verifyAuth(request)
+
+    if (!auth.workMeId) {
+      return NextResponse.json(
+        { success: false, error: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
+    const { workMeId } = auth
+    const { sectionId, type } = await request.json()
+
+    if (!sectionId || !type) {
+      return NextResponse.json(
+        { success: false, error: 'sectionId and type are required' },
+        { status: 400 }
+      )
+    }
+
+    // Validate type
+    const validTypes = [
+      'training',
+      'event',
+      'campaign',
+      'impact_event',
+      'benefits',
+      'community',
+      'career',
+      'employee_cause',
+    ]
+
+    if (!validTypes.includes(type)) {
+      return NextResponse.json(
+        { success: false, error: `Invalid type: ${type}` },
+        { status: 400 }
+      )
+    }
+
+    // Update section in Redis
+    await updateSection(workMeId, sectionId, {
+      type,
+      status: 'mapped',
+    })
+
+    return NextResponse.json({
+      success: true,
+      mappedType: type,
+      sectionId,
+    })
+  } catch (error: any) {
+    console.error('[Map Section] Error:', error)
+    return NextResponse.json(
+      { success: false, error: error.message || 'Failed to map section' },
+      { status: 500 }
+    )
+  }
+}
