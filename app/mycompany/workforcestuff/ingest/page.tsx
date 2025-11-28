@@ -292,21 +292,56 @@ export default function WorkforceStuffIngestPage() {
                 disabled={!rawBlob.trim() || loading || !sourceType}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
               >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Parsing...
+                </>
+              ) : (
+                <>
+                  Parse {sourceType === 'ntk' ? 'NTK' : 'Content'}
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </button>
+            <div className="mt-4">
+              <button
+                onClick={async () => {
+                  if (!rawBlob.trim() || !workMeId || !sourceType) return
+                  setLoading(true)
+                  try {
+                    const { default: api } = await import('@/lib/api')
+                    const response = await api.post('/api/workstuff/split', { rawBlob })
+                    if (response.data.success) {
+                      router.push('/mycompany/workforcestuff/mapper')
+                    } else {
+                      alert('Failed to split: ' + (response.data.error || 'Unknown error'))
+                    }
+                  } catch (error) {
+                    console.error('Split error:', error)
+                    alert('Failed to split content')
+                  } finally {
+                    setLoading(false)
+                  }
+                }}
+                disabled={!rawBlob.trim() || loading}
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+              >
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Parsing...
+                    Splitting...
                   </>
                 ) : (
                   <>
-                    Parse {sourceType === 'ntk' ? 'NTK' : 'Content'}
-                    <ArrowRight className="h-4 w-4" />
+                    Split into Sections →
                   </>
                 )}
               </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
         {/* STEP 2: Proposed */}
         {step === 'proposed' && proposed && (
@@ -438,20 +473,28 @@ export default function WorkforceStuffIngestPage() {
               >
                 Start Over
               </button>
-              <button
-                onClick={handlePublish}
-                disabled={loading || pendingGroups.length > 0}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2 ml-auto"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Publishing...
-                  </>
-                ) : (
-                  'Publish to Workforce Stuff'
-                )}
-              </button>
+              <div className="flex gap-4 ml-auto">
+                <Link
+                  href="/mycompany/workforcestuff/mapper"
+                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center gap-2"
+                >
+                  Use Section Mapper →
+                </Link>
+                <button
+                  onClick={handlePublish}
+                  disabled={loading || pendingGroups.length > 0}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Publishing...
+                    </>
+                  ) : (
+                    'Publish to Workforce Stuff'
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}

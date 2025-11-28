@@ -122,6 +122,40 @@ export async function storePendingFieldGroups(workMeId: string, pendingGroups: s
 }
 
 /**
+ * Store sections array in Redis (Mapper Step 1)
+ */
+export async function storeSections(workMeId: string, sections: any[], ttl: number = 30 * 60): Promise<string> {
+  try {
+    const redisClient = getRedis()
+    const key = `workstuff:sections:${workMeId}`
+    
+    await redisClient.setex(key, ttl, JSON.stringify(sections))
+    console.log(`✅ Sections stored in Redis: ${key} (${sections.length} sections)`)
+    return key
+  } catch (error: any) {
+    console.error('❌ Redis store error:', error)
+    throw error
+  }
+}
+
+/**
+ * Store hydrated model in Redis (Mapper Step 3)
+ */
+export async function storeHydratedModel(workMeId: string, sectionId: string, model: any, ttl: number = 30 * 60): Promise<string> {
+  try {
+    const redisClient = getRedis()
+    const key = `workstuff:models:${workMeId}:${sectionId}`
+    
+    await redisClient.setex(key, ttl, JSON.stringify(model))
+    console.log(`✅ Hydrated model stored in Redis: ${key}`)
+    return key
+  } catch (error: any) {
+    console.error('❌ Redis store error:', error)
+    throw error
+  }
+}
+
+/**
  * Get raw blob from Redis
  */
 export async function getRawBlob(workMeId: string): Promise<string | null> {
@@ -185,6 +219,38 @@ export async function getPendingFieldGroups(workMeId: string): Promise<string[]>
 }
 
 /**
+ * Get sections array from Redis
+ */
+export async function getSections(workMeId: string): Promise<any[]> {
+  try {
+    const redisClient = getRedis()
+    const key = `workstuff:sections:${workMeId}`
+    const result = await redisClient.get(key)
+    if (!result) return []
+    return JSON.parse(result as string)
+  } catch (error: any) {
+    console.error('❌ Redis get error:', error)
+    return []
+  }
+}
+
+/**
+ * Get hydrated model from Redis
+ */
+export async function getHydratedModel(workMeId: string, sectionId: string): Promise<any | null> {
+  try {
+    const redisClient = getRedis()
+    const key = `workstuff:models:${workMeId}:${sectionId}`
+    const result = await redisClient.get(key)
+    if (!result) return null
+    return JSON.parse(result as string)
+  } catch (error: any) {
+    console.error('❌ Redis get error:', error)
+    return null
+  }
+}
+
+/**
  * Delete all workstuff keys for a workMeId (cleanup after publish)
  */
 export async function deleteWorkstuffKeys(workMeId: string): Promise<void> {
@@ -195,6 +261,7 @@ export async function deleteWorkstuffKeys(workMeId: string): Promise<void> {
       `workstuff:proposed:${workMeId}`,
       `workstuff:parsed:${workMeId}`,
       `workstuff:pending:${workMeId}`,
+      `workstuff:sections:${workMeId}`,
     ]
     
     await Promise.all(keys.map(key => redisClient.del(key)))
@@ -204,4 +271,3 @@ export async function deleteWorkstuffKeys(workMeId: string): Promise<void> {
     throw error
   }
 }
-
