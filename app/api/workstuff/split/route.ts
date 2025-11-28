@@ -1,19 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
 import { storeSections } from '@/lib/redis'
-import OpenAI from 'openai'
+import { inferCompanyXType } from '@/lib/services/companyx-topic-inference'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
-
-function getOpenAI() {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY environment variable is not set')
-  }
-  return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  })
-}
 
 /**
  * STEP 1: Section Split + Inference
@@ -49,16 +40,15 @@ export async function POST(request: NextRequest) {
     // Split into sections
     const sections = splitIntoSections(rawBlob)
 
-    // Infer type for each section
-    const openai = getOpenAI()
+    // Infer type for each section using hybrid inference service
     const sectionsWithTypes = await Promise.all(
       sections.map(async (section, index) => {
-        const inferredType = await inferSectionType(openai, section.rawText)
+        const inference = await inferCompanyXType(section.rawText)
         return {
           id: `section_${index}_${Date.now()}`,
           rawText: section.rawText,
           heading: section.heading,
-          inferredType,
+          inferredType: inference.type,
           status: 'pending' as const,
         }
       })
@@ -145,50 +135,4 @@ function splitIntoSections(blob: string): Array<{ rawText: string; heading: stri
   return sections.filter(s => s.rawText.trim().length > 10)
 }
 
-/**
- * Infer CompanyX type for a section using GPT
- */
-async function inferSectionType(openai: OpenAI, sectionText: string): Promise<string> {
-  const prompt = `Analyze this workforce communication section and classify it into ONE of these types:
-- training (training programs, courses, learning, workshops, certifications)
-- event (company events, gatherings, meetings, celebrations)
-- campaign (company campaigns, initiatives, drives)
-- impact_event (disruptions, changes affecting workforce, announcements)
-- benefits (benefits enrollment, open season, health benefits)
-- community (community engagement, volunteer opportunities)
-- career (career development, promotions, opportunities, job postings)
-- employee_cause (employee causes, drives, collections, fundraisers)
-
-Section text:
-${sectionText.substring(0, 1000)}
-
-Return ONLY the type name (e.g., "training", "event", etc.) - no explanation, no JSON, just the type.`
-
-  try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert at classifying workforce communication content. Return only the type name.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.3,
-      max_tokens: 20,
-    })
-
-    const type = response.choices[0].message.content?.trim().toLowerCase() || 'event'
-    
-    // Validate type
-    const validTypes = ['training', 'event', 'campaign', 'impact_event', 'benefits', 'community', 'career', 'employee_cause']
-    return validTypes.includes(type) ? type : 'event'
-  } catch (error) {
-    console.error('Type inference error:', error)
-    return 'event' // Default fallback
-  }
-}
 
