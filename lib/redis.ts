@@ -122,6 +122,7 @@ export async function storePendingFieldGroups(workMeId: string, pendingGroups: s
 }
 
 /**
+ * @deprecated Use @/lib/workstuff/redis setSections() instead
  * Store sections array in Redis (Mapper Step 1)
  */
 export async function storeSections(workMeId: string, sections: any[], ttl: number = 30 * 60): Promise<string> {
@@ -219,6 +220,7 @@ export async function getPendingFieldGroups(workMeId: string): Promise<string[]>
 }
 
 /**
+ * @deprecated Use @/lib/workstuff/redis getSections() instead
  * Get sections array from Redis
  * ALWAYS JSON-parsed
  */
@@ -237,6 +239,7 @@ export async function getSections(workMeId: string): Promise<any[]> {
 }
 
 /**
+ * @deprecated Use @/lib/workstuff/redis updateSection() instead
  * Update a single section in the sections array
  * ALWAYS JSON-stringified
  */

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
-import { storeSections, storeRawBlob } from '@/lib/redis'
+import { setSections } from '@/lib/workstuff/redis'
+import { storeRawBlob } from '@/lib/redis'
 import { inferCompanyXType } from '@/lib/services/companyx-topic-inference'
 import { randomUUID } from 'crypto'
 
@@ -69,8 +70,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Step 5: Store in Redis
-    await storeSections(workMeId, finalSections)
+    // Step 5: Store in Redis (using centralized serialization)
+    await setSections(workMeId, finalSections)
 
     return NextResponse.json({
       success: true,

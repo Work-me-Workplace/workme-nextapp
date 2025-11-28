@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
-import { getSections, updateSection } from '@/lib/redis'
+import { getSections, updateSection } from '@/lib/workstuff/redis'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'

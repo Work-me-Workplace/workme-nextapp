@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
-import { storeSections } from '@/lib/redis'
+import { setSections } from '@/lib/workstuff/redis'
 import { inferCompanyXType } from '@/lib/services/companyx-topic-inference'
 
 // Force dynamic rendering
@@ -54,8 +54,8 @@ export async function POST(request: NextRequest) {
       })
     )
 
-    // Store in Redis
-    await storeSections(workMeId, sectionsWithTypes)
+    // Store in Redis (using centralized serialization)
+    await setSections(workMeId, sectionsWithTypes)
 
     return NextResponse.json({
       success: true,
