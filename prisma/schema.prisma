@@ -38,24 +38,24 @@ model WorkMe {
   // Minimal reverse relations (required by Prisma, but NOT to be queried)
   // WorkMe is pure identity - work outputs reference WorkMe via originatorId
   // These relations exist only for Prisma schema validation
-  originatedCommsOutputs              CommsOutput[]              @relation("CommsOutputOriginator")
-  originatedObjectives                Objective[]                @relation("ObjectiveOriginator")
-  originatedAchievements              Achievement[]              @relation("AchievementOriginator")
-  originatedCompanyCampaigns          CompanyCampaign[]          @relation("CompanyCampaignOriginator")
-  originatedCompanyImpactEvents       CompanyImpactEvent[]       @relation("CompanyImpactEventOriginator")
-  originatedCompanyTrainings          CompanyTraining[]          @relation("CompanyTrainingOriginator")
-  originatedCompanyEvents             CompanyEvent[]             @relation("CompanyEventOriginator")
-  originatedCompanyCommunities        CompanyCommunity[]         @relation("CompanyCommunityOriginator")
-  originatedCompanyBenefits           CompanyBenefits[]          @relation("CompanyBenefitsOriginator")
-  originatedCompanyCareers            CompanyCareer[]           @relation("CompanyCareerOriginator")
-  originatedCompanyEmployeeCauses     CompanyEmployeeCause[]    @relation("CompanyEmployeeCauseOriginator")
-  originatedWorkOutputStandalones     WorkOutputStandalone[]     @relation("WorkOutputStandaloneOriginator")
-  originatedNTKs                      NTK[]                      @relation("NTKOriginator")
-  originatedWorkCommsProducts         WorkCommsProduct[]         @relation("WorkCommsProductOriginator")
-  originatedWorkforceComms            WorkforceComms[]           @relation("WorkforceCommsOriginator")
-  originatedWorkforceCommsDrafts      WorkforceCommsDraft[]      @relation("WorkforceCommsDraftOriginator")
-  originatedWorkforceCommsEditions    WorkforceCommsEdition[]    @relation("WorkforceCommsEditionOriginator")
-  originatedNTKEditions               NTKEdition[]               @relation("NTKEditionOriginator")
+  originatedCommsOutputs           CommsOutput[]           @relation("CommsOutputOriginator")
+  originatedObjectives             Objective[]             @relation("ObjectiveOriginator")
+  originatedAchievements           Achievement[]           @relation("AchievementOriginator")
+  originatedCompanyCampaigns       CompanyCampaign[]       @relation("CompanyCampaignOriginator")
+  originatedCompanyImpactEvents    CompanyImpactEvent[]    @relation("CompanyImpactEventOriginator")
+  originatedCompanyTrainings       CompanyTraining[]       @relation("CompanyTrainingOriginator")
+  originatedCompanyEvents          CompanyEvent[]          @relation("CompanyEventOriginator")
+  originatedCompanyCommunities     CompanyCommunity[]      @relation("CompanyCommunityOriginator")
+  originatedCompanyBenefits        CompanyBenefits[]       @relation("CompanyBenefitsOriginator")
+  originatedCompanyCareers         CompanyCareer[]         @relation("CompanyCareerOriginator")
+  originatedCompanyEmployeeCauses  CompanyEmployeeCause[]  @relation("CompanyEmployeeCauseOriginator")
+  originatedWorkOutputStandalones  WorkOutputStandalone[]  @relation("WorkOutputStandaloneOriginator")
+  originatedNTKs                   NTK[]                   @relation("NTKOriginator")
+  originatedWorkCommsProducts      WorkCommsProduct[]      @relation("WorkCommsProductOriginator")
+  originatedWorkforceComms         WorkforceComms[]        @relation("WorkforceCommsOriginator")
+  originatedWorkforceCommsDrafts   WorkforceCommsDraft[]   @relation("WorkforceCommsDraftOriginator")
+  originatedWorkforceCommsEditions WorkforceCommsEdition[] @relation("WorkforceCommsEditionOriginator")
+  originatedNTKEditions            NTKEdition[]            @relation("NTKEditionOriginator")
 
   // connections Connection[]  // Commented out - not using
   // events      Event[]       // Commented out - not using
@@ -153,23 +153,23 @@ model Company {
   brandColorSecondary String?
 
   // Leadership (Apollo Enrichment)
-  ceoName        String?
-  ceoTitle       String?
-  deputyName     String?
-  deputyTitle    String?
-  chiefOfStaff   String?
+  ceoName      String?
+  ceoTitle     String?
+  deputyName   String?
+  deputyTitle  String?
+  chiefOfStaff String?
 
   // Organization (Apollo Enrichment)
-  directorates   String[] @default([]) // e.g. ["SEA 02", "SEA 05", "SEA 10"]
+  directorates String[] @default([]) // e.g. ["SEA 02", "SEA 05", "SEA 10"]
 
   // Social / Public (Apollo Enrichment)
-  linkedinUrl    String?
-  twitterUrl     String?
-  facebookUrl    String?
-  phone          String?
+  linkedinUrl String?
+  twitterUrl  String?
+  facebookUrl String?
+  phone       String?
 
   // Address (Apollo Enrichment)
-  country        String?
+  country String?
 
   // Relations
   employees WorkMe[]
@@ -177,25 +177,25 @@ model Company {
   // Minimal reverse relations (required by Prisma, but NOT to be queried)
   // Company is independent - work outputs reference Company via companyId
   // These relations exist only for Prisma schema validation
-  commsOutputs              CommsOutput[]              @relation("CommsOutputCompany")
-  objectives                Objective[]                @relation("ObjectiveCompany")
-  achievements              Achievement[]              @relation("AchievementCompany")
-  companyCampaigns          CompanyCampaign[]          @relation("CompanyCampaignCompany")
-  companyImpactEvents       CompanyImpactEvent[]       @relation("CompanyImpactEventCompany")
-  companyTrainings          CompanyTraining[]          @relation("CompanyTrainingCompany")
-  companyEvents             CompanyEvent[]             @relation("CompanyEventCompany")
-  companyCommunities        CompanyCommunity[]         @relation("CompanyCommunityCompany")
-  companyBenefits           CompanyBenefits[]          @relation("CompanyBenefitsCompany")
-  companyCareers            CompanyCareer[]           @relation("CompanyCareerCompany")
-  companyEmployeeCauses     CompanyEmployeeCause[]    @relation("CompanyEmployeeCauseCompany")
-  workOutputStandalones     WorkOutputStandalone[]     @relation("WorkOutputStandaloneCompany")
-  ntks                      NTK[]                      @relation("NTKCompany")
-  workCommsProducts         WorkCommsProduct[]         @relation("WorkCommsProductCompany")
-  workforceComms            WorkforceComms[]           @relation("WorkforceCommsCompany")
-  workforceCommsDrafts      WorkforceCommsDraft[]      @relation("WorkforceCommsDraftCompany")
-  workforceCommsEditions    WorkforceCommsEdition[]    @relation("WorkforceCommsEditionCompany")
-  ntkEditions               NTKEdition[]               @relation("NTKEditionCompany")
-  companyWorkLinks          CompanyWorkLink[]          @relation("CompanyWorkLinkCompany")
+  commsOutputs           CommsOutput[]           @relation("CommsOutputCompany")
+  objectives             Objective[]             @relation("ObjectiveCompany")
+  achievements           Achievement[]           @relation("AchievementCompany")
+  companyCampaigns       CompanyCampaign[]       @relation("CompanyCampaignCompany")
+  companyImpactEvents    CompanyImpactEvent[]    @relation("CompanyImpactEventCompany")
+  companyTrainings       CompanyTraining[]       @relation("CompanyTrainingCompany")
+  companyEvents          CompanyEvent[]          @relation("CompanyEventCompany")
+  companyCommunities     CompanyCommunity[]      @relation("CompanyCommunityCompany")
+  companyBenefits        CompanyBenefits[]       @relation("CompanyBenefitsCompany")
+  companyCareers         CompanyCareer[]         @relation("CompanyCareerCompany")
+  companyEmployeeCauses  CompanyEmployeeCause[]  @relation("CompanyEmployeeCauseCompany")
+  workOutputStandalones  WorkOutputStandalone[]  @relation("WorkOutputStandaloneCompany")
+  ntks                   NTK[]                   @relation("NTKCompany")
+  workCommsProducts      WorkCommsProduct[]      @relation("WorkCommsProductCompany")
+  workforceComms         WorkforceComms[]        @relation("WorkforceCommsCompany")
+  workforceCommsDrafts   WorkforceCommsDraft[]   @relation("WorkforceCommsDraftCompany")
+  workforceCommsEditions WorkforceCommsEdition[] @relation("WorkforceCommsEditionCompany")
+  ntkEditions            NTKEdition[]            @relation("NTKEditionCompany")
+  companyWorkLinks       CompanyWorkLink[]       @relation("CompanyWorkLinkCompany")
 
   @@index([name]) // Index for directory lookups
 }
@@ -385,6 +385,18 @@ model Achievement {
 // ============================================
 // COMPANY MODELS (Renamed from WorkContext*)
 // ============================================
+
+enum ContextType {
+  campaign
+  impact_event
+  training
+  event
+  community
+  benefits
+  career
+  employee_cause
+}
+
 model CompanyCampaign {
   id           String    @id @default(cuid())
   createdAt    DateTime  @default(now())
@@ -485,8 +497,8 @@ model CompanyEvent {
   // Highlights extracted from GPT
   audience      EventAudience?
   vibe          String?
-  perks         String[] @default([])
-  participation String[] @default([])
+  perks         String[]       @default([])
+  participation String[]       @default([])
 
   // Food
   foodProvided String?
@@ -637,39 +649,39 @@ model CompanyEmployeeCause {
 // COMPANY WORK LINK (Junction Table)
 // ============================================
 model CompanyWorkLink {
-  id                   String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  companyEventId       String?
-  companyEvent         CompanyEvent? @relation(fields: [companyEventId], references: [id], onDelete: Cascade)
+  companyEventId String?
+  companyEvent   CompanyEvent? @relation(fields: [companyEventId], references: [id], onDelete: Cascade)
 
-  companyTrainingId    String?
-  companyTraining      CompanyTraining? @relation(fields: [companyTrainingId], references: [id], onDelete: Cascade)
+  companyTrainingId String?
+  companyTraining   CompanyTraining? @relation(fields: [companyTrainingId], references: [id], onDelete: Cascade)
 
-  companyBenefitsId    String?
-  companyBenefits      CompanyBenefits? @relation(fields: [companyBenefitsId], references: [id], onDelete: Cascade)
+  companyBenefitsId String?
+  companyBenefits   CompanyBenefits? @relation(fields: [companyBenefitsId], references: [id], onDelete: Cascade)
 
-  companyCampaignId    String?
-  companyCampaign      CompanyCampaign? @relation(fields: [companyCampaignId], references: [id], onDelete: Cascade)
+  companyCampaignId String?
+  companyCampaign   CompanyCampaign? @relation(fields: [companyCampaignId], references: [id], onDelete: Cascade)
 
   companyImpactEventId String?
   companyImpactEvent   CompanyImpactEvent? @relation(fields: [companyImpactEventId], references: [id], onDelete: Cascade)
 
-  companyCommunityId   String?
-  companyCommunity     CompanyCommunity? @relation(fields: [companyCommunityId], references: [id], onDelete: Cascade)
+  companyCommunityId String?
+  companyCommunity   CompanyCommunity? @relation(fields: [companyCommunityId], references: [id], onDelete: Cascade)
 
-  companyCareerId      String?
-  companyCareer        CompanyCareer? @relation(fields: [companyCareerId], references: [id], onDelete: Cascade)
+  companyCareerId String?
+  companyCareer   CompanyCareer? @relation(fields: [companyCareerId], references: [id], onDelete: Cascade)
 
   companyEmployeeCauseId String?
   companyEmployeeCause   CompanyEmployeeCause? @relation(fields: [companyEmployeeCauseId], references: [id], onDelete: Cascade)
 
-  workCommsProductId   String
-  workCommsProduct     WorkCommsProduct @relation(fields: [workCommsProductId], references: [id], onDelete: Cascade)
+  workCommsProductId String
+  workCommsProduct   WorkCommsProduct @relation(fields: [workCommsProductId], references: [id], onDelete: Cascade)
 
-  companyId    String
-  company      Company @relation("CompanyWorkLinkCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company @relation("CompanyWorkLinkCompany", fields: [companyId], references: [id], onDelete: Cascade)
 
-  createdAt            DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([companyEventId])
   @@index([companyTrainingId])
@@ -820,18 +832,18 @@ enum WorkCommsProductType {
 }
 
 model WorkCommsProduct {
-  id          String              @id @default(uuid())
+  id          String               @id @default(uuid())
   type        WorkCommsProductType
   data        Json?
   metadata    Json?
   createdById String
-  createdAt   DateTime            @default(now())
+  createdAt   DateTime             @default(now())
 
-  companyId    String
-  company      Company @relation("WorkCommsProductCompany", fields: [companyId], references: [id], onDelete: Cascade)
-  originator   WorkMe  @relation("WorkCommsProductOriginator", fields: [createdById], references: [id], onDelete: Cascade)
+  companyId  String
+  company    Company @relation("WorkCommsProductCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  originator WorkMe  @relation("WorkCommsProductOriginator", fields: [createdById], references: [id], onDelete: Cascade)
 
-  links       CompanyWorkLink[]
+  links CompanyWorkLink[]
 
   @@index([companyId])
   @@index([createdById])
@@ -990,14 +1002,14 @@ model WorkforceCommsEdition {
 // HOLIDAY BUILDER SYSTEM MODELS
 // ============================================
 model Holiday {
-  id         String   @id @default(cuid())
-  name       String
-  slug       String   @unique
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  assets     Asset[]
+  assets Asset[]
 
   @@index([slug])
 }
@@ -1006,7 +1018,7 @@ model Asset {
   id          String   @id @default(cuid())
   url         String
   fileName    String
-  category    String   // "holiday", "workforce", "shipyard", "general"
+  category    String // "holiday", "workforce", "shipyard", "general"
   holidaySlug String?
   createdAt   DateTime @default(now())
 
