@@ -96,11 +96,11 @@ export default function EventManualForm({ initialData, initialEventItems, onBack
         foodTypes: formData.foodTypes || null,
       })
 
-      if (result.success && result.workEventRouter) {
+      if (result.success && result.event) {
         // Store in localStorage for instant hydration
-        const eventRouterId = result.workEventRouter.id
+        const eventId = result.event.id
         if (typeof window !== 'undefined') {
-          localStorage.setItem('lastCreatedEventId', eventRouterId)
+          localStorage.setItem('lastCreatedEventId', eventId)
           
           // Refresh events list in background
           const companyId = localStorage.getItem('companyId')
@@ -110,7 +110,7 @@ export default function EventManualForm({ initialData, initialEventItems, onBack
         }
         
         // Navigate directly to view page
-        router.push(`/attention/events/${eventRouterId}/view`)
+        router.push(`/attention/events/${eventId}/view`)
       } else {
         alert('Failed to create Event: ' + (result.error || 'Unknown error'))
         setLoading(false)

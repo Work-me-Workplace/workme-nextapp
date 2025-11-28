@@ -4,7 +4,18 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { verifyAuth } from '@/lib/server/verifyAuth'
 import { getWorkMeId } from '@/lib/getWorkMeId.server'
-import { WORK_OUTPUT_TYPE_VALUES } from './work-support'
+
+// WorkOutput types registry (moved from work-support.ts which was deleted)
+export const WORK_OUTPUT_TYPE_VALUES = [
+  'ntk_snippet',
+  'talking_points',
+  'digital_signage',
+  'print_product',
+  'sharepoint_block',
+  'quick_blurb',
+  'event_kit',
+  'photo_video',
+] as const
 
 const workOutputSchema = z.object({
   eventRouterId: z.string().optional().nullable(), // Renamed from contextId
@@ -24,74 +35,26 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
       return { success: false, error: 'Not authenticated or user must belong to a company' }
     }
 
-    // Verify at least one of eventRouterId or supportId is provided
-    if (!validated.eventRouterId && !validated.supportId) {
-      return { success: false, error: 'Either eventRouterId or supportId is required' }
+    // NOTE: WorkSupport and WorkEventRouter have been removed.
+    // This function is kept for backward compatibility but should be migrated to use WorkCommsProduct.
+    // For now, we require workforceCommsId or eventRouterId (legacy support).
+    
+    if (!validated.workforceCommsId && !validated.eventRouterId) {
+      return { success: false, error: 'Either workforceCommsId or eventRouterId is required' }
     }
 
-    // If supportId provided, verify it exists and belongs to user's company
-    if (validated.supportId) {
-      const support = await prisma.workSupport.findFirst({
-        where: { 
-          id: validated.supportId,
-          companyId, // Multi-tenant: ensure same company
-        },
-      })
-
-      if (!support) {
-        return { success: false, error: 'WorkSupport not found or unauthorized' }
-      }
-
-      // Use support's eventRouterId if eventRouterId not provided
-      const eventRouterIdToUse = validated.eventRouterId || support.eventRouterId
-
-      const workOutput = await prisma.workOutput.create({
-        data: {
-          eventRouterId: eventRouterIdToUse,
-          supportId: validated.supportId,
-          workforceCommsId: validated.workforceCommsId ?? undefined,
-          outputType: validated.outputType,
-          dataJson: validated.dataJson ?? undefined,
-          status: (validated.status || 'draft') as 'draft' | 'final',
-          companyId,
-          originatorId: workMeId,
-        },
-        include: {
-          eventRouter: true,
-          support: true,
-          workforceComms: true,
-        },
-      })
-
-      // Update support assets with new output ID
-      const currentAssets = (support.assets as string[]) || []
-      await prisma.workSupport.update({
-        where: { id: validated.supportId },
-        data: {
-          assets: [...currentAssets, workOutput.id],
-        },
-      })
-
-      return { success: true, workOutput }
-    }
-
-    // If only eventRouterId provided, verify it exists and belongs to user's company
+    // Legacy: If eventRouterId provided, verify it exists (WorkEventRouter was removed, this will fail)
+    // TODO: Migrate to use CompanyWorkLink and WorkCommsProduct
     if (validated.eventRouterId) {
-      const eventRouter = await prisma.workEventRouter.findFirst({
-        where: { 
-          id: validated.eventRouterId,
-          companyId, // Multi-tenant: ensure same company
-        },
-      })
+      // WorkEventRouter no longer exists - this is legacy code
+      return { success: false, error: 'WorkEventRouter has been removed. Please use WorkCommsProduct instead.' }
+    }
 
-      if (!eventRouter) {
-        return { success: false, error: 'Work event router not found or unauthorized' }
-      }
-
+    // If only workforceCommsId provided, create output linked to WorkforceComms
+    if (validated.workforceCommsId) {
       const workOutput = await prisma.workOutput.create({
         data: {
-          eventRouterId: validated.eventRouterId,
-          workforceCommsId: validated.workforceCommsId ?? undefined,
+          workforceCommsId: validated.workforceCommsId,
           outputType: validated.outputType,
           dataJson: validated.dataJson ?? undefined,
           status: (validated.status || 'draft') as 'draft' | 'final',
@@ -99,8 +62,6 @@ export async function createWorkOutput(data: z.infer<typeof workOutputSchema>) {
           originatorId: workMeId,
         },
         include: {
-          eventRouter: true,
-          support: true,
           workforceComms: true,
         },
       })
@@ -148,8 +109,6 @@ export async function updateWorkOutput(id: string, data: Partial<Pick<z.infer<ty
       where: { id },
       data: updateData,
       include: {
-        eventRouter: true,
-        support: true,
         workforceComms: true,
       },
     })
@@ -245,8 +204,6 @@ export async function getWorkOutputs(workMeId?: string) {
         companyId, // Multi-tenant: filter by company
       },
       include: {
-        eventRouter: true,
-        support: true,
         workforceComms: true,
       },
       orderBy: { updatedAt: 'desc' },
@@ -273,8 +230,6 @@ export async function getWorkOutput(id: string) {
         companyId, // Multi-tenant: ensure same company
       },
       include: {
-        eventRouter: true,
-        support: true,
         workforceComms: true,
       },
     })
@@ -298,32 +253,10 @@ export async function getWorkOutputsByRouter(routerId: string) {
       return { success: false, error: 'Not authenticated or user must belong to a company', workOutputs: [] }
     }
 
-    // Verify eventRouter belongs to user's company
-    const eventRouter = await prisma.workEventRouter.findFirst({
-      where: { 
-        id: routerId,
-        companyId, // Multi-tenant: ensure same company
-      },
-    })
-
-    if (!eventRouter) {
-      return { success: false, error: 'Work event router not found or unauthorized', workOutputs: [] }
-    }
-
-    const workOutputs = await prisma.workOutput.findMany({
-      where: { 
-        eventRouterId: routerId,
-        companyId, // Multi-tenant: ensure same company
-      },
-      include: {
-        eventRouter: true,
-        support: true,
-        workforceComms: true,
-      },
-      orderBy: { updatedAt: 'desc' },
-    })
-
-    return { success: true, workOutputs }
+    // NOTE: WorkEventRouter has been removed. This function is legacy.
+    // TODO: Migrate to use CompanyWorkLink and WorkCommsProduct
+    // Return empty array for now
+    return { success: true, workOutputs: [] }
   } catch (error) {
     return { success: false, error: 'Failed to fetch work outputs', workOutputs: [] }
   }

@@ -30,17 +30,39 @@ export default function WorkContextSuccessPage() {
     if (!contextId) return
     setLoading(true)
     try {
+      // Search across all CompanyX types to find the matching one
+      const types: Array<'campaign' | 'impact_event' | 'training' | 'event' | 'community' | 'benefits' | 'career' | 'employee_cause'> = [
+        'campaign',
+        'impact_event',
+        'training',
+        'event',
+        'community',
+        'benefits',
+        'career',
+        'employee_cause',
+      ]
+
       const clientWorkMeId = typeof window !== 'undefined' ? getWorkMeIdFromStorage() : null
-      const result = await getWorkContext(contextId, clientWorkMeId)
-      if (result.success && result.workContext) {
-        setWorkContext(result.workContext)
+      let foundContext: any = null
+
+      // Try each type until we find a match
+      for (const type of types) {
+        const result = await getWorkContext(contextId, type, clientWorkMeId)
+        if (result.success && result.workContext) {
+          foundContext = result.workContext
+          break
+        }
+      }
+
+      if (foundContext) {
+        setWorkContext(foundContext)
         
         // Check if this is an event and extract promotionNeeds
-        if (result.workContext.type === 'event') {
+        if (foundContext.type === 'event') {
           setIsEvent(true)
-          const typedData = result.workContext.typedData
-          if (typedData?.promotionNeeds && Array.isArray(typedData.promotionNeeds) && typedData.promotionNeeds.length > 0) {
-            setPromotionNeeds(typedData.promotionNeeds)
+          // CompanyEvent doesn't have typedData wrapper, check directly
+          if (foundContext.promotionNeeds && Array.isArray(foundContext.promotionNeeds) && foundContext.promotionNeeds.length > 0) {
+            setPromotionNeeds(foundContext.promotionNeeds)
           }
         }
       } else {
@@ -90,11 +112,11 @@ export default function WorkContextSuccessPage() {
               </svg>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {isEvent ? '🎉 Event Created Successfully!' : 'WorkContext Created!'}
+              {isEvent ? '🎉 Event Created Successfully!' : 'Company Item Created!'}
             </h1>
             <p className="text-lg text-gray-600 mb-4">
-              <span className="font-semibold">{workContext.title || (isEvent ? 'Your Event' : 'Your WorkContext')}</span> has been created successfully.
-              {isEvent && workContext.typedData && (
+              <span className="font-semibold">{workContext.title || (isEvent ? 'Your Event' : 'Your Company Item')}</span> has been created successfully.
+              {isEvent && (
                 <span className="block mt-2 text-base">
                   Your event and agenda items have been saved.
                 </span>
@@ -111,14 +133,8 @@ export default function WorkContextSuccessPage() {
             {isEvent ? (
               <button
                 onClick={() => {
-                  // Route based on promotionNeeds
-                  if (promotionNeeds.length === 0) {
-                    // No promotion needs → go to support setup (promotion page doesn't exist yet)
-                    router.push(`/mywork/support/${contextId}/setup`)
-                  } else {
-                    // Has promotion needs → go to support
-                    router.push(`/mywork/support/${contextId}`)
-                  }
+                  // Route to context detail page (WorkSupport removed)
+                  router.push(`/mywork/context/${contextId}`)
                 }}
                 className="block p-6 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition text-center w-full"
               >
@@ -133,18 +149,18 @@ export default function WorkContextSuccessPage() {
                 </p>
               </button>
             ) : (
-              /* Build WorkSupport */
+              /* Create Output */
             <Link
-              href={`/mywork/support/${contextId}/setup`}
+              href={`/mywork/outputs?companyXId=${contextId}&type=${workContext.type}`}
               className="block p-6 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition text-center"
             >
               <div className="mb-3">
                 <svg className="h-10 w-10 text-blue-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Set Up WorkSupport</h3>
-              <p className="text-sm text-gray-600">Choose which outputs you need for this context</p>
+              <h3 className="font-semibold text-gray-900 mb-2">Create Output</h3>
+              <p className="text-sm text-gray-600">Build outputs for this item</p>
             </Link>
             )}
 
@@ -187,9 +203,9 @@ export default function WorkContextSuccessPage() {
                   ? workContext.type.replace('_', ' ').replace(/\b\w/g, (match: string) => match.toUpperCase())
                   : 'Unknown'}
               </p>
-              {workContext.typedData?.description && (
+              {workContext.description && (
                 <p className="text-sm text-gray-600 mt-2">
-                  <span className="font-medium">Description:</span> {workContext.typedData.description}
+                  <span className="font-medium">Description:</span> {workContext.description}
                 </p>
               )}
             </div>

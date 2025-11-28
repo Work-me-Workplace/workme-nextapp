@@ -53,10 +53,10 @@ export default function NewBenefitsPage() {
         annualRecurrence: formData.annualRecurrence,
       })
 
-      if (result.success && result.workContext) {
-        router.push(`/mywork/context/${result.workContext.id}/success`)
+      if (result.success && result.benefits) {
+        router.push(`/mywork/context/${result.benefits.id}/success`)
       } else {
-        alert('Failed to create Benefits Context: ' + (result.error || 'Unknown error'))
+        alert('Failed to create Benefits: ' + (result.error || 'Unknown error'))
         setLoading(false)
       }
     } catch (error) {

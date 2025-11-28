@@ -41,7 +41,8 @@ export async function createPromotionalWorkItem(
     }
 
     // Verify event exists and belongs to user's company
-    const event = await prisma.workEvent.findFirst({
+    // NOTE: WorkEvent renamed to CompanyEvent
+    const event = await prisma.companyEvent.findFirst({
       where: {
         id: validated.eventId,
         companyId,

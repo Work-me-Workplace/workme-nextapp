@@ -44,16 +44,16 @@ export async function createWorkEventFromIngest(
       itemsCount: normalized.eventItemsData.length,
     })
 
-    // Create WorkEvent and EventItems in a transaction
+    // Create CompanyEvent and EventItems in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Create WorkEvent
-      const workEvent = await tx.workEvent.create({
+      // 1. Create CompanyEvent (WorkEvent renamed to CompanyEvent)
+      const companyEvent = await tx.companyEvent.create({
         data: normalized.eventData,
       })
 
-      console.log('[createWorkEventFromIngest] WorkEvent created', {
-        eventId: workEvent.id,
-        title: workEvent.title,
+      console.log('[createWorkEventFromIngest] CompanyEvent created', {
+        eventId: companyEvent.id,
+        title: companyEvent.title,
       })
 
       // 2. Create EventItems
@@ -64,42 +64,27 @@ export async function createWorkEventFromIngest(
               title: itemData.title,
               description: itemData.description,
               metadata: itemData.metadata ?? undefined,
-              eventId: workEvent.id,
+              eventId: companyEvent.id,
             },
           })
         )
       )
 
       console.log('[createWorkEventFromIngest] EventItems created', {
-        eventId: workEvent.id,
+        eventId: companyEvent.id,
         itemsCount: eventItems.length,
       })
 
-      // 3. Create WorkEventRouter entry
-      const workEventRouter = await tx.workEventRouter.create({
-        data: {
-          type: 'event',
-          eventRefId: workEvent.id,
-          companyId,
-          originatorId: workMeId,
-        },
-      })
-
-      console.log('[createWorkEventFromIngest] WorkEventRouter created', {
-        routerId: workEventRouter.id,
-        eventId: workEvent.id,
-      })
-
+      // NOTE: WorkEventRouter has been removed - CompanyEvent is now the direct model
       return {
-        workEvent,
+        companyEvent,
         eventItems,
-        workEventRouter,
       }
     })
 
     return {
       success: true as const,
-      eventId: result.workEventRouter.id, // Return router ID for navigation
+      eventId: result.companyEvent.id, // Return CompanyEvent ID for navigation
       itemCount: result.eventItems.length,
     }
   } catch (error: any) {

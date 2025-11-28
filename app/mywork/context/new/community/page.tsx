@@ -49,8 +49,8 @@ export default function NewCommunityPage() {
         pocPhone: formData.pocPhone || null,
       })
 
-      if (result.success && result.workContext) {
-        router.push(`/mywork/context/${result.workContext.id}/success`)
+      if (result.success && result.opportunity) {
+        router.push(`/mywork/context/${result.opportunity.id}/success`)
       } else {
         alert('Failed to create Community Opportunity: ' + (result.error || 'Unknown error'))
         setLoading(false)

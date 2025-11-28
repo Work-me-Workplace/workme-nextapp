@@ -42,8 +42,8 @@ export default function NewImpactEventPage() {
         pocPhone: formData.pocPhone || null,
       })
 
-      if (result.success && result.workContext) {
-        router.push(`/mywork/context/${result.workContext.id}/success`)
+      if (result.success && result.impactEvent) {
+        router.push(`/mywork/context/${result.impactEvent.id}/success`)
       } else {
         alert('Failed to create Impact: ' + (result.error || 'Unknown error'))
         setLoading(false)

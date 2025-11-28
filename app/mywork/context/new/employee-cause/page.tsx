@@ -63,8 +63,8 @@ export default function NewEmployeeCausePage() {
         sponsoringDepartment: formData.sponsoringDepartment || null,
       })
 
-      if (result.success && result.workContext) {
-        router.push(`/mywork/context/${result.workContext.id}/success`)
+      if (result.success && result.employeeCause) {
+        router.push(`/mywork/context/${result.employeeCause.id}/success`)
       } else {
         alert('Failed to create Employee Cause: ' + (result.error || 'Unknown error'))
         setLoading(false)

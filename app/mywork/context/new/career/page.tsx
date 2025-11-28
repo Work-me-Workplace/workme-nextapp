@@ -78,8 +78,8 @@ export default function NewCareerPage() {
         pocDepartment: formData.pocDepartment || null,
       })
 
-      if (result.success && result.workContext) {
-        router.push(`/mywork/context/${result.workContext.id}/success`)
+      if (result.success && result.career) {
+        router.push(`/mywork/context/${result.career.id}/success`)
       } else {
         alert('Failed to create Career Context: ' + (result.error || 'Unknown error'))
         setLoading(false)

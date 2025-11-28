@@ -46,8 +46,8 @@ export default function NewCampaignPage() {
         pocPhone: formData.pocPhone || null,
       }, workMeId)
 
-      if (result.success && result.workContext) {
-        router.push(`/mywork/context/${result.workContext.id}/success`)
+      if (result.success && result.campaign) {
+        router.push(`/mywork/context/${result.campaign.id}/success`)
       } else {
         alert('Failed to create Campaign: ' + (result.error || 'Unknown error'))
         setLoading(false)

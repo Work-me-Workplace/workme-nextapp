@@ -56,8 +56,8 @@ export default function NewTrainingPage() {
         pocPhone: formData.pocPhone || null,
       })
 
-      if (result.success && result.workContext) {
-        router.push(`/mywork/context/${result.workContext.id}/success`)
+      if (result.success && result.training) {
+        router.push(`/mywork/context/${result.training.id}/success`)
       } else {
         alert('Failed to create Training: ' + (result.error || 'Unknown error'))
         setLoading(false)
