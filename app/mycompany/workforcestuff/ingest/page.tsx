@@ -23,7 +23,6 @@ export default function WorkforceStuffIngestPage() {
         router.push('/signin')
       } else {
         setWorkMeId(id)
-        checkExistingWorkspace(id)
       }
     }
   }, [router])
