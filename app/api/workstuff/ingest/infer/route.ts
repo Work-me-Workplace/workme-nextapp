@@ -39,28 +39,30 @@ export async function POST(request: NextRequest) {
     // Step 2: Split into sections
     const sections = splitIntoSections(blob)
 
-    // Step 3: If 0 sections found → create ONE default section
+    // Step 3: If 0 sections found → create ONE default section (still infer!)
     let finalSections: Array<{ id: string; heading: string; rawText: string; inferredType: string; status: string }>
     
     if (sections.length === 0) {
-      // Fallback: Create one default section
+      // Fallback: Create one default section, but ALWAYS infer type
+      const inference = await inferCompanyXType(blob)
       finalSections = [{
         id: randomUUID(),
-        heading: 'General',
+        heading: '', // Empty heading - UI will show "Section 1"
         rawText: blob,
-        inferredType: 'training', // default fallback
+        inferredType: inference.type, // ALWAYS infer, never use placeholder
         status: 'pending',
       }]
     } else {
-      // Step 4: Infer type for each section using hybrid inference service
+      // Step 4: ALWAYS infer type for each section using hybrid inference service
       finalSections = await Promise.all(
         sections.map(async (section) => {
+          // ALWAYS run inference - no conditional logic, no skipping
           const inference = await inferCompanyXType(section.rawText)
           return {
             id: randomUUID(),
-            heading: section.heading,
+            heading: section.heading || '', // Empty heading is OK - UI will show "Section N"
             rawText: section.rawText,
-            inferredType: inference.type,
+            inferredType: inference.type, // ALWAYS a valid CompanyXType enum
             status: 'pending' as const,
           }
         })

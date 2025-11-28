@@ -78,7 +78,7 @@ function splitIntoSections(blob: string): Array<{ rawText: string; heading: stri
   const lines = blob.split('\n')
   
   let currentSection: string[] = []
-  let currentHeading = 'Untitled Section'
+  let currentHeading = '' // Empty heading - UI will show "Section N"
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
@@ -100,7 +100,7 @@ function splitIntoSections(blob: string): Array<{ rawText: string; heading: stri
         currentHeading = trimmed
         currentSection.push(line) // Include the heading in the section
       } else {
-        currentHeading = 'Untitled Section'
+        currentHeading = '' // Empty heading - UI will show "Section N"
       }
     } else if (isBlankLine && currentSection.length > 0 && i < lines.length - 1) {
       // Blank line might be a boundary - check if next line looks like a heading
@@ -114,7 +114,7 @@ function splitIntoSections(blob: string): Array<{ rawText: string; heading: stri
           heading: currentHeading,
         })
         currentSection = []
-        currentHeading = nextLine
+        currentHeading = nextLine || '' // Empty if no heading
       } else {
         currentSection.push(line) // Keep blank line in current section
       }

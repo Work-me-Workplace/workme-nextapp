@@ -56,24 +56,28 @@ export default function WorkforceMapperPage() {
         const loadedSections = response.data.sections || []
         
         // If no sections found, create fallback section from last pasted blob
+        // ALWAYS infer type - never use placeholder
         if (loadedSections.length === 0) {
           const rawBlobResponse = await api.get('/api/workstuff/raw-blob')
           if (rawBlobResponse.data.success && rawBlobResponse.data.blob) {
-            // Create fallback section
+            // Infer type for fallback section - ALWAYS run inference
+            const { default: inferService } = await import('@/lib/services/companyx-topic-inference')
+            const inference = await inferService.inferCompanyXType(rawBlobResponse.data.blob)
+            
             const fallbackSection: Section = {
               id: `fallback_${Date.now()}`,
               rawText: rawBlobResponse.data.blob,
-              heading: 'General',
-              inferredType: 'training',
+              heading: '', // Empty heading - UI will show "Section 1"
+              inferredType: inference.type, // ALWAYS infer, never placeholder
               status: 'pending',
             }
             setSections([fallbackSection])
-            setSelectedTypes({ [fallbackSection.id]: 'training' })
+            setSelectedTypes({ [fallbackSection.id]: inference.type })
             
             // Store fallback section in Redis
             await api.post('/api/workstuff/map', {
               sectionId: fallbackSection.id,
-              type: 'training',
+              type: inference.type,
             })
           } else {
             // No blob either - redirect to ingest
@@ -92,26 +96,30 @@ export default function WorkforceMapperPage() {
       }
     } catch (error) {
       console.error('Failed to load sections:', error)
-      // On error, try to create fallback
-      try {
-        const { default: api } = await import('@/lib/api')
-        const rawBlobResponse = await api.get('/api/workstuff/raw-blob')
-        if (rawBlobResponse.data.success && rawBlobResponse.data.blob) {
-          const fallbackSection: Section = {
-            id: `fallback_${Date.now()}`,
-            rawText: rawBlobResponse.data.blob,
-            heading: 'General',
-            inferredType: 'training',
-            status: 'pending',
+        // On error, try to create fallback - ALWAYS infer type
+        try {
+          const { default: api } = await import('@/lib/api')
+          const rawBlobResponse = await api.get('/api/workstuff/raw-blob')
+          if (rawBlobResponse.data.success && rawBlobResponse.data.blob) {
+            // ALWAYS infer type - never use placeholder
+            const { default: inferService } = await import('@/lib/services/companyx-topic-inference')
+            const inference = await inferService.inferCompanyXType(rawBlobResponse.data.blob)
+            
+            const fallbackSection: Section = {
+              id: `fallback_${Date.now()}`,
+              rawText: rawBlobResponse.data.blob,
+              heading: '', // Empty heading - UI will show "Section 1"
+              inferredType: inference.type, // ALWAYS infer
+              status: 'pending',
+            }
+            setSections([fallbackSection])
+            setSelectedTypes({ [fallbackSection.id]: inference.type })
+          } else {
+            router.push('/mycompany/workforcestuff/ingest')
           }
-          setSections([fallbackSection])
-          setSelectedTypes({ [fallbackSection.id]: 'training' })
-        } else {
+        } catch (fallbackError) {
           router.push('/mycompany/workforcestuff/ingest')
         }
-      } catch (fallbackError) {
-        router.push('/mycompany/workforcestuff/ingest')
-      }
     } finally {
       setLoading(false)
     }

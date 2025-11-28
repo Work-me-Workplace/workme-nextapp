@@ -242,8 +242,22 @@ ${text.substring(0, 2000)}`
 
 /**
  * MAIN ENTRYPOINT
+ * 
+ * ALWAYS returns a valid CompanyXType enum.
+ * Never returns null, undefined, or placeholder types.
+ * Inference always runs - no conditional skipping.
  */
 export async function inferCompanyXType(text: string): Promise<InferenceResult> {
+  // Validate input
+  if (!text || typeof text !== 'string' || text.trim().length === 0) {
+    // Even for empty text, return a valid type (training as safe default)
+    return {
+      type: 'training',
+      confidence: 0.3,
+      explanation: 'Empty text - defaulting to training',
+    }
+  }
+
   const scores = scoreByKeywords(text)
 
   const deterministicType = chooseDeterministic(scores)
@@ -255,7 +269,7 @@ export async function inferCompanyXType(text: string): Promise<InferenceResult> 
     }
   }
 
-  // Fallback to GPT
+  // Fallback to GPT - ALWAYS returns a valid type
   return await llmFallback(text)
 }
 
