@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
+import { auth } from '@/lib/firebase'
+import { onAuthStateChanged } from 'firebase/auth'
 import { Loader2, ArrowRight } from 'lucide-react'
 
 interface TrainingModel {
@@ -32,8 +34,9 @@ export default function TrainingIngestPage() {
   const trainingId = params.trainingId as string
 
   const [workMeId, setWorkMeId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true) // Start with true to wait for auth
   const [saving, setSaving] = useState(false)
+  const [authReady, setAuthReady] = useState(false)
   const [formData, setFormData] = useState<TrainingModel>({
     title: null,
     description: null,
@@ -55,15 +58,38 @@ export default function TrainingIngestPage() {
   })
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window === 'undefined') return
+
+    // Wait for Firebase auth to be ready
+    if (!auth) {
+      console.error('Firebase auth not initialized - redirecting to signin')
+      router.push('/signin')
+      return
+    }
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        console.error('No Firebase user - redirecting to signin')
+        router.push('/signin')
+        return
+      }
+
+      // Firebase auth is ready, now check workMeId
       const id = getWorkMeIdFromStorage()
       if (!id) {
+        console.error('No workMeId in storage - redirecting to signin')
         router.push('/signin')
-      } else {
-        setWorkMeId(id)
-        loadAndHydrate(id)
+        return
       }
-    }
+
+      setWorkMeId(id)
+      setAuthReady(true)
+      
+      // Now that auth is ready, load and hydrate
+      await loadAndHydrate(id)
+    })
+
+    return () => unsubscribe()
   }, [router, trainingId])
 
   async function loadAndHydrate(id: string) {
@@ -118,10 +144,13 @@ export default function TrainingIngestPage() {
     }
   }
 
-  if (!workMeId || loading) {
+  if (!workMeId || !authReady || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
+          <p className="text-sm text-gray-600">Loading training data...</p>
+        </div>
       </div>
     )
   }
