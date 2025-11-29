@@ -52,25 +52,6 @@ export default function WorkforceStuffPage() {
     }
   }
 
-  // Check for existing workspace on mount
-  useEffect(() => {
-    if (workMeId) {
-      checkWorkspace()
-    }
-  }, [workMeId])
-
-  async function checkWorkspace() {
-    try {
-      const { default: api } = await import('@/lib/api')
-      const response = await api.get('/api/workforce-stuff/ingest/progressive')
-      if (response.data.success && response.data.parsedData) {
-        // Show workspace indicator
-        console.log('Active workspace found')
-      }
-    } catch (error) {
-      // Ignore - no workspace is fine
-    }
-  }
 
   const categoryOptions = [
     { value: 'all', label: 'All Categories' },

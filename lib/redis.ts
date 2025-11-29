@@ -122,54 +122,17 @@ export async function storePendingFieldGroups(workMeId: string, pendingGroups: s
 }
 
 /**
- * @deprecated Use @/lib/workstuff/redis setSections() instead
- * Store sections array in Redis (Mapper Step 1)
+ * @deprecated REMOVED - Legacy ingestion system deleted
+ * These functions are no longer used and have been removed:
+ * - storeSections
+ * - storeHydratedModel
+ * - getRawBlob
+ * - getSections
+ * - updateSection
+ * - getHydratedModel
+ * 
+ * The new Stage 1 → Stage 2 ingest system does not use Redis for section storage.
  */
-export async function storeSections(workMeId: string, sections: any[], ttl: number = 30 * 60): Promise<string> {
-  try {
-    const redisClient = getRedis()
-    const key = `workstuff:sections:${workMeId}`
-    
-    await redisClient.setex(key, ttl, JSON.stringify(sections))
-    console.log(`✅ Sections stored in Redis: ${key} (${sections.length} sections)`)
-    return key
-  } catch (error: any) {
-    console.error('❌ Redis store error:', error)
-    throw error
-  }
-}
-
-/**
- * Store hydrated model in Redis (Mapper Step 3)
- */
-export async function storeHydratedModel(workMeId: string, sectionId: string, model: any, ttl: number = 30 * 60): Promise<string> {
-  try {
-    const redisClient = getRedis()
-    const key = `workstuff:models:${workMeId}:${sectionId}`
-    
-    await redisClient.setex(key, ttl, JSON.stringify(model))
-    console.log(`✅ Hydrated model stored in Redis: ${key}`)
-    return key
-  } catch (error: any) {
-    console.error('❌ Redis store error:', error)
-    throw error
-  }
-}
-
-/**
- * Get raw blob from Redis
- */
-export async function getRawBlob(workMeId: string): Promise<string | null> {
-  try {
-    const redisClient = getRedis()
-    const key = `workstuff:raw:${workMeId}`
-    const result = await redisClient.get(key)
-    return result as string | null
-  } catch (error: any) {
-    console.error('❌ Redis get error:', error)
-    return null
-  }
-}
 
 /**
  * Get proposed CompanyX from Redis
@@ -219,96 +182,9 @@ export async function getPendingFieldGroups(workMeId: string): Promise<string[]>
   }
 }
 
-/**
- * @deprecated Use @/lib/workstuff/redis getSections() instead
- * Get sections array from Redis
- * ALWAYS JSON-parsed
- */
-export async function getSections(workMeId: string): Promise<any[]> {
-  try {
-    const redisClient = getRedis()
-    const key = `workstuff:sections:${workMeId}`
-    const result = await redisClient.get(key)
-    if (!result) return []
-    const parsed = JSON.parse(result as string)
-    return Array.isArray(parsed) ? parsed : []
-  } catch (error: any) {
-    console.error('❌ Redis get error:', error)
-    return []
-  }
-}
 
 /**
- * @deprecated Use @/lib/workstuff/redis updateSection() instead
- * Update a single section in the sections array
- * ALWAYS JSON-stringified
+ * @deprecated REMOVED - Legacy ingestion system deleted
+ * deleteWorkstuffKeys is no longer used.
+ * The new Stage 1 → Stage 2 ingest system does not use Redis for temporary storage.
  */
-export async function updateSection(
-  workMeId: string,
-  sectionId: string,
-  updates: { type?: string; status?: 'pending' | 'mapped' | 'hydrated' }
-): Promise<void> {
-  try {
-    const redisClient = getRedis()
-    const key = `workstuff:sections:${workMeId}`
-    const result = await redisClient.get(key)
-    const sections: any[] = result ? JSON.parse(result as string) : []
-    
-    // Find and update the section
-    const sectionIndex = sections.findIndex((s) => s.id === sectionId)
-    if (sectionIndex === -1) {
-      throw new Error(`Section ${sectionId} not found`)
-    }
-
-    // Update section
-    sections[sectionIndex] = {
-      ...sections[sectionIndex],
-      ...updates,
-    }
-
-    // Save back to Redis (JSON-stringified)
-    await redisClient.setex(key, 30 * 60, JSON.stringify(sections))
-    console.log(`✅ Updated section ${sectionId} in Redis`)
-  } catch (error: any) {
-    console.error('❌ Redis update error:', error)
-    throw error
-  }
-}
-
-/**
- * Get hydrated model from Redis
- */
-export async function getHydratedModel(workMeId: string, sectionId: string): Promise<any | null> {
-  try {
-    const redisClient = getRedis()
-    const key = `workstuff:models:${workMeId}:${sectionId}`
-    const result = await redisClient.get(key)
-    if (!result) return null
-    return JSON.parse(result as string)
-  } catch (error: any) {
-    console.error('❌ Redis get error:', error)
-    return null
-  }
-}
-
-/**
- * Delete all workstuff keys for a workMeId (cleanup after publish)
- */
-export async function deleteWorkstuffKeys(workMeId: string): Promise<void> {
-  try {
-    const redisClient = getRedis()
-    const keys = [
-      `workstuff:raw:${workMeId}`,
-      `workstuff:proposed:${workMeId}`,
-      `workstuff:parsed:${workMeId}`,
-      `workstuff:pending:${workMeId}`,
-      `workstuff:sections:${workMeId}`,
-    ]
-    
-    await Promise.all(keys.map(key => redisClient.del(key)))
-    console.log(`✅ Deleted all workstuff keys for ${workMeId}`)
-  } catch (error: any) {
-    console.error('❌ Redis delete error:', error)
-    throw error
-  }
-}

@@ -39,7 +39,7 @@ model CompanyTraining {
 
 ## 🎨 TYPESCRIPT INTERFACE: TrainingModel (UI)
 
-Used in `/app/mycompany/workforcestuff/mapper/[sectionId]/page.tsx`:
+**LEGACY - REMOVED:** The mapper-based ingestion system has been removed. See new Stage 1 → Stage 2 ingest system.
 
 ```typescript
 interface TrainingModel {
@@ -83,7 +83,19 @@ interface TrainingModel {
 
 ## 🚀 API ROUTES
 
-### 1. `/api/workstuff/hydrate` (POST)
+**⚠️ LEGACY SYSTEM REMOVED:** The following routes have been deleted as part of the legacy ingestion system cleanup:
+- `/api/workstuff/hydrate` (POST) - **DELETED**
+- `/api/workstuff/save-training` (POST) - **DELETED**
+
+**NEW SYSTEM:** See Stage 1 → Stage 2 ingest system:
+- `/api/workstuff/ingest/type-infer` (POST)
+- `/api/workstuff/ingest/create-training` (POST)
+- `/api/workstuff/ingest/training-hydrate` (POST)
+- `/api/workstuff/ingest/training-save` (POST)
+
+---
+
+### 1. `/api/workstuff/hydrate` (POST) - **DELETED**
 
 **Purpose:** Generate Training model from raw section text using GPT
 
@@ -133,7 +145,7 @@ Extract structured training information from this text and return as JSON:
 
 ---
 
-### 2. `/api/workstuff/save-training` (POST)
+### 2. `/api/workstuff/save-training` (POST) - **DELETED**
 
 **Purpose:** Save Training model to Prisma as CompanyTraining
 
@@ -188,9 +200,9 @@ Extract structured training information from this text and return as JSON:
 
 ## 🎨 UI COMPONENTS
 
-### `/app/mycompany/workforcestuff/mapper/[sectionId]/page.tsx`
+### `/app/mycompany/workforcestuff/mapper/[sectionId]/page.tsx` - **DELETED**
 
-**Purpose:** Training Model Builder UI
+**Purpose:** Training Model Builder UI (Legacy - removed)
 
 **Features:**
 - Left pane: Raw section text
