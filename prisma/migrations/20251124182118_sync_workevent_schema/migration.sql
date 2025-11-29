@@ -1,0 +1,1 @@
+-- Empty migration (table already exists)

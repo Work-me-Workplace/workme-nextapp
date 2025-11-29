@@ -1,0 +1,1 @@
+-- Empty migration (enums already exist)
