@@ -5,18 +5,35 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Calendar, Filter, Archive, Clock, CheckCircle, Users } from 'lucide-react'
+import { Calendar, Filter, Archive, Clock, CheckCircle, Users, AlertCircle } from 'lucide-react'
+import api from '@/lib/api'
 
-// Conceptual WorkforceStuffItem type (not yet in Prisma)
+// Unified WorkforceStuffItem type
 interface WorkforceStuffItem {
   id: string
   type: 'event' | 'training' | 'benefit' | 'campaign' | 'impact' | 'cause' | 'community' | 'announcement'
+  category: string
   title: string
   summary: string
   startDate?: string | null
   endDate?: string | null
   status: 'active' | 'archived'
   createdAt: string
+  // Training-specific fields
+  topic?: string | null
+  mandatory?: boolean
+  location?: string | null
+  format?: string | null
+  link?: string | null
+  poc?: {
+    firstName?: string | null
+    lastName?: string | null
+    email?: string | null
+    phone?: string | null
+    rankOrTitle?: string | null
+  }
+  ingestStatus?: string | null
+  raw?: any
 }
 
 export default function WorkforceStuffPage() {
@@ -42,11 +59,17 @@ export default function WorkforceStuffPage() {
   async function loadItems() {
     try {
       setLoading(true)
-      // TODO: Implement API call to fetch workforce stuff items
-      // For now, return empty array
-      setItems([])
+      const response = await api.get('/api/workforcestuff')
+      
+      if (response.data.success && response.data.items) {
+        setItems(response.data.items)
+      } else {
+        console.error('Failed to load items:', response.data.error)
+        setItems([])
+      }
     } catch (error) {
       console.error('Failed to load workforce stuff:', error)
+      setItems([])
     } finally {
       setLoading(false)
     }
@@ -71,18 +94,59 @@ export default function WorkforceStuffPage() {
     return categoryMatch && statusMatch
   })
 
-  // Auto-archive logic: items past endDate should not appear in active
+  // Status filtering logic
+  const now = new Date()
+  
   const activeItems = filteredItems.filter(item => {
+    // If explicitly archived, exclude from active
     if (item.status === 'archived') return false
+    
+    // For training items: include if ingestStatus is pending or saved, or if trainingDate is today/future
+    if (item.type === 'training') {
+      // Include pending/hydrated trainings
+      if (item.ingestStatus === 'pending' || item.ingestStatus === 'saved') {
+        // If trainingDate exists, check if it's today or future
+        if (item.startDate) {
+          const trainingDate = new Date(item.startDate)
+          return trainingDate >= new Date(now.setHours(0, 0, 0, 0))
+        }
+        // If no date, include if status is pending/saved
+        return true
+      }
+      // If trainingDate exists and is future, include
+      if (item.startDate) {
+        const trainingDate = new Date(item.startDate)
+        return trainingDate >= new Date(now.setHours(0, 0, 0, 0))
+      }
+      return false
+    }
+    
+    // For other items: use endDate logic
     if (item.endDate) {
       const endDate = new Date(item.endDate)
-      const now = new Date()
       return endDate >= now
     }
     return true
   })
 
-  const archivedItems = filteredItems.filter(item => item.status === 'archived' || (item.endDate && new Date(item.endDate) < new Date()))
+  const archivedItems = filteredItems.filter(item => {
+    // Explicitly archived
+    if (item.status === 'archived') return true
+    
+    // For training items: archive if trainingDate is in the past
+    if (item.type === 'training' && item.startDate) {
+      const trainingDate = new Date(item.startDate)
+      return trainingDate < new Date(now.setHours(0, 0, 0, 0))
+    }
+    
+    // For other items: archive if endDate is in the past
+    if (item.endDate) {
+      const endDate = new Date(item.endDate)
+      return endDate < now
+    }
+    
+    return false
+  })
 
   if (!workMeId || loading) {
     return (
@@ -182,30 +246,72 @@ export default function WorkforceStuffPage() {
                 </div>
                 {activeItems.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {activeItems.map(item => (
-                      <Link
-                        key={item.id}
-                        href={`/mycompany/workforcestuff/${item.id}`}
-                        className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-green-500"
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <span className="text-xs font-medium text-gray-500 uppercase bg-green-100 text-green-800 px-2 py-1 rounded">
-                            {item.type}
-                          </span>
-                          {item.endDate && new Date(item.endDate) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) && (
-                            <span className="text-xs font-medium text-orange-600">Due Soon</span>
-                          )}
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
-                        <p className="text-sm text-gray-600 mb-4 line-clamp-2">{item.summary}</p>
-                        {item.endDate && (
-                          <div className="flex items-center text-xs text-gray-500">
-                            <Calendar className="h-4 w-4 mr-1" />
-                            Ends {new Date(item.endDate).toLocaleDateString()}
+                    {activeItems.map(item => {
+                      // Determine the correct detail page route
+                      const detailRoute = item.type === 'training' 
+                        ? `/mycompany/workforcestuff/training/${item.id}`
+                        : `/mycompany/workforcestuff/${item.id}`
+                      
+                      return (
+                        <Link
+                          key={item.id}
+                          href={detailRoute}
+                          className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-green-500"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-gray-500 uppercase bg-green-100 text-green-800 px-2 py-1 rounded">
+                                {item.type}
+                              </span>
+                              {item.type === 'training' && item.mandatory && (
+                                <span className="text-xs font-medium text-red-600 bg-red-100 px-2 py-1 rounded">
+                                  Mandatory
+                                </span>
+                              )}
+                              {item.type === 'training' && item.ingestStatus === 'pending' && (
+                                <span className="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
+                                  Pending
+                                </span>
+                              )}
+                            </div>
+                            {(() => {
+                              const date = item.endDate || item.startDate
+                              if (date) {
+                                const dateObj = new Date(date)
+                                const weekFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+                                if (dateObj <= weekFromNow) {
+                                  return <span className="text-xs font-medium text-orange-600">Due Soon</span>
+                                }
+                              }
+                              return null
+                            })()}
                           </div>
-                        )}
-                      </Link>
-                    ))}
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
+                          {item.type === 'training' && item.topic && (
+                            <p className="text-xs text-blue-600 mb-2">Topic: {item.topic}</p>
+                          )}
+                          <p className="text-sm text-gray-600 mb-4 line-clamp-2">{item.summary}</p>
+                          <div className="space-y-1">
+                            {item.startDate && (
+                              <div className="flex items-center text-xs text-gray-500">
+                                <Calendar className="h-4 w-4 mr-1" />
+                                {item.type === 'training' ? 'Training Date' : 'Starts'} {new Date(item.startDate).toLocaleDateString()}
+                              </div>
+                            )}
+                            {item.type === 'training' && item.location && (
+                              <div className="text-xs text-gray-500">
+                                📍 {item.location}
+                              </div>
+                            )}
+                            {item.type === 'training' && item.format && (
+                              <div className="text-xs text-gray-500">
+                                Format: {item.format}
+                              </div>
+                            )}
+                          </div>
+                        </Link>
+                      )
+                    })}
                   </div>
                 ) : (
                   <div className="bg-white rounded-lg shadow p-12 text-center">
@@ -227,21 +333,33 @@ export default function WorkforceStuffPage() {
                   <span className="text-sm text-gray-500">{archivedItems.length} items</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {archivedItems.map(item => (
-                    <Link
-                      key={item.id}
-                      href={`/mycompany/workforcestuff/${item.id}`}
-                      className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-gray-300 opacity-75"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <span className="text-xs font-medium text-gray-500 uppercase bg-gray-100 text-gray-800 px-2 py-1 rounded">
-                          {item.type}
-                        </span>
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">{item.summary}</p>
-                    </Link>
-                  ))}
+                  {archivedItems.map(item => {
+                    const detailRoute = item.type === 'training' 
+                      ? `/mycompany/workforcestuff/training/${item.id}`
+                      : `/mycompany/workforcestuff/${item.id}`
+                    
+                    return (
+                      <Link
+                        key={item.id}
+                        href={detailRoute}
+                        className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-gray-300 opacity-75"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <span className="text-xs font-medium text-gray-500 uppercase bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                            {item.type}
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
+                        <p className="text-sm text-gray-600 mb-4 line-clamp-2">{item.summary}</p>
+                        {item.startDate && (
+                          <div className="flex items-center text-xs text-gray-500">
+                            <Calendar className="h-4 w-4 mr-1" />
+                            {new Date(item.startDate).toLocaleDateString()}
+                          </div>
+                        )}
+                      </Link>
+                    )
+                  })}
                 </div>
               </div>
             )}
