@@ -1,59 +1,52 @@
 /**
- * API Client with Firebase Token Interceptor
+ * Global Axios Instance with Firebase Token Interceptor
  * 
- * Automatically injects Firebase ID tokens into all API requests
- * Replaces all fetch() calls throughout the application
+ * AUTOMATICALLY attaches Firebase ID tokens to ALL API requests
+ * No manual Authorization headers needed anywhere in the codebase
+ * 
+ * Usage:
+ *   import api from '@/lib/api'
+ *   const response = await api.post('/api/workstuff/ingest/create-training', { ... })
  */
 
 'use client'
 
 import axios from 'axios'
-import { getAuth } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
+import { getIdToken } from '@/lib/firebase/getIdToken'
 
 const api = axios.create({
-  baseURL: '', // Use current origin (relative URLs)
+  baseURL: '/',
   headers: {
     'Content-Type': 'application/json',
   },
 })
 
-// Request interceptor - AUTOMATICALLY adds Firebase token to all requests
+// Request interceptor - ALWAYS attaches Firebase token
 api.interceptors.request.use(
   async (config) => {
-    // Ensure /api/* routes always use current origin (local Next.js routes)
+    // Ensure /api/* routes use current origin
     if (config.url && config.url.startsWith('/api/')) {
       config.baseURL = typeof window !== 'undefined' ? window.location.origin : ''
     }
 
+    // ALWAYS try to attach Firebase token
     try {
-      // Get Firebase auth instance
-      const firebaseAuth = auth || getAuth()
-      const user = firebaseAuth?.currentUser
-
-      // If user is authenticated, add token to request
-      if (user) {
-        try {
-          // Firebase SDK automatically refreshes tokens when you call getIdToken()
-          const token = await user.getIdToken()
-          config.headers.Authorization = `Bearer ${token}`
-        } catch (error: any) {
-          console.error('❌ Failed to get Firebase token:', error)
-          // Don't block the request - let server handle auth failure
-        }
+      const token = await getIdToken()
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`
+        console.log(`[API] ✅ Token attached to ${config.method?.toUpperCase()} ${config.url}`)
+      } else {
+        console.warn(`[API] ⚠️ No token available for ${config.method?.toUpperCase()} ${config.url}`)
       }
     } catch (error: any) {
-      // Firebase not initialized yet - skip token for now
-      // This can happen on initial page load before Firebase is ready
-      if (error.code !== 'app/no-app') {
-        console.warn('⚠️ Firebase auth not available:', error.message)
-      }
+      console.warn(`[API] ⚠️ Unable to attach token for ${config.method?.toUpperCase()} ${config.url}:`, error.message)
+      // Don't block the request - let server handle auth failure
     }
 
     return config
   },
   (error) => {
-    console.error('❌ API Request Error:', error)
+    console.error('[API] ❌ Request interceptor error:', error)
     return Promise.reject(error)
   }
 )
@@ -66,13 +59,12 @@ api.interceptors.response.use(
   async (error) => {
     // Handle 401 Unauthorized - token expired or invalid
     if (error.response?.status === 401) {
-      console.error('❌ API Request Unauthorized:', error.response.data)
-      // Could redirect to signin here if needed
+      console.error('[API] ❌ Unauthorized (401):', error.response.data)
     }
 
     // Handle 403 Forbidden
     if (error.response?.status === 403) {
-      console.error('❌ API Request Forbidden:', error.response.data)
+      console.error('[API] ❌ Forbidden (403):', error.response.data)
     }
 
     return Promise.reject(error)

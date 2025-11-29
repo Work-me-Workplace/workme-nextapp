@@ -70,15 +70,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true)
       setError(null)
 
-      // Get fresh Firebase token
+      // Get token for session storage (not for API call - interceptor handles that)
       const token = await firebaseUser.getIdToken()
 
       // Call hydration endpoint
-      const response = await api.get('/api/workme/hydrate', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      // Token is automatically added by api interceptor - no manual header needed
+      const response = await api.get('/api/workme/hydrate')
 
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to hydrate session')
