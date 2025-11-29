@@ -62,7 +62,6 @@ export async function createTypedContext(
       data: {
         ...data,
         companyId,
-        originatorId: workMeId,
       },
     })
 
@@ -129,12 +128,11 @@ export async function updateTypedContext(
   const modelName = MODEL_MAP[type as ModelMapKey]
 
   try {
-    // Update CompanyX model directly (validate ownership via companyId and originatorId)
+    // Update CompanyX model directly (validate ownership via companyId)
     const typed = await (prisma as any)[modelName].update({
       where: { 
         id: companyXId,
         companyId, // Multi-tenant: ensure same company
-        originatorId: workMeId, // Ensure ownership
       },
       data,
     })
@@ -264,12 +262,11 @@ export async function deleteTypedContext(
   const modelName = MODEL_MAP[type as ModelMapKey]
 
   try {
-    // Delete CompanyX model directly (validate ownership via companyId and originatorId)
+    // Delete CompanyX model directly (validate ownership via companyId)
     await (prisma as any)[modelName].delete({
       where: { 
         id: companyXId,
         companyId, // Multi-tenant: ensure same company
-        originatorId: workMeId, // Ensure ownership
       },
     })
 

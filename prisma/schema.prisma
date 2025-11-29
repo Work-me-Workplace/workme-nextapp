@@ -41,13 +41,6 @@ model WorkMe {
   originatedCommsOutputs           CommsOutput[]           @relation("CommsOutputOriginator")
   originatedObjectives             Objective[]             @relation("ObjectiveOriginator")
   originatedAchievements           Achievement[]           @relation("AchievementOriginator")
-  originatedCompanyCampaigns       CompanyCampaign[]       @relation("CompanyCampaignOriginator")
-  originatedCompanyImpactEvents    CompanyImpactEvent[]    @relation("CompanyImpactEventOriginator")
-  originatedCompanyEvents          CompanyEvent[]          @relation("CompanyEventOriginator")
-  originatedCompanyCommunities     CompanyCommunity[]      @relation("CompanyCommunityOriginator")
-  originatedCompanyBenefits        CompanyBenefits[]       @relation("CompanyBenefitsOriginator")
-  originatedCompanyCareers         CompanyCareer[]         @relation("CompanyCareerOriginator")
-  originatedCompanyEmployeeCauses  CompanyEmployeeCause[]  @relation("CompanyEmployeeCauseOriginator")
   originatedWorkOutputStandalones  WorkOutputStandalone[]  @relation("WorkOutputStandaloneOriginator")
   originatedNTKs                   NTK[]                   @relation("NTKOriginator")
   originatedWorkCommsProducts      WorkCommsProduct[]      @relation("WorkCommsProductOriginator")
@@ -403,13 +396,10 @@ model CompanyCampaign {
 
   companyId    String
   company      Company @relation("CompanyCampaignCompany", fields: [companyId], references: [id], onDelete: Cascade)
-  originatorId String
-  originator   WorkMe  @relation("CompanyCampaignOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   links CompanyWorkLink[]
 
   @@index([companyId])
-  @@index([originatorId])
 }
 
 model CompanyImpactEvent {
@@ -427,13 +417,10 @@ model CompanyImpactEvent {
 
   companyId    String
   company      Company @relation("CompanyImpactEventCompany", fields: [companyId], references: [id], onDelete: Cascade)
-  originatorId String
-  originator   WorkMe  @relation("CompanyImpactEventOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   links CompanyWorkLink[]
 
   @@index([companyId])
-  @@index([originatorId])
 }
 
 model CompanyTraining {
@@ -518,15 +505,12 @@ model CompanyEvent {
 
   companyId    String
   company      Company @relation("CompanyEventCompany", fields: [companyId], references: [id], onDelete: Cascade)
-  originatorId String
-  originator   WorkMe  @relation("CompanyEventOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   // Relations
   eventItems EventItem[]
   links      CompanyWorkLink[]
 
   @@index([companyId])
-  @@index([originatorId])
 }
 
 model EventItem {
@@ -560,13 +544,10 @@ model CompanyCommunity {
 
   companyId    String
   company      Company @relation("CompanyCommunityCompany", fields: [companyId], references: [id], onDelete: Cascade)
-  originatorId String
-  originator   WorkMe  @relation("CompanyCommunityOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   links CompanyWorkLink[]
 
   @@index([companyId])
-  @@index([originatorId])
 }
 
 model CompanyBenefits {
@@ -589,13 +570,10 @@ model CompanyBenefits {
 
   companyId    String
   company      Company @relation("CompanyBenefitsCompany", fields: [companyId], references: [id], onDelete: Cascade)
-  originatorId String
-  originator   WorkMe  @relation("CompanyBenefitsOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   links CompanyWorkLink[]
 
   @@index([companyId])
-  @@index([originatorId])
 }
 
 model CompanyCareer {
@@ -614,13 +592,10 @@ model CompanyCareer {
 
   companyId    String
   company      Company @relation("CompanyCareerCompany", fields: [companyId], references: [id], onDelete: Cascade)
-  originatorId String
-  originator   WorkMe  @relation("CompanyCareerOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   links CompanyWorkLink[]
 
   @@index([companyId])
-  @@index([originatorId])
 }
 
 model CompanyEmployeeCause {
@@ -643,13 +618,10 @@ model CompanyEmployeeCause {
 
   companyId    String
   company      Company @relation("CompanyEmployeeCauseCompany", fields: [companyId], references: [id], onDelete: Cascade)
-  originatorId String
-  originator   WorkMe  @relation("CompanyEmployeeCauseOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   links CompanyWorkLink[]
 
   @@index([companyId])
-  @@index([originatorId])
 }
 
 // ============================================

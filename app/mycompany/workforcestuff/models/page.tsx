@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
-import { createTraining } from '@/lib/actions/typed-contexts'
+import { createTraining } from '@/lib/actions/companyx-actions'
 import { CheckCircle, ArrowRight, Loader2, FileText, Save } from 'lucide-react'
 
 interface Section {

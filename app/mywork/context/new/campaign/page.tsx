@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { createCampaign } from '@/lib/actions/typed-contexts'
+import { createCampaign } from '@/lib/actions/companyx-actions'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
 export default function NewCampaignPage() {
@@ -32,7 +32,6 @@ export default function NewCampaignPage() {
 
     setLoading(true)
     try {
-      const workMeId = getWorkMeIdFromStorage()
       const result = await createCampaign({
         title: formData.title,
         description: formData.description || null,
@@ -44,7 +43,7 @@ export default function NewCampaignPage() {
         pocLastName: formData.pocLastName || null,
         pocEmail: formData.pocEmail || null,
         pocPhone: formData.pocPhone || null,
-      }, workMeId)
+      })
 
       if (result.success && result.campaign) {
         router.push(`/mywork/context/${result.campaign.id}/success`)

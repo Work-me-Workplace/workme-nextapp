@@ -3,14 +3,25 @@
 import { prisma } from '../prisma'
 import { z } from 'zod'
 import { getWorkMeId } from '../getWorkMeId.server'
-import { getTypedContext } from './typed-contexts'
+import { getTypedContext } from '@/lib/server/context-factory'
 import type { ContextType } from '@/lib/types/context-type'
 
 // Helper to get typed context data from CompanyX models
 async function enrichCompanyX(companyX: any, type: ContextType) {
   if (!companyX) return null
 
-  const typedResult = await getTypedContext(type, companyX.id)
+  // Get companyId for getTypedContext
+  const workMeId = await getWorkMeId()
+  if (!workMeId) return companyX
+
+  const workMe = await prisma.workMe.findUnique({
+    where: { id: workMeId },
+    select: { companyId: true },
+  })
+
+  if (!workMe?.companyId) return companyX
+
+  const typedResult = await getTypedContext(type, companyX.id, workMe.companyId)
 
   return {
     ...companyX,
@@ -59,7 +70,6 @@ export async function deleteWorkContext(id: string, type: ContextType) {
       where: { 
         id,
         companyId: workMe.companyId,
-        originatorId: workMeId,
       },
     })
 
@@ -88,38 +98,38 @@ export async function getWorkContexts() {
       return { success: false, error: 'User must belong to a company', workContexts: [] }
     }
 
-    // Fetch all CompanyX models for this user
+    // Fetch all CompanyX models for this company
     const [campaigns, impactEvents, trainings, events, communities, benefits, careers, employeeCauses] = await Promise.all([
       prisma.companyCampaign.findMany({
-        where: { originatorId: workMeId, companyId: workMe.companyId },
+        where: { companyId: workMe.companyId },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyImpactEvent.findMany({
-        where: { originatorId: workMeId, companyId: workMe.companyId },
+        where: { companyId: workMe.companyId },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyTraining.findMany({
-        where: { originatorId: workMeId, companyId: workMe.companyId },
+        where: { companyId: workMe.companyId },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyEvent.findMany({
-        where: { originatorId: workMeId, companyId: workMe.companyId },
+        where: { companyId: workMe.companyId },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyCommunity.findMany({
-        where: { originatorId: workMeId, companyId: workMe.companyId },
+        where: { companyId: workMe.companyId },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyBenefits.findMany({
-        where: { originatorId: workMeId, companyId: workMe.companyId },
+        where: { companyId: workMe.companyId },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyCareer.findMany({
-        where: { originatorId: workMeId, companyId: workMe.companyId },
+        where: { companyId: workMe.companyId },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyEmployeeCause.findMany({
-        where: { originatorId: workMeId, companyId: workMe.companyId },
+        where: { companyId: workMe.companyId },
         orderBy: { createdAt: 'desc' },
       }),
     ])
@@ -210,7 +220,6 @@ export async function getWorkContext(id: string, type: ContextType, clientWorkMe
       where: { 
         id,
         companyId: workMe.companyId, // Multi-tenant security
-        originatorId: workMeId, // Ensure ownership
       },
     })
 

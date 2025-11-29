@@ -62,7 +62,6 @@ export async function POST(request: NextRequest) {
       data: {
         ...data,
         companyId,
-        originatorId: workMeId,
       },
     })
 

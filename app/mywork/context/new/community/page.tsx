@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { createCommunityOpportunity } from '@/lib/actions/typed-contexts'
+import { createCommunityOpportunity } from '@/lib/actions/companyx-actions'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
 export default function NewCommunityPage() {
@@ -49,8 +49,8 @@ export default function NewCommunityPage() {
         pocPhone: formData.pocPhone || null,
       })
 
-      if (result.success && result.opportunity) {
-        router.push(`/mywork/context/${result.opportunity.id}/success`)
+      if (result.success && result.community) {
+        router.push(`/mywork/context/${result.community.id}/success`)
       } else {
         alert('Failed to create Community Opportunity: ' + (result.error || 'Unknown error'))
         setLoading(false)

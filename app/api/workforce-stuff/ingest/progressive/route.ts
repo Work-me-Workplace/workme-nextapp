@@ -133,7 +133,6 @@ async function upsertCompanyX(
       data: {
         ...data,
         companyId,
-        originatorId: workMeId,
       },
     })
   }

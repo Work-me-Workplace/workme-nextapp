@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { createBenefits } from '@/lib/actions/typed-contexts'
+import { createBenefits } from '@/lib/actions/companyx-actions'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
 export default function NewBenefitsPage() {
