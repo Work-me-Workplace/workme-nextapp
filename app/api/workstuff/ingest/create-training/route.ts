@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
     // For now, only "training" is fully implemented
     if (selectedType === 'training') {
       // Create CompanyTraining with ONLY ingest snapshot
+      // DO NOT set real training fields - they don't exist in DB yet or should remain null
       const training = await prisma.companyTraining.create({
         data: {
           ingestRawText: rawText,
@@ -58,21 +59,8 @@ export async function POST(request: NextRequest) {
           ingestStatus: 'pending',
           ingestCreatedAt: new Date(),
           companyId,
-          // All "real" fields remain null
-          title: null,
-          description: null,
+          // Only set mandatory default - all other real fields remain undefined (Prisma will use schema defaults)
           mandatory: false,
-          trainingDate: null,
-          startTime: null,
-          endTime: null,
-          location: null,
-          format: null,
-          link: null,
-          pocFirstName: null,
-          pocLastName: null,
-          pocEmail: null,
-          pocPhone: null,
-          pocRankOrTitle: null,
         },
       })
 
