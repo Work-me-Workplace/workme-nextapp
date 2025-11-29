@@ -6,10 +6,10 @@ import { prisma } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 
 /**
- * STAGE 1: Create Training with Ingest Snapshot
+ * STAGE 1: Create CompanyX model with Ingest Snapshot
  * 
- * Creates a new CompanyTraining row with ONLY ingest fields populated.
- * All "real" training fields remain null until Stage 2.
+ * Creates a new CompanyX row (currently only Training) with ONLY ingest fields populated.
+ * All "real" fields remain null until Stage 2.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { companyId } = auth
-    const { rawText } = await request.json()
+    const { rawText, selectedType } = await request.json()
 
     if (!rawText || typeof rawText !== 'string') {
       return NextResponse.json(
@@ -32,37 +32,63 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create CompanyTraining with ONLY ingest snapshot
-    const training = await prisma.companyTraining.create({
-      data: {
-        ingestRawText: rawText,
-        ingestType: 'training',
-        ingestStatus: 'pending',
-        ingestCreatedAt: new Date(),
-        companyId,
-        // All "real" fields remain null
-        title: null,
-        description: null,
-        mandatory: false,
-        trainingDate: null,
-        startTime: null,
-        endTime: null,
-        location: null,
-        format: null,
-        link: null,
-        pocFirstName: null,
-        pocLastName: null,
-        pocEmail: null,
-        pocPhone: null,
-        pocRankOrTitle: null,
-      },
-    })
+    if (!selectedType || typeof selectedType !== 'string') {
+      return NextResponse.json(
+        { success: false, error: 'selectedType is required' },
+        { status: 400 }
+      )
+    }
 
-    return NextResponse.json({
-      success: true,
-      trainingId: training.id,
-      training,
-    })
+    // Validate selectedType
+    const validTypes = ['training', 'event', 'notice', 'task', 'other']
+    if (!validTypes.includes(selectedType)) {
+      return NextResponse.json(
+        { success: false, error: `Invalid selectedType. Must be one of: ${validTypes.join(', ')}` },
+        { status: 400 }
+      )
+    }
+
+    // For now, only "training" is fully implemented
+    if (selectedType === 'training') {
+      // Create CompanyTraining with ONLY ingest snapshot
+      const training = await prisma.companyTraining.create({
+        data: {
+          ingestRawText: rawText,
+          ingestType: selectedType,
+          ingestStatus: 'pending',
+          ingestCreatedAt: new Date(),
+          companyId,
+          // All "real" fields remain null
+          title: null,
+          description: null,
+          mandatory: false,
+          trainingDate: null,
+          startTime: null,
+          endTime: null,
+          location: null,
+          format: null,
+          link: null,
+          pocFirstName: null,
+          pocLastName: null,
+          pocEmail: null,
+          pocPhone: null,
+          pocRankOrTitle: null,
+        },
+      })
+
+      return NextResponse.json({
+        success: true,
+        trainingId: training.id,
+        redirectTo: `/mycompany/workforcestuff/training/ingest/${training.id}`,
+        training,
+      })
+    } else {
+      // Other types coming soon
+      return NextResponse.json(
+        { success: false, error: `Type "${selectedType}" is coming soon. Only "training" is currently supported.` },
+        { status: 400 }
+      )
+    }
   } catch (error: any) {
     console.error('[Create Training] Error:', error)
     return NextResponse.json(

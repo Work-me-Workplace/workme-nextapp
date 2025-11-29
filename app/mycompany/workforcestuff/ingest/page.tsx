@@ -11,7 +11,7 @@ export default function WorkforceStuffIngestPage() {
   const [rawText, setRawText] = useState('')
   const [loading, setLoading] = useState(false)
   const [suggestedType, setSuggestedType] = useState<string | null>(null)
-  const [confidence, setConfidence] = useState<number | null>(null)
+  const [selectedType, setSelectedType] = useState<string>('training')
 
   async function handleInferType() {
     if (!rawText.trim()) {
@@ -27,8 +27,9 @@ export default function WorkforceStuffIngestPage() {
       })
 
       if (response.data.success) {
-        setSuggestedType(response.data.suggestedType)
-        setConfidence(response.data.confidence)
+        const suggested = response.data.suggestedType || 'training'
+        setSuggestedType(suggested)
+        setSelectedType(suggested) // Set selectedType to suggestedType initially
       } else {
         alert('Failed to infer type: ' + (response.data.error || 'Unknown error'))
       }
@@ -41,30 +42,26 @@ export default function WorkforceStuffIngestPage() {
   }
 
   async function handleConfirmType() {
-    if (!suggestedType || !rawText.trim()) return
-
-    // For now, only handle "training"
-    if (suggestedType !== 'training') {
-      alert(`Type "${suggestedType}" is coming soon. Only "training" is supported.`)
-      return
-    }
+    if (!selectedType || !rawText.trim()) return
 
     setLoading(true)
     try {
       const { default: api } = await import('@/lib/api')
       const response = await api.post('/api/workstuff/ingest/create-training', {
         rawText,
+        selectedType,
       })
 
       if (response.data.success) {
-        // Redirect to training ingest page
-        router.push(`/mycompany/workforcestuff/training/ingest/${response.data.trainingId}`)
+        // Use redirectTo from response, or fallback to training route
+        const redirectTo = response.data.redirectTo || `/mycompany/workforcestuff/training/ingest/${response.data.trainingId}`
+        router.push(redirectTo)
       } else {
-        alert('Failed to create training: ' + (response.data.error || 'Unknown error'))
+        alert('Failed to create: ' + (response.data.error || 'Unknown error'))
       }
     } catch (error) {
       console.error('Create error:', error)
-      alert('Failed to create training')
+      alert('Failed to create')
     } finally {
       setLoading(false)
     }
@@ -116,42 +113,43 @@ export default function WorkforceStuffIngestPage() {
 
           {suggestedType && (
             <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Suggested Type: <span className="capitalize">{suggestedType}</span>
-                  </h3>
-                  {confidence && (
-                    <p className="text-sm text-gray-600 mt-1">
-                      Confidence: {Math.round(confidence * 100)}%
-                    </p>
-                  )}
-                </div>
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                  Detected Type
+                </h3>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Type
+                </label>
+                <select
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                  className="border border-gray-300 rounded-md px-3 py-2 bg-white w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="training">Training</option>
+                  <option value="event">Event</option>
+                  <option value="notice">Notice</option>
+                  <option value="task">Task</option>
+                  <option value="other">Other</option>
+                </select>
               </div>
 
-              {suggestedType === 'training' ? (
-                <button
-                  onClick={handleConfirmType}
-                  disabled={loading}
-                  className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      Creating Training...
-                    </>
-                  ) : (
-                    <>
-                      Confirm & Create Training
-                      <ArrowRight className="h-5 w-5" />
-                    </>
-                  )}
-                </button>
-              ) : (
-                <div className="text-sm text-gray-600">
-                  Type "{suggestedType}" is coming soon. Only "training" is currently supported.
-                </div>
-              )}
+              <button
+                onClick={handleConfirmType}
+                disabled={loading}
+                className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    Confirm & Create
+                    <ArrowRight className="h-5 w-5" />
+                  </>
+                )}
+              </button>
             </div>
           )}
         </div>

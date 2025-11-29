@@ -61,8 +61,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       suggestedType,
-      confidence: inference.confidence,
-      explanation: inference.explanation,
     })
   } catch (error: any) {
     console.error('[Type Infer] Error:', error)
