@@ -72,6 +72,7 @@ export async function createEdition(
           rawFields: row.rawFields,
           validated: true,
           status: NTKStatus.VALIDATED,
+          originatorId: workMeId,
         })),
       },
     },

@@ -796,6 +796,7 @@ model WorkOutputStandalone {
   companyDivision   String?
   createdByWorkMeId String
   createdBy         WorkMe  @relation("WorkOutputStandaloneCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  originatorId      String? // NTK attribution
 
   @@index([companyUnit])
   @@index([createdByWorkMeId])
@@ -826,6 +827,7 @@ model NTK {
   companyDivision   String?
   createdByWorkMeId String
   createdBy         WorkMe  @relation("NTKCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  originatorId      String? // NTK attribution
 
   @@index([companyUnit])
   @@index([createdByWorkMeId])
@@ -852,6 +854,7 @@ model NTKEdition {
   title             String?
   createdByWorkMeId String
   createdBy         WorkMe    @relation("NTKEditionCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  originatorId      String? // NTK attribution
 
   companyUnit     String?
   companyDivision String?
@@ -876,6 +879,7 @@ model NTKItem {
   plainLanguage String? // GPT output (plain text)
   feedback      String? // For regenerating with user feedback
   status        NTKStatus @default(PENDING)
+  originatorId  String? // NTK attribution
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -939,6 +943,7 @@ model WorkforceComms {
   companyDivision   String?
   createdByWorkMeId String
   createdBy         WorkMe  @relation("WorkforceCommsCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  originatorId      String? // NTK attribution
 
   editions WorkforceCommsEdition[] @relation("WorkforceCommsEditions")
   drafts   WorkforceCommsDraft[]   @relation("WorkforceCommsDrafts")
@@ -994,6 +999,7 @@ model WorkforceCommsEdition {
   companyDivision   String?
   createdByWorkMeId String
   createdBy         WorkMe  @relation("WorkforceCommsEditionCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  originatorId      String? // NTK attribution
 
   @@index([companyUnit])
   @@index([createdByWorkMeId])

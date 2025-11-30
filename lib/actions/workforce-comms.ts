@@ -110,6 +110,7 @@ export async function createWorkforceCommsProduct(data: z.infer<typeof workforce
         createdByWorkMeId: workMeId,
         companyUnit: companyUnit,
         companyDivision: companyDivision,
+        originatorId: workMeId,
       },
     })
 
@@ -316,6 +317,7 @@ export async function createWorkforceCommsEdition(data: z.infer<typeof workforce
         createdByWorkMeId: workMeId,
         companyUnit: companyUnit,
         companyDivision: companyDivision,
+        originatorId: workMeId,
       },
       include: {
         product: true,
