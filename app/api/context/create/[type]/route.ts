@@ -3,6 +3,8 @@ import type { ContextType } from '@/lib/types/context-type'
 import { createTypedContext } from '@/lib/server/context-factory'
 import { SCHEMA_MAP } from '@/lib/server/context-schemas'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
+import { loadMembership } from '@/lib/auth/loadMembership'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -35,11 +37,32 @@ export async function POST(
   { params }: { params: Promise<{ type: string }> }
 ) {
   try {
-    // Verify Firebase token and get authenticated context
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    // 1. Auth - Verify Firebase token
+    const { firebaseId } = await verifyAuth(request)
+
+    // 2. Load WorkMe identity
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId } = workMe
 
     const { type } = await params
     const body = await request.json()
+
+    // 3. Determine companyUnit from request body or use default
+    const companyUnit = body.companyUnit || workMe.companyUnit
+    const companyDivision = body.companyDivision || workMe.companyDivision
+
+    if (!companyUnit) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'companyUnit is required. Provide in request body or set as default in profile.' 
+        },
+        { status: 400 },
+      )
+    }
+
+    // 4. Load membership & verify access
+    const membership = await loadMembership(workMeId, companyUnit)
 
     console.log('[API POST /api/context/create/[type]]', {
       type,
@@ -47,6 +70,7 @@ export async function POST(
       workMeId,
       companyUnit,
       companyDivision,
+      role: membership.role,
     })
 
     // Validate type

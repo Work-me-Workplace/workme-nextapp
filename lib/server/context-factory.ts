@@ -60,12 +60,13 @@ export async function createTypedContext(
   const modelName = MODEL_MAP[type as ModelMapKey]
 
   try {
-    // Create CompanyX model directly
+    // Create CompanyX model directly with createdByWorkMeId
     const typed = await (prisma as any)[modelName].create({
       data: {
         ...data,
         companyUnit,
         companyDivision,
+        createdByWorkMeId: workMeId,
       },
     })
 

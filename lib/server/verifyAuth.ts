@@ -1,8 +1,8 @@
 /**
  * Server-side Firebase Token Verification
  * 
- * Uses Firebase Admin SDK to verify ID tokens from Authorization header
- * Returns authenticated user's workMeId, companyUnit, and companyDivision
+ * Pure Firebase authentication - verifies ID tokens only
+ * Does NOT fetch WorkMe or membership data
  * 
  * ⚠️ SERVER-ONLY - Never import in client components
  */
@@ -10,23 +10,21 @@
 'use server'
 
 import { getAdminAuth } from './firebaseAdmin'
-import { prisma } from '@/lib/prisma'
 
 export interface VerifiedAuth {
-  workMeId: string
-  companyUnit: string | null // Required for WorkContext, but collected AFTER signup
-  companyDivision: string | null // Optional grouping layer
   firebaseId: string
   email: string | null
+  displayName: string | null
+  photoUrl: string | null
 }
 
 /**
  * Verify Firebase token from Request Authorization header
- * Fetches WorkMe from database
+ * Pure authentication - returns Firebase user data only
  * 
  * @param request - Next.js Request object (for API routes)
- * @throws Error if token is missing, invalid, or user not found
- * @returns {VerifiedAuth} Authenticated user context
+ * @throws Error if token is missing or invalid
+ * @returns {VerifiedAuth} Firebase user data
  */
 export async function verifyAuth(request?: Request): Promise<VerifiedAuth> {
   // For API routes, use request headers. For server actions, use next/headers
@@ -56,28 +54,11 @@ export async function verifyAuth(request?: Request): Promise<VerifiedAuth> {
       email: decodedToken.email,
     })
 
-    // Get WorkMe record by firebaseId
-    const workMe = await prisma.workMe.findUnique({
-      where: { firebaseId: decodedToken.uid },
-      select: {
-        id: true,
-        firebaseId: true,
-        email: true,
-        companyUnit: true,
-        companyDivision: true,
-      },
-    })
-
-    if (!workMe) {
-      throw new Error('Unauthorized: WorkMe record not found. Please complete sign up.')
-    }
-
     return {
-      workMeId: workMe.id,
-      companyUnit: workMe.companyUnit,
-      companyDivision: workMe.companyDivision,
       firebaseId: decodedToken.uid,
-      email: decodedToken.email || workMe.email,
+      email: decodedToken.email || null,
+      displayName: decodedToken.name || null,
+      photoUrl: decodedToken.picture || null,
     }
   } catch (error: any) {
     console.error('[verifyAuth] Token verification failed:', {
