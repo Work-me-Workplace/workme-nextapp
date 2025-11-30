@@ -33,28 +33,28 @@ model WorkMe {
   superAdmin SuperAdmin? // Optional link to SuperAdmin (may migrate away)
 
   // WorkWorld Architecture Relations
-  workplaces Workplace[]
+  workplaces             Workplace[]
   companyUnitMemberships CompanyUnitMembers[]
 
   // Minimal reverse relations (required by Prisma, but NOT to be queried)
   // WorkMe is pure identity - work outputs reference WorkMe via createdByWorkMeId
   // These relations exist only for Prisma schema validation
-  originatedCommsOutputs           CommsOutput[]           @relation("CommsOutputOriginator")
-  originatedObjectives             Objective[]             @relation("ObjectiveOriginator")
-  originatedAchievements           Achievement[]           @relation("AchievementOriginator")
-  createdWorkOutputStandalones     WorkOutputStandalone[]  @relation("WorkOutputStandaloneCreator")
-  createdNTKs                      NTK[]                   @relation("NTKCreator")
-  createdWorkCommsProducts         WorkCommsProduct[]      @relation("WorkCommsProductCreator")
-  createdWorkforceComms            WorkforceComms[]        @relation("WorkforceCommsCreator")
-  createdWorkforceCommsDrafts       WorkforceCommsDraft[]   @relation("WorkforceCommsDraftCreator")
-  createdWorkforceCommsEditions    WorkforceCommsEdition[] @relation("WorkforceCommsEditionCreator")
-  createdNTKEditions               NTKEdition[]            @relation("NTKEditionCreator")
-  createdCompanyCampaigns          CompanyCampaign[]       @relation("CompanyCampaignCreator")
-  createdCompanyImpactEvents        CompanyImpactEvent[]    @relation("CompanyImpactEventCreator")
-  createdCompanyTrainings           CompanyTraining[]       @relation("CompanyTrainingCreator")
-  createdCompanyEvents              CompanyEvent[]           @relation("CompanyEventCreator")
-  createdCompanyCommunities         CompanyCommunity[]      @relation("CompanyCommunityCreator")
-  createdCompanyCareers              CompanyCareer[]          @relation("CompanyCareerCreator")
+  originatedCommsOutputs        CommsOutput[]           @relation("CommsOutputOriginator")
+  originatedObjectives          Objective[]             @relation("ObjectiveOriginator")
+  originatedAchievements        Achievement[]           @relation("AchievementOriginator")
+  createdWorkOutputStandalones  WorkOutputStandalone[]  @relation("WorkOutputStandaloneCreator")
+  createdNTKs                   NTK[]                   @relation("NTKCreator")
+  createdWorkCommsProducts      WorkCommsProduct[]      @relation("WorkCommsProductCreator")
+  createdWorkforceComms         WorkforceComms[]        @relation("WorkforceCommsCreator")
+  createdWorkforceCommsDrafts   WorkforceCommsDraft[]   @relation("WorkforceCommsDraftCreator")
+  createdWorkforceCommsEditions WorkforceCommsEdition[] @relation("WorkforceCommsEditionCreator")
+  createdNTKEditions            NTKEdition[]            @relation("NTKEditionCreator")
+  createdCompanyCampaigns       CompanyCampaign[]       @relation("CompanyCampaignCreator")
+  createdCompanyImpactEvents    CompanyImpactEvent[]    @relation("CompanyImpactEventCreator")
+  createdCompanyTrainings       CompanyTraining[]       @relation("CompanyTrainingCreator")
+  createdCompanyEvents          CompanyEvent[]          @relation("CompanyEventCreator")
+  createdCompanyCommunities     CompanyCommunity[]      @relation("CompanyCommunityCreator")
+  createdCompanyCareers         CompanyCareer[]         @relation("CompanyCareerCreator")
 
   // connections Connection[]  // Commented out - not using
   // events      Event[]       // Commented out - not using
@@ -212,9 +212,9 @@ model CompanyUnit {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  company    CompanyRegistry @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  parentUnit CompanyUnit?    @relation("UnitHierarchy", fields: [parentUnitId], references: [id], onDelete: SetNull)
-  subUnits   CompanyUnit[]   @relation("UnitHierarchy")
+  company    CompanyRegistry      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parentUnit CompanyUnit?         @relation("UnitHierarchy", fields: [parentUnitId], references: [id], onDelete: SetNull)
+  subUnits   CompanyUnit[]        @relation("UnitHierarchy")
   members    CompanyUnitMembers[]
 
   @@index([companyId])
@@ -224,14 +224,14 @@ model CompanyUnit {
 
 // CompanyUnitMembers: Junction table linking WorkMe to CompanyUnit with role
 model CompanyUnitMembers {
-  id          String      @id @default(uuid())
+  id          String          @id @default(uuid())
   workMeId    String
-  companyUnit String      // References CompanyUnit.unit
+  companyUnit String // References CompanyUnit.unit
   role        CompanyUnitRole @default(MEMBER)
-  createdAt   DateTime    @default(now())
+  createdAt   DateTime        @default(now())
 
-  workMe  WorkMe       @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-  unit    CompanyUnit  @relation(fields: [companyUnit], references: [unit], onDelete: Cascade)
+  workMe WorkMe      @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  unit   CompanyUnit @relation(fields: [companyUnit], references: [unit], onDelete: Cascade)
 
   @@unique([workMeId, companyUnit])
   @@index([workMeId])
@@ -256,7 +256,6 @@ model Workplace {
   @@index([workMeId])
   @@index([companyId])
 }
-
 
 enum CompanyType {
   NON_PROFIT
@@ -392,10 +391,10 @@ model CompanyCampaign {
   pocEmail     String?
   pocPhone     String?
 
-  companyUnit     String?
-  companyDivision String?
+  companyUnit       String?
+  companyDivision   String?
   createdByWorkMeId String
-  createdBy        WorkMe @relation("CompanyCampaignCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  createdBy         WorkMe  @relation("CompanyCampaignCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   links CompanyWorkLink[]
 
@@ -416,10 +415,10 @@ model CompanyImpactEvent {
   pocEmail           String?
   pocPhone           String?
 
-  companyUnit     String?
-  companyDivision String?
+  companyUnit       String?
+  companyDivision   String?
   createdByWorkMeId String
-  createdBy        WorkMe @relation("CompanyImpactEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  createdBy         WorkMe  @relation("CompanyImpactEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   links CompanyWorkLink[]
 
@@ -462,10 +461,10 @@ model CompanyTraining {
   ingestCreatedAt DateTime? @default(now())
 
   // Relations
-  companyUnit     String?
-  companyDivision String?
+  companyUnit       String?
+  companyDivision   String?
   createdByWorkMeId String
-  createdBy        WorkMe @relation("CompanyTrainingCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  createdBy         WorkMe  @relation("CompanyTrainingCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   links CompanyWorkLink[]
 
@@ -510,12 +509,12 @@ model CompanyEvent {
   pocEmail String?
   pocPhone String?
 
-  summary   String?    // Stage 3 synthesized paragraph
+  summary String? // Stage 3 synthesized paragraph
 
-  companyUnit     String?
-  companyDivision String?
+  companyUnit       String?
+  companyDivision   String?
   createdByWorkMeId String
-  createdBy        WorkMe @relation("CompanyEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  createdBy         WorkMe  @relation("CompanyEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   // Relations
   eventItems EventItem[]
@@ -554,10 +553,10 @@ model CompanyCommunity {
   pocEmail     String?
   pocPhone     String?
 
-  companyUnit     String?
-  companyDivision String?
+  companyUnit       String?
+  companyDivision   String?
   createdByWorkMeId String
-  createdBy        WorkMe @relation("CompanyCommunityCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  createdBy         WorkMe  @relation("CompanyCommunityCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   links CompanyWorkLink[]
 
@@ -569,45 +568,48 @@ model CompanyBenefits {
   // -----------------------
   // IDENTITY
   // -----------------------
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // -----------------------
   // CORE CONTENT
   // -----------------------
-  title                   String
-  description             String?        // 1–2 sentence plain explainer
-  employeeBenefitSummary  String?        // why employees should care
+  title                  String
+  description            String? // 1–2 sentence plain explainer
+  employeeBenefitSummary String? // why employees should care
 
   // -----------------------
   // UNIVERSAL BENEFIT STRUCTURE
   // -----------------------
-  windowStart             DateTime?      // enrollment or action window start
-  windowEnd               DateTime?      // enrollment or action window end
+  windowStart DateTime? // enrollment or action window start
+  windowEnd   DateTime? // enrollment or action window end
 
-  deadlines               Json?          // { enrollBy, mailInDeadline, systemClose, etc. }
+  deadlines Json? // { enrollBy, mailInDeadline, systemClose, etc. }
 
-  actionLink              String?        // GRB / TSP.gov / OPM / portal / signup
-  resources               Json?          // { brochures: [...], guides: [...], instructions: [...] }
+  actionLink String? // GRB / TSP.gov / OPM / portal / signup
+  resources  Json? // { brochures: [...], guides: [...], instructions: [...] }
 
-  pocList                 Json?          // [{ name, email, phone }]
-  extraInstructions       Json?          // ["Review FEHB options", "Log into GRB", ...]
+  pocList           Json? // [{ name, email, phone }]
+  extraInstructions Json? // ["Review FEHB options", "Log into GRB", ...]
 
   // -----------------------
   // AI SYNTHESIS (Stage 3)
   // -----------------------
-  summary                 String?        // NTK synthesized paragraph
+  summary String? // NTK synthesized paragraph
 
   // -----------------------
   // RAW INGESTION (Stage 1)
   // -----------------------
-  ingestRawText           String?
+  ingestRawText String?
 
   // -----------------------
   // RELATIONS
   // -----------------------
-  links CompanyWorkLink[]
+  companyUnit String?
+  links       CompanyWorkLink[]
+
+  @@index([companyUnit])
 }
 
 enum CareerLevel {
@@ -651,11 +653,11 @@ model CompanyCareer {
   ingestRawText String?
 
   // Relations
-  companyUnit     String?
-  companyDivision String?
+  companyUnit       String?
+  companyDivision   String?
   createdByWorkMeId String
-  createdBy        WorkMe @relation("CompanyCareerCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-  links           CompanyWorkLink[]
+  createdBy         WorkMe            @relation("CompanyCareerCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  links             CompanyWorkLink[]
 
   @@index([companyUnit])
   @@index([createdByWorkMeId])
@@ -665,47 +667,50 @@ model CompanyEmployeeCause {
   // -----------------------
   // IDENTITY
   // -----------------------
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // -----------------------
   // CORE CONTENT
   // -----------------------
-  title            String
-  description      String?        // 1–2 sentence "what is this thing?"
-  impactSummary    String?        // 1 sentence "why this matters / who it helps"
+  title         String
+  description   String? // 1–2 sentence "what is this thing?"
+  impactSummary String? // 1 sentence "why this matters / who it helps"
 
   // -----------------------
   // STRUCTURED FIELDS
   // -----------------------
-  partnerOrg            String?
-  sponsoringDepartment  String?
+  partnerOrg           String?
+  sponsoringDepartment String?
 
-  windowStart           DateTime?
-  windowEnd             DateTime?
-  deadlines             Json?        // { mailed, dropoff, delivery }
+  windowStart DateTime?
+  windowEnd   DateTime?
+  deadlines   Json? // { mailed, dropoff, delivery }
 
-  locations             String[]    @default([])    // drop-off or event locations
-  link                  String?
+  locations String[] @default([]) // drop-off or event locations
+  link      String?
 
-  pocList               Json?        // [{ name, email, phone }]
-  extraInstructions     Json?        // ["avoid toy weapons", ...]
+  pocList           Json? // [{ name, email, phone }]
+  extraInstructions Json? // ["avoid toy weapons", ...]
 
   // -----------------------
   // AI SYNTHESIS (Stage 3)
   // -----------------------
-  summary               String?
+  summary String?
 
   // -----------------------
   // RAW INGESTION (Stage 1)
   // -----------------------
-  ingestRawText         String?
+  ingestRawText String?
 
   // -----------------------
   // RELATIONS
   // -----------------------
-  links CompanyWorkLink[]
+  companyUnit String?
+  links       CompanyWorkLink[]
+
+  @@index([companyUnit])
 }
 
 // ============================================
@@ -787,10 +792,10 @@ model WorkOutputStandalone {
   draftContent Json? // email body, notes, fields, etc.
   metadata     Json? // any structured data needed later
 
-  companyUnit     String?
-  companyDivision String?
+  companyUnit       String?
+  companyDivision   String?
   createdByWorkMeId String
-  createdBy        WorkMe @relation("WorkOutputStandaloneCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  createdBy         WorkMe  @relation("WorkOutputStandaloneCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyUnit])
   @@index([createdByWorkMeId])
@@ -817,10 +822,10 @@ model NTK {
   metadata     Json? // Additional metadata (isCSV, generatedAt, etc.)
 
   // Multi-tenant scoping
-  companyUnit     String?
-  companyDivision String?
+  companyUnit       String?
+  companyDivision   String?
   createdByWorkMeId String
-  createdBy        WorkMe @relation("NTKCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  createdBy         WorkMe  @relation("NTKCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyUnit])
   @@index([createdByWorkMeId])
@@ -840,13 +845,13 @@ enum NTKStatus {
 }
 
 model NTKEdition {
-  id           String    @id @default(uuid())
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  date         DateTime?
-  title        String?
+  id                String    @id @default(uuid())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  date              DateTime?
+  title             String?
   createdByWorkMeId String
-  createdBy        WorkMe @relation("NTKEditionCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  createdBy         WorkMe    @relation("NTKEditionCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   companyUnit     String?
   companyDivision String?
@@ -897,16 +902,16 @@ enum WorkCommsProductType {
 }
 
 model WorkCommsProduct {
-  id          String               @id @default(uuid())
-  type        WorkCommsProductType
-  data        Json?
-  metadata    Json?
-  createdAt   DateTime             @default(now())
+  id        String               @id @default(uuid())
+  type      WorkCommsProductType
+  data      Json?
+  metadata  Json?
+  createdAt DateTime             @default(now())
 
-  companyUnit     String?
-  companyDivision String?
+  companyUnit       String?
+  companyDivision   String?
   createdByWorkMeId String
-  createdBy        WorkMe @relation("WorkCommsProductCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  createdBy         WorkMe  @relation("WorkCommsProductCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   links CompanyWorkLink[]
 
@@ -930,10 +935,10 @@ model WorkforceComms {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  companyUnit     String?
-  companyDivision String?
+  companyUnit       String?
+  companyDivision   String?
   createdByWorkMeId String
-  createdBy        WorkMe @relation("WorkforceCommsCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  createdBy         WorkMe  @relation("WorkforceCommsCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   editions WorkforceCommsEdition[] @relation("WorkforceCommsEditions")
   drafts   WorkforceCommsDraft[]   @relation("WorkforceCommsDrafts")
@@ -961,10 +966,10 @@ model WorkforceCommsDraft {
   product     WorkforceComms         @relation("WorkforceCommsDrafts", fields: [workforceCommsId], references: [workforceCommsId], onDelete: Cascade)
   lastEdition WorkforceCommsEdition? @relation(fields: [lastEditionId], references: [editionId], onDelete: SetNull)
 
-  companyUnit     String?
-  companyDivision String?
+  companyUnit       String?
+  companyDivision   String?
   createdByWorkMeId String
-  createdBy        WorkMe @relation("WorkforceCommsDraftCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  createdBy         WorkMe  @relation("WorkforceCommsDraftCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyUnit])
   @@index([createdByWorkMeId])
@@ -985,10 +990,10 @@ model WorkforceCommsEdition {
   product      WorkforceComms        @relation("WorkforceCommsEditions", fields: [workforceCommsId], references: [workforceCommsId], onDelete: Cascade)
   referencedBy WorkforceCommsDraft[] // Drafts that reference this edition as lastEdition
 
-  companyUnit     String?
-  companyDivision String?
+  companyUnit       String?
+  companyDivision   String?
   createdByWorkMeId String
-  createdBy        WorkMe @relation("WorkforceCommsEditionCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  createdBy         WorkMe  @relation("WorkforceCommsEditionCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyUnit])
   @@index([createdByWorkMeId])
