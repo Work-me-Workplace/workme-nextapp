@@ -383,6 +383,8 @@ model CompanyCampaign {
   pocEmail     String?
   pocPhone     String?
 
+  summary String?
+
   companyUnit       String?
   createdByWorkMeId String
   createdBy         WorkMe  @relation("CompanyCampaignCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
@@ -403,6 +405,8 @@ model CompanyImpactEvent {
   pocLastName        String?
   pocEmail           String?
   pocPhone           String?
+
+  summary String?
 
   companyUnit       String?
   createdByWorkMeId String
@@ -445,6 +449,8 @@ model CompanyTraining {
   ingestType      String?
   ingestStatus    String?   @default("pending")
   ingestCreatedAt DateTime? @default(now())
+
+  summary String?
 
   // Relations
   companyUnit       String?
@@ -533,6 +539,8 @@ model CompanyCommunity {
   pocLastName  String?
   pocEmail     String?
   pocPhone     String?
+
+  summary String?
 
   companyUnit       String?
   createdByWorkMeId String
@@ -628,6 +636,8 @@ model CompanyCareer {
 
   // Raw ingest text (no workflow status)
   ingestRawText String?
+
+  summary String?
 
   // Relations
   companyUnit       String?
