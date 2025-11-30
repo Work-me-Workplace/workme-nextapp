@@ -39,22 +39,17 @@ model WorkMe {
   // Minimal reverse relations (required by Prisma, but NOT to be queried)
   // WorkMe is pure identity - work outputs reference WorkMe via createdByWorkMeId
   // These relations exist only for Prisma schema validation
-  originatedCommsOutputs        CommsOutput[]           @relation("CommsOutputOriginator")
-  originatedObjectives          Objective[]             @relation("ObjectiveOriginator")
-  originatedAchievements        Achievement[]           @relation("AchievementOriginator")
-  createdWorkOutputStandalones  WorkOutputStandalone[]  @relation("WorkOutputStandaloneCreator")
-  createdNTKs                   NTK[]                   @relation("NTKCreator")
-  createdWorkCommsProducts      WorkCommsProduct[]      @relation("WorkCommsProductCreator")
-  createdWorkforceComms         WorkforceComms[]        @relation("WorkforceCommsCreator")
-  createdWorkforceCommsDrafts   WorkforceCommsDraft[]   @relation("WorkforceCommsDraftCreator")
-  createdWorkforceCommsEditions WorkforceCommsEdition[] @relation("WorkforceCommsEditionCreator")
-  createdNTKEditions            NTKEdition[]            @relation("NTKEditionCreator")
-  createdCompanyCampaigns       CompanyCampaign[]       @relation("CompanyCampaignCreator")
-  createdCompanyImpactEvents    CompanyImpactEvent[]    @relation("CompanyImpactEventCreator")
-  createdCompanyTrainings       CompanyTraining[]       @relation("CompanyTrainingCreator")
-  createdCompanyEvents          CompanyEvent[]          @relation("CompanyEventCreator")
-  createdCompanyCommunities     CompanyCommunity[]      @relation("CompanyCommunityCreator")
-  createdCompanyCareers         CompanyCareer[]         @relation("CompanyCareerCreator")
+  originatedCommsOutputs       CommsOutput[]                      @relation("CommsOutputOriginator")
+  originatedObjectives         Objective[]                        @relation("ObjectiveOriginator")
+  originatedAchievements       Achievement[]                      @relation("AchievementOriginator")
+  createdWorkOutputStandalones WorkOutputStandalone[]             @relation("WorkOutputStandaloneCreator")
+  createdEmailDigestProducts   WorkForceEnduringProdEmailDigest[] @relation("EmailDigestProductCreator")
+  createdCompanyCampaigns      CompanyCampaign[]                  @relation("CompanyCampaignCreator")
+  createdCompanyImpactEvents   CompanyImpactEvent[]               @relation("CompanyImpactEventCreator")
+  createdCompanyTrainings      CompanyTraining[]                  @relation("CompanyTrainingCreator")
+  createdCompanyEvents         CompanyEvent[]                     @relation("CompanyEventCreator")
+  createdCompanyCommunities    CompanyCommunity[]                 @relation("CompanyCommunityCreator")
+  createdCompanyCareers        CompanyCareer[]                    @relation("CompanyCareerCreator")
 
   // connections Connection[]  // Commented out - not using
   // events      Event[]       // Commented out - not using
@@ -392,11 +387,8 @@ model CompanyCampaign {
   pocPhone     String?
 
   companyUnit       String?
-  companyDivision   String?
   createdByWorkMeId String
   createdBy         WorkMe  @relation("CompanyCampaignCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-
-  links CompanyWorkLink[]
 
   @@index([companyUnit])
   @@index([createdByWorkMeId])
@@ -416,11 +408,8 @@ model CompanyImpactEvent {
   pocPhone           String?
 
   companyUnit       String?
-  companyDivision   String?
   createdByWorkMeId String
   createdBy         WorkMe  @relation("CompanyImpactEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-
-  links CompanyWorkLink[]
 
   @@index([companyUnit])
   @@index([createdByWorkMeId])
@@ -462,11 +451,8 @@ model CompanyTraining {
 
   // Relations
   companyUnit       String?
-  companyDivision   String?
   createdByWorkMeId String
   createdBy         WorkMe  @relation("CompanyTrainingCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-
-  links CompanyWorkLink[]
 
   @@index([companyUnit])
   @@index([createdByWorkMeId])
@@ -512,13 +498,11 @@ model CompanyEvent {
   summary String? // Stage 3 synthesized paragraph
 
   companyUnit       String?
-  companyDivision   String?
   createdByWorkMeId String
   createdBy         WorkMe  @relation("CompanyEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   // Relations
   eventItems EventItem[]
-  links      CompanyWorkLink[]
 
   @@index([companyUnit])
   @@index([createdByWorkMeId])
@@ -554,11 +538,8 @@ model CompanyCommunity {
   pocPhone     String?
 
   companyUnit       String?
-  companyDivision   String?
   createdByWorkMeId String
   createdBy         WorkMe  @relation("CompanyCommunityCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-
-  links CompanyWorkLink[]
 
   @@index([companyUnit])
   @@index([createdByWorkMeId])
@@ -607,7 +588,6 @@ model CompanyBenefits {
   // RELATIONS
   // -----------------------
   companyUnit String?
-  links       CompanyWorkLink[]
 
   @@index([companyUnit])
 }
@@ -654,10 +634,8 @@ model CompanyCareer {
 
   // Relations
   companyUnit       String?
-  companyDivision   String?
   createdByWorkMeId String
-  createdBy         WorkMe            @relation("CompanyCareerCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-  links             CompanyWorkLink[]
+  createdBy         WorkMe  @relation("CompanyCareerCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyUnit])
   @@index([createdByWorkMeId])
@@ -708,58 +686,7 @@ model CompanyEmployeeCause {
   // RELATIONS
   // -----------------------
   companyUnit String?
-  links       CompanyWorkLink[]
 
-  @@index([companyUnit])
-}
-
-// ============================================
-// COMPANY WORK LINK (Junction Table)
-// ============================================
-model CompanyWorkLink {
-  id String @id @default(uuid())
-
-  companyEventId String?
-  companyEvent   CompanyEvent? @relation(fields: [companyEventId], references: [id], onDelete: Cascade)
-
-  companyTrainingId String?
-  companyTraining   CompanyTraining? @relation(fields: [companyTrainingId], references: [id], onDelete: Cascade)
-
-  companyBenefitsId String?
-  companyBenefits   CompanyBenefits? @relation(fields: [companyBenefitsId], references: [id], onDelete: Cascade)
-
-  companyCampaignId String?
-  companyCampaign   CompanyCampaign? @relation(fields: [companyCampaignId], references: [id], onDelete: Cascade)
-
-  companyImpactEventId String?
-  companyImpactEvent   CompanyImpactEvent? @relation(fields: [companyImpactEventId], references: [id], onDelete: Cascade)
-
-  companyCommunityId String?
-  companyCommunity   CompanyCommunity? @relation(fields: [companyCommunityId], references: [id], onDelete: Cascade)
-
-  companyCareerId String?
-  companyCareer   CompanyCareer? @relation(fields: [companyCareerId], references: [id], onDelete: Cascade)
-
-  companyEmployeeCauseId String?
-  companyEmployeeCause   CompanyEmployeeCause? @relation(fields: [companyEmployeeCauseId], references: [id], onDelete: Cascade)
-
-  workCommsProductId String
-  workCommsProduct   WorkCommsProduct @relation(fields: [workCommsProductId], references: [id], onDelete: Cascade)
-
-  companyUnit     String?
-  companyDivision String?
-
-  createdAt DateTime @default(now())
-
-  @@index([companyEventId])
-  @@index([companyTrainingId])
-  @@index([companyBenefitsId])
-  @@index([companyCampaignId])
-  @@index([companyImpactEventId])
-  @@index([companyCommunityId])
-  @@index([companyCareerId])
-  @@index([companyEmployeeCauseId])
-  @@index([workCommsProductId])
   @@index([companyUnit])
 }
 
@@ -793,7 +720,6 @@ model WorkOutputStandalone {
   metadata     Json? // any structured data needed later
 
   companyUnit       String?
-  companyDivision   String?
   createdByWorkMeId String
   createdBy         WorkMe  @relation("WorkOutputStandaloneCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
   originatorId      String? // NTK attribution
@@ -805,206 +731,40 @@ model WorkOutputStandalone {
 }
 
 // ============================================
-// STANDALONE NTK MODEL (Legacy - preserved for backward compatibility)
+// WORKFORCE ENDURING PRODUCTS (Clean Architecture)
 // ============================================
-model NTK {
-  ntkId     String   @id @default(cuid()) @map("id") // Primary key as ntkId
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
-  // NAVSEA NTK Structure
-  header     String // [TITLE IN ALL CAPS] – [MONTH] [DAY]
-  poc        String // *POC: [name & email]*
-  summary    String // 2-4 sentence summary in NAVSEA tone
-  sourceText String? // Original source text (manual entry, CSV, etc.)
-
-  // Optional structured data
-  draftContent Json? // Full NTK structure for future use
-  metadata     Json? // Additional metadata (isCSV, generatedAt, etc.)
-
-  // Multi-tenant scoping
-  companyUnit       String?
-  companyDivision   String?
+// Email Digest Enduring Product
+model WorkForceEnduringProdEmailDigest {
+  id                String   @id @default(uuid())
+  title             String
+  description       String?
+  companyUnit       String
   createdByWorkMeId String
-  createdBy         WorkMe  @relation("NTKCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-  originatorId      String? // NTK attribution
+  createdAt         DateTime @default(now())
+
+  createdBy WorkMe               @relation("EmailDigestProductCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  editions  EmailDigestEdition[]
 
   @@index([companyUnit])
   @@index([createdByWorkMeId])
   @@index([createdAt])
-  @@map("ntk")
 }
 
-// ============================================
-// NTK EDITION & ITEM MODELS (New Pipeline)
-// ============================================
-enum NTKStatus {
-  PENDING
-  VALIDATED
-  GENERATED
-  REVIEWED
-  FINAL
-}
+// Email Digest Edition
+model EmailDigestEdition {
+  id            String                           @id @default(uuid())
+  emailDigestId String
+  product       WorkForceEnduringProdEmailDigest @relation(fields: [emailDigestId], references: [id], onDelete: Cascade)
 
-model NTKEdition {
-  id                String    @id @default(uuid())
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  date              DateTime?
-  title             String?
-  createdByWorkMeId String
-  createdBy         WorkMe    @relation("NTKEditionCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-  originatorId      String? // NTK attribution
+  contentJson  Json
+  generatedAt  DateTime @default(now())
+  originatorId String
+  companyUnit  String
 
-  companyUnit     String?
-  companyDivision String?
-
-  items NTKItem[]
-
+  @@index([emailDigestId])
   @@index([companyUnit])
-  @@index([createdByWorkMeId])
-  @@index([createdAt])
-  @@map("ntk_editions")
-}
-
-model NTKItem {
-  id        String     @id @default(uuid())
-  editionId String
-  edition   NTKEdition @relation(fields: [editionId], references: [id], onDelete: Cascade)
-
-  inputId   String // Stable per-row identifier
-  rawFields Json // Store uploaded CSV row as JSON
-  validated Boolean @default(false)
-
-  plainLanguage String? // GPT output (plain text)
-  feedback      String? // For regenerating with user feedback
-  status        NTKStatus @default(PENDING)
-  originatorId  String? // NTK attribution
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([editionId])
-  @@index([inputId])
-  @@index([status])
-  @@map("ntk_items")
-}
-
-// ============================================
-// WORK COMMS PRODUCT (Normalized Work Layer)
-// ============================================
-enum WorkCommsProductType {
-  email
-  poster
-  ntk
-  digital_sign
-  exec_email
-  flyer
-  sharepoint
-  photo_video
-  talking_points
-}
-
-model WorkCommsProduct {
-  id        String               @id @default(uuid())
-  type      WorkCommsProductType
-  data      Json?
-  metadata  Json?
-  createdAt DateTime             @default(now())
-
-  companyUnit       String?
-  companyDivision   String?
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation("WorkCommsProductCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-
-  links CompanyWorkLink[]
-
-  @@index([companyUnit])
-  @@index([createdByWorkMeId])
-  @@index([type])
-}
-
-// ============================================
-// WORKFORCE COMMUNICATIONS SYSTEM (3-Layer)
-// ============================================
-
-// 1. Product Layer (True North) - Stable, reusable product definitions
-// NOTE: This is kept for backward compatibility with existing WorkforceComms system
-// New products should use WorkCommsProduct instead
-model WorkforceComms {
-  workforceCommsId String   @id @default(uuid())
-  type             String // "email" for now, future-proof for other types
-  name             String // "Need to Know", "Urgent Update", "Awareness Email"
-  description      String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  companyUnit       String?
-  companyDivision   String?
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation("WorkforceCommsCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-  originatorId      String? // NTK attribution
-
-  editions WorkforceCommsEdition[] @relation("WorkforceCommsEditions")
-  drafts   WorkforceCommsDraft[]   @relation("WorkforceCommsDrafts")
-
-  @@index([companyUnit])
-  @@index([createdByWorkMeId])
-  @@index([type])
-  @@index([name])
-}
-
-// 2. Draft Layer (Staging Container) - Where context and notes live before GPT generation
-// NOTE: eventRouterIds field is deprecated - use CompanyWorkLink instead
-model WorkforceCommsDraft {
-  draftId          String   @id @default(uuid())
-  workforceCommsId String // FK → WorkforceComms
-  eventRouterIds   Json? // DEPRECATED: Array of WorkEventRouter references (use CompanyWorkLink instead)
-  lastEditionId    String? // FK → WorkforceCommsEdition (optional reference to previous edition)
-  authorNotes      String? // Freeform "what to tell GPT"
-  whatChanged      String? // Crisp delta from last send
-  priorityNotes    String? // "still a priority", "emphasize X"
-  status           String   @default("drafting") // "drafting" | "readyForGeneration" | "needsReview" | "generating"
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  product     WorkforceComms         @relation("WorkforceCommsDrafts", fields: [workforceCommsId], references: [workforceCommsId], onDelete: Cascade)
-  lastEdition WorkforceCommsEdition? @relation(fields: [lastEditionId], references: [editionId], onDelete: SetNull)
-
-  companyUnit       String?
-  companyDivision   String?
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation("WorkforceCommsDraftCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-
-  @@index([companyUnit])
-  @@index([createdByWorkMeId])
-  @@index([status])
-  @@index([createdAt])
-}
-
-// 3. Edition Layer (Final Output) - Immutable generated emails
-model WorkforceCommsEdition {
-  editionId        String    @id @default(uuid())
-  workforceCommsId String // FK → WorkforceComms
-  subject          String
-  body             String
-  sentAt           DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-
-  product      WorkforceComms        @relation("WorkforceCommsEditions", fields: [workforceCommsId], references: [workforceCommsId], onDelete: Cascade)
-  referencedBy WorkforceCommsDraft[] // Drafts that reference this edition as lastEdition
-
-  companyUnit       String?
-  companyDivision   String?
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation("WorkforceCommsEditionCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-  originatorId      String? // NTK attribution
-
-  @@index([companyUnit])
-  @@index([createdByWorkMeId])
-  @@index([sentAt])
-  @@index([createdAt])
+  @@index([generatedAt])
 }
 
 // ============================================
