@@ -51,7 +51,10 @@ export async function createWorkEventFromIngest(
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create CompanyEvent (WorkEvent renamed to CompanyEvent)
       const companyEvent = await tx.companyEvent.create({
-        data: normalized.eventData,
+        data: {
+          ...normalized.eventData,
+          createdByWorkMeId: workMeId,
+        },
       })
 
       console.log('[createWorkEventFromIngest] CompanyEvent created', {

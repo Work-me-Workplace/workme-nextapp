@@ -56,6 +56,7 @@ export async function createStandaloneOutput(
       data: {
         ...validated,
         companyUnit,
+        createdByWorkMeId: workMeId,
         originatorId: workMeId,
       },
     })

@@ -58,7 +58,10 @@ export async function POST(request: Request) {
       // Exclude createdAt/updatedAt - Prisma handles these automatically
       const { createdAt, updatedAt, ...eventCreateData } = normalized.eventData as any
       const companyEvent = await tx.companyEvent.create({
-        data: eventCreateData,
+        data: {
+          ...eventCreateData,
+          createdByWorkMeId: workMeId,
+        },
       })
 
       console.log('[API POST /api/ingest/event/save] CompanyEvent created', {
