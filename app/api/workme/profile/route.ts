@@ -21,8 +21,21 @@ export async function GET(request: NextRequest) {
 
     const workMe = await prisma.workMe.findUnique({
       where: { id: workMeId },
-      include: {
-        company: true,
+      select: {
+        id: true,
+        firebaseId: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        photoUrl: true,
+        jobTitle: true,
+        specialty: true,
+        industry: true,
+        jobRole: true,
+        salaryRange: true,
+        companyUnit: true,
+        companyDivision: true,
+        createdAt: true,
       },
     })
 
@@ -86,8 +99,21 @@ export async function PUT(request: NextRequest) {
     const workMe = await prisma.workMe.update({
       where: { id },
       data: mappedData,
-      include: {
-        company: true,
+      select: {
+        id: true,
+        firebaseId: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        photoUrl: true,
+        jobTitle: true,
+        specialty: true,
+        industry: true,
+        jobRole: true,
+        salaryRange: true,
+        companyUnit: true,
+        companyDivision: true,
+        createdAt: true,
       },
     })
 
