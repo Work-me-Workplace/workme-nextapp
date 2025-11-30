@@ -129,6 +129,7 @@ export default function WorkforceStuffIngestPage() {
                   className="border border-gray-300 rounded-md px-3 py-2 bg-white w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="training">Training</option>
+                  <option value="career">Career</option>
                   <option value="event">Event</option>
                   <option value="notice">Notice</option>
                   <option value="task">Task</option>

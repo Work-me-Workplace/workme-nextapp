@@ -35,11 +35,14 @@ export async function POST(request: NextRequest) {
     const inference = await inferCompanyXType(blob)
 
     // Map CompanyXType to ingest type
-    // For now, only support: training, event, notice, task, other
+    // Supported: training, career, event, notice, task, other
     let suggestedType: string
     switch (inference.type) {
       case 'training':
         suggestedType = 'training'
+        break
+      case 'career':
+        suggestedType = 'career'
         break
       case 'event':
         suggestedType = 'event'
@@ -50,7 +53,6 @@ export async function POST(request: NextRequest) {
       case 'campaign':
       case 'benefits':
       case 'community':
-      case 'career':
       case 'employee_cause':
         suggestedType = 'task'
         break

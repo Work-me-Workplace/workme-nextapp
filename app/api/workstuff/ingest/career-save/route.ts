@@ -70,13 +70,14 @@ export async function POST(request: NextRequest) {
 
     // Update ALL real career fields
     // DO NOT overwrite ingestRawText
+    // Title is required, so use empty string if null
     const updated = await prisma.companyCareer.update({
       where: { id: data.careerId },
       data: {
-        title: data.title,
-        description: data.description,
-        level: data.level,
-        type: data.type,
+        title: data.title || '',
+        description: data.description ?? null,
+        level: data.level ?? null,
+        type: data.type ?? null,
         eligibility: data.eligibility ? JSON.parse(JSON.stringify(data.eligibility)) : null,
         application: data.application ? JSON.parse(JSON.stringify(data.application)) : null,
         extras: data.extras ? JSON.parse(JSON.stringify(data.extras)) : null,
