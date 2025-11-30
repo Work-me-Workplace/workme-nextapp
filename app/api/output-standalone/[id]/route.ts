@@ -20,7 +20,7 @@ export async function GET(
     
     // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     const { id } = await params
 
@@ -28,7 +28,6 @@ export async function GET(
       id,
       workMeId,
       companyUnit,
-      companyDivision,
     })
 
     const result = await getStandaloneOutput(id, companyUnit)
@@ -73,7 +72,7 @@ export async function PUT(
     
     // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     const { id } = await params
     const body = await request.json()
@@ -83,7 +82,6 @@ export async function PUT(
       payload: body,
       workMeId,
       companyUnit,
-      companyDivision,
     })
 
     const result = await updateStandaloneOutput({ id, ...body }, workMeId, companyUnit)
@@ -140,7 +138,7 @@ export async function DELETE(
     
     // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     const { id } = await params
 
@@ -148,7 +146,6 @@ export async function DELETE(
       id,
       workMeId,
       companyUnit,
-      companyDivision,
     })
 
     const result = await deleteStandaloneOutput(id, workMeId, companyUnit)

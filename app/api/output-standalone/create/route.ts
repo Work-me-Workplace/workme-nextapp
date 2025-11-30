@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     
     // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     if (!companyUnit) {
       return NextResponse.json(
@@ -38,10 +38,9 @@ export async function POST(request: Request) {
       payload: body,
       workMeId,
       companyUnit,
-      companyDivision,
     })
 
-    const result = await createStandaloneOutput(body, workMeId, companyUnit, companyDivision)
+    const result = await createStandaloneOutput(body, workMeId, companyUnit)
 
     console.log('[API POST /api/output-standalone/create] SUCCESS', {
       outputId: result.outputId,

@@ -97,10 +97,10 @@ export default function EventViewPage() {
 
   // Refresh events list after viewing
   useEffect(() => {
-    if (companyId && hydrated && event) {
+    if (companyUnit && hydrated && event) {
       refreshEvents() // Refresh events list to keep it in sync
     }
-  }, [companyId, hydrated, event, refreshEvents])
+  }, [companyUnit, hydrated, event, refreshEvents])
 
   if (loading) {
     return (

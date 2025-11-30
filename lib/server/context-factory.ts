@@ -25,21 +25,18 @@ type ModelMapKey = keyof typeof MODEL_MAP
  * @param data - The typed context data (validated by schema)
  * @param workMeId - The authenticated user's WorkMe ID
  * @param companyUnit - The authenticated user's company unit (required for multi-tenant)
- * @param companyDivision - The authenticated user's company division (optional)
  */
 export async function createTypedContext(
   type: ContextType,
   data: Record<string, any>,
   workMeId: string,
-  companyUnit: string | null,
-  companyDivision: string | null = null
+  companyUnit: string | null
 ) {
   console.log('[CompanyX CREATE]', {
     type,
     payload: data,
     workMeId,
     companyUnit,
-    companyDivision,
   })
 
   if (!workMeId) {
@@ -65,7 +62,6 @@ export async function createTypedContext(
       data: {
         ...data,
         companyUnit,
-        companyDivision,
         createdByWorkMeId: workMeId,
       },
     })
@@ -75,7 +71,6 @@ export async function createTypedContext(
       typedId: typed.id,
       workMeId,
       companyUnit,
-      companyDivision,
     })
 
     return { typed, success: true as const }
@@ -84,7 +79,6 @@ export async function createTypedContext(
       type,
       workMeId,
       companyUnit,
-      companyDivision,
       error: error.message,
       stack: error.stack,
     })

@@ -19,12 +19,11 @@ export async function POST(request: Request) {
     
     // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     console.log('[API POST /api/ai/parse-event]', {
       workMeId,
       companyUnit,
-      companyDivision,
     })
 
     const formData = await request.formData()
@@ -67,7 +66,6 @@ export async function POST(request: Request) {
     console.log('[API POST /api/ai/parse-event] SUCCESS', {
       workMeId,
       companyUnit,
-      companyDivision,
       parsedFields: Object.keys(parsedData),
     })
 

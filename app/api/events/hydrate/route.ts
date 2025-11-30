@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const { firebaseId } = await verifyAuth(request)
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
     const searchParams = request.nextUrl.searchParams
     const requestedCompanyUnit = searchParams.get('companyUnit')
 
@@ -78,7 +78,6 @@ export async function GET(request: NextRequest) {
 
     console.log('[API GET /api/events/hydrate] SUCCESS', {
       companyUnit: targetCompanyUnit,
-      companyDivision,
       eventCount: events.length,
     })
 

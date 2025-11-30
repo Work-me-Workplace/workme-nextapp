@@ -32,15 +32,13 @@ const updateStandaloneOutputSchema = createStandaloneOutputSchema.partial().exte
  * @param data - The output data (validated by schema)
  * @param workMeId - The authenticated user's WorkMe ID
  * @param companyUnit - The authenticated user's company unit (required for multi-tenant)
- * @param companyDivision - The authenticated user's company division (optional)
  */
 export async function createStandaloneOutput(
   data: z.infer<typeof createStandaloneOutputSchema>,
   workMeId: string,
-  companyUnit: string | null,
-  companyDivision: string | null = null
+  companyUnit: string | null
 ) {
-  console.log(`[StandaloneOutput CREATE] type=${data.outputType} payload=${JSON.stringify(data)} workMeId=${workMeId} companyUnit=${companyUnit} companyDivision=${companyDivision}`)
+  console.log(`[StandaloneOutput CREATE] type=${data.outputType} payload=${JSON.stringify(data)} workMeId=${workMeId} companyUnit=${companyUnit}`)
 
   if (!workMeId) {
     console.error(`[StandaloneOutput CREATE] ERROR: No WorkMeId - not authenticated`)
@@ -59,12 +57,11 @@ export async function createStandaloneOutput(
       data: {
         ...validated,
         companyUnit,
-        companyDivision,
         originatorId: workMeId,
       },
     })
 
-    console.log(`[StandaloneOutput CREATE] SUCCESS type=${data.outputType} outputId=${result.id} workMeId=${workMeId} companyUnit=${companyUnit} companyDivision=${companyDivision}`)
+    console.log(`[StandaloneOutput CREATE] SUCCESS type=${data.outputType} outputId=${result.id} workMeId=${workMeId} companyUnit=${companyUnit}`)
 
     return {
       success: true,
@@ -75,7 +72,7 @@ export async function createStandaloneOutput(
       data: result,
     }
   } catch (error: any) {
-    console.error(`[StandaloneOutput CREATE] ERROR type=${data.outputType} workMeId=${workMeId} companyUnit=${companyUnit} companyDivision=${companyDivision} error=${error.message}`)
+    console.error(`[StandaloneOutput CREATE] ERROR type=${data.outputType} workMeId=${workMeId} companyUnit=${companyUnit} error=${error.message}`)
     throw error
   }
 }

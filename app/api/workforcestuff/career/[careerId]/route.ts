@@ -16,7 +16,7 @@ export async function GET(
   try {
     const { firebaseId } = await verifyAuth(request)
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     if (!workMeId || !companyUnit) {
       return NextResponse.json(

@@ -17,12 +17,11 @@ export async function GET(request: Request) {
     
     // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     console.log('[API GET /api/output-standalone]', {
       workMeId,
       companyUnit,
-      companyDivision,
     })
 
     const result = await listStandaloneOutputs(companyUnit)

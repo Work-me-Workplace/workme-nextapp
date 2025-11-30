@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     
     // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
     
     // Parse request body
     const body = await req.json()

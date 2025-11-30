@@ -35,7 +35,7 @@ export async function createPromotionalWorkItem(
     const validated = promotionalWorkItemSchema.parse(data)
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     if (!workMeId || !companyUnit) {
       return {
@@ -120,7 +120,7 @@ export async function getPromotionalWorkItem(id: string) {
   try {
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     if (!workMeId || !companyUnit) {
       return {
@@ -206,7 +206,7 @@ export async function getPromotionalWorkItemsByEvent(eventId: string) {
   try {
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     if (!workMeId || !companyUnit) {
       return {

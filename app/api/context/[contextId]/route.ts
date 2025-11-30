@@ -24,7 +24,7 @@ export async function GET(
     
     // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     const { contextId } = await params
 
@@ -32,7 +32,6 @@ export async function GET(
       contextId,
       workMeId,
       companyUnit,
-      companyDivision,
     })
 
     if (!contextId) {
@@ -135,7 +134,7 @@ export async function PUT(
     
     // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     const { contextId } = await params
     const body = await request.json()
@@ -145,7 +144,6 @@ export async function PUT(
       payload: body,
       workMeId,
       companyUnit,
-      companyDivision,
     })
 
     if (!contextId) {
@@ -275,7 +273,7 @@ export async function DELETE(
     
     // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     const { contextId } = await params
 
@@ -283,7 +281,6 @@ export async function DELETE(
       contextId,
       workMeId,
       companyUnit,
-      companyDivision,
     })
 
     if (!contextId) {
@@ -313,7 +310,6 @@ export async function DELETE(
         where: {
           id: contextId,
           companyUnit, // Multi-tenant security
-          ...(companyDivision && { companyDivision }),
         },
       })
       if (result) {

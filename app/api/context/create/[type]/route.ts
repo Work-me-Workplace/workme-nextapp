@@ -49,7 +49,6 @@ export async function POST(
 
     // 3. Determine companyUnit from request body or use default
     const companyUnit = body.companyUnit || workMe.companyUnit
-    const companyDivision = body.companyDivision || workMe.companyDivision
 
     if (!companyUnit) {
       return NextResponse.json(
@@ -69,7 +68,6 @@ export async function POST(
       payload: body,
       workMeId,
       companyUnit,
-      companyDivision,
       role: membership.role,
     })
 
@@ -116,7 +114,7 @@ export async function POST(
     }
 
     // Create using factory (includes transaction)
-    const result = await createTypedContext(type as ContextType, cleanData, workMeId, companyUnit, companyDivision)
+    const result = await createTypedContext(type as ContextType, cleanData, workMeId, companyUnit)
 
     console.log('[API POST /api/context/create/[type]] SUCCESS', {
       type,

@@ -15,7 +15,7 @@ export async function getCompanyXContexts() {
     
     // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     if (!companyUnit) {
       return { 
@@ -116,7 +116,7 @@ export async function getCompanyXContext(
     
     // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     if (!companyUnit) {
       return { 

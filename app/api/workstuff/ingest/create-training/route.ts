@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   try {
     const { firebaseId } = await verifyAuth(request)
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     if (!workMeId || !companyUnit) {
       return NextResponse.json(
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
           ingestStatus: 'pending',
           ingestCreatedAt: new Date(),
           companyUnit,
-          companyDivision,
+          createdByWorkMeId: workMeId,
           mandatory: false,
         },
       })
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
           ingestRawText: rawText,
           title: '', // Required field, will be updated in Stage 2
           companyUnit,
-          companyDivision,
+          createdByWorkMeId: workMeId,
         },
       })
 

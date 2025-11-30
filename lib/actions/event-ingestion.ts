@@ -19,7 +19,7 @@ export async function createWorkEventFromIngest(
     // Verify authentication
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     if (!workMeId || !companyUnit) {
       return {
@@ -39,7 +39,6 @@ export async function createWorkEventFromIngest(
     const normalized = normalizeGPTIngestionOutput(
       ingestionData,
       companyUnit,
-      companyDivision,
       workMeId
     )
 

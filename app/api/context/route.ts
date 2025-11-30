@@ -18,12 +18,11 @@ export async function GET(request: Request) {
     
     // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     console.log('[API GET /api/context]', {
       workMeId,
       companyUnit,
-      companyDivision,
     })
 
     // Validate companyUnit is set
@@ -102,7 +101,6 @@ export async function GET(request: Request) {
     console.log('[API GET /api/context] SUCCESS', {
       workMeId,
       companyUnit,
-      companyDivision,
       count: enrichedContexts.length,
       contexts: enrichedContexts.map(c => ({
         id: c.id,

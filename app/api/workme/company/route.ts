@@ -75,7 +75,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Note: WorkMe no longer has a direct Company relation
-    // Users are scoped by companyUnit/companyDivision strings instead
+    // Users are scoped by companyUnit strings instead
     // This route is kept for company directory lookup/search functionality
     const updatedWorkMe = await prisma.workMe.findUnique({
       where: { id },

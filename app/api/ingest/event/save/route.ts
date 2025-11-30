@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     
     // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     if (!companyUnit) {
       return NextResponse.json(
@@ -36,7 +36,6 @@ export async function POST(request: Request) {
     console.log('[API POST /api/ingest/event/save]', {
       workMeId,
       companyUnit,
-      companyDivision,
       hasEvent: !!body.event,
       itemsCount: body.items?.length || 0,
     })
@@ -45,7 +44,6 @@ export async function POST(request: Request) {
     const normalized = normalizeGPTIngestionOutput(
       body,
       companyUnit,
-      companyDivision,
       workMeId
     )
 

@@ -68,12 +68,11 @@ export async function POST(request: Request) {
     
     // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId, companyUnit } = workMe
 
     console.log('[API POST /api/ingest/promotional/ai]', {
       workMeId,
       companyUnit,
-      companyDivision,
     })
 
     const body: PromotionalIngestionRequest = await request.json()

@@ -171,9 +171,9 @@ model Company {
   // Address (Apollo Enrichment)
   country String?
 
-  // Note: Work models now use companyUnit/companyDivision instead of Company relations
+  // Note: Work models now use companyUnit instead of Company relations
   // Company model remains as an independent entity for enterprise-level metadata
-  // No direct relation to WorkMe - users are scoped by companyUnit/companyDivision strings
+  // No direct relation to WorkMe - users are scoped by companyUnit strings
 
   @@index([name]) // Index for directory lookups
 }
@@ -286,10 +286,9 @@ enum AchievementCategory {
 model CommsOutput {
   id String @id @default(cuid())
 
-  companyUnit     String?
-  companyDivision String?
-  originatorId    String
-  originator      WorkMe  @relation("CommsOutputOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
+  companyUnit  String?
+  originatorId String
+  originator   WorkMe  @relation("CommsOutputOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   type        String // "email", "flyer", "digest", etc.
   title       String
@@ -309,10 +308,9 @@ model CommsOutput {
 model Objective {
   id String @id @default(cuid())
 
-  companyUnit     String?
-  companyDivision String?
-  originatorId    String
-  originator      WorkMe  @relation("ObjectiveOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
+  companyUnit  String?
+  originatorId String
+  originator   WorkMe  @relation("ObjectiveOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   title       String
   description String?
@@ -330,10 +328,9 @@ model Objective {
 model Achievement {
   id String @id @default(cuid())
 
-  companyUnit     String?
-  companyDivision String?
-  originatorId    String
-  originator      WorkMe  @relation("AchievementOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
+  companyUnit  String?
+  originatorId String
+  originator   WorkMe  @relation("AchievementOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   title    String
   category AchievementCategory
