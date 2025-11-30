@@ -74,21 +74,18 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Link user to company
-    const updatedWorkMe = await prisma.workMe.update({
+    // Note: WorkMe no longer has a direct Company relation
+    // Users are scoped by companyUnit/companyDivision strings instead
+    // This route is kept for company directory lookup/search functionality
+    const updatedWorkMe = await prisma.workMe.findUnique({
       where: { id },
-      data: {
-        companyId: company.id,
-      },
-      include: {
-        company: true,
-      },
     })
 
     return NextResponse.json({
       success: true,
       workMe: updatedWorkMe,
       company,
+      note: 'WorkMe no longer has a direct Company relation. Use companyUnit/companyDivision for scoping.',
     })
   } catch (error: any) {
     console.error('❌ WorkMeCompanyLink error:', error)
