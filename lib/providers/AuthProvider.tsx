@@ -13,8 +13,8 @@ export interface Session {
   workMeId: string | null
   firebaseId: string | null
   email: string | null
-  companyId: string | null
-  companyName: string | null
+  companyUnit: string | null
+  companyDivision: string | null
   firebaseToken: string | null
   hydratedAt: number | null
 }
@@ -31,8 +31,8 @@ const AuthContext = createContext<AuthContextType>({
     workMeId: null,
     firebaseId: null,
     email: null,
-    companyId: null,
-    companyName: null,
+    companyUnit: null,
+    companyDivision: null,
     firebaseToken: null,
     hydratedAt: null,
   },
@@ -54,8 +54,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     workMeId: null,
     firebaseId: null,
     email: null,
-    companyId: null,
-    companyName: null,
+    companyUnit: null,
+    companyDivision: null,
     firebaseToken: null,
     hydratedAt: null,
   })
@@ -81,28 +81,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error(response.data.error || 'Failed to hydrate session')
       }
 
-      const { workMe, company } = response.data
+      const { workMe } = response.data
 
       // Build unified session object
       const newSession: Session = {
         workMeId: workMe.id,
         firebaseId: firebaseUser.uid,
         email: firebaseUser.email || workMe.email,
-        companyId: workMe.companyId,
-        companyName: company?.name || null,
+        companyUnit: workMe.companyUnit,
+        companyDivision: workMe.companyDivision,
         firebaseToken: token,
         hydratedAt: Date.now(),
       }
 
       setSession(newSession)
 
-      // Mirror to localStorage (for backwards compatibility during migration)
+      // Mirror to localStorage
       if (typeof window !== 'undefined') {
         localStorage.setItem('workMeId', newSession.workMeId || '')
         localStorage.setItem('firebaseId', newSession.firebaseId || '')
         localStorage.setItem('email', newSession.email || '')
-        if (newSession.companyId) {
-          localStorage.setItem('companyId', newSession.companyId)
+        if (newSession.companyUnit) {
+          localStorage.setItem('companyUnit', newSession.companyUnit)
+        }
+        if (newSession.companyDivision) {
+          localStorage.setItem('companyDivision', newSession.companyDivision)
         }
         if (newSession.firebaseToken) {
           localStorage.setItem('firebaseToken', newSession.firebaseToken)
@@ -111,7 +114,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log('[AuthProvider] Session hydrated:', {
         workMeId: newSession.workMeId,
-        companyId: newSession.companyId,
+        companyUnit: newSession.companyUnit,
+        companyDivision: newSession.companyDivision,
         email: newSession.email,
       })
     } catch (err: any) {
@@ -123,8 +127,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         workMeId: null,
         firebaseId: null,
         email: null,
-        companyId: null,
-        companyName: null,
+        companyUnit: null,
+        companyDivision: null,
         firebaseToken: null,
         hydratedAt: null,
       })
@@ -134,7 +138,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('workMeId')
         localStorage.removeItem('firebaseId')
         localStorage.removeItem('email')
-        localStorage.removeItem('companyId')
+        localStorage.removeItem('companyUnit')
+        localStorage.removeItem('companyDivision')
         localStorage.removeItem('firebaseToken')
       }
     } finally {
@@ -150,8 +155,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       workMeId: null,
       firebaseId: null,
       email: null,
-      companyId: null,
-      companyName: null,
+      companyUnit: null,
+      companyDivision: null,
       firebaseToken: null,
       hydratedAt: null,
     })
@@ -161,7 +166,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('workMeId')
       localStorage.removeItem('firebaseId')
       localStorage.removeItem('email')
-      localStorage.removeItem('companyId')
+      localStorage.removeItem('companyUnit')
+      localStorage.removeItem('companyDivision')
       localStorage.removeItem('firebaseToken')
     }
   }, [])

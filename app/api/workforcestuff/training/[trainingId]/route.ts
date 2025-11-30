@@ -15,20 +15,20 @@ export async function GET(
   try {
     const auth = await verifyAuth(request)
 
-    if (!auth.workMeId || !auth.companyId) {
+    if (!auth.workMeId || !auth.companyUnit) {
       return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
+        { success: false, error: 'Not authenticated or companyUnit not set' },
         { status: 401 }
       )
     }
 
-    const { companyId } = auth
+    const { companyUnit } = auth
     const { trainingId } = params
 
     const training = await prisma.companyTraining.findFirst({
       where: {
         id: trainingId,
-        companyId, // Multi-tenant security
+        companyUnit, // Multi-tenant security
       },
     })
 

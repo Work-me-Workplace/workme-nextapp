@@ -15,9 +15,9 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await verifyAuth(request)
 
-    if (!auth.workMeId || !auth.companyId) {
+    if (!auth.workMeId || !auth.companyUnit) {
       return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
+        { success: false, error: 'Not authenticated or companyUnit not set' },
         { status: 401 }
       )
     }

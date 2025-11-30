@@ -4,7 +4,7 @@ import type { ContextType } from "@/lib/types/context-type"
 
 /**
  * Get and enrich a CompanyX model with typed data
- * Filters by companyId for multi-tenant security
+ * Filters by companyUnit for multi-tenant security
  * Returns null if not found or unauthorized
  * 
  * NOTE: This is NOT a server action (no "use server") to avoid conflicts.
@@ -12,21 +12,21 @@ import type { ContextType } from "@/lib/types/context-type"
  * 
  * @param id - The CompanyX model ID
  * @param type - The context type (campaign, event, etc.)
- * @param companyId - The company ID to scope the query (required for multi-tenant)
+ * @param companyUnit - The company unit to scope the query (required for multi-tenant)
  */
 export async function getCompanyX(
   id: string,
   type: ContextType,
-  companyId: string
+  companyUnit: string | null
 ) {
   console.log('[CompanyX GET]', {
     companyXId: id,
     type,
-    companyId,
+    companyUnit,
   })
 
-  if (!companyId) {
-    console.error('[CompanyX GET] ERROR: No companyId - user must belong to a company', {
+  if (!companyUnit) {
+    console.error('[CompanyX GET] ERROR: No companyUnit - user must set a companyUnit', {
       companyXId: id,
       type,
     })
@@ -50,7 +50,7 @@ export async function getCompanyX(
     console.error('[CompanyX GET] ERROR: Invalid context type', {
       companyXId: id,
       type,
-      companyId,
+      companyUnit,
     })
     return null
   }
@@ -59,14 +59,14 @@ export async function getCompanyX(
     companyXId: id,
     type,
     modelName,
-    companyId,
+    companyUnit,
   })
 
   // Get CompanyX model directly with company scoping (multi-tenant security)
   const companyX = await (prisma as any)[modelName].findFirst({
     where: { 
       id,
-      companyId, // Multi-tenant: ensure same company
+      companyUnit, // Multi-tenant: ensure same company unit
     },
   })
 
@@ -75,7 +75,7 @@ export async function getCompanyX(
       companyXId: id,
       type,
       modelName,
-      companyId,
+      companyUnit,
     })
     return null
   }
@@ -84,7 +84,7 @@ export async function getCompanyX(
     companyXId: companyX.id,
     type,
     title: companyX.title,
-    companyId,
+    companyUnit,
   })
 
   // Enrich with typed data (already have it, just format)
@@ -99,7 +99,7 @@ export async function getCompanyX(
     companyXId: companyX.id,
     type,
     title: result.title,
-    companyId,
+    companyUnit,
   })
 
   return result

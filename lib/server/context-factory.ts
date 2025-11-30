@@ -24,19 +24,22 @@ type ModelMapKey = keyof typeof MODEL_MAP
  * @param type - The context type (campaign, event, etc.)
  * @param data - The typed context data (validated by schema)
  * @param workMeId - The authenticated user's WorkMe ID
- * @param companyId - The authenticated user's Company ID (required for multi-tenant)
+ * @param companyUnit - The authenticated user's company unit (required for multi-tenant)
+ * @param companyDivision - The authenticated user's company division (optional)
  */
 export async function createTypedContext(
   type: ContextType,
   data: Record<string, any>,
   workMeId: string,
-  companyId: string
+  companyUnit: string | null,
+  companyDivision: string | null = null
 ) {
   console.log('[CompanyX CREATE]', {
     type,
     payload: data,
     workMeId,
-    companyId,
+    companyUnit,
+    companyDivision,
   })
 
   if (!workMeId) {
@@ -44,9 +47,9 @@ export async function createTypedContext(
     throw new Error("No WorkMeId - not authenticated")
   }
 
-  if (!companyId) {
-    console.error('[CompanyX CREATE] ERROR: No CompanyId - user must belong to a company')
-    throw new Error("User must belong to a company")
+  if (!companyUnit) {
+    console.error('[CompanyX CREATE] ERROR: No companyUnit - user must set a companyUnit before creating work items')
+    throw new Error("User must set a companyUnit before creating work items")
   }
 
   if (!MODEL_MAP[type as ModelMapKey]) {
@@ -61,7 +64,8 @@ export async function createTypedContext(
     const typed = await (prisma as any)[modelName].create({
       data: {
         ...data,
-        companyId,
+        companyUnit,
+        companyDivision,
       },
     })
 
@@ -69,7 +73,8 @@ export async function createTypedContext(
       type,
       typedId: typed.id,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
     return { typed, success: true as const }
@@ -77,7 +82,8 @@ export async function createTypedContext(
     console.error('[CompanyX CREATE] ERROR', {
       type,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
       error: error.message,
       stack: error.stack,
     })
@@ -93,21 +99,21 @@ export async function createTypedContext(
  * @param type - The context type
  * @param data - The updated typed context data (validated by schema)
  * @param workMeId - The authenticated user's WorkMe ID
- * @param companyId - The authenticated user's Company ID (required for multi-tenant)
+ * @param companyUnit - The authenticated user's company unit (required for multi-tenant)
  */
 export async function updateTypedContext(
   companyXId: string,
   type: ContextType,
   data: Record<string, any>,
   workMeId: string,
-  companyId: string
+  companyUnit: string | null
 ) {
   console.log('[CompanyX UPDATE]', {
     companyXId,
     type,
     payload: data,
     workMeId,
-    companyId,
+    companyUnit,
   })
 
   if (!workMeId) {
@@ -115,9 +121,9 @@ export async function updateTypedContext(
     throw new Error("No WorkMeId - not authenticated")
   }
 
-  if (!companyId) {
-    console.error('[CompanyX UPDATE] ERROR: No CompanyId - user must belong to a company')
-    throw new Error("User must belong to a company")
+  if (!companyUnit) {
+    console.error('[CompanyX UPDATE] ERROR: No companyUnit - user must set a companyUnit')
+    throw new Error("User must set a companyUnit")
   }
 
   if (!MODEL_MAP[type as ModelMapKey]) {
@@ -128,11 +134,11 @@ export async function updateTypedContext(
   const modelName = MODEL_MAP[type as ModelMapKey]
 
   try {
-    // Update CompanyX model directly (validate ownership via companyId)
+    // Update CompanyX model directly (validate ownership via companyUnit)
     const typed = await (prisma as any)[modelName].update({
       where: { 
         id: companyXId,
-        companyId, // Multi-tenant: ensure same company
+        companyUnit, // Multi-tenant: ensure same company unit
       },
       data,
     })
@@ -142,7 +148,7 @@ export async function updateTypedContext(
       type,
       typedId: typed.id,
       workMeId,
-      companyId,
+      companyUnit,
     })
 
     return { typed, success: true as const }
@@ -151,7 +157,7 @@ export async function updateTypedContext(
       companyXId,
       type,
       workMeId,
-      companyId,
+      companyUnit,
       error: error.message,
       stack: error.stack,
     })
@@ -161,26 +167,26 @@ export async function updateTypedContext(
 
 /**
  * Get CompanyX model data by type and ID
- * Filters by companyId for multi-tenant security
+ * Filters by companyUnit for multi-tenant security
  * 
  * @param type - The context type
  * @param companyXId - The CompanyX model ID
- * @param companyId - The company ID to scope the query (required for multi-tenant)
+ * @param companyUnit - The company unit to scope the query (required for multi-tenant)
  */
 export async function getTypedContext(
   type: ContextType,
   companyXId: string,
-  companyId: string
+  companyUnit: string | null
 ) {
   console.log('[CompanyX GET_TYPED]', {
     type,
     companyXId,
-    companyId,
+    companyUnit,
   })
 
-  if (!companyId) {
-    console.error('[CompanyX GET_TYPED] ERROR: No CompanyId - user must belong to a company')
-    throw new Error("User must belong to a company")
+  if (!companyUnit) {
+    console.error('[CompanyX GET_TYPED] ERROR: No companyUnit - user must set a companyUnit')
+    throw new Error("User must set a companyUnit")
   }
 
   if (!MODEL_MAP[type as ModelMapKey]) {
@@ -194,14 +200,14 @@ export async function getTypedContext(
     const typed = await (prisma as any)[modelName].findFirst({
       where: { 
         id: companyXId,
-        companyId, // Multi-tenant: ensure same company
+        companyUnit, // Multi-tenant: ensure same company unit
       },
     })
 
     console.log('[CompanyX GET_TYPED] SUCCESS', {
       type,
       companyXId,
-      companyId,
+      companyUnit,
       found: !!typed,
       title: typed?.title || 'N/A',
     })
@@ -211,7 +217,7 @@ export async function getTypedContext(
     console.error('[CompanyX GET_TYPED] ERROR', {
       type,
       companyXId,
-      companyId,
+      companyUnit,
       error: error.message,
       stack: error.stack,
     })
@@ -226,19 +232,19 @@ export async function getTypedContext(
  * @param companyXId - The CompanyX model ID
  * @param type - The context type
  * @param workMeId - The authenticated user's WorkMe ID
- * @param companyId - The authenticated user's Company ID (required for multi-tenant)
+ * @param companyUnit - The authenticated user's company unit (required for multi-tenant)
  */
 export async function deleteTypedContext(
   companyXId: string,
   type: ContextType,
   workMeId: string,
-  companyId: string
+  companyUnit: string | null
 ) {
   console.log('[CompanyX DELETE]', {
     companyXId,
     type,
     workMeId,
-    companyId,
+    companyUnit,
   })
 
   if (!workMeId) {
@@ -246,9 +252,9 @@ export async function deleteTypedContext(
     throw new Error("No WorkMeId - not authenticated")
   }
 
-  if (!companyId) {
-    console.error('[CompanyX DELETE] ERROR: No CompanyId - user must belong to a company')
-    throw new Error("User must belong to a company")
+  if (!companyUnit) {
+    console.error('[CompanyX DELETE] ERROR: No companyUnit - user must set a companyUnit')
+    throw new Error("User must set a companyUnit")
   }
 
   if (!MODEL_MAP[type as ModelMapKey]) {
@@ -262,11 +268,11 @@ export async function deleteTypedContext(
   const modelName = MODEL_MAP[type as ModelMapKey]
 
   try {
-    // Delete CompanyX model directly (validate ownership via companyId)
+    // Delete CompanyX model directly (validate ownership via companyUnit)
     await (prisma as any)[modelName].delete({
       where: { 
         id: companyXId,
-        companyId, // Multi-tenant: ensure same company
+        companyUnit, // Multi-tenant: ensure same company unit
       },
     })
 
@@ -274,7 +280,7 @@ export async function deleteTypedContext(
       companyXId,
       type,
       workMeId,
-      companyId,
+      companyUnit,
     })
 
     return { success: true as const }
@@ -283,7 +289,7 @@ export async function deleteTypedContext(
       companyXId,
       type,
       workMeId,
-      companyId,
+      companyUnit,
       error: error.message,
       stack: error.stack,
     })

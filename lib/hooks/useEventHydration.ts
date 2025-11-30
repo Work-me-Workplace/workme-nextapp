@@ -19,10 +19,10 @@ interface EventData {
  * Comprehensive hydration hook for event data.
  * Fetches and stores all event-related data in localStorage.
  * 
- * @param {string} companyId - Company ID to hydrate events for
+ * @param {string} companyUnit - Company unit to hydrate events for
  * @returns {Object} { data, loading, hydrated, error, refresh, getEventByRouterId }
  */
-export function useEventHydration(companyId: string | null) {
+export function useEventHydration(companyUnit: string | null) {
   const [data, setData] = useState<EventData>({
     events: [],
     eventRouters: [],
@@ -39,13 +39,13 @@ export function useEventHydration(companyId: string | null) {
   // Load from localStorage on mount - instant render
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if (!companyId) {
+    if (!companyUnit) {
       setLoading(false)
       return
     }
 
     try {
-      const stored = localStorage.getItem(`eventHydration_${companyId}`)
+      const stored = localStorage.getItem(`eventHydration_${companyUnit}`)
       if (stored) {
         const parsed = JSON.parse(stored)
         if (parsed.data) {
@@ -58,12 +58,12 @@ export function useEventHydration(companyId: string | null) {
     }
 
     setLoading(false)
-  }, [companyId])
+  }, [companyUnit])
 
   // Refresh from API
   const refresh = useCallback(async () => {
-    if (!companyId) {
-      setError('companyId is required')
+    if (!companyUnit) {
+      setError('companyUnit is required')
       setLoading(false)
       return
     }
@@ -72,7 +72,7 @@ export function useEventHydration(companyId: string | null) {
       setLoading(true)
       setError(null)
 
-      const response = await api.get(`/api/events/hydrate?companyId=${companyId}`)
+      const response = await api.get(`/api/events/hydrate?companyUnit=${companyUnit}`)
 
       if (!response.data?.success) {
         throw new Error(response.data?.error || 'Failed to hydrate event data')
@@ -98,7 +98,7 @@ export function useEventHydration(companyId: string | null) {
         timestamp: new Date().toISOString(),
       }
       localStorage.setItem(
-        `eventHydration_${companyId}`,
+        `eventHydration_${companyUnit}`,
         JSON.stringify(storageData),
       )
 
@@ -120,19 +120,19 @@ export function useEventHydration(companyId: string | null) {
       setError(err.message || 'Failed to hydrate event data')
       setLoading(false)
     }
-  }, [companyId])
+  }, [companyUnit])
 
   // Listen for refresh events (after refresh is defined)
   useEffect(() => {
     if (typeof window === 'undefined') return
     const handleRefresh = () => {
-      if (companyId) {
+      if (companyUnit) {
         refresh()
       }
     }
     window.addEventListener('refreshEvents', handleRefresh)
     return () => window.removeEventListener('refreshEvents', handleRefresh)
-  }, [companyId, refresh])
+  }, [companyUnit, refresh])
 
   // Helper to get a specific event by router ID (checks localStorage first)
   const getEventByRouterId = useCallback((routerId: string) => {

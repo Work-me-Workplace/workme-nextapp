@@ -16,14 +16,14 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await verifyAuth(request)
 
-    if (!auth.workMeId || !auth.companyId) {
+    if (!auth.workMeId || !auth.companyUnit) {
       return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
+        { success: false, error: 'Not authenticated or companyUnit not set' },
         { status: 401 }
       )
     }
 
-    const { companyId } = auth
+    const { companyUnit } = auth
     const { careerId } = await request.json()
 
     if (!careerId || typeof careerId !== 'string') {
@@ -34,8 +34,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Load the CompanyCareer row
-    const career = await prisma.companyCareer.findUnique({
-      where: { id: careerId, companyId },
+    const career = await prisma.companyCareer.findFirst({
+      where: { id: careerId, companyUnit },
     })
 
     if (!career) {

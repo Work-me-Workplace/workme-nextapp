@@ -36,7 +36,7 @@ export async function POST(
 ) {
   try {
     // Verify Firebase token and get authenticated context
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
 
     const { type } = await params
     const body = await request.json()
@@ -45,7 +45,8 @@ export async function POST(
       type,
       payload: body,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
     // Validate type
@@ -79,8 +80,19 @@ export async function POST(
       ])
     )
 
+    // Validate companyUnit is set
+    if (!companyUnit) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'User must set a companyUnit before creating work items' 
+        },
+        { status: 400 },
+      )
+    }
+
     // Create using factory (includes transaction)
-    const result = await createTypedContext(type as ContextType, cleanData, workMeId, companyId)
+    const result = await createTypedContext(type as ContextType, cleanData, workMeId, companyUnit, companyDivision)
 
     console.log('[API POST /api/context/create/[type]] SUCCESS', {
       type,

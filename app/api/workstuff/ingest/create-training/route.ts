@@ -15,14 +15,14 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await verifyAuth(request)
 
-    if (!auth.workMeId || !auth.companyId) {
+    if (!auth.workMeId || !auth.companyUnit) {
       return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
+        { success: false, error: 'Not authenticated or companyUnit not set' },
         { status: 401 }
       )
     }
 
-    const { companyId } = auth
+    const { companyUnit, companyDivision } = auth
     const { rawText, selectedType } = await request.json()
 
     if (!rawText || typeof rawText !== 'string') {
@@ -56,7 +56,8 @@ export async function POST(request: NextRequest) {
           ingestType: selectedType,
           ingestStatus: 'pending',
           ingestCreatedAt: new Date(),
-          companyId,
+          companyUnit,
+          companyDivision,
           mandatory: false,
         },
       })
@@ -73,7 +74,8 @@ export async function POST(request: NextRequest) {
         data: {
           ingestRawText: rawText,
           title: '', // Required field, will be updated in Stage 2
-          companyId,
+          companyUnit,
+          companyDivision,
         },
       })
 

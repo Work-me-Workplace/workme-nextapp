@@ -31,23 +31,25 @@ const updateStandaloneOutputSchema = createStandaloneOutputSchema.partial().exte
  * 
  * @param data - The output data (validated by schema)
  * @param workMeId - The authenticated user's WorkMe ID
- * @param companyId - The authenticated user's Company ID (required for multi-tenant)
+ * @param companyUnit - The authenticated user's company unit (required for multi-tenant)
+ * @param companyDivision - The authenticated user's company division (optional)
  */
 export async function createStandaloneOutput(
   data: z.infer<typeof createStandaloneOutputSchema>,
   workMeId: string,
-  companyId: string
+  companyUnit: string | null,
+  companyDivision: string | null = null
 ) {
-  console.log(`[StandaloneOutput CREATE] type=${data.outputType} payload=${JSON.stringify(data)} workMeId=${workMeId} companyId=${companyId}`)
+  console.log(`[StandaloneOutput CREATE] type=${data.outputType} payload=${JSON.stringify(data)} workMeId=${workMeId} companyUnit=${companyUnit} companyDivision=${companyDivision}`)
 
   if (!workMeId) {
     console.error(`[StandaloneOutput CREATE] ERROR: No WorkMeId - not authenticated`)
     throw new Error("No WorkMeId - not authenticated")
   }
 
-  if (!companyId) {
-    console.error(`[StandaloneOutput CREATE] ERROR: No CompanyId - user must belong to a company`)
-    throw new Error("User must belong to a company")
+  if (!companyUnit) {
+    console.error(`[StandaloneOutput CREATE] ERROR: No companyUnit - user must set a companyUnit before creating work items`)
+    throw new Error("User must set a companyUnit before creating work items")
   }
 
   try {
@@ -56,12 +58,13 @@ export async function createStandaloneOutput(
     const result = await prisma.workOutputStandalone.create({
       data: {
         ...validated,
-        companyId,
+        companyUnit,
+        companyDivision,
         originatorId: workMeId,
       },
     })
 
-    console.log(`[StandaloneOutput CREATE] SUCCESS type=${data.outputType} outputId=${result.id} workMeId=${workMeId} companyId=${companyId}`)
+    console.log(`[StandaloneOutput CREATE] SUCCESS type=${data.outputType} outputId=${result.id} workMeId=${workMeId} companyUnit=${companyUnit} companyDivision=${companyDivision}`)
 
     return {
       success: true,
@@ -72,7 +75,7 @@ export async function createStandaloneOutput(
       data: result,
     }
   } catch (error: any) {
-    console.error(`[StandaloneOutput CREATE] ERROR type=${data.outputType} workMeId=${workMeId} companyId=${companyId} error=${error.message}`)
+    console.error(`[StandaloneOutput CREATE] ERROR type=${data.outputType} workMeId=${workMeId} companyUnit=${companyUnit} companyDivision=${companyDivision} error=${error.message}`)
     throw error
   }
 }
@@ -82,22 +85,22 @@ export async function createStandaloneOutput(
  * 
  * @param data - The output data (validated by schema, must include id)
  * @param workMeId - The authenticated user's WorkMe ID
- * @param companyId - The authenticated user's Company ID (required for multi-tenant)
+ * @param companyUnit - The authenticated user's company unit (required for multi-tenant)
  */
 export async function updateStandaloneOutput(
   data: z.infer<typeof updateStandaloneOutputSchema>,
   workMeId: string,
-  companyId: string
+  companyUnit: string | null
 ) {
-  console.log(`[StandaloneOutput UPDATE] id=${data.id} payload=${JSON.stringify(data)} workMeId=${workMeId} companyId=${companyId}`)
+  console.log(`[StandaloneOutput UPDATE] id=${data.id} payload=${JSON.stringify(data)} workMeId=${workMeId} companyUnit=${companyUnit}`)
 
   if (!workMeId) {
     console.error(`[StandaloneOutput UPDATE] ERROR: No WorkMeId - not authenticated`)
     throw new Error("No WorkMeId - not authenticated")
   }
 
-  if (!companyId) {
-    console.error(`[StandaloneOutput UPDATE] ERROR: No CompanyId - user must belong to a company`)
+  if (!companyUnit) {
+    console.error(`[StandaloneOutput UPDATE] ERROR: No companyUnit - user must set a companyUnit`)
     throw new Error("User must belong to a company")
   }
 
@@ -109,17 +112,17 @@ export async function updateStandaloneOutput(
     const existing = await prisma.workOutputStandalone.findFirst({
       where: { 
         id,
-        companyId, // Multi-tenant: ensure same company
+        companyUnit, // Multi-tenant: ensure same company unit
       },
     })
 
     if (!existing) {
-      console.error(`[StandaloneOutput UPDATE] ERROR: Output not found or unauthorized id=${id} workMeId=${workMeId} companyId=${companyId}`)
+      console.error(`[StandaloneOutput UPDATE] ERROR: Output not found or unauthorized id=${id} workMeId=${workMeId} companyUnit=${companyUnit}`)
       throw new Error("Output not found or unauthorized")
     }
 
     if (existing.originatorId !== workMeId) {
-      console.error(`[StandaloneOutput UPDATE] ERROR: Unauthorized id=${id} workMeId=${workMeId} owner=${existing.originatorId} companyId=${companyId}`)
+      console.error(`[StandaloneOutput UPDATE] ERROR: Unauthorized id=${id} workMeId=${workMeId} owner=${existing.originatorId} companyUnit=${companyUnit}`)
       throw new Error("Unauthorized")
     }
 
@@ -128,7 +131,7 @@ export async function updateStandaloneOutput(
       data: updateData,
     })
 
-    console.log(`[StandaloneOutput UPDATE] SUCCESS id=${id} workMeId=${workMeId} companyId=${companyId}`)
+    console.log(`[StandaloneOutput UPDATE] SUCCESS id=${id} workMeId=${workMeId} companyUnit=${companyUnit}`)
 
     return {
       success: true,
@@ -139,83 +142,83 @@ export async function updateStandaloneOutput(
       data: result,
     }
   } catch (error: any) {
-    console.error(`[StandaloneOutput UPDATE] ERROR id=${data.id} workMeId=${workMeId} companyId=${companyId} error=${error.message}`)
+    console.error(`[StandaloneOutput UPDATE] ERROR id=${data.id} workMeId=${workMeId} companyUnit=${companyUnit} error=${error.message}`)
     throw error
   }
 }
 
 /**
  * Get a standalone output by ID
- * Filters by companyId for multi-tenant security
+ * Filters by companyUnit for multi-tenant security
  * 
  * @param id - The output ID
- * @param companyId - The company ID to scope the query (required for multi-tenant)
+ * @param companyUnit - The company unit to scope the query (required for multi-tenant)
  */
-export async function getStandaloneOutput(id: string, companyId: string) {
-  console.log(`[StandaloneOutput GET] id=${id} companyId=${companyId}`)
+export async function getStandaloneOutput(id: string, companyUnit: string | null) {
+  console.log(`[StandaloneOutput GET] id=${id} companyUnit=${companyUnit}`)
 
-  if (!companyId) {
-    console.error(`[StandaloneOutput GET] ERROR: No CompanyId - user must belong to a company`)
-    throw new Error("User must belong to a company")
+  if (!companyUnit) {
+    console.error(`[StandaloneOutput GET] ERROR: No companyUnit - user must set a companyUnit`)
+    throw new Error("User must set a companyUnit")
   }
 
   try {
     const result = await prisma.workOutputStandalone.findFirst({
       where: { 
         id,
-        companyId, // Multi-tenant: ensure same company
+        companyUnit, // Multi-tenant: ensure same company unit
       },
     })
 
     if (!result) {
-      console.error(`[StandaloneOutput GET] ERROR: Output not found or unauthorized id=${id} companyId=${companyId}`)
+      console.error(`[StandaloneOutput GET] ERROR: Output not found or unauthorized id=${id} companyUnit=${companyUnit}`)
       throw new Error("Output not found or unauthorized")
     }
 
-    console.log(`[StandaloneOutput GET] SUCCESS id=${id} companyId=${companyId}`)
+    console.log(`[StandaloneOutput GET] SUCCESS id=${id} companyUnit=${companyUnit}`)
 
     return {
       success: true,
       data: result,
     }
   } catch (error: any) {
-    console.error(`[StandaloneOutput GET] ERROR id=${id} companyId=${companyId} error=${error.message}`)
+    console.error(`[StandaloneOutput GET] ERROR id=${id} companyUnit=${companyUnit} error=${error.message}`)
     throw error
   }
 }
 
 /**
- * List all standalone outputs for the authenticated user's company
- * Filters by companyId for multi-tenant security
+ * List all standalone outputs for the authenticated user's company unit
+ * Filters by companyUnit for multi-tenant security
  * 
- * @param companyId - The company ID to scope the query (required for multi-tenant)
+ * @param companyUnit - The company unit to scope the query (required for multi-tenant)
  */
-export async function listStandaloneOutputs(companyId: string) {
-  console.log(`[StandaloneOutput LIST] companyId=${companyId}`)
+export async function listStandaloneOutputs(companyUnit: string | null) {
+  console.log(`[StandaloneOutput LIST] companyUnit=${companyUnit}`)
 
-  if (!companyId) {
-    console.error(`[StandaloneOutput LIST] ERROR: No CompanyId - user must belong to a company`)
-    throw new Error("User must belong to a company")
+  if (!companyUnit) {
+    console.error(`[StandaloneOutput LIST] ERROR: No companyUnit - user must set a companyUnit`)
+    throw new Error("User must set a companyUnit")
   }
 
   try {
     const results = await prisma.workOutputStandalone.findMany({
       where: {
-        companyId, // Multi-tenant: filter by company
+        companyUnit, // Multi-tenant: filter by company unit
       },
       orderBy: {
         updatedAt: "desc",
       },
     })
 
-    console.log(`[StandaloneOutput LIST] SUCCESS companyId=${companyId} count=${results.length}`)
+    console.log(`[StandaloneOutput LIST] SUCCESS companyUnit=${companyUnit} count=${results.length}`)
 
     return {
       success: true,
       data: results,
     }
   } catch (error: any) {
-    console.error(`[StandaloneOutput LIST] ERROR companyId=${companyId} error=${error.message}`)
+    console.error(`[StandaloneOutput LIST] ERROR companyUnit=${companyUnit} error=${error.message}`)
     throw error
   }
 }
@@ -226,23 +229,23 @@ export async function listStandaloneOutputs(companyId: string) {
  * 
  * @param id - The output ID
  * @param workMeId - The authenticated user's WorkMe ID
- * @param companyId - The authenticated user's Company ID (required for multi-tenant)
+ * @param companyUnit - The authenticated user's company unit (required for multi-tenant)
  */
 export async function deleteStandaloneOutput(
   id: string,
   workMeId: string,
-  companyId: string
+  companyUnit: string | null
 ) {
-  console.log(`[StandaloneOutput DELETE] id=${id} workMeId=${workMeId} companyId=${companyId}`)
+  console.log(`[StandaloneOutput DELETE] id=${id} workMeId=${workMeId} companyUnit=${companyUnit}`)
 
   if (!workMeId) {
     console.error(`[StandaloneOutput DELETE] ERROR: No WorkMeId - not authenticated`)
     throw new Error("No WorkMeId - not authenticated")
   }
 
-  if (!companyId) {
-    console.error(`[StandaloneOutput DELETE] ERROR: No CompanyId - user must belong to a company`)
-    throw new Error("User must belong to a company")
+  if (!companyUnit) {
+    console.error(`[StandaloneOutput DELETE] ERROR: No companyUnit - user must set a companyUnit`)
+    throw new Error("User must set a companyUnit")
   }
 
   try {
@@ -250,17 +253,17 @@ export async function deleteStandaloneOutput(
     const existing = await prisma.workOutputStandalone.findFirst({
       where: { 
         id,
-        companyId, // Multi-tenant: ensure same company
+        companyUnit, // Multi-tenant: ensure same company unit
       },
     })
 
     if (!existing) {
-      console.error(`[StandaloneOutput DELETE] ERROR: Output not found or unauthorized id=${id} workMeId=${workMeId} companyId=${companyId}`)
+      console.error(`[StandaloneOutput DELETE] ERROR: Output not found or unauthorized id=${id} workMeId=${workMeId} companyUnit=${companyUnit}`)
       throw new Error("Output not found or unauthorized")
     }
 
     if (existing.originatorId !== workMeId) {
-      console.error(`[StandaloneOutput DELETE] ERROR: Unauthorized id=${id} workMeId=${workMeId} owner=${existing.originatorId} companyId=${companyId}`)
+      console.error(`[StandaloneOutput DELETE] ERROR: Unauthorized id=${id} workMeId=${workMeId} owner=${existing.originatorId} companyUnit=${companyUnit}`)
       throw new Error("Unauthorized")
     }
 
@@ -268,7 +271,7 @@ export async function deleteStandaloneOutput(
       where: { id },
     })
 
-    console.log(`[StandaloneOutput DELETE] SUCCESS id=${id} workMeId=${workMeId} companyId=${companyId}`)
+    console.log(`[StandaloneOutput DELETE] SUCCESS id=${id} workMeId=${workMeId} companyUnit=${companyUnit}`)
 
     return {
       success: true,
@@ -277,7 +280,7 @@ export async function deleteStandaloneOutput(
       message: "Output deleted.",
     }
   } catch (error: any) {
-    console.error(`[StandaloneOutput DELETE] ERROR id=${id} workMeId=${workMeId} companyId=${companyId} error=${error.message}`)
+    console.error(`[StandaloneOutput DELETE] ERROR id=${id} workMeId=${workMeId} companyUnit=${companyUnit} error=${error.message}`)
     throw error
   }
 }

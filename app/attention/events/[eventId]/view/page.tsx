@@ -13,21 +13,21 @@ export default function EventViewPage() {
   const params = useParams()
   const eventRouterId = params.eventId as string
 
-  // Get companyId from localStorage (hydrated by AuthProvider)
-  const [companyId, setCompanyId] = useState<string | null>(null)
+  // Get companyUnit from localStorage (hydrated by AuthProvider)
+  const [companyUnit, setCompanyUnit] = useState<string | null>(null)
   const [event, setEvent] = useState<any>(null)
   const [routerData, setRouterData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Use hydration hook
-  const { hydrated, refresh: refreshEvents } = useEventHydration(companyId)
+  const { hydrated, refresh: refreshEvents } = useEventHydration(companyUnit)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedCompanyId = localStorage.getItem('companyId')
-      if (storedCompanyId) {
-        setCompanyId(storedCompanyId)
+      const storedCompanyUnit = localStorage.getItem('companyUnit')
+      if (storedCompanyUnit) {
+        setCompanyUnit(storedCompanyUnit)
       }
     }
   }, [])

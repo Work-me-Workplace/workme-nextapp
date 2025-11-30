@@ -36,14 +36,14 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await verifyAuth(request)
 
-    if (!auth.workMeId || !auth.companyId) {
+    if (!auth.workMeId || !auth.companyUnit) {
       return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
+        { success: false, error: 'Not authenticated or companyUnit not set' },
         { status: 401 }
       )
     }
 
-    const { companyId } = auth
+    const { companyUnit } = auth
     const data: CareerSaveRequest = await request.json()
 
     if (!data.careerId) {
@@ -53,11 +53,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify career exists and belongs to company
+    // Verify career exists and belongs to company unit
     const existing = await prisma.companyCareer.findFirst({
       where: {
         id: data.careerId,
-        companyId,
+        companyUnit,
       },
     })
 

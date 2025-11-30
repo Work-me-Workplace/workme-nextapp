@@ -103,8 +103,8 @@ export default function EventManualForm({ initialData, initialEventItems, onBack
           localStorage.setItem('lastCreatedEventId', eventId)
           
           // Refresh events list in background
-          const companyId = localStorage.getItem('companyId')
-          if (companyId) {
+          const companyUnit = localStorage.getItem('companyUnit')
+          if (companyUnit) {
             window.dispatchEvent(new CustomEvent('refreshEvents'))
           }
         }

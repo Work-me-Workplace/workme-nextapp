@@ -2,7 +2,7 @@
  * Server-side Firebase Token Verification
  * 
  * Uses Firebase Admin SDK to verify ID tokens from Authorization header
- * Returns authenticated user's workMeId and companyId
+ * Returns authenticated user's workMeId, companyUnit, and companyDivision
  * 
  * ⚠️ SERVER-ONLY - Never import in client components
  */
@@ -14,15 +14,15 @@ import { prisma } from '@/lib/prisma'
 
 export interface VerifiedAuth {
   workMeId: string
-  companyId: string // Required - user must belong to a company (enforced in Phase 2)
-  companyName: string | null
+  companyUnit: string | null // Required for WorkContext, but collected AFTER signup
+  companyDivision: string | null // Optional grouping layer
   firebaseId: string
   email: string | null
 }
 
 /**
  * Verify Firebase token from Request Authorization header
- * Fetches WorkMe + Company from database
+ * Fetches WorkMe from database
  * 
  * @param request - Next.js Request object (for API routes)
  * @throws Error if token is missing, invalid, or user not found
@@ -59,13 +59,12 @@ export async function verifyAuth(request?: Request): Promise<VerifiedAuth> {
     // Get WorkMe record by firebaseId
     const workMe = await prisma.workMe.findUnique({
       where: { firebaseId: decodedToken.uid },
-      include: {
-        company: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+      select: {
+        id: true,
+        firebaseId: true,
+        email: true,
+        companyUnit: true,
+        companyDivision: true,
       },
     })
 
@@ -73,16 +72,10 @@ export async function verifyAuth(request?: Request): Promise<VerifiedAuth> {
       throw new Error('Unauthorized: WorkMe record not found. Please complete sign up.')
     }
 
-    // Guard: User must belong to a company (enforced in Phase 2)
-    if (!workMe.companyId) {
-      console.error('[verifyAuth] ERROR: User does not belong to a company:', workMe.id)
-      throw new Error('User must belong to a company. Please contact support.')
-    }
-
     return {
       workMeId: workMe.id,
-      companyId: workMe.companyId, // Now guaranteed non-null by check above
-      companyName: workMe.company?.name || null,
+      companyUnit: workMe.companyUnit,
+      companyDivision: workMe.companyDivision,
       firebaseId: decodedToken.uid,
       email: decodedToken.email || workMe.email,
     }

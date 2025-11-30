@@ -19,14 +19,15 @@ export async function GET(
 ) {
   try {
     // Verify Firebase token and get authenticated context
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
 
     const { contextId } = await params
 
     console.log('[API GET /api/context/[contextId]]', {
       contextId,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
     if (!contextId) {
@@ -52,12 +53,20 @@ export async function GET(
     let workContext: any = null
     let foundType: ContextType | null = null
 
+    // Validate companyUnit is set
+    if (!companyUnit) {
+      return NextResponse.json(
+        { success: false, error: 'User must set a companyUnit' },
+        { status: 400 },
+      )
+    }
+
     // Try each model type until we find a match
     for (const [type, modelName] of Object.entries(modelMap) as [ContextType, string][]) {
       const result = await (prisma as any)[modelName].findFirst({
         where: {
           id: contextId,
-          companyId, // Multi-tenant security
+          companyUnit, // Multi-tenant security
         },
       })
       if (result) {
@@ -78,7 +87,7 @@ export async function GET(
     }
 
     // Enrich with typed data
-    const enriched = await getCompanyX(contextId, foundType, companyId)
+    const enriched = await getCompanyX(contextId, foundType, companyUnit)
 
     console.log('[API GET /api/context/[contextId]] SUCCESS', {
       contextId,
@@ -117,7 +126,7 @@ export async function PUT(
 ) {
   try {
     // Verify Firebase token and get authenticated context
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
 
     const { contextId } = await params
     const body = await request.json()
@@ -126,7 +135,8 @@ export async function PUT(
       contextId,
       payload: body,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
     if (!contextId) {
@@ -148,6 +158,14 @@ export async function PUT(
       employee_cause: 'companyEmployeeCause',
     }
 
+    // Validate companyUnit is set
+    if (!companyUnit) {
+      return NextResponse.json(
+        { success: false, error: 'User must set a companyUnit' },
+        { status: 400 },
+      )
+    }
+
     let foundType: ContextType | null = null
 
     // Try each model type until we find a match
@@ -155,7 +173,7 @@ export async function PUT(
       const result = await (prisma as any)[modelName].findFirst({
         where: {
           id: contextId,
-          companyId, // Multi-tenant security
+          companyUnit, // Multi-tenant security
         },
       })
       if (result) {
@@ -197,7 +215,7 @@ export async function PUT(
       foundType,
       cleanData,
       workMeId,
-      companyId
+      companyUnit
     )
 
     console.log('[API PUT /api/context/[contextId]] SUCCESS', {

@@ -11,44 +11,44 @@ import { EVENT_CATEGORY_OPTIONS } from '@/config/event-category'
 export default function EventsLandingPage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
-  const [companyId, setCompanyId] = useState<string | null>(null)
+  const [companyUnit, setCompanyUnit] = useState<string | null>(null)
 
   // Hydrate events - loads instantly from localStorage
-  const { events, eventRouters, hydrated, loading: eventsLoading, refresh: refreshEvents } = useEventHydration(companyId)
+  const { events, eventRouters, hydrated, loading: eventsLoading, refresh: refreshEvents } = useEventHydration(companyUnit)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const id = getWorkMeIdFromStorage()
-      const storedCompanyId = localStorage.getItem('companyId')
+      const storedCompanyUnit = localStorage.getItem('companyUnit')
       if (!id) {
         router.push('/signin')
       } else {
         setWorkMeId(id)
-        if (storedCompanyId) {
-          setCompanyId(storedCompanyId)
+        if (storedCompanyUnit) {
+          setCompanyUnit(storedCompanyUnit)
         }
       }
     }
   }, [router])
 
-  // Auto-hydrate when companyId is available
+  // Auto-hydrate when companyUnit is available
   useEffect(() => {
-    if (companyId && !hydrated && !eventsLoading) {
+    if (companyUnit && !hydrated && !eventsLoading) {
       refreshEvents()
     }
-  }, [companyId, hydrated, eventsLoading, refreshEvents])
+  }, [companyUnit, hydrated, eventsLoading, refreshEvents])
 
   // Listen for refresh events
   useEffect(() => {
     if (typeof window === 'undefined') return
     const handleRefresh = () => {
-      if (companyId) {
+      if (companyUnit) {
         refreshEvents()
       }
     }
     window.addEventListener('refreshEvents', handleRefresh)
     return () => window.removeEventListener('refreshEvents', handleRefresh)
-  }, [companyId, refreshEvents])
+  }, [companyUnit, refreshEvents])
 
   if (!workMeId) {
     return (

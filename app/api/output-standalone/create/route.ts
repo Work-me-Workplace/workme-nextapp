@@ -15,17 +15,28 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request) {
   try {
     // Verify Firebase token and get authenticated context
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+
+    if (!companyUnit) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'User must set a companyUnit before creating work items' 
+        },
+        { status: 400 },
+      )
+    }
 
     const body = await request.json()
 
     console.log('[API POST /api/output-standalone/create]', {
       payload: body,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
-    const result = await createStandaloneOutput(body, workMeId, companyId)
+    const result = await createStandaloneOutput(body, workMeId, companyUnit, companyDivision)
 
     console.log('[API POST /api/output-standalone/create] SUCCESS', {
       outputId: result.outputId,

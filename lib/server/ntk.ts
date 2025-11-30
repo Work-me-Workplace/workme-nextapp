@@ -34,20 +34,22 @@ const updateNTKSchema = createNTKSchema.partial().extend({
 export async function createNTK(
   data: z.infer<typeof createNTKSchema>,
   workMeId: string,
-  companyId: string
+  companyUnit: string | null,
+  companyDivision: string | null = null
 ) {
   console.log('[NTK CREATE]', {
     header: data.header,
     workMeId,
-    companyId,
+    companyUnit,
+    companyDivision,
   })
 
   if (!workMeId) {
     throw new Error('No WorkMeId - not authenticated')
   }
 
-  if (!companyId) {
-    throw new Error('User must belong to a company')
+  if (!companyUnit) {
+    throw new Error('User must set a companyUnit before creating work items')
   }
 
   const validated = createNTKSchema.parse(data)
@@ -60,7 +62,8 @@ export async function createNTK(
       sourceText: validated.sourceText ?? undefined,
       draftContent: validated.draftContent ?? undefined,
       metadata: validated.metadata ?? undefined,
-      companyId,
+      companyUnit,
+      companyDivision,
       originatorId: workMeId,
     },
   })
@@ -82,13 +85,17 @@ export async function createNTK(
 export async function updateNTK(
   data: z.infer<typeof updateNTKSchema>,
   workMeId: string,
-  companyId: string
+  companyUnit: string | null
 ) {
   console.log('[NTK UPDATE]', {
     ntkId: data.ntkId,
     workMeId,
-    companyId,
+    companyUnit,
   })
+
+  if (!companyUnit) {
+    throw new Error('User must set a companyUnit')
+  }
 
   const validated = updateNTKSchema.parse(data)
   const { ntkId, ...updateData } = validated
@@ -97,7 +104,7 @@ export async function updateNTK(
   const existing = await prisma.nTK.findFirst({
     where: {
       ntkId,
-      companyId,
+      companyUnit,
       originatorId: workMeId,
     },
   })
@@ -124,13 +131,17 @@ export async function updateNTK(
 /**
  * Get a single NTK by ID
  */
-export async function getNTK(ntkId: string, workMeId: string, companyId: string) {
-  console.log('[NTK GET]', { ntkId, workMeId, companyId })
+export async function getNTK(ntkId: string, workMeId: string, companyUnit: string | null) {
+  console.log('[NTK GET]', { ntkId, workMeId, companyUnit })
+
+  if (!companyUnit) {
+    throw new Error('User must set a companyUnit')
+  }
 
   const ntk = await prisma.nTK.findFirst({
     where: {
       ntkId,
-      companyId, // Multi-tenant scoping
+      companyUnit, // Multi-tenant scoping
     },
   })
 
@@ -152,14 +163,18 @@ export async function getNTK(ntkId: string, workMeId: string, companyId: string)
 }
 
 /**
- * List all NTKs for a company
+ * List all NTKs for a company unit
  */
-export async function listNTKs(companyId: string) {
-  console.log('[NTK LIST]', { companyId })
+export async function listNTKs(companyUnit: string | null) {
+  console.log('[NTK LIST]', { companyUnit })
+
+  if (!companyUnit) {
+    throw new Error('User must set a companyUnit')
+  }
 
   const ntks = await prisma.nTK.findMany({
     where: {
-      companyId, // Multi-tenant scoping
+      companyUnit, // Multi-tenant scoping
     },
     orderBy: {
       createdAt: 'desc',
@@ -187,14 +202,18 @@ export async function listNTKs(companyId: string) {
 /**
  * Delete an NTK
  */
-export async function deleteNTK(ntkId: string, workMeId: string, companyId: string) {
-  console.log('[NTK DELETE]', { ntkId, workMeId, companyId })
+export async function deleteNTK(ntkId: string, workMeId: string, companyUnit: string | null) {
+  console.log('[NTK DELETE]', { ntkId, workMeId, companyUnit })
+
+  if (!companyUnit) {
+    throw new Error('User must set a companyUnit')
+  }
 
   // Verify ownership
   const existing = await prisma.nTK.findFirst({
     where: {
       ntkId,
-      companyId,
+      companyUnit,
       originatorId: workMeId,
     },
   })

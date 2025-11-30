@@ -7,46 +7,45 @@ export const dynamic = 'force-dynamic'
 /**
  * GET /api/events/hydrate
  * 
- * Hydrates all events for a company.
+ * Hydrates all events for a company unit.
  * Returns events, event routers, and stats.
  * 
  * Query params:
- * - companyId: Company ID to hydrate events for
+ * - companyUnit: Company unit to hydrate events for
  */
 export async function GET(request: NextRequest) {
   try {
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
     const searchParams = request.nextUrl.searchParams
-    const requestedCompanyId = searchParams.get('companyId')
+    const requestedCompanyUnit = searchParams.get('companyUnit')
 
-    // Use provided companyId or authenticated user's companyId
-    const targetCompanyId = requestedCompanyId || companyId
+    // Use provided companyUnit or authenticated user's companyUnit
+    const targetCompanyUnit = requestedCompanyUnit || companyUnit
 
-    if (!targetCompanyId) {
+    if (!targetCompanyUnit) {
       return NextResponse.json(
-        { success: false, error: 'companyId is required' },
+        { success: false, error: 'companyUnit is required' },
         { status: 400 },
       )
     }
 
-    // Verify user has access to this company
-    // (In a multi-tenant system, you'd check if workMeId belongs to companyId)
+    // Verify user has access to this company unit
     const workMe = await prisma.workMe.findUnique({
       where: { id: workMeId },
-      select: { companyId: true },
+      select: { companyUnit: true },
     })
 
-    if (!workMe || workMe.companyId !== targetCompanyId) {
+    if (!workMe || workMe.companyUnit !== targetCompanyUnit) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized: Access denied to this company' },
+        { success: false, error: 'Unauthorized: Access denied to this company unit' },
         { status: 403 },
       )
     }
 
-    // Fetch all CompanyEvent models for this company directly
+    // Fetch all CompanyEvent models for this company unit directly
     const events = await prisma.companyEvent.findMany({
       where: {
-        companyId: targetCompanyId, // Multi-tenant security
+        companyUnit: targetCompanyUnit, // Multi-tenant security
       },
       orderBy: { createdAt: 'desc' },
       include: {
@@ -80,7 +79,8 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('[API GET /api/events/hydrate] SUCCESS', {
-      companyId: targetCompanyId,
+      companyUnit: targetCompanyUnit,
+      companyDivision,
       eventCount: events.length,
     })
 

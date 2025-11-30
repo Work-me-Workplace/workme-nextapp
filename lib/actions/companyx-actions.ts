@@ -12,13 +12,13 @@ import { z } from 'zod'
 
 export async function createCampaign(data: z.infer<typeof campaignSchema>) {
   try {
-    const { workMeId, companyId } = await verifyAuth()
-    if (!workMeId || !companyId) {
-      return { success: false, error: 'Not authenticated' }
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth()
+    if (!workMeId || !companyUnit) {
+      return { success: false, error: 'Not authenticated or companyUnit not set' }
     }
 
     const validated = campaignSchema.parse(data)
-    const result = await createTypedContext('campaign', validated, workMeId, companyId)
+    const result = await createTypedContext('campaign', validated, workMeId, companyUnit, companyDivision)
     return { success: true, campaign: result.typed }
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -30,13 +30,13 @@ export async function createCampaign(data: z.infer<typeof campaignSchema>) {
 
 export async function createImpactEvent(data: z.infer<typeof impactEventSchema>) {
   try {
-    const { workMeId, companyId } = await verifyAuth()
-    if (!workMeId || !companyId) {
-      return { success: false, error: 'Not authenticated' }
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth()
+    if (!workMeId || !companyUnit) {
+      return { success: false, error: 'Not authenticated or companyUnit not set' }
     }
 
     const validated = impactEventSchema.parse(data)
-    const result = await createTypedContext('impact_event', validated, workMeId, companyId)
+    const result = await createTypedContext('impact_event', validated, workMeId, companyUnit, companyDivision)
     return { success: true, impactEvent: result.typed }
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -48,13 +48,13 @@ export async function createImpactEvent(data: z.infer<typeof impactEventSchema>)
 
 export async function createTraining(data: z.infer<typeof trainingSchema>) {
   try {
-    const { workMeId, companyId } = await verifyAuth()
-    if (!workMeId || !companyId) {
-      return { success: false, error: 'Not authenticated' }
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth()
+    if (!workMeId || !companyUnit) {
+      return { success: false, error: 'Not authenticated or companyUnit not set' }
     }
 
     const validated = trainingSchema.parse(data)
-    const result = await createTypedContext('training', validated, workMeId, companyId)
+    const result = await createTypedContext('training', validated, workMeId, companyUnit, companyDivision)
     return { success: true, training: result.typed }
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -66,13 +66,13 @@ export async function createTraining(data: z.infer<typeof trainingSchema>) {
 
 export async function createEvent(data: z.infer<typeof eventSchema>) {
   try {
-    const { workMeId, companyId } = await verifyAuth()
-    if (!workMeId || !companyId) {
-      return { success: false, error: 'Not authenticated' }
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth()
+    if (!workMeId || !companyUnit) {
+      return { success: false, error: 'Not authenticated or companyUnit not set' }
     }
 
     const validated = eventSchema.parse(data)
-    const result = await createTypedContext('event', validated, workMeId, companyId)
+    const result = await createTypedContext('event', validated, workMeId, companyUnit, companyDivision)
     return { success: true, event: result.typed }
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -84,13 +84,13 @@ export async function createEvent(data: z.infer<typeof eventSchema>) {
 
 export async function createCommunityOpportunity(data: z.infer<typeof communityOpportunitySchema>) {
   try {
-    const { workMeId, companyId } = await verifyAuth()
-    if (!workMeId || !companyId) {
-      return { success: false, error: 'Not authenticated' }
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth()
+    if (!workMeId || !companyUnit) {
+      return { success: false, error: 'Not authenticated or companyUnit not set' }
     }
 
     const validated = communityOpportunitySchema.parse(data)
-    const result = await createTypedContext('community', validated, workMeId, companyId)
+    const result = await createTypedContext('community', validated, workMeId, companyUnit, companyDivision)
     return { success: true, community: result.typed }
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -102,13 +102,13 @@ export async function createCommunityOpportunity(data: z.infer<typeof communityO
 
 export async function createBenefits(data: z.infer<typeof benefitsSchema>) {
   try {
-    const { workMeId, companyId } = await verifyAuth()
-    if (!workMeId || !companyId) {
-      return { success: false, error: 'Not authenticated' }
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth()
+    if (!workMeId || !companyUnit) {
+      return { success: false, error: 'Not authenticated or companyUnit not set' }
     }
 
     const validated = benefitsSchema.parse(data)
-    const result = await createTypedContext('benefits', validated, workMeId, companyId)
+    const result = await createTypedContext('benefits', validated, workMeId, companyUnit, companyDivision)
     return { success: true, benefits: result.typed }
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -120,13 +120,13 @@ export async function createBenefits(data: z.infer<typeof benefitsSchema>) {
 
 export async function createCareer(data: z.infer<typeof careerSchema>) {
   try {
-    const { workMeId, companyId } = await verifyAuth()
-    if (!workMeId || !companyId) {
-      return { success: false, error: 'Not authenticated' }
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth()
+    if (!workMeId || !companyUnit) {
+      return { success: false, error: 'Not authenticated or companyUnit not set' }
     }
 
     const validated = careerSchema.parse(data)
-    const result = await createTypedContext('career', validated, workMeId, companyId)
+    const result = await createTypedContext('career', validated, workMeId, companyUnit, companyDivision)
     return { success: true, career: result.typed }
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -138,13 +138,13 @@ export async function createCareer(data: z.infer<typeof careerSchema>) {
 
 export async function createEmployeeCause(data: z.infer<typeof employeeCauseSchema>) {
   try {
-    const { workMeId, companyId } = await verifyAuth()
-    if (!workMeId || !companyId) {
-      return { success: false, error: 'Not authenticated' }
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth()
+    if (!workMeId || !companyUnit) {
+      return { success: false, error: 'Not authenticated or companyUnit not set' }
     }
 
     const validated = employeeCauseSchema.parse(data)
-    const result = await createTypedContext('employee_cause', validated, workMeId, companyId)
+    const result = await createTypedContext('employee_cause', validated, workMeId, companyUnit, companyDivision)
     return { success: true, employeeCause: result.typed }
   } catch (error: any) {
     if (error instanceof z.ZodError) {

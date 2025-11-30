@@ -15,50 +15,50 @@ export async function GET(request: NextRequest) {
   try {
     const auth = await verifyAuth(request)
 
-    if (!auth.workMeId || !auth.companyId) {
+    if (!auth.workMeId || !auth.companyUnit) {
       return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
+        { success: false, error: 'Not authenticated or companyUnit not set' },
         { status: 401 }
       )
     }
 
-    const { companyId } = auth
+    const { companyUnit } = auth
 
     // Fetch all CompanyX models
     const [trainings, events, campaigns, impactEvents, community, benefits, careers] = await Promise.all([
       // CompanyTraining
       prisma.companyTraining.findMany({
-        where: { companyId },
+        where: { companyUnit },
         orderBy: { trainingDate: 'asc' },
       }),
       // CompanyEvent
       prisma.companyEvent.findMany({
-        where: { companyId },
+        where: { companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       // CompanyCampaign
       prisma.companyCampaign.findMany({
-        where: { companyId },
+        where: { companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       // CompanyImpactEvent
       prisma.companyImpactEvent.findMany({
-        where: { companyId },
+        where: { companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       // CompanyCommunity
       prisma.companyCommunity.findMany({
-        where: { companyId },
+        where: { companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       // CompanyBenefits
       prisma.companyBenefits.findMany({
-        where: { companyId },
+        where: { companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       // CompanyCareer
       prisma.companyCareer.findMany({
-        where: { companyId },
+        where: { companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
     ])

@@ -14,16 +14,28 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(request: Request) {
   try {
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    
+    if (!companyUnit) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'User must set a companyUnit before creating work items' 
+        },
+        { status: 400 },
+      )
+    }
+
     const body = await request.json()
 
     console.log('[API POST /api/ntk/create]', {
       payload: body,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
-    const result = await createNTK(body, workMeId, companyId)
+    const result = await createNTK(body, workMeId, companyUnit, companyDivision)
 
     return NextResponse.json(result)
   } catch (error: any) {

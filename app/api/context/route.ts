@@ -13,45 +13,57 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: Request) {
   try {
     // Verify Firebase token and get authenticated context
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
 
     console.log('[API GET /api/context]', {
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
-    // Get all CompanyX models for user's company (multi-tenant scoping)
+    // Validate companyUnit is set
+    if (!companyUnit) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'User must set a companyUnit' 
+        },
+        { status: 400 },
+      )
+    }
+
+    // Get all CompanyX models for user's company unit (multi-tenant scoping)
     const [campaigns, impactEvents, trainings, events, communities, benefits, careers, employeeCauses] = await Promise.all([
       prisma.companyCampaign.findMany({
-        where: { companyId },
+        where: { companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyImpactEvent.findMany({
-        where: { companyId },
+        where: { companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyTraining.findMany({
-        where: { companyId },
+        where: { companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyEvent.findMany({
-        where: { companyId },
+        where: { companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyCommunity.findMany({
-        where: { companyId },
+        where: { companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyBenefits.findMany({
-        where: { companyId },
+        where: { companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyCareer.findMany({
-        where: { companyId },
+        where: { companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyEmployeeCause.findMany({
-        where: { companyId },
+        where: { companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
     ])
@@ -84,7 +96,8 @@ export async function GET(request: Request) {
 
     console.log('[API GET /api/context] SUCCESS', {
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
       count: enrichedContexts.length,
       contexts: enrichedContexts.map(c => ({
         id: c.id,

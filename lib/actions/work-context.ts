@@ -10,24 +10,24 @@ import type { ContextType } from '@/lib/types/context-type'
 async function enrichCompanyX(companyX: any, type: ContextType) {
   if (!companyX) return null
 
-  // Get companyId for getTypedContext
+  // Get companyUnit for getTypedContext
   const workMeId = await getWorkMeId()
   if (!workMeId) return companyX
 
   const workMe = await prisma.workMe.findUnique({
     where: { id: workMeId },
-    select: { companyId: true },
+    select: { companyUnit: true },
   })
 
-  if (!workMe?.companyId) return companyX
+  if (!workMe?.companyUnit) return companyX
 
-  const typedResult = await getTypedContext(type, companyX.id, workMe.companyId)
+  const typedResult = await getTypedContext(type, companyX.id, workMe.companyUnit)
 
   return {
     ...companyX,
     type,
-    typedData: typedResult.success ? typedResult.data : null,
-    title: typedResult.success ? typedResult.title : companyX.title || 'Unknown',
+    typedData: typedResult || null,
+    title: typedResult?.title || companyX.title || 'Unknown',
   }
 }
 
@@ -39,14 +39,14 @@ export async function deleteWorkContext(id: string, type: ContextType) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    // Get companyId for multi-tenant security
+    // Get companyUnit for multi-tenant security
     const workMe = await prisma.workMe.findUnique({
       where: { id: workMeId },
-      select: { companyId: true },
+      select: { companyUnit: true },
     })
 
-    if (!workMe?.companyId) {
-      return { success: false, error: 'User must belong to a company' }
+    if (!workMe?.companyUnit) {
+      return { success: false, error: 'User must set a companyUnit' }
     }
 
     // Delete CompanyX model directly based on type
@@ -69,7 +69,7 @@ export async function deleteWorkContext(id: string, type: ContextType) {
     await (prisma as any)[modelName].delete({
       where: { 
         id,
-        companyId: workMe.companyId,
+        companyUnit: workMe.companyUnit,
       },
     })
 
@@ -88,48 +88,48 @@ export async function getWorkContexts() {
       return { success: false, error: 'Not authenticated', workContexts: [] }
     }
 
-    // Get companyId for multi-tenant security
+    // Get companyUnit for multi-tenant security
     const workMe = await prisma.workMe.findUnique({
       where: { id: workMeId },
-      select: { companyId: true },
+      select: { companyUnit: true },
     })
 
-    if (!workMe?.companyId) {
-      return { success: false, error: 'User must belong to a company', workContexts: [] }
+    if (!workMe?.companyUnit) {
+      return { success: false, error: 'User must set a companyUnit', workContexts: [] }
     }
 
-    // Fetch all CompanyX models for this company
+    // Fetch all CompanyX models for this company unit
     const [campaigns, impactEvents, trainings, events, communities, benefits, careers, employeeCauses] = await Promise.all([
       prisma.companyCampaign.findMany({
-        where: { companyId: workMe.companyId },
+        where: { companyUnit: workMe.companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyImpactEvent.findMany({
-        where: { companyId: workMe.companyId },
+        where: { companyUnit: workMe.companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyTraining.findMany({
-        where: { companyId: workMe.companyId },
+        where: { companyUnit: workMe.companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyEvent.findMany({
-        where: { companyId: workMe.companyId },
+        where: { companyUnit: workMe.companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyCommunity.findMany({
-        where: { companyId: workMe.companyId },
+        where: { companyUnit: workMe.companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyBenefits.findMany({
-        where: { companyId: workMe.companyId },
+        where: { companyUnit: workMe.companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyCareer.findMany({
-        where: { companyId: workMe.companyId },
+        where: { companyUnit: workMe.companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyEmployeeCause.findMany({
-        where: { companyId: workMe.companyId },
+        where: { companyUnit: workMe.companyUnit },
         orderBy: { createdAt: 'desc' },
       }),
     ])
@@ -188,14 +188,14 @@ export async function getWorkContext(id: string, type: ContextType, clientWorkMe
       return { success: false, error: 'Not authenticated', workContext: null }
     }
 
-    // Get companyId from workMe
+    // Get companyUnit from workMe
     const workMe = await prisma.workMe.findUnique({
       where: { id: workMeId },
-      select: { companyId: true },
+      select: { companyUnit: true },
     })
 
-    if (!workMe?.companyId) {
-      return { success: false, error: 'User must belong to a company', workContext: null }
+    if (!workMe?.companyUnit) {
+      return { success: false, error: 'User must set a companyUnit', workContext: null }
     }
 
     // Map type to model name
@@ -219,7 +219,7 @@ export async function getWorkContext(id: string, type: ContextType, clientWorkMe
     const companyX = await (prisma as any)[modelName].findFirst({
       where: { 
         id,
-        companyId: workMe.companyId, // Multi-tenant security
+        companyUnit: workMe.companyUnit, // Multi-tenant security
       },
     })
 

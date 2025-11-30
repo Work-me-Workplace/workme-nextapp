@@ -80,48 +80,48 @@ export default function WorkplaceSandboxPage() {
   const pathname = usePathname()
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
-  const [companyId, setCompanyId] = useState<string | null>(null)
+  const [companyUnit, setCompanyUnit] = useState<string | null>(null)
   const [allContexts, setAllContexts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   // Use event hydration hook for instant event loading
-  const { events, eventRouters, hydrated: eventsHydrated, refresh: refreshEvents } = useEventHydration(companyId)
+  const { events, eventRouters, hydrated: eventsHydrated, refresh: refreshEvents } = useEventHydration(companyUnit)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const id = getWorkMeIdFromStorage()
-      const storedCompanyId = localStorage.getItem('companyId')
+      const storedCompanyUnit = localStorage.getItem('companyUnit')
       if (!id) {
         router.push('/signin')
       } else {
         setWorkMeId(id)
-        if (storedCompanyId) {
-          setCompanyId(storedCompanyId)
+        if (storedCompanyUnit) {
+          setCompanyUnit(storedCompanyUnit)
         }
         loadContexts()
       }
     }
   }, [router])
 
-  // Hydrate events when companyId is available
+  // Hydrate events when companyUnit is available
   useEffect(() => {
-    if (companyId && !eventsHydrated) {
+    if (companyUnit && !eventsHydrated) {
       refreshEvents()
     }
-  }, [companyId, eventsHydrated, refreshEvents])
+  }, [companyUnit, eventsHydrated, refreshEvents])
 
   // Listen for refresh events (when new event is created)
   useEffect(() => {
     if (typeof window === 'undefined') return
     const handleRefresh = () => {
-      if (companyId) {
+      if (companyUnit) {
         refreshEvents()
         loadContexts() // Also refresh other contexts
       }
     }
     window.addEventListener('refreshEvents', handleRefresh)
     return () => window.removeEventListener('refreshEvents', handleRefresh)
-  }, [companyId, refreshEvents])
+  }, [companyUnit, refreshEvents])
 
   async function loadContexts() {
     setLoading(true)

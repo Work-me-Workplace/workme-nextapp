@@ -3,21 +3,77 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import api from '@/lib/api'
 
 export default function WelcomePage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
+  const [companyUnit, setCompanyUnit] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get workMeId from localStorage
-    if (typeof window !== 'undefined') {
+    // Check if user has companyUnit set
+    const checkCompanyUnit = async () => {
+      if (typeof window === 'undefined') return
+
       const id = localStorage.getItem('workMeId')
       setWorkMeId(id)
+
+      // Check localStorage first
+      const storedCompanyUnit = localStorage.getItem('companyUnit')
+      if (storedCompanyUnit) {
+        setCompanyUnit(storedCompanyUnit)
+        setLoading(false)
+        return
+      }
+
+      // If not in localStorage, check via API
+      try {
+        const response = await api.get('/api/workme/hydrate')
+        if (response.data.success && response.data.workMe) {
+          const unit = response.data.workMe.companyUnit
+          setCompanyUnit(unit)
+          if (unit) {
+            localStorage.setItem('companyUnit', unit)
+            if (response.data.workMe.companyDivision) {
+              localStorage.setItem('companyDivision', response.data.workMe.companyDivision)
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to check company unit:', err)
+      } finally {
+        setLoading(false)
+      }
     }
+
+    checkCompanyUnit()
   }, [])
 
+  useEffect(() => {
+    // Redirect if companyUnit is missing
+    if (!loading && !companyUnit) {
+      router.push('/setup/unit')
+    } else if (!loading && companyUnit) {
+      // User has companyUnit, can proceed to dashboard
+      // Don't auto-redirect, let them click continue
+    }
+  }, [loading, companyUnit, router])
+
   const handleContinue = () => {
-    router.push('/dashboard')
+    if (companyUnit) {
+      router.push('/dashboard')
+    } else {
+      router.push('/setup/unit')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+      </div>
+    )
   }
 
   return (
