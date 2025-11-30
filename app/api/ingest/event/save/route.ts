@@ -17,13 +17,21 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request) {
   try {
     // Verify Firebase token and get authenticated context
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+
+    if (!companyUnit) {
+      return NextResponse.json(
+        { success: false, error: 'User must set a companyUnit' },
+        { status: 400 }
+      )
+    }
 
     const body: EventIngestionResponse = await request.json()
 
     console.log('[API POST /api/ingest/event/save]', {
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
       hasEvent: !!body.event,
       itemsCount: body.items?.length || 0,
     })
@@ -31,7 +39,8 @@ export async function POST(request: Request) {
     // Normalize GPT output
     const normalized = normalizeGPTIngestionOutput(
       body,
-      companyId,
+      companyUnit,
+      companyDivision,
       workMeId
     )
 

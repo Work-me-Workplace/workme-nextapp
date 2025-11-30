@@ -56,7 +56,8 @@ interface NormalizedEventData {
   participation: string[]
   pocEmail: string | null
   pocPhone: string | null
-  companyId: string
+  companyUnit: string | null
+  companyDivision: string | null
   originatorId: string
 }
 
@@ -286,7 +287,8 @@ function parseEventDate(value: string | null | undefined): Date | null {
  */
 export function normalizeGPTIngestionOutput(
   gptOutput: GPTIngestionOutput,
-  companyId: string,
+  companyUnit: string | null,
+  companyDivision: string | null,
   originatorId: string
 ): NormalizedIngestionData {
   const event = gptOutput.event || {}
@@ -312,7 +314,8 @@ export function normalizeGPTIngestionOutput(
     participation: normalizeArray(event.participation),
     pocEmail: null, // Not in GPT output, can be added later
     pocPhone: null, // Not in GPT output, can be added later
-    companyId,
+    companyUnit,
+    companyDivision,
     originatorId,
   }
 

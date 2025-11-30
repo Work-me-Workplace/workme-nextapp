@@ -63,11 +63,12 @@ interface PromotionalIngestionError {
 export async function POST(request: Request) {
   try {
     // Verify Firebase token and get authenticated context
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
 
     console.log('[API POST /api/ingest/promotional/ai]', {
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
     const body: PromotionalIngestionRequest = await request.json()

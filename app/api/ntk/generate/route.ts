@@ -39,7 +39,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request) {
   try {
     // Verify Firebase token and get authenticated context
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
 
     const body = await request.json()
     const { sourceText, isCSV = false, save = false } = body
@@ -49,7 +49,8 @@ export async function POST(request: Request) {
       isCSV,
       save,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
     if (!sourceText || typeof sourceText !== 'string' || sourceText.trim().length === 0) {
@@ -97,7 +98,8 @@ export async function POST(request: Request) {
           },
         },
         workMeId,
-        companyId,
+        companyUnit,
+        companyDivision,
       )
 
       ntkId = result.ntkId

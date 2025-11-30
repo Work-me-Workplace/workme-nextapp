@@ -11,7 +11,14 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     // Verify Firebase token and get authenticated context
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+
+    if (!companyUnit) {
+      return NextResponse.json(
+        { success: false, error: 'User must set a companyUnit' },
+        { status: 400 }
+      )
+    }
 
     const { draftId, productId } = await request.json()
 
@@ -38,13 +45,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify draft belongs to user's company
+    // Verify draft belongs to user's company unit
     const product = await prisma.workforceComms.findUnique({
       where: { workforceCommsId: productId },
-      select: { companyId: true },
+      select: { companyUnit: true, companyDivision: true },
     })
 
-    if (!product || product.companyId !== companyId) {
+    if (!product || product.companyUnit !== companyUnit) {
       return NextResponse.json(
         { success: false, error: 'Draft not found or unauthorized' },
         { status: 404 }
@@ -52,11 +59,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch work contexts using CompanyWorkLink (eventRouterIds is deprecated)
-    // For now, get all CompanyX models linked to this WorkCommsProduct via CompanyWorkLink
+    // Filter by related CompanyX models' companyUnit since CompanyWorkLink doesn't have companyUnit
     const companyWorkLinks = await prisma.companyWorkLink.findMany({
       where: {
         workCommsProductId: productId,
-        companyId, // Multi-tenant security
+        OR: [
+          { companyEvent: { companyUnit } },
+          { companyCampaign: { companyUnit } },
+          { companyImpactEvent: { companyUnit } },
+          { companyTraining: { companyUnit } },
+          { companyCommunity: { companyUnit } },
+          { companyBenefits: { companyUnit } },
+          { companyCareer: { companyUnit } },
+          { companyEmployeeCause: { companyUnit } },
+        ],
       },
       include: {
         companyEvent: true,
@@ -142,7 +158,8 @@ export async function POST(request: NextRequest) {
       body: generatedContent.body,
       sentAt: null,
         originatorId: workMeId,
-        companyId: companyId,
+        companyUnit: companyUnit,
+        companyDivision: companyDivision,
       },
     })
 

@@ -10,7 +10,7 @@ import { verifyAuth } from '@/lib/server/verifyAuth'
 export async function POST(req: NextRequest) {
   try {
     // Verify authentication
-    const { companyId } = await verifyAuth(req)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(req)
     
     // Parse request body
     const body = await req.json()

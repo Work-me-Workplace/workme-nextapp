@@ -29,7 +29,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request) {
   try {
     // Verify Firebase token and get authenticated context
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
 
     const body = await request.json()
     const { csvContent } = body
@@ -37,7 +37,8 @@ export async function POST(request: Request) {
     console.log('[API POST /api/ntk/csv-preview]', {
       csvLength: csvContent?.length || 0,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
     if (!csvContent || typeof csvContent !== 'string' || csvContent.trim().length === 0) {
