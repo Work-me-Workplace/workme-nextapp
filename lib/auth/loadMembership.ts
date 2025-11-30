@@ -9,13 +9,13 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { CompanyRole } from '@prisma/client'
+import { CompanyUnitRole } from '@prisma/client'
 
 export interface Membership {
   id: string
   workMeId: string
   companyUnit: string
-  role: CompanyRole
+  role: CompanyUnitRole
   createdAt: Date
 }
 
@@ -58,12 +58,12 @@ export async function loadMembership(
 export async function hasRole(
   workMeId: string,
   companyUnit: string,
-  requiredRole: CompanyRole
+  requiredRole: CompanyUnitRole
 ): Promise<boolean> {
   try {
     const membership = await loadMembership(workMeId, companyUnit)
     
-    const roleHierarchy: Record<CompanyRole, number> = {
+    const roleHierarchy: Record<CompanyUnitRole, number> = {
       MEMBER: 1,
       MANAGER: 2,
       ADMIN: 3,

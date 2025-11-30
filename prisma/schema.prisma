@@ -56,7 +56,6 @@ model WorkMe {
   createdCompanyCommunities         CompanyCommunity[]      @relation("CompanyCommunityCreator")
   createdCompanyBenefits            CompanyBenefits[]        @relation("CompanyBenefitsCreator")
   createdCompanyCareers              CompanyCareer[]          @relation("CompanyCareerCreator")
-  createdCompanyEmployeeCauses      CompanyEmployeeCause[]  @relation("CompanyEmployeeCauseCreator")
 
   // connections Connection[]  // Commented out - not using
   // events      Event[]       // Commented out - not using
@@ -94,7 +93,7 @@ enum EventCategory {
   FAMILY
 }
 
-enum CompanyRole {
+enum CompanyUnitRole {
   MEMBER
   MANAGER
   ADMIN
@@ -229,7 +228,7 @@ model CompanyUnitMembers {
   id          String      @id @default(uuid())
   workMeId    String
   companyUnit String      // References CompanyUnit.unit
-  role        CompanyRole @default(MEMBER)
+  role        CompanyUnitRole @default(MEMBER)
   createdAt   DateTime    @default(now())
 
   workMe  WorkMe       @relation(fields: [workMeId], references: [id], onDelete: Cascade)
@@ -252,26 +251,13 @@ model Workplace {
   workMe  WorkMe          @relation(fields: [workMeId], references: [id], onDelete: Cascade)
   company CompanyRegistry @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  roles CompanyRole[]
+  // Note: roles relation removed - CompanyRole model deleted
 
   @@unique([workMeId, companyId]) // One workplace per user-company pair
   @@index([workMeId])
   @@index([companyId])
 }
 
-// CompanyRole: Defines permissions inside a company or unit
-model CompanyRole {
-  id          String   @id @default(cuid())
-  workplaceId String
-  role        String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  workplace Workplace @relation(fields: [workplaceId], references: [id], onDelete: Cascade)
-
-  @@index([workplaceId])
-  @@index([role])
-}
 
 enum CompanyType {
   NON_PROFIT
@@ -659,32 +645,50 @@ model CompanyCareer {
 }
 
 model CompanyEmployeeCause {
-  id                   String    @id @default(cuid())
-  createdAt            DateTime  @default(now())
-  title                String
-  description          String?
-  partnerOrg           String?
-  windowStart          DateTime?
-  windowEnd            DateTime?
-  location             String?
-  neededItems          String[]
-  collectionPoints     String[]
-  signUpLink           String?
-  pocFirstName         String?
-  pocLastName          String?
-  pocEmail             String?
-  pocPhone             String?
-  sponsoringDepartment String?
+  // -----------------------
+  // IDENTITY
+  // -----------------------
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  companyUnit     String?
-  companyDivision String?
-  createdByWorkMeId String
-  createdBy        WorkMe @relation("CompanyEmployeeCauseCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  // -----------------------
+  // CORE CONTENT
+  // -----------------------
+  title            String
+  description      String?        // 1–2 sentence "what is this thing?"
+  impactSummary    String?        // 1 sentence "why this matters / who it helps"
 
+  // -----------------------
+  // STRUCTURED FIELDS
+  // -----------------------
+  partnerOrg            String?
+  sponsoringDepartment  String?
+
+  windowStart           DateTime?
+  windowEnd             DateTime?
+  deadlines             Json?        // { mailed, dropoff, delivery }
+
+  locations             String[]    @default([])    // drop-off or event locations
+  link                  String?
+
+  pocList               Json?        // [{ name, email, phone }]
+  extraInstructions     Json?        // ["avoid toy weapons", ...]
+
+  // -----------------------
+  // AI SYNTHESIS (Stage 3)
+  // -----------------------
+  summary               String?
+
+  // -----------------------
+  // RAW INGESTION (Stage 1)
+  // -----------------------
+  ingestRawText         String?
+
+  // -----------------------
+  // RELATIONS
+  // -----------------------
   links CompanyWorkLink[]
-
-  @@index([companyUnit])
-  @@index([createdByWorkMeId])
 }
 
 // ============================================
@@ -833,7 +837,7 @@ model NTKEdition {
   items NTKItem[]
 
   @@index([companyUnit])
-  @@index([originatorId])
+  @@index([createdByWorkMeId])
   @@index([createdAt])
   @@map("ntk_editions")
 }
