@@ -14,12 +14,12 @@ export async function GET(
   { params }: { params: Promise<{ ntkId: string }> }
 ) {
   try {
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
     const { ntkId } = await params
 
-    console.log('[API GET /api/ntk/[ntkId]]', { ntkId, workMeId, companyId })
+    console.log('[API GET /api/ntk/[ntkId]]', { ntkId, workMeId, companyUnit, companyDivision })
 
-    const result = await getNTK(ntkId, workMeId, companyId)
+    const result = await getNTK(ntkId, workMeId, companyUnit)
 
     return NextResponse.json(result)
   } catch (error: any) {
@@ -47,13 +47,13 @@ export async function PUT(
   { params }: { params: Promise<{ ntkId: string }> }
 ) {
   try {
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
     const { ntkId } = await params
     const body = await request.json()
 
-    console.log('[API PUT /api/ntk/[ntkId]]', { ntkId, payload: body, workMeId, companyId })
+    console.log('[API PUT /api/ntk/[ntkId]]', { ntkId, payload: body, workMeId, companyUnit, companyDivision })
 
-    const result = await updateNTK({ ntkId, ...body }, workMeId, companyId)
+    const result = await updateNTK({ ntkId, ...body }, workMeId, companyUnit)
 
     return NextResponse.json(result)
   } catch (error: any) {
@@ -81,12 +81,12 @@ export async function DELETE(
   { params }: { params: Promise<{ ntkId: string }> }
 ) {
   try {
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
     const { ntkId } = await params
 
-    console.log('[API DELETE /api/ntk/[ntkId]]', { ntkId, workMeId, companyId })
+    console.log('[API DELETE /api/ntk/[ntkId]]', { ntkId, workMeId, companyUnit, companyDivision })
 
-    const result = await deleteNTK(ntkId, workMeId, companyId)
+    const result = await deleteNTK(ntkId, workMeId, companyUnit)
 
     return NextResponse.json(result)
   } catch (error: any) {

@@ -14,16 +14,17 @@ export async function GET(
   { params }: { params: { editionId: string } },
 ) {
   try {
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
     const { editionId } = params
 
     console.log('[API GET /api/ntk/editions/[editionId]]', {
       editionId,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
-    const result = await getEdition(editionId, workMeId, companyId)
+    const result = await getEdition(editionId, workMeId, companyUnit)
 
     return NextResponse.json(result)
   } catch (error: any) {

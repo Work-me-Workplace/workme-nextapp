@@ -15,17 +15,18 @@ export async function GET(
 ) {
   try {
     // Verify Firebase token and get authenticated context
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
 
     const { id } = await params
 
     console.log('[API GET /api/output-standalone/[id]]', {
       id,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
-    const result = await getStandaloneOutput(id, companyId)
+    const result = await getStandaloneOutput(id, companyUnit)
 
     console.log('[API GET /api/output-standalone/[id]] SUCCESS', {
       id,
@@ -63,7 +64,7 @@ export async function PUT(
 ) {
   try {
     // Verify Firebase token and get authenticated context
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
 
     const { id } = await params
     const body = await request.json()
@@ -72,10 +73,11 @@ export async function PUT(
       id,
       payload: body,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
-    const result = await updateStandaloneOutput({ id, ...body }, workMeId, companyId)
+    const result = await updateStandaloneOutput({ id, ...body }, workMeId, companyUnit)
 
     console.log('[API PUT /api/output-standalone/[id]] SUCCESS', {
       id,
@@ -125,17 +127,18 @@ export async function DELETE(
 ) {
   try {
     // Verify Firebase token and get authenticated context
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
 
     const { id } = await params
 
     console.log('[API DELETE /api/output-standalone/[id]]', {
       id,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
-    const result = await deleteStandaloneOutput(id, workMeId, companyId)
+    const result = await deleteStandaloneOutput(id, workMeId, companyUnit)
 
     console.log('[API DELETE /api/output-standalone/[id]] SUCCESS', {
       id,

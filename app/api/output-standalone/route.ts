@@ -12,14 +12,15 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: Request) {
   try {
     // Verify Firebase token and get authenticated context
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
 
     console.log('[API GET /api/output-standalone]', {
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
-    const result = await listStandaloneOutputs(companyId)
+    const result = await listStandaloneOutputs(companyUnit)
 
     console.log('[API GET /api/output-standalone] SUCCESS', {
       count: result.data.length,

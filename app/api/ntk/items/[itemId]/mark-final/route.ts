@@ -14,16 +14,17 @@ export async function PATCH(
   { params }: { params: { itemId: string } },
 ) {
   try {
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
     const { itemId } = params
 
     console.log('[API PATCH /api/ntk/items/[itemId]/mark-final]', {
       itemId,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
-    const result = await markItemFinal(itemId, workMeId, companyId)
+    const result = await markItemFinal(itemId, workMeId, companyUnit)
 
     return NextResponse.json(result)
   } catch (error: any) {

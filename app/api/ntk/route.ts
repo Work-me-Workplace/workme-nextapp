@@ -11,11 +11,11 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: Request) {
   try {
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
 
-    console.log('[API GET /api/ntk]', { workMeId, companyId })
+    console.log('[API GET /api/ntk]', { workMeId, companyUnit, companyDivision })
 
-    const result = await listNTKs(companyId)
+    const result = await listNTKs(companyUnit)
 
     return NextResponse.json(result)
   } catch (error: any) {

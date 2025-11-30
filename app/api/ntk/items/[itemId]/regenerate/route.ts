@@ -19,7 +19,7 @@ export async function POST(
   { params }: { params: { itemId: string } },
 ) {
   try {
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
     const { itemId } = params
 
     const body = await request.json()
@@ -29,11 +29,12 @@ export async function POST(
       itemId,
       hasFeedback: !!feedback,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
     // Get existing item
-    const itemResult = await getItem(itemId, workMeId, companyId)
+    const itemResult = await getItem(itemId, workMeId, companyUnit)
     const item = itemResult.item
 
     // Prepare source text from rawFields
@@ -57,7 +58,7 @@ export async function POST(
         status: 'GENERATED' as any,
       },
       workMeId,
-      companyId,
+      companyUnit,
     )
 
     return NextResponse.json({

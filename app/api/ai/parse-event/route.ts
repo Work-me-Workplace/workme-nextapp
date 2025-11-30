@@ -14,11 +14,12 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request) {
   try {
     // Verify Firebase token and get authenticated context
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
 
     console.log('[API POST /api/ai/parse-event]', {
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
     const formData = await request.formData()
@@ -60,7 +61,8 @@ export async function POST(request: Request) {
 
     console.log('[API POST /api/ai/parse-event] SUCCESS', {
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
       parsedFields: Object.keys(parsedData),
     })
 

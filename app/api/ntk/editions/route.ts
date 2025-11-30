@@ -12,11 +12,11 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: Request) {
   try {
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
 
-    console.log('[API GET /api/ntk/editions]', { workMeId, companyId })
+    console.log('[API GET /api/ntk/editions]', { workMeId, companyUnit, companyDivision })
 
-    const result = await listEditions(companyId)
+    const result = await listEditions(companyUnit)
 
     return NextResponse.json(result)
   } catch (error: any) {
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
 
     const body = await request.json()
     const { previewRows, title, date } = body
@@ -57,7 +57,8 @@ export async function POST(request: Request) {
       title,
       date,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
     if (!previewRows || !Array.isArray(previewRows) || previewRows.length === 0) {
@@ -70,7 +71,8 @@ export async function POST(request: Request) {
     const result = await createEdition(
       previewRows as PreviewRow[],
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
       title,
       date ? new Date(date) : undefined,
     )

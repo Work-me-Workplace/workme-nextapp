@@ -33,14 +33,16 @@ const updateItemSchema = z.object({
 export async function createEdition(
   previewRows: PreviewRow[],
   workMeId: string,
-  companyId: string,
+  companyUnit: string | null,
+  companyDivision: string | null = null,
   title?: string,
   date?: Date,
 ) {
   console.log('[NTK Edition CREATE]', {
     itemCount: previewRows.length,
     workMeId,
-    companyId,
+    companyUnit,
+    companyDivision,
     title,
   })
 
@@ -48,8 +50,8 @@ export async function createEdition(
     throw new Error('No WorkMeId - not authenticated')
   }
 
-  if (!companyId) {
-    throw new Error('User must belong to a company')
+  if (!companyUnit) {
+    throw new Error('User must set a companyUnit')
   }
 
   if (!previewRows || previewRows.length === 0) {
@@ -62,7 +64,8 @@ export async function createEdition(
       title: title || undefined,
       date: date || undefined,
       originatorId: workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
       items: {
         create: previewRows.map((row) => ({
           inputId: row.inputId,
@@ -95,14 +98,18 @@ export async function createEdition(
 export async function getEdition(
   editionId: string,
   workMeId: string,
-  companyId: string,
+  companyUnit: string | null,
 ) {
-  console.log('[NTK Edition GET]', { editionId, workMeId, companyId })
+  console.log('[NTK Edition GET]', { editionId, workMeId, companyUnit })
+
+  if (!companyUnit) {
+    throw new Error('User must set a companyUnit')
+  }
 
   const edition = await prisma.nTKEdition.findFirst({
     where: {
       id: editionId,
-      companyId, // Multi-tenant scoping
+      companyUnit, // Multi-tenant scoping
     },
     include: {
       items: {
@@ -139,12 +146,16 @@ export async function getEdition(
 /**
  * List all NTKEditions for a company
  */
-export async function listEditions(companyId: string) {
-  console.log('[NTK Edition LIST]', { companyId })
+export async function listEditions(companyUnit: string | null) {
+  console.log('[NTK Edition LIST]', { companyUnit })
+
+  if (!companyUnit) {
+    throw new Error('User must set a companyUnit')
+  }
 
   const editions = await prisma.nTKEdition.findMany({
     where: {
-      companyId,
+      companyUnit,
     },
     include: {
       _count: {
@@ -181,15 +192,19 @@ export async function listEditions(companyId: string) {
 export async function getItem(
   itemId: string,
   workMeId: string,
-  companyId: string,
+  companyUnit: string | null,
 ) {
-  console.log('[NTK Item GET]', { itemId, workMeId, companyId })
+  console.log('[NTK Item GET]', { itemId, workMeId, companyUnit })
+
+  if (!companyUnit) {
+    throw new Error('User must set a companyUnit')
+  }
 
   const item = await prisma.nTKItem.findFirst({
     where: {
       id: itemId,
       edition: {
-        companyId, // Multi-tenant scoping
+        companyUnit, // Multi-tenant scoping
       },
     },
     include: {
@@ -198,7 +213,8 @@ export async function getItem(
           id: true,
           title: true,
           date: true,
-          companyId: true,
+          companyUnit: true,
+          companyDivision: true,
         },
       },
     },
@@ -222,15 +238,19 @@ export async function getItem(
 export async function updateItem(
   data: z.infer<typeof updateItemSchema>,
   workMeId: string,
-  companyId: string,
+  companyUnit: string | null,
 ) {
   console.log('[NTK Item UPDATE]', {
     itemId: data.itemId,
     workMeId,
-    companyId,
+    companyUnit,
     hasFeedback: !!data.feedback,
     newStatus: data.status,
   })
+
+  if (!companyUnit) {
+    throw new Error('User must set a companyUnit')
+  }
 
   const validated = updateItemSchema.parse(data)
   const { itemId, ...updateData } = validated
@@ -240,7 +260,7 @@ export async function updateItem(
     where: {
       id: itemId,
       edition: {
-        companyId,
+        companyUnit,
       },
     },
   })
@@ -279,7 +299,7 @@ export async function updateItem(
 export async function markItemFinal(
   itemId: string,
   workMeId: string,
-  companyId: string,
+  companyUnit: string | null,
 ) {
   return updateItem(
     {
@@ -287,7 +307,7 @@ export async function markItemFinal(
       status: NTKStatus.FINAL,
     },
     workMeId,
-    companyId,
+    companyUnit,
   )
 }
 

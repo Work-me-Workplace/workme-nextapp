@@ -14,16 +14,17 @@ export async function GET(
   { params }: { params: { itemId: string } },
 ) {
   try {
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
     const { itemId } = params
 
     console.log('[API GET /api/ntk/items/[itemId]]', {
       itemId,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
-    const result = await getItem(itemId, workMeId, companyId)
+    const result = await getItem(itemId, workMeId, companyUnit)
 
     return NextResponse.json(result)
   } catch (error: any) {
@@ -58,7 +59,7 @@ export async function PUT(
   { params }: { params: { itemId: string } },
 ) {
   try {
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
     const { itemId } = params
 
     const body = await request.json()
@@ -70,7 +71,8 @@ export async function PUT(
       hasPlainLanguage: !!plainLanguage,
       status,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
     const result = await updateItem(
@@ -81,7 +83,7 @@ export async function PUT(
         status,
       },
       workMeId,
-      companyId,
+      companyUnit,
     )
 
     return NextResponse.json(result)

@@ -262,14 +262,15 @@ export async function DELETE(
 ) {
   try {
     // Verify Firebase token and get authenticated context
-    const { workMeId, companyId } = await verifyAuth(request)
+    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
 
     const { contextId } = await params
 
     console.log('[API DELETE /api/context/[contextId]]', {
       contextId,
       workMeId,
-      companyId,
+      companyUnit,
+      companyDivision,
     })
 
     if (!contextId) {
@@ -298,7 +299,8 @@ export async function DELETE(
       const result = await (prisma as any)[modelName].findFirst({
         where: {
           id: contextId,
-          companyId, // Multi-tenant security
+          companyUnit, // Multi-tenant security
+          ...(companyDivision && { companyDivision }),
         },
       })
       if (result) {
@@ -315,7 +317,7 @@ export async function DELETE(
     }
 
     // Delete using factory (includes transaction and ownership validation)
-    await deleteTypedContext(contextId, foundType, workMeId, companyId)
+    await deleteTypedContext(contextId, foundType, workMeId, companyUnit)
 
     console.log('[API DELETE /api/context/[contextId]] SUCCESS', {
       contextId,
