@@ -132,13 +132,6 @@ export default function MilestoneDetailPage() {
                   <Plus className="h-5 w-5 mr-2" />
                   Create Work Output from This
                 </Link>
-                <Link
-                  href={`/ntk?milestoneId=${milestoneId}`}
-                  className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition"
-                >
-                  <FileText className="h-5 w-5 mr-2" />
-                  Related NTKs
-                </Link>
               </div>
             </div>
           </div>

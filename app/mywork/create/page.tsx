@@ -8,7 +8,6 @@ import SidebarNav from '@/components/mywork/SidebarNav'
 import { FileText, MessageSquare, Monitor, Mail, Image, FileCheck } from 'lucide-react'
 
 const outputTypes = [
-  { value: 'ntk', name: 'NTK', icon: FileText, description: 'Need to Know snippets' },
   { value: 'workforce_comms', name: 'Workforce Comms', icon: MessageSquare, description: 'Internal communications' },
   { value: 'digital_signage', name: 'Digital Signage', icon: Monitor, description: 'Digital display content' },
   { value: 'executive_email', name: 'Executive Email', icon: Mail, description: 'Executive-level emails' },

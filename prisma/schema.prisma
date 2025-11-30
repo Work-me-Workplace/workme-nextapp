@@ -697,7 +697,6 @@ enum OutputCategory {
   print_product
   sharepoint_update
   photo_video_support
-  ntk
 }
 
 // ============================================

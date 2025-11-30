@@ -13,7 +13,6 @@ const createStandaloneOutputSchema = z.object({
     "print_product",
     "sharepoint_update",
     "photo_video_support",
-    "ntk",
   ]),
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),

@@ -9,7 +9,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head>
         <title>Work.me</title>
-        <link rel="icon" href="/WorkMeIcon.png" type="image/png" />
+        <link rel="icon" href="/logo.png" type="image/png" />
       </head>
       <body className="min-h-screen bg-gray-50">
         <AuthProvider>
