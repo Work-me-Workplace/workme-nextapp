@@ -18,8 +18,8 @@ model WorkMe {
   firstName       String?
   lastName        String?
   photoUrl        String?
-  companyUnit     String?        // required for WorkContext, but collected AFTER signup
-  companyDivision String?        // optional grouping layer
+  companyUnit     String? // required for WorkContext, but collected AFTER signup
+  companyDivision String? // optional grouping layer
   workMeCompanyId String?
   workMeCompany   WorkMeCompany? @relation(fields: [workMeCompanyId], references: [id])
 
@@ -163,11 +163,9 @@ model Company {
   // Address (Apollo Enrichment)
   country String?
 
-  // Relations
-  employees WorkMe[]
-
   // Note: Work models now use companyUnit/companyDivision instead of Company relations
   // Company model remains as an independent entity for enterprise-level metadata
+  // No direct relation to WorkMe - users are scoped by companyUnit/companyDivision strings
 
   @@index([name]) // Index for directory lookups
 }
@@ -276,8 +274,8 @@ model CommsOutput {
 
   companyUnit     String?
   companyDivision String?
-  originatorId String
-  originator   WorkMe  @relation("CommsOutputOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
+  originatorId    String
+  originator      WorkMe  @relation("CommsOutputOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   type        String // "email", "flyer", "digest", etc.
   title       String
@@ -299,8 +297,8 @@ model Objective {
 
   companyUnit     String?
   companyDivision String?
-  originatorId String
-  originator   WorkMe  @relation("ObjectiveOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
+  originatorId    String
+  originator      WorkMe  @relation("ObjectiveOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   title       String
   description String?
@@ -320,8 +318,8 @@ model Achievement {
 
   companyUnit     String?
   companyDivision String?
-  originatorId String
-  originator   WorkMe  @relation("AchievementOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
+  originatorId    String
+  originator      WorkMe  @relation("AchievementOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   title    String
   category AchievementCategory
@@ -404,38 +402,38 @@ model CompanyImpactEvent {
 }
 
 model CompanyTraining {
-  id               String   @id @default(cuid())
-  createdAt        DateTime @default(now())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
 
   // Core
   title            String?
   topic            String?
   description      String?
-  mandatory        Boolean   @default(false)
+  mandatory        Boolean @default(false)
   sponsoringOffice String?
 
   // Date / Time
-  trainingDate     DateTime?
-  startTime        String?
-  endTime          String?
+  trainingDate DateTime?
+  startTime    String?
+  endTime      String?
 
   // Format / Location
-  location         String?
-  format           String?
-  link             String?
+  location String?
+  format   String?
+  link     String?
 
   // POC
-  pocFirstName     String?
-  pocLastName      String?
-  pocEmail         String?
-  pocPhone         String?
-  pocRankOrTitle   String?
+  pocFirstName   String?
+  pocLastName    String?
+  pocEmail       String?
+  pocPhone       String?
+  pocRankOrTitle String?
 
   // Stage 1 Ingest Snapshot
-  ingestRawText    String?
-  ingestType       String?
-  ingestStatus     String? @default("pending")
-  ingestCreatedAt  DateTime? @default(now())
+  ingestRawText   String?
+  ingestType      String?
+  ingestStatus    String?   @default("pending")
+  ingestCreatedAt DateTime? @default(now())
 
   // Relations
   companyUnit     String?
@@ -569,37 +567,37 @@ enum CareerType {
 }
 
 model CompanyCareer {
-  id             String   @id @default(cuid())
-  createdAt      DateTime @default(now())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
 
-  title          String
-  description    String?
+  title       String
+  description String?
 
   // Classification enums
-  level          CareerLevel?   // NAVSEA | NAVY | DOD
-  type           CareerType?    // Leadership | Fellowship | Other
+  level CareerLevel? // NAVSEA | NAVY | DOD
+  type  CareerType? // Leadership | Fellowship | Other
 
   // Eligibility JSON
-  eligibility    Json?          // {
-                                //   paygradeRange: { min: string | null, max: string | null },
-                                //   timeInServiceMonths?: number | null,
-                                //   timeInPositionMonths?: number | null,
-                                //   who?: string | null
-                                // }
+  eligibility Json? // {
+  //   paygradeRange: { min: string | null, max: string | null },
+  //   timeInServiceMonths?: number | null,
+  //   timeInPositionMonths?: number | null,
+  //   who?: string | null
+  // }
 
   // Application JSON
-  application    Json?          // { instructions: string | null, link?: string | null }
+  application Json? // { instructions: string | null, link?: string | null }
 
   // Optional extras
-  extras         Json?          // { cost?: string | null, notes?: string[] | null }
+  extras Json? // { cost?: string | null, notes?: string[] | null }
 
   // Raw ingest text (no workflow status)
-  ingestRawText  String?
+  ingestRawText String?
 
   // Relations
   companyUnit     String?
   companyDivision String?
-  links          CompanyWorkLink[]
+  links           CompanyWorkLink[]
 
   @@index([companyUnit])
 }
@@ -711,8 +709,8 @@ model WorkOutputStandalone {
 
   companyUnit     String?
   companyDivision String?
-  originatorId String
-  originator   WorkMe  @relation("WorkOutputStandaloneOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
+  originatorId    String
+  originator      WorkMe  @relation("WorkOutputStandaloneOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   @@index([companyUnit])
   @@index([originatorId])
@@ -741,8 +739,8 @@ model NTK {
   // Multi-tenant scoping
   companyUnit     String?
   companyDivision String?
-  originatorId String
-  originator   WorkMe  @relation("NTKOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
+  originatorId    String
+  originator      WorkMe  @relation("NTKOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   @@index([companyUnit])
   @@index([originatorId])
@@ -828,7 +826,7 @@ model WorkCommsProduct {
 
   companyUnit     String?
   companyDivision String?
-  originator WorkMe  @relation("WorkCommsProductOriginator", fields: [createdById], references: [id], onDelete: Cascade)
+  originator      WorkMe  @relation("WorkCommsProductOriginator", fields: [createdById], references: [id], onDelete: Cascade)
 
   links CompanyWorkLink[]
 
@@ -854,8 +852,8 @@ model WorkforceComms {
 
   companyUnit     String?
   companyDivision String?
-  originatorId String
-  originator   WorkMe  @relation("WorkforceCommsOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
+  originatorId    String
+  originator      WorkMe  @relation("WorkforceCommsOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   editions WorkforceCommsEdition[] @relation("WorkforceCommsEditions")
   drafts   WorkforceCommsDraft[]   @relation("WorkforceCommsDrafts")
@@ -885,8 +883,8 @@ model WorkforceCommsDraft {
 
   companyUnit     String?
   companyDivision String?
-  originatorId String
-  originator   WorkMe  @relation("WorkforceCommsDraftOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
+  originatorId    String
+  originator      WorkMe  @relation("WorkforceCommsDraftOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   @@index([companyUnit])
   @@index([originatorId])
@@ -909,8 +907,8 @@ model WorkforceCommsEdition {
 
   companyUnit     String?
   companyDivision String?
-  originatorId String
-  originator   WorkMe  @relation("WorkforceCommsEditionOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
+  originatorId    String
+  originator      WorkMe  @relation("WorkforceCommsEditionOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   @@index([companyUnit])
   @@index([originatorId])
