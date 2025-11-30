@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate selectedType
-    const validTypes = ['training', 'event', 'notice', 'task', 'other']
+    const validTypes = ['training', 'career', 'event', 'notice', 'task', 'other']
     if (!validTypes.includes(selectedType)) {
       return NextResponse.json(
         { success: false, error: `Invalid selectedType. Must be one of: ${validTypes.join(', ')}` },
@@ -48,10 +48,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // For now, only "training" is fully implemented
     if (selectedType === 'training') {
       // Create CompanyTraining with ONLY ingest snapshot
-      // DO NOT set real training fields - they don't exist in DB yet or should remain null
       const training = await prisma.companyTraining.create({
         data: {
           ingestRawText: rawText,
@@ -59,7 +57,6 @@ export async function POST(request: NextRequest) {
           ingestStatus: 'pending',
           ingestCreatedAt: new Date(),
           companyId,
-          // Only set mandatory default - all other real fields remain undefined (Prisma will use schema defaults)
           mandatory: false,
         },
       })
@@ -70,10 +67,26 @@ export async function POST(request: NextRequest) {
         redirectTo: `/mycompany/workforcestuff/training/ingest/${training.id}`,
         training,
       })
+    } else if (selectedType === 'career') {
+      // Create CompanyCareer with ONLY ingest snapshot
+      const career = await prisma.companyCareer.create({
+        data: {
+          ingestRawText: rawText,
+          title: '', // Required field, will be updated in Stage 2
+          companyId,
+        },
+      })
+
+      return NextResponse.json({
+        success: true,
+        careerId: career.id,
+        redirectTo: `/mycompany/workforcestuff/career/ingest/${career.id}`,
+        career,
+      })
     } else {
       // Other types coming soon
       return NextResponse.json(
-        { success: false, error: `Type "${selectedType}" is coming soon. Only "training" is currently supported.` },
+        { success: false, error: `Type "${selectedType}" is coming soon. Only "training" and "career" are currently supported.` },
         { status: 400 }
       )
     }

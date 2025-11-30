@@ -576,24 +576,50 @@ model CompanyBenefits {
   @@index([companyId])
 }
 
+enum CareerLevel {
+  NAVSEA
+  NAVY
+  DOD
+}
+
+enum CareerType {
+  Leadership
+  Fellowship
+  Other
+}
+
 model CompanyCareer {
   id             String   @id @default(cuid())
   createdAt      DateTime @default(now())
+
   title          String
   description    String?
-  deadlines      Json? // Array of {label: string, date: DateTime}
-  supervisorName String?
-  resourceLink   String?
-  pocFirstName   String?
-  pocLastName    String?
-  pocEmail       String?
-  pocPhone       String?
-  pocDepartment  String?
 
-  companyId    String
-  company      Company @relation("CompanyCareerCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  // Classification enums
+  level          CareerLevel?   // NAVSEA | NAVY | DOD
+  type           CareerType?    // Leadership | Fellowship | Other
 
-  links CompanyWorkLink[]
+  // Eligibility JSON
+  eligibility    Json?          // {
+                                //   paygradeRange: { min: string | null, max: string | null },
+                                //   timeInServiceMonths?: number | null,
+                                //   timeInPositionMonths?: number | null,
+                                //   who?: string | null
+                                // }
+
+  // Application JSON
+  application    Json?          // { instructions: string | null, link?: string | null }
+
+  // Optional extras
+  extras         Json?          // { cost?: string | null, notes?: string[] | null }
+
+  // Raw ingest text (no workflow status)
+  ingestRawText  String?
+
+  // Relations
+  companyId      String
+  company        Company @relation("CompanyCareerCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  links          CompanyWorkLink[]
 
   @@index([companyId])
 }

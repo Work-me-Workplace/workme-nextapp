@@ -53,8 +53,11 @@ export default function WorkforceStuffIngestPage() {
       })
 
       if (response.data.success) {
-        // Use redirectTo from response, or fallback to training route
-        const redirectTo = response.data.redirectTo || `/mycompany/workforcestuff/training/ingest/${response.data.trainingId}`
+        // Use redirectTo from response (handles both training and career)
+        const redirectTo = response.data.redirectTo || 
+          (response.data.trainingId ? `/mycompany/workforcestuff/training/ingest/${response.data.trainingId}` : 
+           response.data.careerId ? `/mycompany/workforcestuff/career/ingest/${response.data.careerId}` : 
+           '/mycompany/workforcestuff')
         router.push(redirectTo)
       } else {
         alert('Failed to create: ' + (response.data.error || 'Unknown error'))
