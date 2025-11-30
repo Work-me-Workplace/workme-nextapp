@@ -274,11 +274,11 @@ export async function getWorkOutputs(workMeId?: string) {
     }
 
     if (!companyUnit) {
-      const workMe = await prisma.workMe.findUnique({
+      const workMeRecord = await prisma.workMe.findUnique({
         where: { id: userId },
         select: { companyUnit: true },
       })
-      companyUnit = workMe?.companyUnit || null
+      companyUnit = workMeRecord?.companyUnit || null
     }
 
     if (!companyUnit) {

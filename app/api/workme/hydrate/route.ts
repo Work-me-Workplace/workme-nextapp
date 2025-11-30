@@ -33,8 +33,8 @@ export async function GET(request: Request) {
       firebaseId,
     })
 
-    // Fetch WorkMe
-    const workMe = await prisma.workMe.findUnique({
+    // Fetch WorkMe with additional fields not in loadWorkMe
+    const workMeRecord = await prisma.workMe.findUnique({
       where: { id: workMeId },
       select: {
         id: true,
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
       },
     })
 
-    if (!workMe) {
+    if (!workMeRecord) {
       console.error('[API GET /api/workme/hydrate] WorkMe not found:', workMeId)
       return NextResponse.json(
         {
@@ -66,28 +66,28 @@ export async function GET(request: Request) {
     }
 
     console.log('[API GET /api/workme/hydrate] Hydration successful:', {
-      workMeId: workMe.id,
-      companyUnit: workMe.companyUnit,
-      companyDivision: workMe.companyDivision,
+      workMeId: workMeRecord.id,
+      companyUnit: workMeRecord.companyUnit,
+      companyDivision: workMeRecord.companyDivision,
     })
 
     return NextResponse.json({
       success: true,
       workMe: {
-        id: workMe.id,
-        firebaseId: workMe.firebaseId,
-        email: workMe.email,
-        firstName: workMe.firstName,
-        lastName: workMe.lastName,
-        photoUrl: workMe.photoUrl,
-        companyUnit: workMe.companyUnit,
-        companyDivision: workMe.companyDivision,
-        jobTitle: workMe.jobTitle,
-        specialty: workMe.specialty,
-        industry: workMe.industry,
-        jobRole: workMe.jobRole,
-        salaryRange: workMe.salaryRange,
-        createdAt: workMe.createdAt,
+        id: workMeRecord.id,
+        firebaseId: workMeRecord.firebaseId,
+        email: workMeRecord.email,
+        firstName: workMeRecord.firstName,
+        lastName: workMeRecord.lastName,
+        photoUrl: workMeRecord.photoUrl,
+        companyUnit: workMeRecord.companyUnit,
+        companyDivision: workMeRecord.companyDivision,
+        jobTitle: workMeRecord.jobTitle,
+        specialty: workMeRecord.specialty,
+        industry: workMeRecord.industry,
+        jobRole: workMeRecord.jobRole,
+        salaryRange: workMeRecord.salaryRange,
+        createdAt: workMeRecord.createdAt,
       },
     })
   } catch (error: any) {

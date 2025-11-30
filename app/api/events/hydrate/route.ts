@@ -33,12 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify user has access to this company unit
-    const workMe = await prisma.workMe.findUnique({
-      where: { id: workMeId },
-      select: { companyUnit: true },
-    })
-
-    if (!workMe || workMe.companyUnit !== targetCompanyUnit) {
+    if (!companyUnit || companyUnit !== targetCompanyUnit) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized: Access denied to this company unit' },
         { status: 403 },
