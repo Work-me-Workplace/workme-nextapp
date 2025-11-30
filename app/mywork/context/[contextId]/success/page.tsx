@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { getWorkContext } from '@/lib/actions/work-context'
+import { getCompanyXContext } from '@/lib/actions/company-x'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
 export default function WorkContextSuccessPage() {
@@ -47,7 +47,7 @@ export default function WorkContextSuccessPage() {
 
       // Try each type until we find a match
       for (const type of types) {
-        const result = await getWorkContext(contextId, type, clientWorkMeId)
+        const result = await getCompanyXContext(contextId, type, clientWorkMeId)
         if (result.success && result.workContext) {
           foundContext = result.workContext
           break

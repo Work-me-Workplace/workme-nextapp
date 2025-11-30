@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { getItem, updateItem } from '@/lib/server/ntk-edition'
 
 // Force dynamic rendering
@@ -14,7 +15,9 @@ export async function GET(
   { params }: { params: { itemId: string } },
 ) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    const { firebaseId } = await verifyAuth(request)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
     const { itemId } = params
 
     console.log('[API GET /api/ntk/items/[itemId]]', {
@@ -59,7 +62,9 @@ export async function PUT(
   { params }: { params: { itemId: string } },
 ) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    const { firebaseId } = await verifyAuth(request)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
     const { itemId } = params
 
     const body = await request.json()

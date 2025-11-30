@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
 
 // Force dynamic rendering
@@ -34,16 +35,16 @@ interface TrainingSaveRequest {
  */
 export async function POST(request: NextRequest) {
   try {
-    const auth = await verifyAuth(request)
+    const { firebaseId } = await verifyAuth(request)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
-    if (!auth.workMeId || !auth.companyUnit) {
+    if (!workMeId || !companyUnit) {
       return NextResponse.json(
         { success: false, error: 'Not authenticated or companyUnit not set' },
         { status: 401 }
       )
     }
-
-    const { companyUnit } = auth
     const data: TrainingSaveRequest = await request.json()
 
     if (!data.trainingId) {

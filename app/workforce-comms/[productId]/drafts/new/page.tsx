@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { use, useState, useEffect } from 'react'
 import { createWorkforceCommsDraft, getWorkforceCommsProduct } from '@/lib/actions/workforce-comms'
-import { getWorkContexts } from '@/lib/actions/work-context'
+import { getCompanyXContexts } from '@/lib/actions/company-x'
 
 export default function NewDraftPage({ params }: { params: Promise<{ productId: string }> }) {
   const router = useRouter()
@@ -32,7 +32,7 @@ export default function NewDraftPage({ params }: { params: Promise<{ productId: 
       }
 
       // Fetch available work contexts
-      const contextsResult = await getWorkContexts()
+      const contextsResult = await getCompanyXContexts()
       if (contextsResult.success && contextsResult.workContexts) {
         setWorkContexts(contextsResult.workContexts)
       }

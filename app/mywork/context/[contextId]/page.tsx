@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { getWorkContext, deleteWorkContext } from '@/lib/actions/work-context'
+import { getCompanyXContext, deleteCompanyXContext } from '@/lib/actions/company-x'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
 export default function WorkContextDetailPage() {
@@ -49,7 +49,7 @@ export default function WorkContextDetailPage() {
 
       // Try each type until we find a match
       for (const type of types) {
-        const result = await getWorkContext(contextId, type, clientWorkMeId)
+        const result = await getCompanyXContext(contextId, type, clientWorkMeId)
         if (result.success && result.workContext) {
           foundContext = result.workContext
           foundType = type
@@ -85,7 +85,7 @@ export default function WorkContextDetailPage() {
     }
 
     if (confirm('Are you sure you want to delete this? This action cannot be undone.')) {
-      const result = await deleteWorkContext(contextId, contextType)
+      const result = await deleteCompanyXContext(contextId, contextType)
       if (result.success) {
         router.push('/mywork')
       } else {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createStandaloneOutput } from '@/lib/server/work-output-standalone'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -14,8 +15,12 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(request: Request) {
   try {
-    // Verify Firebase token and get authenticated context
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    // 1. Auth - Verify Firebase token
+    const { firebaseId } = await verifyAuth(request)
+    
+    // 2. Load WorkMe identity
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
     if (!companyUnit) {
       return NextResponse.json(

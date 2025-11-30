@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { normalizeGPTIngestionOutput } from '@/lib/server/gptJsonMapperService'
 import type { EventIngestionResponse } from '@/lib/types/event-ingestion'
 
@@ -16,18 +17,20 @@ export async function createWorkEventFromIngest(
 ) {
   try {
     // Verify authentication
-    const { workMeId, companyId } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
-    if (!workMeId || !companyId) {
+    if (!workMeId || !companyUnit) {
       return {
         success: false as const,
-        error: 'Not authenticated or user must belong to a company',
+        error: 'Not authenticated or user must set a companyUnit',
       }
     }
 
     console.log('[createWorkEventFromIngest] Starting', {
       workMeId,
-      companyId,
+      companyUnit,
       hasEvent: !!ingestionData.event,
       itemsCount: ingestionData.items?.length || 0,
     })
@@ -35,7 +38,8 @@ export async function createWorkEventFromIngest(
     // Normalize GPT output
     const normalized = normalizeGPTIngestionOutput(
       ingestionData,
-      companyId,
+      companyUnit,
+      companyDivision,
       workMeId
     )
 

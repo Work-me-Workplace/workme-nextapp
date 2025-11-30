@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { getWorkMeId } from '@/lib/getWorkMeId.server'
 import type { WorkCommsProductType } from '@prisma/client'
 
@@ -57,10 +58,12 @@ const workProductSchema = z.object({
 export async function createWorkOutput(data: z.infer<typeof workProductSchema>) {
   try {
     const validated = workProductSchema.parse(data)
-    const { workMeId, companyId } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
-    if (!workMeId || !companyId) {
-      return { success: false, error: 'Not authenticated or user must belong to a company' }
+    if (!workMeId || !companyUnit) {
+      return { success: false, error: 'Not authenticated or user must set a companyUnit' }
     }
 
     // Determine product type
@@ -95,8 +98,9 @@ export async function createWorkOutput(data: z.infer<typeof workProductSchema>) 
         type: productType,
         data: validated.data ?? undefined,
         metadata: validated.metadata ?? undefined,
-        companyId,
-        createdById: workMeId,
+        companyUnit: companyUnit,
+        companyDivision: companyDivision,
+        createdByWorkMeId: workMeId,
       },
     })
 
@@ -108,7 +112,8 @@ export async function createWorkOutput(data: z.infer<typeof workProductSchema>) 
           data: {
             [key]: value,
             workCommsProductId: product.id,
-            companyId,
+            companyUnit: companyUnit,
+            companyDivision: companyDivision,
           },
         })
         links.push(link)
@@ -144,17 +149,19 @@ export async function createWorkOutput(data: z.infer<typeof workProductSchema>) 
 export async function updateWorkOutput(id: string, data: { data?: any; metadata?: any; dataJson?: any }) {
   try {
     const validated = workProductSchema.pick({ data: true, metadata: true }).partial().parse(data)
-    const { workMeId, companyId } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
-    if (!workMeId || !companyId) {
-      return { success: false, error: 'Not authenticated or user must belong to a company' }
+    if (!workMeId || !companyUnit) {
+      return { success: false, error: 'Not authenticated or user must set a companyUnit' }
     }
 
     const existing = await prisma.workCommsProduct.findFirst({
       where: { 
         id,
-        companyId, // Multi-tenant: ensure same company
-        createdById: workMeId,
+        companyUnit, // Multi-tenant: ensure same company unit
+        createdByWorkMeId: workMeId,
       },
     })
 
@@ -203,17 +210,19 @@ export async function updateWorkOutput(id: string, data: { data?: any; metadata?
  */
 export async function deleteWorkOutput(id: string) {
   try {
-    const { workMeId, companyId } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
-    if (!workMeId || !companyId) {
-      return { success: false, error: 'Not authenticated or user must belong to a company' }
+    if (!workMeId || !companyUnit) {
+      return { success: false, error: 'Not authenticated or user must set a companyUnit' }
     }
 
     const existing = await prisma.workCommsProduct.findFirst({
       where: { 
         id,
-        companyId, // Multi-tenant: ensure same company
-        createdById: workMeId,
+        companyUnit, // Multi-tenant: ensure same company unit
+        createdByWorkMeId: workMeId,
       },
     })
 
@@ -241,19 +250,20 @@ export async function getWorkOutputs(workMeId?: string) {
     if (!userId && workMeId) {
       const workMe = await prisma.workMe.findUnique({
         where: { id: workMeId },
-        select: { id: true, companyId: true },
+        select: { id: true, companyUnit: true },
       })
       if (workMe) {
         userId = workMeId
       }
     }
 
-    let companyId: string | null = null
+    let companyUnit: string | null = null
     if (!userId) {
       try {
-        const auth = await verifyAuth()
-        userId = auth.workMeId
-        companyId = auth.companyId
+        const { firebaseId } = await verifyAuth()
+        const workMe = await loadWorkMe(firebaseId)
+        userId = workMe.id
+        companyUnit = workMe.companyUnit
       } catch (authError) {
         // verifyAuth failed
       }
@@ -263,21 +273,21 @@ export async function getWorkOutputs(workMeId?: string) {
       return { success: false, error: 'Not authenticated', workOutputs: [] }
     }
 
-    if (!companyId) {
+    if (!companyUnit) {
       const workMe = await prisma.workMe.findUnique({
         where: { id: userId },
-        select: { companyId: true },
+        select: { companyUnit: true },
       })
-      companyId = workMe?.companyId || null
+      companyUnit = workMe?.companyUnit || null
     }
 
-    if (!companyId) {
-      return { success: false, error: 'User must belong to a company', workOutputs: [] }
+    if (!companyUnit) {
+      return { success: false, error: 'User must set a companyUnit', workOutputs: [] }
     }
 
     const products = await prisma.workCommsProduct.findMany({
       where: { 
-        companyId, // Multi-tenant: filter by company
+        companyUnit, // Multi-tenant: filter by company unit
       },
       include: {
         links: {
@@ -319,16 +329,18 @@ export async function getWorkOutputs(workMeId?: string) {
  */
 export async function getWorkOutput(id: string) {
   try {
-    const { workMeId, companyId } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
-    if (!workMeId || !companyId) {
-      return { success: false, error: 'Not authenticated or user must belong to a company' }
+    if (!workMeId || !companyUnit) {
+      return { success: false, error: 'Not authenticated or user must set a companyUnit' }
     }
 
     const product = await prisma.workCommsProduct.findFirst({
       where: { 
         id,
-        companyId, // Multi-tenant: ensure same company
+        companyUnit, // Multi-tenant: ensure same company unit
       },
       include: {
         links: {
@@ -374,15 +386,18 @@ export async function getWorkOutput(id: string) {
  */
 export async function getWorkOutputsByRouter(companyXId: string, companyXType: 'event' | 'campaign' | 'training' | 'benefits' | 'impact_event' | 'community' | 'career' | 'employee_cause') {
   try {
-    const { workMeId, companyId } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
-    if (!workMeId || !companyId) {
-      return { success: false, error: 'Not authenticated or user must belong to a company', workOutputs: [] }
+    if (!workMeId || !companyUnit) {
+      return { success: false, error: 'Not authenticated or user must set a companyUnit', workOutputs: [] }
     }
 
     // Build where clause based on type
     const whereClause: any = {
-      companyId,
+      companyUnit,
+      companyDivision: companyDivision || undefined,
     }
 
     switch (companyXType) {

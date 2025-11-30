@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { normalizeGPTIngestionOutput } from '@/lib/server/gptJsonMapperService'
 import { prisma } from '@/lib/prisma'
 import type { EventIngestionResponse } from '@/lib/types/event-ingestion'
@@ -16,8 +17,12 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(request: Request) {
   try {
-    // Verify Firebase token and get authenticated context
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    // 1. Auth - Verify Firebase token
+    const { firebaseId } = await verifyAuth(request)
+    
+    // 2. Load WorkMe identity
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
     if (!companyUnit) {
       return NextResponse.json(

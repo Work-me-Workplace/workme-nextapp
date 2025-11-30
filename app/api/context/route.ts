@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 
 // Force dynamic rendering (API routes are dynamic by default, but explicit for safety)
 export const dynamic = 'force-dynamic'
@@ -12,8 +13,12 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: Request) {
   try {
-    // Verify Firebase token and get authenticated context
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    // 1. Auth - Verify Firebase token
+    const { firebaseId } = await verifyAuth(request)
+    
+    // 2. Load WorkMe identity
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
     console.log('[API GET /api/context]', {
       workMeId,

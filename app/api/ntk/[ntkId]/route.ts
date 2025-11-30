@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getNTK, updateNTK, deleteNTK } from '@/lib/server/ntk'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -14,7 +15,9 @@ export async function GET(
   { params }: { params: Promise<{ ntkId: string }> }
 ) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    const { firebaseId } = await verifyAuth(request)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
     const { ntkId } = await params
 
     console.log('[API GET /api/ntk/[ntkId]]', { ntkId, workMeId, companyUnit, companyDivision })
@@ -47,7 +50,9 @@ export async function PUT(
   { params }: { params: Promise<{ ntkId: string }> }
 ) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    const { firebaseId } = await verifyAuth(request)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
     const { ntkId } = await params
     const body = await request.json()
 
@@ -81,7 +86,9 @@ export async function DELETE(
   { params }: { params: Promise<{ ntkId: string }> }
 ) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    const { firebaseId } = await verifyAuth(request)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
     const { ntkId } = await params
 
     console.log('[API DELETE /api/ntk/[ntkId]]', { ntkId, workMeId, companyUnit, companyDivision })

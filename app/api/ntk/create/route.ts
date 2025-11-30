@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createNTK } from '@/lib/server/ntk'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -14,7 +15,9 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(request: Request) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    const { firebaseId } = await verifyAuth(request)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
     
     if (!companyUnit) {
       return NextResponse.json(

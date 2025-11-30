@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import EventManualForm from './EventManualForm'
-import { getWorkContexts } from '@/lib/actions/work-context'
+import { getCompanyXContexts } from '@/lib/actions/company-x'
 
 interface EventTemplatePickerProps {
   onBack: () => void
@@ -19,7 +19,7 @@ export default function EventTemplatePicker({ onBack }: EventTemplatePickerProps
 
   const loadEvents = async () => {
     try {
-      const result = await getWorkContexts()
+      const result = await getCompanyXContexts()
       if (result.success && result.workContexts) {
         // Filter to only event type contexts
         const eventContexts = result.workContexts.filter(

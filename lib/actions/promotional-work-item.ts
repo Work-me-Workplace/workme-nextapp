@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { z } from 'zod'
 
 const promotionalWorkItemSchema = z.object({
@@ -32,20 +33,22 @@ export async function createPromotionalWorkItem(
 ) {
   try {
     const validated = promotionalWorkItemSchema.parse(data)
-    const { workMeId, companyId } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
-    if (!workMeId || !companyId) {
+    if (!workMeId || !companyUnit) {
       return {
         success: false as const,
-        error: 'Not authenticated or user must belong to a company',
+        error: 'Not authenticated or user must set a companyUnit',
       }
     }
 
-    // Verify event exists and belongs to user's company
+    // Verify event exists and belongs to user's company unit
     const event = await prisma.companyEvent.findFirst({
       where: {
         id: validated.eventId,
-        companyId,
+        companyUnit,
       },
     })
 
@@ -115,12 +118,14 @@ export async function createPromotionalWorkItem(
  */
 export async function getPromotionalWorkItem(id: string) {
   try {
-    const { workMeId, companyId } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
-    if (!workMeId || !companyId) {
+    if (!workMeId || !companyUnit) {
       return {
         success: false as const,
-        error: 'Not authenticated or user must belong to a company',
+        error: 'Not authenticated or user must set a companyUnit',
         item: null,
       }
     }
@@ -133,7 +138,7 @@ export async function getPromotionalWorkItem(id: string) {
       include: {
         event: {
           select: {
-            companyId: true,
+            companyUnit: true,
           },
         },
       },
@@ -147,8 +152,8 @@ export async function getPromotionalWorkItem(id: string) {
       }
     }
 
-    // Verify it belongs to user's company
-    if (eventItem.event.companyId !== companyId) {
+    // Verify it belongs to user's company unit
+    if (eventItem.event.companyUnit !== companyUnit) {
       return {
         success: false as const,
         error: 'Unauthorized',
@@ -199,21 +204,23 @@ export async function getPromotionalWorkItem(id: string) {
  */
 export async function getPromotionalWorkItemsByEvent(eventId: string) {
   try {
-    const { workMeId, companyId } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
-    if (!workMeId || !companyId) {
+    if (!workMeId || !companyUnit) {
       return {
         success: false as const,
-        error: 'Not authenticated or user must belong to a company',
+        error: 'Not authenticated or user must set a companyUnit',
         items: [],
       }
     }
 
-    // Verify event exists and belongs to user's company
+    // Verify event exists and belongs to user's company unit
     const event = await prisma.companyEvent.findFirst({
       where: {
         id: eventId,
-        companyId,
+        companyUnit,
       },
     })
 

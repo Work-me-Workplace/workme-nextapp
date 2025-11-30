@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
 
 // Force dynamic rendering
@@ -18,8 +19,12 @@ export async function GET(request: Request) {
   try {
     console.log('[API GET /api/workme/hydrate] Starting hydration...')
 
-    // Verify Firebase token and get authenticated context
-    const { workMeId, companyUnit, companyDivision, firebaseId } = await verifyAuth(request)
+    // 1. Auth - Verify Firebase token
+    const { firebaseId } = await verifyAuth(request)
+    
+    // 2. Load WorkMe identity
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
     console.log('[API GET /api/workme/hydrate] Auth verified:', {
       workMeId,

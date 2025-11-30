@@ -54,7 +54,6 @@ model WorkMe {
   createdCompanyTrainings           CompanyTraining[]       @relation("CompanyTrainingCreator")
   createdCompanyEvents              CompanyEvent[]           @relation("CompanyEventCreator")
   createdCompanyCommunities         CompanyCommunity[]      @relation("CompanyCommunityCreator")
-  createdCompanyBenefits            CompanyBenefits[]        @relation("CompanyBenefitsCreator")
   createdCompanyCareers              CompanyCareer[]          @relation("CompanyCareerCreator")
 
   // connections Connection[]  // Commented out - not using
@@ -511,6 +510,8 @@ model CompanyEvent {
   pocEmail String?
   pocPhone String?
 
+  summary   String?    // Stage 3 synthesized paragraph
+
   companyUnit     String?
   companyDivision String?
   createdByWorkMeId String
@@ -565,32 +566,48 @@ model CompanyCommunity {
 }
 
 model CompanyBenefits {
-  id               String    @id @default(cuid())
-  createdAt        DateTime  @default(now())
-  title            String
-  description      String?
-  windowStart      DateTime?
-  windowEnd        DateTime?
-  fehbLink         String?
-  fedvipLink       String?
-  fsafedsLink      String?
-  faqLink          String?
-  pocFirstName     String?
-  pocLastName      String?
-  pocEmail         String?
-  pocPhone         String?
-  pocDepartment    String?
-  annualRecurrence Boolean   @default(false)
+  // -----------------------
+  // IDENTITY
+  // -----------------------
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  companyUnit     String?
-  companyDivision String?
-  createdByWorkMeId String
-  createdBy        WorkMe @relation("CompanyBenefitsCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  // -----------------------
+  // CORE CONTENT
+  // -----------------------
+  title                   String
+  description             String?        // 1–2 sentence plain explainer
+  employeeBenefitSummary  String?        // why employees should care
 
+  // -----------------------
+  // UNIVERSAL BENEFIT STRUCTURE
+  // -----------------------
+  windowStart             DateTime?      // enrollment or action window start
+  windowEnd               DateTime?      // enrollment or action window end
+
+  deadlines               Json?          // { enrollBy, mailInDeadline, systemClose, etc. }
+
+  actionLink              String?        // GRB / TSP.gov / OPM / portal / signup
+  resources               Json?          // { brochures: [...], guides: [...], instructions: [...] }
+
+  pocList                 Json?          // [{ name, email, phone }]
+  extraInstructions       Json?          // ["Review FEHB options", "Log into GRB", ...]
+
+  // -----------------------
+  // AI SYNTHESIS (Stage 3)
+  // -----------------------
+  summary                 String?        // NTK synthesized paragraph
+
+  // -----------------------
+  // RAW INGESTION (Stage 1)
+  // -----------------------
+  ingestRawText           String?
+
+  // -----------------------
+  // RELATIONS
+  // -----------------------
   links CompanyWorkLink[]
-
-  @@index([companyUnit])
-  @@index([createdByWorkMeId])
 }
 
 enum CareerLevel {

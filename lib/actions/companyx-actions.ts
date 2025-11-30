@@ -2,6 +2,7 @@
 
 import { createTypedContext } from '@/lib/server/context-factory'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { campaignSchema, impactEventSchema, trainingSchema, eventSchema, communityOpportunitySchema, benefitsSchema, careerSchema, employeeCauseSchema } from '@/lib/server/context-schemas'
 import { z } from 'zod'
 
@@ -12,7 +13,9 @@ import { z } from 'zod'
 
 export async function createCampaign(data: z.infer<typeof campaignSchema>) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
     if (!workMeId || !companyUnit) {
       return { success: false, error: 'Not authenticated or companyUnit not set' }
     }
@@ -30,7 +33,9 @@ export async function createCampaign(data: z.infer<typeof campaignSchema>) {
 
 export async function createImpactEvent(data: z.infer<typeof impactEventSchema>) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
     if (!workMeId || !companyUnit) {
       return { success: false, error: 'Not authenticated or companyUnit not set' }
     }
@@ -48,7 +53,9 @@ export async function createImpactEvent(data: z.infer<typeof impactEventSchema>)
 
 export async function createTraining(data: z.infer<typeof trainingSchema>) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
     if (!workMeId || !companyUnit) {
       return { success: false, error: 'Not authenticated or companyUnit not set' }
     }
@@ -66,7 +73,9 @@ export async function createTraining(data: z.infer<typeof trainingSchema>) {
 
 export async function createEvent(data: z.infer<typeof eventSchema>) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
     if (!workMeId || !companyUnit) {
       return { success: false, error: 'Not authenticated or companyUnit not set' }
     }
@@ -84,7 +93,9 @@ export async function createEvent(data: z.infer<typeof eventSchema>) {
 
 export async function createCommunityOpportunity(data: z.infer<typeof communityOpportunitySchema>) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
     if (!workMeId || !companyUnit) {
       return { success: false, error: 'Not authenticated or companyUnit not set' }
     }
@@ -102,7 +113,9 @@ export async function createCommunityOpportunity(data: z.infer<typeof communityO
 
 export async function createBenefits(data: z.infer<typeof benefitsSchema>) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
     if (!workMeId || !companyUnit) {
       return { success: false, error: 'Not authenticated or companyUnit not set' }
     }
@@ -120,7 +133,9 @@ export async function createBenefits(data: z.infer<typeof benefitsSchema>) {
 
 export async function createCareer(data: z.infer<typeof careerSchema>) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
     if (!workMeId || !companyUnit) {
       return { success: false, error: 'Not authenticated or companyUnit not set' }
     }
@@ -138,7 +153,9 @@ export async function createCareer(data: z.infer<typeof careerSchema>) {
 
 export async function createEmployeeCause(data: z.infer<typeof employeeCauseSchema>) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
     if (!workMeId || !companyUnit) {
       return { success: false, error: 'Not authenticated or companyUnit not set' }
     }

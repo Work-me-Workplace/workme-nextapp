@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
 import { getTypedContext } from '@/lib/server/context-factory'
 
@@ -10,8 +11,12 @@ export const dynamic = 'force-dynamic'
 // This is a placeholder - you'll need to integrate with OpenAI or your AI service
 export async function POST(request: NextRequest) {
   try {
-    // Verify Firebase token and get authenticated context
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    // 1. Auth - Verify Firebase token
+    const { firebaseId } = await verifyAuth(request)
+    
+    // 2. Load WorkMe identity
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
     if (!companyUnit) {
       return NextResponse.json(

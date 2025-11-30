@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { listNTKs } from '@/lib/server/ntk'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -11,7 +12,9 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: Request) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    const { firebaseId } = await verifyAuth(request)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
     console.log('[API GET /api/ntk]', { workMeId, companyUnit, companyDivision })
 

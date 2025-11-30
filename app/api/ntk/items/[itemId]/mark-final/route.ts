@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { markItemFinal } from '@/lib/server/ntk-edition'
 
 // Force dynamic rendering
@@ -14,7 +15,9 @@ export async function PATCH(
   { params }: { params: { itemId: string } },
 ) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    const { firebaseId } = await verifyAuth(request)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
     const { itemId } = params
 
     console.log('[API PATCH /api/ntk/items/[itemId]/mark-final]', {

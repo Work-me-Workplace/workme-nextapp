@@ -8,7 +8,6 @@ import type { ContextType } from "@/lib/types/context-type"
  * Returns null if not found or unauthorized
  * 
  * NOTE: This is NOT a server action (no "use server") to avoid conflicts.
- * Use getWorkContext from lib/actions/work-context.ts for server actions.
  * 
  * @param id - The CompanyX model ID
  * @param type - The context type (campaign, event, etc.)
@@ -104,10 +103,4 @@ export async function getCompanyX(
 
   return result
 }
-
-/**
- * Legacy alias for backward compatibility
- * @deprecated Use getCompanyX instead
- */
-export const getWorkEventRouter = getCompanyX
 

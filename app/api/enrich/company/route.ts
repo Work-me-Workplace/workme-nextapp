@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { enrichAndUpsertCompany } from '@/lib/actions/company-enrichment'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 
 /**
  * POST /api/enrich/company
@@ -9,8 +10,12 @@ import { verifyAuth } from '@/lib/server/verifyAuth'
  */
 export async function POST(req: NextRequest) {
   try {
-    // Verify authentication
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(req)
+    // 1. Auth - Verify Firebase token
+    const { firebaseId } = await verifyAuth(req)
+    
+    // 2. Load WorkMe identity
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
     
     // Parse request body
     const body = await req.json()

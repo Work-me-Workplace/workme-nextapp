@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import OpenAI from 'openai'
 import type { EventIngestionRequest, EventIngestionAPIResponse, EventIngestionAPIError } from '@/lib/types/event-ingestion'
 
@@ -32,8 +33,12 @@ function getOpenAIClient(): OpenAI {
  */
 export async function POST(request: Request) {
   try {
-    // Verify Firebase token and get authenticated context
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    // 1. Auth - Verify Firebase token
+    const { firebaseId } = await verifyAuth(request)
+    
+    // 2. Load WorkMe identity
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
     console.log('[API POST /api/ingest/event/ai]', {
       workMeId,
@@ -207,7 +212,7 @@ Return only:
 
     console.log('[API POST /api/ingest/event/ai] SUCCESS', {
       workMeId,
-      companyId,
+      companyUnit,
       eventTitle: response.data.event.title,
       itemsCount: response.data.items.length,
     })

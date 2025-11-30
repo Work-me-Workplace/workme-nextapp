@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { createEdition, listEditions } from '@/lib/server/ntk-edition'
 import type { PreviewRow } from '@/lib/services/ntk-csv-pipeline'
 
@@ -12,7 +13,9 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: Request) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    const { firebaseId } = await verifyAuth(request)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
     console.log('[API GET /api/ntk/editions]', { workMeId, companyUnit, companyDivision })
 
@@ -47,7 +50,9 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    const { firebaseId } = await verifyAuth(request)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
     const body = await request.json()
     const { previewRows, title, date } = body

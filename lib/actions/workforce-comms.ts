@@ -3,6 +3,7 @@
 import { prisma } from '../prisma'
 import { z } from 'zod'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 
 // ============================================
 // ZOD SCHEMAS
@@ -97,15 +98,18 @@ export async function getWorkforceCommsProduct(id: string) {
 export async function createWorkforceCommsProduct(data: z.infer<typeof workforceCommsProductSchema>) {
   try {
     const validated = workforceCommsProductSchema.parse(data)
-    const { workMeId, companyId } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
     const product = await prisma.workforceComms.create({
       data: {
         type: validated.type || 'email',
         name: validated.name,
         description: validated.description ?? undefined,
-        originatorId: workMeId,
-        companyId: companyId,
+        createdByWorkMeId: workMeId,
+        companyUnit: companyUnit,
+        companyDivision: companyDivision,
       },
     })
 
@@ -167,7 +171,9 @@ export async function getWorkforceCommsDraft(draftId: string) {
 export async function createWorkforceCommsDraft(data: z.infer<typeof workforceCommsDraftSchema>) {
   try {
     const validated = workforceCommsDraftSchema.parse(data)
-    const { workMeId, companyId } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
     // Verify product exists
     const product = await prisma.workforceComms.findUnique({
@@ -199,8 +205,9 @@ export async function createWorkforceCommsDraft(data: z.infer<typeof workforceCo
         whatChanged: validated.whatChanged ?? undefined,
         priorityNotes: validated.priorityNotes ?? undefined,
         status: validated.status || 'drafting',
-        originatorId: workMeId,
-        companyId: companyId,
+        createdByWorkMeId: workMeId,
+        companyUnit: companyUnit,
+        companyDivision: companyDivision,
       },
       include: {
         product: true,
@@ -287,7 +294,9 @@ export async function getWorkforceCommsEdition(editionId: string) {
 export async function createWorkforceCommsEdition(data: z.infer<typeof workforceCommsEditionSchema>) {
   try {
     const validated = workforceCommsEditionSchema.parse(data)
-    const { workMeId, companyId } = await verifyAuth()
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
     // Verify product exists
     const product = await prisma.workforceComms.findUnique({
@@ -304,8 +313,9 @@ export async function createWorkforceCommsEdition(data: z.infer<typeof workforce
         subject: validated.subject,
         body: validated.body,
         sentAt: validated.sentAt ?? undefined,
-        originatorId: workMeId,
-        companyId: companyId,
+        createdByWorkMeId: workMeId,
+        companyUnit: companyUnit,
+        companyDivision: companyDivision,
       },
       include: {
         product: true,

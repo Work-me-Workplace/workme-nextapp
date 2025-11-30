@@ -7,22 +7,23 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await verifyAuth(request)
+    const { firebaseId } = await verifyAuth(request)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
-    if (!auth.workMeId || !auth.companyUnit) {
+    if (!workMeId || !companyUnit) {
       return NextResponse.json(
         { success: false, error: 'Not authenticated or companyUnit not set' },
         { status: 401 }
       )
     }
-
-    const { companyUnit } = auth
 
     // Fetch all CompanyX models
     const [trainings, events, campaigns, impactEvents, community, benefits, careers] = await Promise.all([

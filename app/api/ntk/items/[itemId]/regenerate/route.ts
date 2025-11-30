@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { getItem, updateItem } from '@/lib/server/ntk-edition'
 import { generateNTK } from '@/lib/services/ntk-generator'
 
@@ -19,7 +20,9 @@ export async function POST(
   { params }: { params: { itemId: string } },
 ) {
   try {
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    const { firebaseId } = await verifyAuth(request)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
     const { itemId } = params
 
     const body = await request.json()

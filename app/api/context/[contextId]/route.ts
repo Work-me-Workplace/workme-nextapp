@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
-import { getCompanyX } from '@/lib/server/get-work-context'
+import { getCompanyX } from '@/lib/server/get-company-x'
 import { updateTypedContext, deleteTypedContext } from '@/lib/server/context-factory'
 import { SCHEMA_MAP } from '@/lib/server/context-schemas'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import type { ContextType } from '@/lib/types/context-type'
 import { prisma } from '@/lib/prisma'
 
@@ -18,8 +19,12 @@ export async function GET(
   { params }: { params: Promise<{ contextId: string }> }
 ) {
   try {
-    // Verify Firebase token and get authenticated context
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    // 1. Auth - Verify Firebase token
+    const { firebaseId } = await verifyAuth(request)
+    
+    // 2. Load WorkMe identity
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
     const { contextId } = await params
 
@@ -125,8 +130,12 @@ export async function PUT(
   { params }: { params: Promise<{ contextId: string }> }
 ) {
   try {
-    // Verify Firebase token and get authenticated context
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    // 1. Auth - Verify Firebase token
+    const { firebaseId } = await verifyAuth(request)
+    
+    // 2. Load WorkMe identity
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
     const { contextId } = await params
     const body = await request.json()
@@ -261,8 +270,12 @@ export async function DELETE(
   { params }: { params: Promise<{ contextId: string }> }
 ) {
   try {
-    // Verify Firebase token and get authenticated context
-    const { workMeId, companyUnit, companyDivision } = await verifyAuth(request)
+    // 1. Auth - Verify Firebase token
+    const { firebaseId } = await verifyAuth(request)
+    
+    // 2. Load WorkMe identity
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyUnit, companyDivision } = workMe
 
     const { contextId } = await params
 
