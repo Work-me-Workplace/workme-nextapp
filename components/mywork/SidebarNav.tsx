@@ -18,6 +18,7 @@ import {
   Settings,
   TrendingUp,
   CheckSquare,
+  Radio,
 } from 'lucide-react'
 
 export default function SidebarNav() {
@@ -37,6 +38,7 @@ export default function SidebarNav() {
     if (path === '/mycareer/reflections') return pathname === path
     if (path === '/mynetwork/connections') return pathname === path
     if (path === '/mynetwork/suggestions') return pathname === path
+    if (path === '/signal') return pathname?.startsWith(path)
     if (path === '/worksupport') return pathname?.startsWith(path) || pathname?.startsWith('/mywork/support')
     return pathname?.startsWith(path)
   }
@@ -78,6 +80,12 @@ export default function SidebarNav() {
       items: [
         { name: 'Connections', path: '/mynetwork/connections', icon: Network },
         { name: 'Suggested Interactions', path: '/mynetwork/suggestions', icon: UserPlus },
+      ],
+    },
+    {
+      name: 'Signals',
+      items: [
+        { name: 'Signals', path: '/signal', icon: Radio },
       ],
     },
     {
