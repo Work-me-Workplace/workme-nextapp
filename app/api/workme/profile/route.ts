@@ -62,43 +62,46 @@ export async function GET(request: NextRequest) {
 /**
  * PUT /api/workme/profile
  * 
- * Upsert the rest of the user profile
- * Requires workMeId in request body or header
+ * Update basic profile fields
+ * Uses verifyAuth + loadWorkMe for identity
+ * 
+ * Fields: firstName, lastName, jobTitle, jobRole, specialty?, industry?, salaryRange?, photoUrl?
  */
 export async function PUT(request: NextRequest) {
   try {
+    // 1. Auth (NextRequest extends Request, so this works)
+    const { firebaseId } = await verifyAuth(request as Request)
+    
+    // 2. Load WorkMe Identity
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId } = workMe
+    
+    // 3. Get profile data from body
     const body = await request.json()
-    const { workMeId, ...profileData } = body
+    const {
+      firstName,
+      lastName,
+      jobTitle,
+      jobRole, // Maps to jobRole enum
+      specialty,
+      industry,
+      salaryRange, // Maps to salaryRange enum
+      photoUrl,
+    } = body
 
-    // Get workMeId from body or header
-    const id = workMeId || request.headers.get('x-workme-id')
-
-    if (!id) {
-      return NextResponse.json(
-        { success: false, error: 'workMeId is required' },
-        { status: 400 },
-      )
-    }
-
-    // Verify WorkMe exists
-    const existing = await prisma.workMe.findUnique({
-      where: { id },
-    })
-
-    if (!existing) {
-      return NextResponse.json(
-        { success: false, error: 'WorkMe not found' },
-        { status: 404 },
-      )
-    }
-
-    // Map and validate profile data using FieldMapperService
-    const mappedData = FieldMapperService.mapWorkMeProfile(profileData)
-
-    // Update profile fields
-    const workMe = await prisma.workMe.update({
-      where: { id },
-      data: mappedData,
+    // 4. Update profile fields (only basic profile, no companyUnit here)
+    const updated = await prisma.workMe.update({
+      where: { id: workMeId },
+      data: {
+        firstName: firstName !== undefined ? firstName : undefined,
+        lastName: lastName !== undefined ? lastName : undefined,
+        jobTitle: jobTitle !== undefined ? jobTitle : undefined,
+        jobRole: jobRole !== undefined ? jobRole : undefined,
+        specialty: specialty !== undefined ? specialty : undefined,
+        industry: industry !== undefined ? industry : undefined,
+        salaryRange: salaryRange !== undefined ? salaryRange : undefined,
+        photoUrl: photoUrl !== undefined ? photoUrl : undefined,
+      },
       select: {
         id: true,
         firebaseId: true,
@@ -117,9 +120,11 @@ export async function PUT(request: NextRequest) {
       },
     })
 
+    console.log('✅ Updated WorkMe profile:', workMeId)
+
     return NextResponse.json({
       success: true,
-      workMe,
+      workMe: updated,
     })
   } catch (error: any) {
     console.error('❌ WorkMeProfileUpdate error:', error)

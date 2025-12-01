@@ -51,9 +51,9 @@ export default function WelcomePage() {
   }, [])
 
   useEffect(() => {
-    // Redirect if companyUnit is missing
+    // Redirect if companyUnit is missing - send to profile to complete onboarding
     if (!loading && !companyUnit) {
-      router.push('/setup/unit')
+      router.push('/profile')
     } else if (!loading && companyUnit) {
       // User has companyUnit, can proceed to dashboard
       // Don't auto-redirect, let them click continue

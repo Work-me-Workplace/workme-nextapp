@@ -179,6 +179,22 @@ model Company {
 }
 
 // ============================================
+// COMPANY UNIT REGISTRY (Open Joinable Workspace Registry)
+// ============================================
+
+// CompanyUnitRegistry: Open joinable workspace registry
+// Users can create or join workspaces by name
+model CompanyUnitRegistry {
+  id         String   @id @default(cuid())
+  name       String   @unique // Unique workspace name (user-defined or generated)
+  visibility String   @default("public") // "public" or "private"
+  createdAt  DateTime @default(now())
+
+  @@index([name])
+  @@index([visibility])
+}
+
+// ============================================
 // WORKWORLD ARCHITECTURE MODELS
 // ============================================
 

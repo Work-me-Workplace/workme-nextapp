@@ -67,6 +67,7 @@ export default function SignupPage() {
       })
 
       await persistSession(result, workMe)
+      // Redirect to profile for onboarding
       router.push('/profile')
     } catch (error) {
       console.error('Google signup failed:', error)
@@ -103,6 +104,7 @@ export default function SignupPage() {
       })
 
       await persistSession(result, workMe)
+      // Redirect to profile for onboarding
       router.push('/profile')
     } catch (error: any) {
       console.error('Email signup failed:', error)

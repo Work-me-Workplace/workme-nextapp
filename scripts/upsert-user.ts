@@ -161,3 +161,4 @@ upsertUser(email, firebaseId)
     process.exit(1)
   })
 
+

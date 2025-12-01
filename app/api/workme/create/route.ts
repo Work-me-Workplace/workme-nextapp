@@ -1,52 +1,24 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { FirebaseService } from '@/lib/services/firebase'
+import { verifyAuth } from '@/lib/server/verifyAuth'
 
 /**
  * POST /api/workme/create
  * 
  * Find or create WorkMe user from Firebase auth
- * Uses Firebase service for token verification
+ * Uses verifyAuth for token verification
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const {
-      firebaseId,
-      email,
-      firstName,
-      lastName,
-      photoURL,
-      idToken, // Optional: for token verification
-    } = body
+    // 1. Verify Firebase auth (NextRequest extends Request, so this works)
+    const { firebaseId, email, displayName, photoUrl } = await verifyAuth(request as Request)
 
-    if (!firebaseId) {
-      return NextResponse.json(
-        { success: false, error: 'firebaseId is required' },
-        { status: 400 },
-      )
-    }
+    // 2. Parse name from displayName
+    const nameParts = displayName?.split(' ') || []
+    const firstName = nameParts[0] || null
+    const lastName = nameParts.slice(1).join(' ') || null
 
-    // If idToken provided, verify it via Firebase service
-    if (idToken) {
-      try {
-        const firebaseUser = await FirebaseService.verifyToken(idToken)
-        // Verify firebaseId matches token
-        if (firebaseUser.uid !== firebaseId) {
-          return NextResponse.json(
-            { success: false, error: 'firebaseId does not match token' },
-            { status: 401 },
-          )
-        }
-      } catch (error: any) {
-        return NextResponse.json(
-          { success: false, error: `Token verification failed: ${error.message}` },
-          { status: 401 },
-        )
-      }
-    }
-
-    // Find or create WorkMe
+    // 3. Look up WorkMe by firebaseId
     let workMe = await prisma.workMe.findUnique({
       where: { firebaseId },
     })
@@ -67,7 +39,7 @@ export async function POST(request: Request) {
             firebaseId,
             firstName: firstName || workMe.firstName,
             lastName: lastName || workMe.lastName,
-            photoUrl: photoURL || workMe.photoUrl,
+            photoUrl: photoUrl || workMe.photoUrl,
           },
         })
         console.log('✅ Updated existing WorkMe with firebaseId:', workMe.id)
@@ -79,7 +51,7 @@ export async function POST(request: Request) {
             email: email?.toLowerCase().trim() || '',
             firstName: firstName || null,
             lastName: lastName || null,
-            photoUrl: photoURL || null,
+            photoUrl: photoUrl || null,
           },
         })
         isNewUser = true
@@ -89,7 +61,7 @@ export async function POST(request: Request) {
       console.log('✅ Found existing WorkMe:', workMe.id)
     }
 
-    // If this is the first user (Adam - the first man), make them super admin
+    // 4. If this is the first user (Adam - the first man), make them super admin
     if (isNewUser) {
       const existingSuperAdmin = await prisma.superAdmin.findFirst()
       
