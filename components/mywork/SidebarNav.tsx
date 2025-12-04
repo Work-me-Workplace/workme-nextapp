@@ -29,7 +29,6 @@ export default function SidebarNav() {
 
   const isActive = (path: string) => {
     if (path === '/dashboard') return pathname === path
-    if (path === '/mycompany/profile') return pathname === path
     if (path === '/mycompany/workforcestuff') return pathname?.startsWith(path)
     if (path === '/mycompany/milestones') return pathname?.startsWith(path)
     if (path === '/mycompany/worksignal') return pathname?.startsWith(path)
@@ -59,7 +58,6 @@ export default function SidebarNav() {
     {
       name: 'MyCompany',
       items: [
-        { name: 'Company Profile', path: '/mycompany/profile', icon: Building2 },
         { name: 'Workforce Stuff', path: '/mycompany/workforcestuff', icon: Users },
         { name: 'Company Milestones', path: '/mycompany/milestones', icon: TrendingUp },
         { name: 'WorkSignal', path: '/mycompany/worksignal', icon: Sparkles },
