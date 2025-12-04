@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import OnboardingPrompt from '@/components/onboarding/OnboardingPrompt'
+import PersonalUX from '@/components/personal/PersonalUX'
 import { TrendingUp, Bell, Briefcase } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -74,8 +74,8 @@ export default function DashboardPage() {
               <p className="text-gray-600 mt-2">Your work overview and quick access</p>
             </div>
 
-            {/* Onboarding Prompt */}
-            <OnboardingPrompt />
+            {/* Personal UX Component */}
+            <PersonalUX />
 
             {/* Dashboard Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
