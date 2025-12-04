@@ -11,25 +11,7 @@ import { Building2, Users, TrendingUp, MapPin, Globe, Phone, Mail } from 'lucide
 interface Company {
   id: string
   name: string
-  industry?: string | null
-  website?: string | null
-  city?: string | null
-  state?: string | null
-  description?: string | null
-  headcount?: number | null
-  missionStatement?: string | null
-  vision?: string | null
-  values?: string | null
-  ceoName?: string | null
-  ceoTitle?: string | null
-  deputyName?: string | null
-  deputyTitle?: string | null
-  chiefOfStaff?: string | null
-  directorates?: string[]
-  linkedinUrl?: string | null
-  twitterUrl?: string | null
-  phone?: string | null
-  brandLogoUrl?: string | null
+  division?: string | null
 }
 
 export default function CompanyProfilePage() {
@@ -62,24 +44,7 @@ export default function CompanyProfilePage() {
           setCompany({
             id: profile.company?.id || '',
             name: profile.company?.name || 'No company set',
-            industry: null,
-            website: null,
-            city: null,
-            state: null,
-            description: null,
-            headcount: null,
-            missionStatement: null,
-            vision: null,
-            values: null,
-            ceoName: null,
-            ceoTitle: null,
-            deputyName: null,
-            deputyTitle: null,
-            chiefOfStaff: null,
-            directorates: [],
-            linkedinUrl: null,
-            phone: null,
-            brandLogoUrl: null,
+            division: profile.division?.name || null,
           })
         }
       }
@@ -164,9 +129,10 @@ export default function CompanyProfilePage() {
                       )}
                       <div>
                         <h2 className="text-2xl font-bold text-gray-900">{company.name}</h2>
-                        {company.industry && (
-                          <p className="text-gray-600 mt-1">{company.industry}</p>
+                        {company.division && (
+                          <p className="text-gray-600 mt-1">Division: {company.division}</p>
                         )}
+                        <p className="text-gray-500 mt-1 text-sm">Read-only registry values</p>
                       </div>
                     </div>
                     <Link
@@ -177,114 +143,11 @@ export default function CompanyProfilePage() {
                     </Link>
                   </div>
 
-                  {company.description && (
-                    <p className="text-gray-700 mb-4">{company.description}</p>
-                  )}
-
-                  {/* Company Stats Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                    {company.headcount && (
-                      <div className="flex items-center p-4 bg-gray-50 rounded-lg">
-                        <Users className="h-6 w-6 text-gray-600 mr-3" />
-                        <div>
-                          <p className="text-sm text-gray-600">Headcount</p>
-                          <p className="text-lg font-semibold text-gray-900">{company.headcount.toLocaleString()}</p>
-                        </div>
-                      </div>
-                    )}
-                    {company.city && company.state && (
-                      <div className="flex items-center p-4 bg-gray-50 rounded-lg">
-                        <MapPin className="h-6 w-6 text-gray-600 mr-3" />
-                        <div>
-                          <p className="text-sm text-gray-600">Location</p>
-                          <p className="text-lg font-semibold text-gray-900">{company.city}, {company.state}</p>
-                        </div>
-                      </div>
-                    )}
-                    {company.website && (
-                      <div className="flex items-center p-4 bg-gray-50 rounded-lg">
-                        <Globe className="h-6 w-6 text-gray-600 mr-3" />
-                        <div>
-                          <p className="text-sm text-gray-600">Website</p>
-                          <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-lg font-semibold text-blue-600 hover:underline">
-                            Visit Site
-                          </a>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <p className="text-gray-600 mt-4">
+                    This page displays your workforce affiliation from the registry. 
+                    To edit your company or division, use the Profile Build section.
+                  </p>
                 </div>
-
-                {/* Mission, Vision, Values */}
-                {(company.missionStatement || company.vision || company.values) && (
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Identity</h3>
-                    <div className="space-y-4">
-                      {company.missionStatement && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-500 mb-1">Mission</h4>
-                          <p className="text-gray-700">{company.missionStatement}</p>
-                        </div>
-                      )}
-                      {company.vision && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-500 mb-1">Vision</h4>
-                          <p className="text-gray-700">{company.vision}</p>
-                        </div>
-                      )}
-                      {company.values && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-500 mb-1">Values</h4>
-                          <p className="text-gray-700">{company.values}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Leadership Grid (Stub) */}
-                {(company.ceoName || company.deputyName || company.chiefOfStaff) && (
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Leadership</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {company.ceoName && (
-                        <div className="p-4 border border-gray-200 rounded-lg">
-                          <p className="text-sm text-gray-600 mb-1">{company.ceoTitle || 'CEO/Commander'}</p>
-                          <p className="font-semibold text-gray-900">{company.ceoName}</p>
-                        </div>
-                      )}
-                      {company.deputyName && (
-                        <div className="p-4 border border-gray-200 rounded-lg">
-                          <p className="text-sm text-gray-600 mb-1">{company.deputyTitle || 'Deputy/COO'}</p>
-                          <p className="font-semibold text-gray-900">{company.deputyName}</p>
-                        </div>
-                      )}
-                      {company.chiefOfStaff && (
-                        <div className="p-4 border border-gray-200 rounded-lg">
-                          <p className="text-sm text-gray-600 mb-1">Chief of Staff</p>
-                          <p className="font-semibold text-gray-900">{company.chiefOfStaff}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Recent Milestones Preview (Stub) */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-gray-900">Recent Milestones</h3>
-                    <Link href="/mycompany/milestones" className="text-sm text-blue-600 hover:text-blue-700">
-                      View All →
-                    </Link>
-                  </div>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                    <TrendingUp className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-500">No milestones yet</p>
-                  </div>
-                </div>
-
-                {/* Recent Workforce Stuff Preview (Stub) */}
-                <div className="bg-white rounded-lg shadow p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-semibold text-gray-900">Recent Workforce Stuff</h3>
                     <Link href="/mycompany/workforcestuff" className="text-sm text-blue-600 hover:text-blue-700">
