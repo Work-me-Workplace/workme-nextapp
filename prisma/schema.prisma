@@ -12,10 +12,10 @@ datasource db {
 // CORE USER MODEL (Pure Identity)
 // ============================================
 model WorkMe {
-  id              String         @id @default(uuid())
-  firebaseId      String?        @unique
-  email           String         @unique
-  createdAt       DateTime       @default(now())
+  id         String   @id @default(uuid())
+  firebaseId String?  @unique
+  email      String   @unique
+  createdAt  DateTime @default(now())
 
   workMeCompanyId String?
   workMeCompany   WorkMeCompany? @relation(fields: [workMeCompanyId], references: [id])
@@ -27,6 +27,9 @@ model WorkMe {
 
   // Work History (one-to-many)
   workEntries WorkEntry[]
+
+  // Skills Intelligence (one-to-one)
+  mySkills MySkills?
 
   // WorkWorld Architecture Relations
   workplaces             Workplace[]
@@ -54,18 +57,18 @@ model WorkMe {
 // Clean profile - personal identity only (like GoFast Athlete profile)
 // No employment data here - that belongs in WorkEntry
 model WorkProfile {
-  id           String   @id @default(cuid())
-  userId       String   @unique // References WorkMe.id
+  id           String  @id @default(cuid())
+  userId       String  @unique // References WorkMe.id
   firstName    String?
   lastName     String?
-  headline     String?  // LinkedIn-style headline
-  currentRole  String?  // Optional current role display
-  handle       String   @unique // Unique username for future "Connect" features
+  headline     String? // LinkedIn-style headline
+  currentRole  String? // Optional current role display
+  handle       String  @unique // Unique username for future "Connect" features
   linkedinUrl  String?
-  profileImage String?  // Profile photo URL
-  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  profileImage String? // Profile photo URL
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user WorkMe @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -207,11 +210,11 @@ model Company {
 // Registry pattern like RaceRegistry - search or create
 // Simple, searchable company unit registry
 model CompanyUnit {
-  id        String      @id @default(cuid())
-  name      String      @unique // Company/employer name (unique globally)
-  domain    String?     // Optional domain for matching
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id        String   @id @default(cuid())
+  name      String   @unique // Company/employer name (unique globally)
+  domain    String? // Optional domain for matching
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   workEntries WorkEntry[]
 
@@ -225,24 +228,54 @@ model CompanyUnit {
 // Links WorkMe to CompanyUnit with employment details
 // Each WorkMe can have multiple WorkEntries (current + past jobs)
 model WorkEntry {
-  id            String      @id @default(cuid())
-  userId        String      // References WorkMe.id
-  companyUnitId String      // References CompanyUnit.id
-  division      String?     // Simple string for MVP1 (team, department, etc.)
-  title         String?     // Job title
-  startDate     DateTime?   // Employment start date
-  endDate       DateTime?   // Employment end date (null = current)
-  
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id            String    @id @default(cuid())
+  userId        String // References WorkMe.id
+  companyUnitId String // References CompanyUnit.id
+  division      String? // Simple string for MVP1 (team, department, etc.)
+  title         String? // Job title
+  startDate     DateTime? // Employment start date
+  endDate       DateTime? // Employment end date (null = current)
 
-  user        WorkMe       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyUnit CompanyUnit  @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user        WorkMe      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyUnit CompanyUnit @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([companyUnitId])
   @@index([startDate])
   @@index([endDate])
+}
+
+// ============================================
+// MY SKILLS MODEL (Capability Intelligence)
+// ============================================
+// Standalone intelligence module attached directly to WorkMe
+// Raw user inputs + AI-enriched fields for capability intelligence
+model MySkills {
+  id       String @id @default(cuid())
+  workMeId String @unique // Foreign key to WorkMe.id
+
+  // User-entered freeform inputs
+  mySkillsRaw              String? // "What do you do?"
+  myJobResponsibilitiesRaw String? // "What are your tasks?"
+  myStrengthsRaw           String? // "What are your specialties?"
+
+  // AI-enriched fields
+  mySkillsAI              String?
+  myJobResponsibilitiesAI String?
+  myStrengthsAI           String?
+
+  // Reserved for future: JSON snapshot for intelligence graph
+  insightSnapshot String? // optional, JSON blob
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+
+  @@index([workMeId])
 }
 
 // ============================================
@@ -291,9 +324,9 @@ model CompanyUnitHierarchy {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  company    CompanyRegistry         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company    CompanyRegistry        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   parentUnit CompanyUnitHierarchy?  @relation("UnitHierarchy", fields: [parentUnitId], references: [id], onDelete: SetNull)
-  subUnits   CompanyUnitHierarchy[]  @relation("UnitHierarchy")
+  subUnits   CompanyUnitHierarchy[] @relation("UnitHierarchy")
   members    CompanyUnitMembers[]
 
   @@index([companyId])
@@ -311,7 +344,7 @@ model CompanyUnitMembers {
   role        CompanyUnitRole @default(MEMBER)
   createdAt   DateTime        @default(now())
 
-  workMe WorkMe              @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  workMe WorkMe               @relation(fields: [workMeId], references: [id], onDelete: Cascade)
   unit   CompanyUnitHierarchy @relation(fields: [companyUnit], references: [unit], onDelete: Cascade)
 
   @@unique([workMeId, companyUnit])

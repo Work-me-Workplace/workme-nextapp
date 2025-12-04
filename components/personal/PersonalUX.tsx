@@ -64,8 +64,20 @@ export default function PersonalUX() {
         hasGoals = objectives.length > 0
       }
 
-      // Check skills - placeholder for now
-      const hasSkillSets = false
+      // Check skills (MySkills)
+      let hasSkillSets = false
+      try {
+        const skillsRes = await api.get('/api/myskills')
+        const mySkills = skillsRes.data.mySkills
+        // Consider skills complete if at least one raw field is filled
+        hasSkillSets = !!(
+          mySkills?.mySkillsRaw ||
+          mySkills?.myJobResponsibilitiesRaw ||
+          mySkills?.myStrengthsRaw
+        )
+      } catch (err) {
+        hasSkillSets = false
+      }
 
       setStatus({
         profile: hasProfile,

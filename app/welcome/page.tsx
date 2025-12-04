@@ -62,9 +62,9 @@ export default function WelcomePage() {
   // Don't auto-redirect - let user stay on welcome page and click continue
   // Like IgniteBD - "hold on welcome bro" - just show welcome, no yanking
   // Always go to dashboard - onboarding prompts will handle setup
-  
+
   const handleContinue = () => {
-    router.push('/dashboard')
+      router.push('/dashboard')
   }
 
   if (loading) {

@@ -59,7 +59,7 @@ async function restoreUser(
       }
       
       // Update or create WorkProfile
-      if (firstName || lastName) {
+        if (firstName || lastName) {
         await prisma.workProfile.upsert({
           where: { userId: workMe.id },
           create: {
@@ -71,10 +71,10 @@ async function restoreUser(
           update: {
             firstName: firstName !== undefined ? firstName : undefined,
             lastName: lastName !== undefined ? lastName : undefined,
-          },
-        })
+            },
+          })
         console.log('\n✅ Updated user name in WorkProfile')
-      }
+        }
       
       // Get profile and work entry for display
       const [profile, currentWorkEntry] = await Promise.all([

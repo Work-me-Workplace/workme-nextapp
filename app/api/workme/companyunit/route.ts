@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       if (!companyUnitRecord) {
         companyUnitRecord = await prisma.companyUnit.create({
           data: {
-            name: normalizedName,
+          name: normalizedName, 
           },
         })
         console.log('✅ Created new CompanyUnit:', companyUnitRecord.name)
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       
       companyUnitRecord = await prisma.companyUnit.create({
         data: { 
-          name: generated,
+          name: generated, 
         }
       })
       
@@ -95,8 +95,8 @@ export async function POST(request: NextRequest) {
       },
       include: {
         companyUnit: {
-          select: {
-            id: true,
+      select: {
+        id: true,
             name: true,
             domain: true,
           },

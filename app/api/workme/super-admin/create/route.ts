@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     // Verify WorkMe exists and get profile
     const [workMe, profile] = await Promise.all([
       prisma.workMe.findUnique({
-        where: { id: workMeId },
+      where: { id: workMeId },
       }),
       prisma.workProfile.findUnique({
         where: { userId: workMeId },
