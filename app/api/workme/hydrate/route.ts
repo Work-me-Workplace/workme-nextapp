@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
 import { loadWorkMe } from '@/lib/auth/loadWorkMe'
-import { prisma } from '@/lib/prisma'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -22,78 +21,26 @@ export async function GET(request: Request) {
     // 1. Auth - Verify Firebase token
     const { firebaseId } = await verifyAuth(request)
     
-    // 2. Load WorkMe identity
+    // 2. Load WorkMe identity - just the basic WorkMe object
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId } = workMe
 
-    console.log('[API GET /api/workme/hydrate] Auth verified:', {
-      workMeId,
+    console.log('[API GET /api/workme/hydrate] Hydration successful:', {
+      workMeId: workMe.id,
       firebaseId,
     })
 
-    // Fetch WorkMe, WorkProfile, and current WorkEntry
-    const [workMeRecord, profile, currentWorkEntry] = await Promise.all([
-      prisma.workMe.findUnique({
-        where: { id: workMeId },
-        select: {
-          id: true,
-          firebaseId: true,
-          email: true,
-          createdAt: true,
-        },
-      }),
-      prisma.workProfile.findUnique({
-        where: { userId: workMeId },
-      }),
-      prisma.workEntry.findFirst({
-        where: {
-          userId: workMeId,
-          endDate: null, // Current job
-        },
-        include: {
-          companyUnit: {
-            select: {
-              id: true,
-              name: true,
-              domain: true,
-            },
-          },
-        },
-      }),
-    ])
-
-    if (!workMeRecord) {
-      console.error('[API GET /api/workme/hydrate] WorkMe not found:', workMeId)
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'WorkMe not found',
-        },
-        { status: 404 },
-      )
-    }
-
-    const companyUnit = currentWorkEntry?.companyUnit.name || null
-    const companyDivision = currentWorkEntry?.division || null
-
-    console.log('[API GET /api/workme/hydrate] Hydration successful:', {
-      workMeId: workMeRecord.id,
-      companyUnit,
-      companyDivision,
-    })
-
+    // Just return the WorkMe object - no WorkEntry/WorkProfile queries
     return NextResponse.json({
       success: true,
       workMe: {
-        id: workMeRecord.id,
-        firebaseId: workMeRecord.firebaseId,
-        email: workMeRecord.email,
-        firstName: profile?.firstName || null,
-        lastName: profile?.lastName || null,
-        photoUrl: profile?.profileImage || null,
-        companyUnit,
-        companyDivision,
-        createdAt: workMeRecord.createdAt,
+        id: workMe.id,
+        firebaseId: workMe.firebaseId,
+        email: workMe.email,
+        firstName: workMe.firstName,
+        lastName: workMe.lastName,
+        photoUrl: workMe.photoUrl,
+        companyUnit: workMe.companyUnit,
+        companyDivision: workMe.companyDivision,
       },
     })
   } catch (error: any) {

@@ -24,6 +24,9 @@ export interface WorkMeIdentity {
 /**
  * Load WorkMe identity by Firebase ID
  * 
+ * Simplified - just returns the WorkMe object without related data
+ * This avoids errors when WorkEntry/WorkProfile tables don't exist yet
+ * 
  * @param firebaseId - Firebase user ID from verifyAuth
  * @throws Error if WorkMe record not found
  * @returns {WorkMeIdentity} WorkMe identity data
@@ -42,35 +45,17 @@ export async function loadWorkMe(firebaseId: string): Promise<WorkMeIdentity> {
     throw new Error('WorkMe identity not found. Please complete sign up.')
   }
 
-  // Fetch WorkProfile and current WorkEntry
-  const [profile, currentWorkEntry] = await Promise.all([
-    prisma.workProfile.findUnique({
-      where: { userId: workMe.id },
-    }),
-    prisma.workEntry.findFirst({
-      where: {
-        userId: workMe.id,
-        endDate: null, // Current job
-      },
-      include: {
-        companyUnit: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    }),
-  ])
-
+  // Just return basic WorkMe - no WorkEntry/WorkProfile queries
+  // This keeps it simple and avoids errors when tables don't exist
   return {
     id: workMe.id,
     firebaseId: workMe.firebaseId,
     email: workMe.email,
-    firstName: profile?.firstName || null,
-    lastName: profile?.lastName || null,
-    photoUrl: profile?.profileImage || null,
-    companyUnit: currentWorkEntry?.companyUnit.name || null,
-    companyDivision: currentWorkEntry?.division || null,
+    firstName: null, // Will be populated from WorkProfile when available
+    lastName: null,  // Will be populated from WorkProfile when available
+    photoUrl: null,   // Will be populated from WorkProfile when available
+    companyUnit: null, // Will be populated from WorkEntry when available
+    companyDivision: null, // Will be populated from WorkEntry when available
   }
 }
 
