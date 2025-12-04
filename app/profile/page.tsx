@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { getAuth } from 'firebase/auth'
 import api from '@/lib/api'
 import { User } from 'lucide-react'
 
@@ -9,6 +10,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [workMeId, setWorkMeId] = useState<string | null>(null)
+  const [email, setEmail] = useState<string>('')
   
   // WorkProfile data (personal identity only - like GoFast Athlete profile)
   const [formData, setFormData] = useState({
@@ -29,6 +31,27 @@ export default function ProfilePage() {
         return
       }
       setWorkMeId(id)
+      
+      // Pre-populate from Firebase first (like GoFast)
+      const firebaseUser = getAuth().currentUser
+      if (firebaseUser) {
+        // Parse displayName for firstName/lastName
+        const displayName = firebaseUser.displayName || ''
+        const firstNameFromFirebase = displayName.split(' ')[0] || ''
+        const lastNameFromFirebase = displayName.split(' ').slice(1).join(' ') || ''
+        
+        setEmail(firebaseUser.email || '')
+        
+        // Pre-populate form with Firebase data
+        setFormData(prev => ({
+          ...prev,
+          firstName: firstNameFromFirebase,
+          lastName: lastNameFromFirebase,
+          profileImage: firebaseUser.photoURL || prev.profileImage,
+        }))
+      }
+      
+      // Then load from API (will override Firebase if profile exists)
       loadProfile()
     }
   }, [router])
@@ -38,15 +61,18 @@ export default function ProfilePage() {
       const response = await api.get('/api/workme/profile')
       if (response.data?.profile) {
         const profile = response.data.profile
-        setFormData({
-          firstName: profile.firstName || '',
-          lastName: profile.lastName || '',
+        const firebaseUser = getAuth().currentUser
+        
+        // Pre-populate: API data first, then Firebase, then empty
+        setFormData(prev => ({
+          firstName: profile.firstName || prev.firstName || '',
+          lastName: profile.lastName || prev.lastName || '',
           headline: profile.headline || '',
           currentRole: profile.currentRole || '',
           handle: profile.handle || '',
           linkedinUrl: profile.linkedinUrl || '',
-          profileImage: profile.profileImage || '', // Will be auto-populated from Firebase if empty
-        })
+          profileImage: profile.profileImage || firebaseUser?.photoURL || prev.profileImage || '',
+        }))
       }
     } catch (error) {
       console.log('Profile not loaded (new user):', error)
@@ -112,6 +138,20 @@ export default function ProfilePage() {
 
         {/* Profile Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Email (read-only, from Firebase) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              disabled
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-600 cursor-not-allowed"
+            />
+            <p className="text-xs text-gray-500 mt-1">Email from your Firebase account (read-only)</p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -207,8 +247,21 @@ export default function ProfilePage() {
               placeholder="Leave empty to use your Firebase profile photo"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Your Firebase profile photo will be used automatically if left empty
+              Pre-populated from Firebase. Leave empty to use your Firebase profile photo automatically.
             </p>
+            {formData.profileImage && (
+              <div className="mt-2">
+                <img 
+                  src={formData.profileImage} 
+                  alt="Profile preview" 
+                  className="h-20 w-20 rounded-full object-cover border-2 border-sky-500"
+                  onError={(e) => {
+                    // Hide broken images
+                    e.currentTarget.style.display = 'none'
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex gap-4 pt-4">
