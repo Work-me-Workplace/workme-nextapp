@@ -59,23 +59,42 @@ export default function ProfilePage() {
   const loadProfile = async () => {
     try {
       const response = await api.get('/api/workme/profile')
+      const firebaseUser = getAuth().currentUser
+      
       if (response.data?.profile) {
         const profile = response.data.profile
-        const firebaseUser = getAuth().currentUser
         
         // Pre-populate: API data first, then Firebase, then empty
+        // Handle: use API handle if exists, otherwise keep empty (user will enter their own)
+        // Photo: prioritize API, then Firebase, then empty
         setFormData(prev => ({
           firstName: profile.firstName || prev.firstName || '',
           lastName: profile.lastName || prev.lastName || '',
           headline: profile.headline || '',
           currentRole: profile.currentRole || '',
-          handle: profile.handle || '',
+          handle: profile.handle || '', // User will enter their own handle
           linkedinUrl: profile.linkedinUrl || '',
           profileImage: profile.profileImage || firebaseUser?.photoURL || prev.profileImage || '',
         }))
+      } else {
+        // If no profile exists, ensure Firebase photo is loaded
+        if (firebaseUser?.photoURL) {
+          setFormData(prev => ({
+            ...prev,
+            profileImage: firebaseUser.photoURL || prev.profileImage || '',
+          }))
+        }
       }
     } catch (error) {
       console.log('Profile not loaded (new user):', error)
+      // On error, still try to load Firebase photo
+      const firebaseUser = getAuth().currentUser
+      if (firebaseUser?.photoURL) {
+        setFormData(prev => ({
+          ...prev,
+          profileImage: firebaseUser.photoURL || prev.profileImage || '',
+        }))
+      }
     }
   }
 
@@ -125,8 +144,21 @@ export default function ProfilePage() {
       <div className="max-w-2xl w-full bg-white rounded-lg p-8 shadow-lg border-2 border-sky-500">
         {/* Header with icon */}
         <div className="mb-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-sky-100 rounded-full mb-4">
-            <User className="h-8 w-8 text-sky-600" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-sky-100 rounded-full mb-4 overflow-hidden">
+            {formData.profileImage ? (
+              <img 
+                src={formData.profileImage} 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback to icon if image fails
+                  e.currentTarget.style.display = 'none'
+                  const icon = e.currentTarget.nextElementSibling as HTMLElement
+                  if (icon) icon.style.display = 'block'
+                }}
+              />
+            ) : null}
+            <User className={`h-8 w-8 text-sky-600 ${formData.profileImage ? 'hidden' : ''}`} />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Your Profile
@@ -202,11 +234,15 @@ export default function ProfilePage() {
               type="text"
               required
               value={formData.handle}
-              onChange={(e) => setFormData({ ...formData, handle: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+              onChange={(e) => {
+                // Only allow lowercase letters, numbers, and underscores
+                const sanitized = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')
+                setFormData({ ...formData, handle: sanitized })
+              }}
               className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-              placeholder="e.g. johndoe"
+              placeholder="e.g. johndoe or adam_cole"
             />
-            <p className="text-xs text-gray-500 mt-1">Unique username for your profile (letters, numbers, and underscores only)</p>
+            <p className="text-xs text-gray-500 mt-1">Choose your unique username (letters, numbers, and underscores only)</p>
           </div>
 
           <div>
@@ -247,7 +283,9 @@ export default function ProfilePage() {
               placeholder="Leave empty to use your Firebase profile photo"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Pre-populated from Firebase. Leave empty to use your Firebase profile photo automatically.
+              {formData.profileImage 
+                ? 'Your profile photo is loaded. Leave empty to use your Firebase profile photo automatically.'
+                : 'Your Firebase profile photo will be used automatically if left empty.'}
             </p>
             {formData.profileImage && (
               <div className="mt-2">

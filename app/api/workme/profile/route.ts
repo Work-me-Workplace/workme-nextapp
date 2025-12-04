@@ -26,13 +26,17 @@ export async function GET(request: NextRequest) {
       })
 
       if (!profile) {
-        // Auto-create profile with basic data from WorkMe + Firebase photo
-        profile = await prisma.workProfile.create({
-          data: {
-            userId: workMeId,
-            firstName: workMe.firstName || null,
-            lastName: workMe.lastName || null,
-            handle: `user_${workMeId.slice(0, 8)}`, // Auto-generate handle
+        // Don't auto-create profile - let user fill it out themselves
+        // Just return empty structure so they can enter their own handle
+        return NextResponse.json({
+          success: true,
+          profile: {
+            firstName: null,
+            lastName: null,
+            headline: null,
+            currentRole: null,
+            handle: null, // User must enter their own handle
+            linkedinUrl: null,
             profileImage: firebasePhotoUrl || null, // Auto-get from Firebase
           },
         })
@@ -53,7 +57,7 @@ export async function GET(request: NextRequest) {
             lastName: null,
             headline: null,
             currentRole: null,
-            handle: `user_${workMeId.slice(0, 8)}`,
+            handle: null, // User must enter their own handle
             linkedinUrl: null,
             profileImage: firebasePhotoUrl || null,
           },
@@ -121,28 +125,34 @@ export async function PUT(request: NextRequest) {
       ? profileImage 
       : firebasePhotoUrl || null
 
-    // 5. Check if handle is unique (if provided and different from current)
-    if (handle) {
-      try {
-        const existingProfile = await prisma.workProfile.findUnique({
-          where: { handle },
-        })
-        
-        if (existingProfile && existingProfile.userId !== workMeId) {
-          return NextResponse.json(
-            { success: false, error: 'Handle already taken' },
-            { status: 400 },
-          )
-        }
-      } catch (error: any) {
-        // If table doesn't exist, skip handle check
-        if (error.code !== 'P2021') {
-          throw error
-        }
+    // 5. Validate handle is provided (required)
+    if (!handle || !handle.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Handle is required' },
+        { status: 400 },
+      )
+    }
+
+    // 6. Check if handle is unique (if different from current)
+    try {
+      const existingProfile = await prisma.workProfile.findUnique({
+        where: { handle },
+      })
+      
+      if (existingProfile && existingProfile.userId !== workMeId) {
+        return NextResponse.json(
+          { success: false, error: 'Handle already taken. Please choose a different username.' },
+          { status: 400 },
+        )
+      }
+    } catch (error: any) {
+      // If table doesn't exist, skip handle check
+      if (error.code !== 'P2021') {
+        throw error
       }
     }
 
-    // 6. Upsert WorkProfile
+    // 7. Upsert WorkProfile
     try {
       const profile = await prisma.workProfile.upsert({
         where: { userId: workMeId },
@@ -152,7 +162,7 @@ export async function PUT(request: NextRequest) {
           lastName: lastName !== undefined ? lastName : null,
           headline: headline !== undefined ? headline : null,
           currentRole: currentRole !== undefined ? currentRole : null,
-          handle: handle || `user_${workMeId.slice(0, 8)}`, // Auto-generate if not provided
+          handle: handle.trim(), // User must provide their own handle
           linkedinUrl: linkedinUrl !== undefined ? linkedinUrl : null,
           profileImage: finalProfileImage, // Use Firebase photo if not provided
         },
@@ -161,7 +171,7 @@ export async function PUT(request: NextRequest) {
           lastName: lastName !== undefined ? lastName : undefined,
           headline: headline !== undefined ? headline : undefined,
           currentRole: currentRole !== undefined ? currentRole : undefined,
-          handle: handle !== undefined ? handle : undefined,
+          handle: handle !== undefined ? handle.trim() : undefined,
           linkedinUrl: linkedinUrl !== undefined ? linkedinUrl : undefined,
           profileImage: finalProfileImage !== undefined ? finalProfileImage : undefined,
         },
