@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
-import { jobRoleOptions, salaryRangeOptions } from '@/lib/config/profileConfig'
 import WorkspaceUnit from '@/components/profile/WorkspaceUnit'
 
 type Step = 'profile' | 'workspace'
@@ -14,19 +13,18 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false)
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   
-  // Profile data
+  // WorkProfile data (personal identity only - like GoFast Athlete profile)
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    jobTitle: '',
-    jobRole: '',
-    specialty: '',
-    industry: '',
-    salaryRange: '',
-    photoUrl: '',
+    headline: '',
+    currentRole: '',
+    handle: '',
+    linkedinUrl: '',
+    profileImage: '',
   })
 
-  // Workspace data
+  // Workspace data (separate - WorkEntry)
   const [unitName, setUnitName] = useState('')
 
   useEffect(() => {
@@ -37,26 +35,36 @@ export default function ProfilePage() {
         return
       }
       setWorkMeId(id)
-      loadProfile(id)
+      loadProfile()
     }
   }, [router])
 
-  const loadProfile = async (id: string) => {
+  const loadProfile = async () => {
     try {
-      const response = await api.get(`/api/workme/profile?workMeId=${id}`)
-      if (response.data?.workMe) {
-        const workMe = response.data.workMe
+      const response = await api.get('/api/workme/profile')
+      if (response.data?.profile) {
+        const profile = response.data.profile
         setFormData({
-          firstName: workMe.firstName || '',
-          lastName: workMe.lastName || '',
-          jobTitle: workMe.jobTitle || '',
-          jobRole: workMe.jobRole || '',
-          specialty: workMe.specialty || '',
-          industry: workMe.industry || '',
-          salaryRange: workMe.salaryRange || '',
-          photoUrl: workMe.photoUrl || '',
+          firstName: profile.firstName || '',
+          lastName: profile.lastName || '',
+          headline: profile.headline || '',
+          currentRole: profile.currentRole || '',
+          handle: profile.handle || '',
+          linkedinUrl: profile.linkedinUrl || '',
+          profileImage: profile.profileImage || '',
         })
-        setUnitName(workMe.companyUnit || '')
+      }
+      
+      // Load company affiliation separately (WorkEntry)
+      try {
+        const workEntriesRes = await api.get('/api/work-entry/list')
+        const workEntries = workEntriesRes.data.workEntries || []
+        const currentEntry = workEntries.find((e: any) => !e.endDate)
+        if (currentEntry?.companyUnit?.name) {
+          setUnitName(currentEntry.companyUnit.name)
+        }
+      } catch (err) {
+        // No work entry yet
       }
     } catch (error) {
       console.log('Profile not loaded (new user):', error)
@@ -67,24 +75,23 @@ export default function ProfilePage() {
     e.preventDefault()
     if (!workMeId || loading) return
 
-    // Validate required fields
-    if (!formData.jobTitle.trim() || !formData.jobRole) {
-      alert('Please fill in all required fields (Job Title and Role Level)')
+    // Validate required fields (headline and handle for PersonalUX check)
+    if (!formData.headline.trim() || !formData.handle.trim()) {
+      alert('Please fill in headline and handle (required for profile completion)')
       return
     }
 
     setLoading(true)
     try {
-      // Update basic profile
+      // Update WorkProfile (personal identity only)
       await api.put('/api/workme/profile', {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        jobTitle: formData.jobTitle,
-        jobRole: formData.jobRole,
-        specialty: formData.specialty || null,
-        industry: formData.industry || null,
-        salaryRange: formData.salaryRange || null,
-        photoUrl: formData.photoUrl || null,
+        firstName: formData.firstName || null,
+        lastName: formData.lastName || null,
+        headline: formData.headline || null,
+        currentRole: formData.currentRole || null,
+        handle: formData.handle,
+        linkedinUrl: formData.linkedinUrl || null,
+        profileImage: formData.profileImage || null,
       })
 
       // Move to workspace step
@@ -188,7 +195,7 @@ export default function ProfilePage() {
           </p>
         </div>
 
-        {/* Step 1: Basic Profile */}
+        {/* Step 1: Personal Profile (WorkProfile - like GoFast Athlete) */}
         {currentStep === 'profile' && (
           <form onSubmit={handleProfileSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -218,83 +225,73 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-white/90 mb-2">
-                  Job Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.jobTitle}
-                  onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
-                  className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
-                  placeholder="e.g. Marketing Manager"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-white/90 mb-2">
-                  Role Level *
-                </label>
-                <select
-                  required
-                  value={formData.jobRole}
-                  onChange={(e) => setFormData({ ...formData, jobRole: e.target.value })}
-                  className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-white/50"
-                >
-                  <option value="">Select role level</option>
-                  {jobRoleOptions.map((role) => (
-                    <option key={role.value} value={role.value} className="text-gray-900">
-                      {role.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-white/90 mb-2">
-                  Specialty
-                </label>
-                <input
-                  type="text"
-                  value={formData.specialty}
-                  onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
-                  className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
-                  placeholder="e.g. Digital Marketing, Product Design"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-white/90 mb-2">
-                  Industry
-                </label>
-                <input
-                  type="text"
-                  value={formData.industry}
-                  onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                  className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
-                  placeholder="e.g. Technology, Healthcare"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-white/90 mb-2">
+                Headline *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.headline}
+                onChange={(e) => setFormData({ ...formData, headline: e.target.value })}
+                className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
+                placeholder="e.g. Marketing Manager | Growth Strategist"
+              />
+              <p className="text-xs text-white/60 mt-1">LinkedIn-style professional headline</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-white/90 mb-2">
-                Salary Range
+                Handle (Username) *
               </label>
-              <select
-                value={formData.salaryRange}
-                onChange={(e) => setFormData({ ...formData, salaryRange: e.target.value })}
-                className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-white/50"
-              >
-                <option value="">Select range</option>
-                {salaryRangeOptions.map((range) => (
-                  <option key={range.value} value={range.value} className="text-gray-900">
-                    {range.label}
-                  </option>
-                ))}
-              </select>
+              <input
+                type="text"
+                required
+                value={formData.handle}
+                onChange={(e) => setFormData({ ...formData, handle: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+                className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
+                placeholder="e.g. johndoe"
+              />
+              <p className="text-xs text-white/60 mt-1">Unique username for your profile (letters, numbers, and underscores only)</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white/90 mb-2">
+                Current Role (Optional)
+              </label>
+              <input
+                type="text"
+                value={formData.currentRole}
+                onChange={(e) => setFormData({ ...formData, currentRole: e.target.value })}
+                className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
+                placeholder="e.g. Senior Marketing Manager"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white/90 mb-2">
+                LinkedIn URL (Optional)
+              </label>
+              <input
+                type="url"
+                value={formData.linkedinUrl}
+                onChange={(e) => setFormData({ ...formData, linkedinUrl: e.target.value })}
+                className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
+                placeholder="https://linkedin.com/in/yourprofile"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white/90 mb-2">
+                Profile Image URL (Optional)
+              </label>
+              <input
+                type="url"
+                value={formData.profileImage}
+                onChange={(e) => setFormData({ ...formData, profileImage: e.target.value })}
+                className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
+                placeholder="https://example.com/your-photo.jpg"
+              />
             </div>
 
             <div className="flex gap-4 pt-4">
