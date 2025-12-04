@@ -144,7 +144,7 @@ export default function PersonalUX() {
       key: 'companyAffiliation',
       label: 'Company',
       description: 'Set up your work affiliation',
-      path: '/profile',
+      path: '/mycompany/profile',
       icon: Building2,
       complete: status.companyAffiliation,
     },
