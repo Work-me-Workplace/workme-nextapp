@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
             ? prisma.companyUnit.findUnique({
                 where: { id: profile.companyUnitId },
                 select: { id: true, name: true },
-              })
+    })
             : null,
           profile.divisionUnitId
             ? prisma.divisionUnit.findUnique({
@@ -243,20 +243,20 @@ export async function PUT(request: NextRequest) {
           profileImage: finalProfileImage, // Use Firebase photo if not provided
         },
         update: {
-          firstName: firstName !== undefined ? firstName : undefined,
-          lastName: lastName !== undefined ? lastName : undefined,
+        firstName: firstName !== undefined ? firstName : undefined,
+        lastName: lastName !== undefined ? lastName : undefined,
           headline: headline !== undefined ? headline : undefined,
           currentRole: currentRole !== undefined ? currentRole : undefined,
           handle: handle !== undefined ? handle.trim() : undefined,
           linkedinUrl: linkedinUrl !== undefined ? linkedinUrl : undefined,
           profileImage: finalProfileImage !== undefined ? finalProfileImage : undefined,
-        },
-      })
+      },
+    })
 
       console.log('✅ Updated WorkProfile:', workMeId)
 
-      return NextResponse.json({
-        success: true,
+    return NextResponse.json({
+      success: true,
         profile,
       })
     } catch (error: any) {

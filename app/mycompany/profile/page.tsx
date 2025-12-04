@@ -120,13 +120,9 @@ export default function CompanyProfilePage() {
                 <div className="bg-white rounded-lg shadow p-6">
                   <div className="flex items-start justify-between mb-6">
                     <div className="flex items-center">
-                      {company.brandLogoUrl ? (
-                        <img src={company.brandLogoUrl} alt={company.name} className="h-16 w-16 rounded-lg mr-4" />
-                      ) : (
-                        <div className="h-16 w-16 rounded-lg bg-blue-100 flex items-center justify-center mr-4">
-                          <Building2 className="h-8 w-8 text-blue-600" />
-                        </div>
-                      )}
+                      <div className="h-16 w-16 rounded-lg bg-blue-100 flex items-center justify-center mr-4">
+                        <Building2 className="h-8 w-8 text-blue-600" />
+                      </div>
                       <div>
                         <h2 className="text-2xl font-bold text-gray-900">{company.name}</h2>
                         {company.division && (
@@ -148,6 +144,9 @@ export default function CompanyProfilePage() {
                     To edit your company or division, use the Profile Build section.
                   </p>
                 </div>
+
+                {/* Recent Workforce Stuff Preview */}
+                <div className="bg-white rounded-lg shadow p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-semibold text-gray-900">Recent Workforce Stuff</h3>
                     <Link href="/mycompany/workforcestuff" className="text-sm text-blue-600 hover:text-blue-700">
