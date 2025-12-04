@@ -95,10 +95,9 @@ export async function POST(request: NextRequest) {
       },
       include: {
         companyUnit: {
-      select: {
-        id: true,
+          select: {
+            id: true,
             name: true,
-            domain: true,
           },
         },
       },
