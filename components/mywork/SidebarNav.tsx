@@ -21,7 +21,6 @@ import {
   Radio,
   Eye,
   ClipboardList,
-  UserPlus,
 } from 'lucide-react'
 
 export default function SidebarNav() {
