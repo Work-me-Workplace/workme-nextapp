@@ -122,25 +122,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('[AuthProvider] Hydration error:', err)
       setError(err.message || 'Failed to hydrate session')
       
-      // Clear session on error
-      setSession({
-        workMeId: null,
-        firebaseId: null,
-        email: null,
-        companyUnit: null,
-        companyDivision: null,
-        firebaseToken: null,
-        hydratedAt: null,
-      })
+      // Don't clear session on hydration error - keep existing session
+      // Only clear if it's an auth error (401/403)
+      const isAuthError = err.response?.status === 401 || err.response?.status === 403 || 
+                         err.message?.includes('Unauthorized') || 
+                         err.message?.includes('not found')
+      
+      if (isAuthError) {
+        // Only clear on actual auth failures
+        console.warn('[AuthProvider] Auth error detected, clearing session')
+        setSession({
+          workMeId: null,
+          firebaseId: null,
+          email: null,
+          companyUnit: null,
+          companyDivision: null,
+          firebaseToken: null,
+          hydratedAt: null,
+        })
 
-      // Clear localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('workMeId')
-        localStorage.removeItem('firebaseId')
-        localStorage.removeItem('email')
-        localStorage.removeItem('companyUnit')
-        localStorage.removeItem('companyDivision')
-        localStorage.removeItem('firebaseToken')
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('workMeId')
+          localStorage.removeItem('firebaseId')
+          localStorage.removeItem('email')
+          localStorage.removeItem('companyUnit')
+          localStorage.removeItem('companyDivision')
+          localStorage.removeItem('firebaseToken')
+        }
+      } else {
+        // For other errors (500, network, etc), keep existing session
+        // Try to preserve workMeId from localStorage if available
+        const existingWorkMeId = typeof window !== 'undefined' ? localStorage.getItem('workMeId') : null
+        if (existingWorkMeId) {
+          console.log('[AuthProvider] Keeping existing session despite hydration error')
+          setSession((prev) => ({
+            ...prev,
+            workMeId: existingWorkMeId,
+            firebaseId: firebaseUser.uid,
+            email: firebaseUser.email || prev.email,
+          }))
+        }
       }
     } finally {
       setLoading(false)
