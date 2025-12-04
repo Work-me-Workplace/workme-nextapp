@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
+import SidebarNav from '@/components/mywork/SidebarNav'
 
 interface MyWorkItem {
   id: string
@@ -184,7 +185,12 @@ export default function MyWorkOutlookPage() {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex">
+        {/* Sidebar */}
+        <SidebarNav />
+
+        {/* Main Content */}
+        <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Quick Add */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Add</h2>
@@ -341,7 +347,8 @@ export default function MyWorkOutlookPage() {
             )
           })}
         </div>
-      </main>
+        </main>
+      </div>
     </div>
   )
 }

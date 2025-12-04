@@ -19,6 +19,8 @@ import {
   TrendingUp,
   CheckSquare,
   Radio,
+  Eye,
+  ClipboardList,
 } from 'lucide-react'
 
 export default function SidebarNav() {
@@ -33,6 +35,8 @@ export default function SidebarNav() {
     if (path === '/mywork/create') return pathname === path
     if (path === '/mywork/fromcompanystuff') return pathname === path
     if (path === '/mywork/active') return pathname === path
+    if (path === '/my/outlook') return pathname === path
+    if (path === '/my/admin') return pathname === path
     if (path === '/mycareer/track') return pathname === path
     if (path === '/mycareer/achievements') return pathname === path
     if (path === '/mycareer/reflections') return pathname === path
@@ -65,6 +69,8 @@ export default function SidebarNav() {
         { name: 'Create Output', path: '/mywork/create', icon: FileText },
         { name: 'Work From Company Stuff', path: '/mywork/fromcompanystuff', icon: Briefcase },
         { name: "Stuff I'm Working On", path: '/mywork/active', icon: CheckSquare },
+        { name: 'My Work Outlook', path: '/my/outlook', icon: Eye },
+        { name: 'Admin', path: '/my/admin', icon: ClipboardList },
       ],
     },
     {
