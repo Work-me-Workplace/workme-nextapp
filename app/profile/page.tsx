@@ -45,7 +45,7 @@ export default function ProfilePage() {
           currentRole: profile.currentRole || '',
           handle: profile.handle || '',
           linkedinUrl: profile.linkedinUrl || '',
-          profileImage: profile.profileImage || '',
+          profileImage: profile.profileImage || '', // Will be auto-populated from Firebase if empty
         })
       }
     } catch (error) {
@@ -204,8 +204,11 @@ export default function ProfilePage() {
               value={formData.profileImage}
               onChange={(e) => setFormData({ ...formData, profileImage: e.target.value })}
               className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-              placeholder="https://example.com/your-photo.jpg"
+              placeholder="Leave empty to use your Firebase profile photo"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Your Firebase profile photo will be used automatically if left empty
+            </p>
           </div>
 
           <div className="flex gap-4 pt-4">
