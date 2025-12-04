@@ -1,5 +1,6 @@
 /**
  * Script to upsert a user by email and Firebase ID
+ * ⚠️ UPDATED: Now uses WorkProfile architecture
  * 
  * Usage: npx tsx scripts/upsert-user.ts <email> <firebaseId>
  */
@@ -19,10 +20,6 @@ async function upsertUser(email: string, firebaseId: string) {
         id: true,
         firebaseId: true,
         email: true,
-        firstName: true,
-        lastName: true,
-        companyUnit: true,
-        companyDivision: true,
       },
     })
 
@@ -41,21 +38,20 @@ async function upsertUser(email: string, firebaseId: string) {
           id: true,
           firebaseId: true,
           email: true,
-          firstName: true,
-          lastName: true,
-          companyUnit: true,
-          companyDivision: true,
         },
+      })
+      
+      // Get profile for display
+      const profile = await prisma.workProfile.findUnique({
+        where: { userId: workMe.id },
       })
       
       console.log(`\n✅ Updated user with new Firebase ID`)
       console.log(`   WorkMe ID: ${workMe.id}`)
       console.log(`   Email: ${workMe.email}`)
       console.log(`   Firebase ID: ${workMe.firebaseId}`)
-      const fullName = `${workMe.firstName || ''} ${workMe.lastName || ''}`.trim() || '(no name)'
-    console.log(`   Name: ${fullName}`)
-      console.log(`   Company Unit: ${workMe.companyUnit || '(none)'}`)
-      console.log(`   Company Division: ${workMe.companyDivision || '(none)'}`)
+      const fullName = `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || '(no name)'
+      console.log(`   Name: ${fullName}`)
       
       return workMe
     }
@@ -67,10 +63,6 @@ async function upsertUser(email: string, firebaseId: string) {
         id: true,
         firebaseId: true,
         email: true,
-        firstName: true,
-        lastName: true,
-        companyUnit: true,
-        companyDivision: true,
       },
     })
 
@@ -90,10 +82,6 @@ async function upsertUser(email: string, firebaseId: string) {
             id: true,
             firebaseId: true,
             email: true,
-            firstName: true,
-            lastName: true,
-            companyUnit: true,
-            companyDivision: true,
           },
         })
         console.log(`\n✅ Updated email to: ${workMe.email}`)
@@ -108,17 +96,21 @@ async function upsertUser(email: string, firebaseId: string) {
       data: {
         firebaseId,
         email: email.toLowerCase().trim(),
-        firstName: 'Adam',
-        lastName: 'Cole',
       },
       select: {
         id: true,
         firebaseId: true,
         email: true,
-        firstName: true,
-        lastName: true,
-        companyUnit: true,
-        companyDivision: true,
+      },
+    })
+
+    // Create WorkProfile
+    await prisma.workProfile.create({
+      data: {
+        userId: workMe.id,
+        firstName: 'Adam',
+        lastName: 'Cole',
+        handle: `user_${workMe.id.slice(0, 8)}`,
       },
     })
 
@@ -126,8 +118,7 @@ async function upsertUser(email: string, firebaseId: string) {
     console.log(`   WorkMe ID: ${workMe.id}`)
     console.log(`   Email: ${workMe.email}`)
     console.log(`   Firebase ID: ${workMe.firebaseId}`)
-    const fullName = `${workMe.firstName || ''} ${workMe.lastName || ''}`.trim() || '(no name)'
-    console.log(`   Name: ${fullName}`)
+    console.log(`   Name: Adam Cole`)
     
     return workMe
   } catch (error: any) {
@@ -160,5 +151,3 @@ upsertUser(email, firebaseId)
     console.error('\n❌ Upsert failed:', error)
     process.exit(1)
   })
-
-

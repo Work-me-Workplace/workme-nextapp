@@ -17,8 +17,8 @@ export interface WorkMeIdentity {
   firstName: string | null
   lastName: string | null
   photoUrl: string | null
-  companyUnit: string | null // Optional default for quick selection
-  companyDivision: string | null
+  companyUnit: string | null // From current WorkEntry
+  companyDivision: string | null // From current WorkEntry
 }
 
 /**
@@ -35,11 +35,6 @@ export async function loadWorkMe(firebaseId: string): Promise<WorkMeIdentity> {
       id: true,
       firebaseId: true,
       email: true,
-      firstName: true,
-      lastName: true,
-      photoUrl: true,
-      companyUnit: true, // Optional default
-      companyDivision: true,
     },
   })
 
@@ -47,6 +42,35 @@ export async function loadWorkMe(firebaseId: string): Promise<WorkMeIdentity> {
     throw new Error('WorkMe identity not found. Please complete sign up.')
   }
 
-  return workMe
+  // Fetch WorkProfile and current WorkEntry
+  const [profile, currentWorkEntry] = await Promise.all([
+    prisma.workProfile.findUnique({
+      where: { userId: workMe.id },
+    }),
+    prisma.workEntry.findFirst({
+      where: {
+        userId: workMe.id,
+        endDate: null, // Current job
+      },
+      include: {
+        companyUnit: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    }),
+  ])
+
+  return {
+    id: workMe.id,
+    firebaseId: workMe.firebaseId,
+    email: workMe.email,
+    firstName: profile?.firstName || null,
+    lastName: profile?.lastName || null,
+    photoUrl: profile?.profileImage || null,
+    companyUnit: currentWorkEntry?.companyUnit.name || null,
+    companyDivision: currentWorkEntry?.division || null,
+  }
 }
 

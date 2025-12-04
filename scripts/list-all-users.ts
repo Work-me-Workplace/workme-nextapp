@@ -14,18 +14,45 @@ async function listAllUsers() {
         id: true,
         email: true,
         firebaseId: true,
-        firstName: true,
-        lastName: true,
-        companyUnit: true,
-        companyDivision: true,
         createdAt: true,
       },
     })
 
-    console.log(`Found ${users.length} user(s) in database:\n`)
+    // Fetch profiles and work entries for all users
+    const usersWithData = await Promise.all(
+      users.map(async (user) => {
+        const [profile, currentWorkEntry] = await Promise.all([
+          prisma.workProfile.findUnique({
+            where: { userId: user.id },
+          }),
+          prisma.workEntry.findFirst({
+            where: {
+              userId: user.id,
+              endDate: null,
+            },
+            include: {
+              companyUnit: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          }),
+        ])
+        return {
+          ...user,
+          firstName: profile?.firstName || null,
+          lastName: profile?.lastName || null,
+          companyUnit: currentWorkEntry?.companyUnit.name || null,
+          companyDivision: currentWorkEntry?.division || null,
+        }
+      })
+    )
+
+    console.log(`Found ${usersWithData.length} user(s) in database:\n`)
     console.log('='.repeat(80))
 
-    users.forEach((user, index) => {
+    usersWithData.forEach((user, index) => {
       console.log(`\n${index + 1}. User Record`)
       console.log(`   WorkMe ID: ${user.id}`)
       console.log(`   Email: ${user.email}`)

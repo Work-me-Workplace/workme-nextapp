@@ -4,14 +4,13 @@
  * Maps form data to database fields with validation and type conversion
  */
 
-import { JobRole, SalaryRange, CompanyType, RevenueRange } from '@prisma/client'
+import { CompanyType, RevenueRange } from '@prisma/client'
 
+// NOTE: JobRole and SalaryRange enums removed - employment data now in WorkEntry
+// WorkMeProfileData is deprecated - use WorkProfile for personal identity only
 export interface WorkMeProfileData {
-  jobTitle?: string
-  specialty?: string
-  industry?: string
-  jobRole?: string | JobRole
-  salaryRange?: string | SalaryRange
+  // Deprecated - employment data belongs in WorkEntry
+  // Keeping for backward compatibility during migration
 }
 
 export interface CompanyData {
@@ -29,21 +28,12 @@ export interface CompanyData {
 export class FieldMapperService {
   /**
    * Map WorkMe profile form data to database fields
+   * ⚠️ DEPRECATED: Employment data now belongs in WorkEntry
+   * Keeping for backward compatibility during migration
    */
-  static mapWorkMeProfile(data: WorkMeProfileData): {
-    jobTitle?: string
-    specialty?: string
-    industry?: string
-    jobRole?: JobRole
-    salaryRange?: SalaryRange
-  } {
-    return {
-      jobTitle: data.jobTitle?.trim() || undefined,
-      specialty: data.specialty?.trim() || undefined,
-      industry: data.industry?.trim() || undefined,
-      jobRole: data.jobRole ? (data.jobRole as JobRole) : undefined,
-      salaryRange: data.salaryRange ? (data.salaryRange as SalaryRange) : undefined,
-    }
+  static mapWorkMeProfile(data: WorkMeProfileData): Record<string, never> {
+    // Deprecated - employment data should be stored in WorkEntry
+    return {}
   }
 
   /**
@@ -75,16 +65,20 @@ export class FieldMapperService {
 
   /**
    * Validate JobRole enum value
+   * ⚠️ DEPRECATED: JobRole enum removed - employment data now in WorkEntry
    */
-  static isValidJobRole(value: string): value is JobRole {
-    return ['INDIVIDUAL_CONTRIBUTOR', 'MANAGER', 'DIRECTOR_LEVEL', 'PROJECT_LEAD'].includes(value)
+  static isValidJobRole(value: string): boolean {
+    // Deprecated - enum removed
+    return false
   }
 
   /**
    * Validate SalaryRange enum value
+   * ⚠️ DEPRECATED: SalaryRange enum removed - employment data now in WorkEntry
    */
-  static isValidSalaryRange(value: string): value is SalaryRange {
-    return ['BELOW_50K', 'K50_100K', 'K100_150K', 'K150_200K', 'ABOVE_200K'].includes(value)
+  static isValidSalaryRange(value: string): boolean {
+    // Deprecated - enum removed
+    return false
   }
 
   /**

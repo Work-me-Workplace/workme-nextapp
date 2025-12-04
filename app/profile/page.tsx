@@ -315,7 +315,7 @@ export default function ProfilePage() {
             <WorkspaceUnit
               unitName={unitName}
               onUnitNameChange={setUnitName}
-              onSubmit={handleWorkspaceSubmit}
+              onSubmit={() => {}}
               loading={loading}
             />
 

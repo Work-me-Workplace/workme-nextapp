@@ -17,18 +17,31 @@ async function lookupUser(firebaseId: string) {
         id: true,
         email: true,
         firebaseId: true,
-        firstName: true,
-        lastName: true,
-        companyUnit: true,
-        companyDivision: true,
         createdAt: true,
       },
     })
 
     if (workMe) {
+      // Get profile and work entry
+      const [profile, currentWorkEntry] = await Promise.all([
+        prisma.workProfile.findUnique({ where: { userId: workMe.id } }),
+        prisma.workEntry.findFirst({
+          where: { userId: workMe.id, endDate: null },
+          include: { companyUnit: { select: { name: true } } },
+        }),
+      ])
+      
+      const userData = {
+        ...workMe,
+        firstName: profile?.firstName || null,
+        lastName: profile?.lastName || null,
+        companyUnit: currentWorkEntry?.companyUnit.name || null,
+        companyDivision: currentWorkEntry?.division || null,
+      }
+      
       console.log('\n✅ User found by firebaseId:')
-      console.log(JSON.stringify(workMe, null, 2))
-      return workMe
+      console.log(JSON.stringify(userData, null, 2))
+      return userData
     }
 
     console.log('\n❌ User not found by firebaseId')
@@ -41,16 +54,32 @@ async function lookupUser(firebaseId: string) {
         id: true,
         email: true,
         firebaseId: true,
-        firstName: true,
-        lastName: true,
-        companyUnit: true,
-        companyDivision: true,
         createdAt: true,
       },
     })
 
-    console.log(`\nFound ${allUsers.length} users in database:`)
-    allUsers.forEach((user, index) => {
+    // Fetch profiles and work entries
+    const usersWithData = await Promise.all(
+      allUsers.map(async (user) => {
+        const [profile, currentWorkEntry] = await Promise.all([
+          prisma.workProfile.findUnique({ where: { userId: user.id } }),
+          prisma.workEntry.findFirst({
+            where: { userId: user.id, endDate: null },
+            include: { companyUnit: { select: { name: true } } },
+          }),
+        ])
+        return {
+          ...user,
+          firstName: profile?.firstName || null,
+          lastName: profile?.lastName || null,
+          companyUnit: currentWorkEntry?.companyUnit.name || null,
+          companyDivision: currentWorkEntry?.division || null,
+        }
+      })
+    )
+
+    console.log(`\nFound ${usersWithData.length} users in database:`)
+    usersWithData.forEach((user, index) => {
       console.log(`\n${index + 1}. ${user.email}`)
       console.log(`   ID: ${user.id}`)
       console.log(`   Firebase ID: ${user.firebaseId || '(none)'}`)

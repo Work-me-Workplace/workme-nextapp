@@ -18,10 +18,7 @@ async function deleteUser(identifier: string) {
         id: true,
         email: true,
         firebaseId: true,
-        firstName: true,
-        lastName: true,
-        companyUnit: true,
-        companyDivision: true,
+        // firstName, lastName, companyUnit, companyDivision removed - now in WorkProfile/WorkEntry
       },
     })
 
@@ -33,10 +30,6 @@ async function deleteUser(identifier: string) {
           id: true,
           email: true,
           firebaseId: true,
-          firstName: true,
-          lastName: true,
-          companyUnit: true,
-          companyDivision: true,
         },
       })
     }
@@ -49,10 +42,6 @@ async function deleteUser(identifier: string) {
           id: true,
           email: true,
           firebaseId: true,
-          firstName: true,
-          lastName: true,
-          companyUnit: true,
-          companyDivision: true,
         },
       })
     }
@@ -62,13 +51,33 @@ async function deleteUser(identifier: string) {
       return
     }
 
+    // Get profile and work entry for display
+    const [profile, currentWorkEntry] = await Promise.all([
+      prisma.workProfile.findUnique({
+        where: { userId: workMe.id },
+      }),
+      prisma.workEntry.findFirst({
+        where: {
+          userId: workMe.id,
+          endDate: null,
+        },
+        include: {
+          companyUnit: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      }),
+    ])
+
     console.log('✅ Found user:')
     console.log(`   WorkMe ID: ${workMe.id}`)
     console.log(`   Email: ${workMe.email}`)
     console.log(`   Firebase ID: ${workMe.firebaseId || '(none)'}`)
-    console.log(`   Name: ${workMe.firstName || ''} ${workMe.lastName || ''}`.trim() || '(no name)')
-    console.log(`   Company Unit: ${workMe.companyUnit || '(none)'}`)
-    console.log(`   Company Division: ${workMe.companyDivision || '(none)'}`)
+    console.log(`   Name: ${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || '(no name)')
+    console.log(`   Company Unit: ${currentWorkEntry?.companyUnit.name || '(none)'}`)
+    console.log(`   Company Division: ${currentWorkEntry?.division || '(none)'}`)
     console.log('')
 
     // Delete the user

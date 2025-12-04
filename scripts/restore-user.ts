@@ -1,5 +1,6 @@
 /**
  * Script to restore/create a user account
+ * ⚠️ UPDATED: Now uses WorkProfile architecture
  * 
  * Usage: npx tsx scripts/restore-user.ts <email> <firebaseId> [firstName] [lastName]
  */
@@ -33,10 +34,6 @@ async function restoreUser(
         id: true,
         email: true,
         firebaseId: true,
-        firstName: true,
-        lastName: true,
-        companyUnit: true,
-        companyDivision: true,
       },
     })
 
@@ -51,49 +48,49 @@ async function restoreUser(
           where: { id: workMe.id },
           data: {
             firebaseId,
-            ...(firstName && { firstName }),
-            ...(lastName && { lastName }),
           },
           select: {
             id: true,
             email: true,
             firebaseId: true,
-            firstName: true,
-            lastName: true,
-            companyUnit: true,
-            companyDivision: true,
           },
         })
-        console.log('\n✅ Updated user with Firebase ID and name')
-      } else {
-        // Just update name if provided
-        if (firstName || lastName) {
-          workMe = await prisma.workMe.update({
-            where: { id: workMe.id },
-            data: {
-              ...(firstName && { firstName }),
-              ...(lastName && { lastName }),
-            },
-            select: {
-              id: true,
-              email: true,
-              firebaseId: true,
-              firstName: true,
-              lastName: true,
-              companyUnit: true,
-              companyDivision: true,
-            },
-          })
-          console.log('\n✅ Updated user name')
-        }
+        console.log('\n✅ Updated user with Firebase ID')
       }
+      
+      // Update or create WorkProfile
+      if (firstName || lastName) {
+        await prisma.workProfile.upsert({
+          where: { userId: workMe.id },
+          create: {
+            userId: workMe.id,
+            firstName: firstName || null,
+            lastName: lastName || null,
+            handle: `user_${workMe.id.slice(0, 8)}`,
+          },
+          update: {
+            firstName: firstName !== undefined ? firstName : undefined,
+            lastName: lastName !== undefined ? lastName : undefined,
+          },
+        })
+        console.log('\n✅ Updated user name in WorkProfile')
+      }
+      
+      // Get profile and work entry for display
+      const [profile, currentWorkEntry] = await Promise.all([
+        prisma.workProfile.findUnique({ where: { userId: workMe.id } }),
+        prisma.workEntry.findFirst({
+          where: { userId: workMe.id, endDate: null },
+          include: { companyUnit: { select: { name: true } } },
+        }),
+      ])
       
       console.log(`   WorkMe ID: ${workMe.id}`)
       console.log(`   Email: ${workMe.email}`)
       console.log(`   Firebase ID: ${workMe.firebaseId}`)
-      console.log(`   Name: ${formatName(workMe.firstName, workMe.lastName)}`)
-      console.log(`   Company Unit: ${workMe.companyUnit || '(none)'}`)
-      console.log(`   Company Division: ${workMe.companyDivision || '(none)'}`)
+      console.log(`   Name: ${formatName(profile?.firstName, profile?.lastName)}`)
+      console.log(`   Company Unit: ${currentWorkEntry?.companyUnit.name || '(none)'}`)
+      console.log(`   Company Division: ${currentWorkEntry?.division || '(none)'}`)
       
       return workMe
     }
@@ -105,10 +102,6 @@ async function restoreUser(
         id: true,
         email: true,
         firebaseId: true,
-        firstName: true,
-        lastName: true,
-        companyUnit: true,
-        companyDivision: true,
       },
     })
 
@@ -123,35 +116,29 @@ async function restoreUser(
           where: { id: workMe.id },
           data: {
             email: email.toLowerCase().trim(),
-            ...(firstName && { firstName }),
-            ...(lastName && { lastName }),
           },
           select: {
             id: true,
             email: true,
             firebaseId: true,
-            firstName: true,
-            lastName: true,
-            companyUnit: true,
-            companyDivision: true,
           },
         })
-        console.log('\n✅ Updated email and name')
-      } else if (firstName || lastName) {
-        workMe = await prisma.workMe.update({
-          where: { id: workMe.id },
-          data: {
-            ...(firstName && { firstName }),
-            ...(lastName && { lastName }),
+        console.log('\n✅ Updated email')
+      }
+      
+      // Update or create WorkProfile
+      if (firstName || lastName) {
+        await prisma.workProfile.upsert({
+          where: { userId: workMe.id },
+          create: {
+            userId: workMe.id,
+            firstName: firstName || null,
+            lastName: lastName || null,
+            handle: `user_${workMe.id.slice(0, 8)}`,
           },
-          select: {
-            id: true,
-            email: true,
-            firebaseId: true,
-            firstName: true,
-            lastName: true,
-            companyUnit: true,
-            companyDivision: true,
+          update: {
+            firstName: firstName !== undefined ? firstName : undefined,
+            lastName: lastName !== undefined ? lastName : undefined,
           },
         })
         console.log('\n✅ Updated name')
@@ -166,17 +153,21 @@ async function restoreUser(
       data: {
         firebaseId,
         email: email.toLowerCase().trim(),
-        firstName: firstName || 'Adam',
-        lastName: lastName || 'Cole',
       },
       select: {
         id: true,
         email: true,
         firebaseId: true,
-        firstName: true,
-        lastName: true,
-        companyUnit: true,
-        companyDivision: true,
+      },
+    })
+
+    // Create WorkProfile
+    await prisma.workProfile.create({
+      data: {
+        userId: workMe.id,
+        firstName: firstName || 'Adam',
+        lastName: lastName || 'Cole',
+        handle: `user_${workMe.id.slice(0, 8)}`,
       },
     })
 
@@ -184,9 +175,7 @@ async function restoreUser(
     console.log(`   WorkMe ID: ${workMe.id}`)
     console.log(`   Email: ${workMe.email}`)
     console.log(`   Firebase ID: ${workMe.firebaseId}`)
-    console.log(`   Name: ${formatName(workMe.firstName, workMe.lastName)}`)
-    console.log(`   Company Unit: ${workMe.companyUnit || '(none)'}`)
-    console.log(`   Company Division: ${workMe.companyDivision || '(none)'}`)
+    console.log(`   Name: ${formatName(firstName || 'Adam', lastName || 'Cole')}`)
     
     return workMe
   } catch (error: any) {
