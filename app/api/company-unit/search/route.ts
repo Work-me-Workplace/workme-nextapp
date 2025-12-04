@@ -32,7 +32,6 @@ export async function POST(request: NextRequest) {
       select: {
         id: true,
         name: true,
-        domain: true,
         createdAt: true,
       },
       take: 20,

@@ -8,7 +8,7 @@ import { prisma } from '@/lib/prisma'
  * 
  * Create company unit in registry (search-before-create pattern like RaceRegistry)
  * 
- * Body: { name: string, domain?: string }
+ * Body: { name: string }
  * 
  * Behavior:
  * - Search first by name (case-insensitive exact match)
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, domain } = body
+    const { name } = body
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       return NextResponse.json(
@@ -56,7 +56,6 @@ export async function POST(request: NextRequest) {
         companyUnit: {
           id: existingCompanyUnit.id,
           name: existingCompanyUnit.name,
-          domain: existingCompanyUnit.domain,
         },
         message: 'Company unit found in registry',
       })
@@ -66,7 +65,6 @@ export async function POST(request: NextRequest) {
     const companyUnit = await prisma.companyUnit.create({
       data: {
         name: normalizedName,
-        domain: domain?.trim() || null,
       },
     })
 
@@ -77,7 +75,6 @@ export async function POST(request: NextRequest) {
       companyUnit: {
         id: companyUnit.id,
         name: companyUnit.name,
-        domain: companyUnit.domain,
       },
     })
   } catch (error: any) {
