@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { getAuth } from 'firebase/auth'
 import api from '@/lib/api'
 
 export default function WelcomePage() {
@@ -10,6 +10,15 @@ export default function WelcomePage() {
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [companyUnit, setCompanyUnit] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Check Firebase auth - only redirect if not authenticated
+  useEffect(() => {
+    const firebaseUser = getAuth().currentUser
+    if (!firebaseUser) {
+      router.replace('/signin')
+      return
+    }
+  }, [router])
 
   useEffect(() => {
     // Check if user has companyUnit set
@@ -50,21 +59,15 @@ export default function WelcomePage() {
     checkCompanyUnit()
   }, [])
 
-  useEffect(() => {
-    // Redirect if companyUnit is missing - send to profile to complete onboarding
-    if (!loading && !companyUnit) {
-      router.push('/profile')
-    } else if (!loading && companyUnit) {
-      // User has companyUnit, can proceed to dashboard
-      // Don't auto-redirect, let them click continue
-    }
-  }, [loading, companyUnit, router])
-
+  // Don't auto-redirect - let user stay on welcome page and click continue
+  // Like IgniteBD - "hold on welcome bro" - just show welcome, no yanking
+  
   const handleContinue = () => {
-    if (companyUnit) {
-      router.push('/dashboard')
+    // Check if user needs to complete setup
+    if (!companyUnit) {
+      router.push('/profile')
     } else {
-      router.push('/setup/unit')
+      router.push('/dashboard')
     }
   }
 
