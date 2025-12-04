@@ -108,7 +108,7 @@ export default function CompanyProfilePage() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No Company Profile</h3>
                 <p className="text-gray-600 mb-4">Your company profile hasn't been set up yet.</p>
                 <Link
-                  href="/mywork/profile-build"
+                  href="/settings/company"
                   className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
                 >
                   Set Up Workforce Profile
@@ -132,7 +132,7 @@ export default function CompanyProfilePage() {
                       </div>
                     </div>
                     <Link
-                      href="/mywork/profile-build"
+                      href="/settings/company"
                       className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50"
                     >
                       Edit Workforce Profile

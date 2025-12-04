@@ -37,24 +37,19 @@ export default function PersonalUX() {
       setLoading(true)
 
       // Run all checks in parallel for faster loading
-      const [profileRes, workEntriesRes, objectivesRes] = await Promise.allSettled([
+      const [profileRes, objectivesRes] = await Promise.allSettled([
         api.get('/api/workme/profile'),
-        api.get('/api/work-entry/list'),
         api.get('/api/objectives/list'),
       ])
 
       // Check profile (WorkProfile with headline and handle)
       let hasProfile = false
+      let hasCompanyAffiliation = false
       if (profileRes.status === 'fulfilled') {
         const profile = profileRes.value.data.profile
         hasProfile = !!(profile?.headline && profile?.handle)
-      }
-
-      // Check work entries (company affiliation)
-      let hasCompanyAffiliation = false
-      if (workEntriesRes.status === 'fulfilled') {
-        const workEntries = workEntriesRes.value.data.workEntries || []
-        hasCompanyAffiliation = workEntries.length > 0
+        // Check company affiliation from WorkProfile (companyUnitId)
+        hasCompanyAffiliation = !!profile?.company?.id
       }
 
       // Check goals (Objectives)
@@ -144,7 +139,7 @@ export default function PersonalUX() {
       key: 'companyAffiliation',
       label: 'Company',
       description: 'Set up your work affiliation',
-      path: '/mywork/profile-build',
+      path: '/settings/company',
       icon: Building2,
       complete: status.companyAffiliation,
     },

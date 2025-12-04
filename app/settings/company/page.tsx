@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
+import TopNav from '@/components/layout/TopNav'
 import api from '@/lib/api'
-import { Building2, Search, Plus, CheckCircle2, Loader2 } from 'lucide-react'
+import { Building2, Search, Plus, CheckCircle2, Loader2, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 
 interface CompanyUnit {
   id: string
@@ -18,7 +20,7 @@ interface DivisionUnit {
   companyUnitId: string
 }
 
-export default function ProfileBuildPage() {
+export default function CompanySettingsPage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -85,7 +87,7 @@ export default function ProfileBuildPage() {
     try {
       const response = await api.post('/api/company/search', { query })
       if (response.data.success) {
-        setCompanySearchResults(response.data.companies || [])
+        setCompanySearchResults(response.data.companyUnits || [])
       }
     } catch (error) {
       console.error('Company search failed:', error)
@@ -99,7 +101,7 @@ export default function ProfileBuildPage() {
     try {
       const response = await api.post('/api/company/create', { name: newCompanyName })
       if (response.data.success) {
-        const company = response.data.company
+        const company = response.data.companyUnit
         setSelectedCompany(company)
         setCurrentCompany(company)
         setNewCompanyName('')
@@ -127,7 +129,7 @@ export default function ProfileBuildPage() {
         companyUnitId: selectedCompany.id,
       })
       if (response.data.success) {
-        setDivisionSearchResults(response.data.divisions || [])
+        setDivisionSearchResults(response.data.divisionUnits || [])
       }
     } catch (error) {
       console.error('Division search failed:', error)
@@ -144,7 +146,7 @@ export default function ProfileBuildPage() {
         companyUnitId: selectedCompany.id,
       })
       if (response.data.success) {
-        const division = response.data.division
+        const division = response.data.divisionUnit
         setSelectedDivision(division)
         setCurrentDivision(division)
         setNewDivisionName('')
@@ -173,7 +175,8 @@ export default function ProfileBuildPage() {
       if (response.data.success) {
         setCurrentCompany(selectedCompany)
         setCurrentDivision(selectedDivision)
-        alert('Profile saved successfully!')
+        alert('Company affiliation saved successfully!')
+        router.push('/settings')
       }
     } catch (error: any) {
       alert(`Failed to save profile: ${error.response?.data?.error || error.message}`)
@@ -196,21 +199,7 @@ export default function ProfileBuildPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Nav */}
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <a href="/dashboard" className="flex items-center space-x-2">
-                <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <span className="text-xl font-bold text-gray-900">Work.me</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <TopNav />
 
       <div className="flex">
         <SidebarNav />
@@ -218,8 +207,15 @@ export default function ProfileBuildPage() {
         <main className="flex-1">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">My Workforce Profile</h1>
-              <p className="text-gray-600 mt-2">Set up your company and division affiliation</p>
+              <Link
+                href="/settings"
+                className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-4"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Settings
+              </Link>
+              <h1 className="text-3xl font-bold text-gray-900">Company & Division</h1>
+              <p className="text-gray-600 mt-2">Manage your company and division affiliation</p>
             </div>
 
             {/* Company Selection */}
@@ -459,7 +455,7 @@ export default function ProfileBuildPage() {
                       Saving...
                     </>
                   ) : (
-                    'Save Profile'
+                    'Save Company Affiliation'
                   )}
                 </button>
               </div>
