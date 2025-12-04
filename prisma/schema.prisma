@@ -61,23 +61,31 @@ model WorkMe {
 // Clean profile - personal identity only (like GoFast Athlete profile)
 // No employment data here - that belongs in WorkEntry
 model WorkProfile {
-  id           String  @id @default(cuid())
-  userId       String  @unique // References WorkMe.id
-  firstName    String?
-  lastName     String?
-  headline     String? // LinkedIn-style headline
-  currentRole  String? // Optional current role display
-  handle       String  @unique // Unique username for future "Connect" features
-  linkedinUrl  String?
-  profileImage String? // Profile photo URL
+  id              String  @id @default(cuid())
+  userId          String  @unique // References WorkMe.id
+  firstName       String?
+  lastName        String?
+  headline        String? // LinkedIn-style headline
+  currentRole     String? // Optional current role display
+  handle          String  @unique // Unique username for future "Connect" features
+  linkedinUrl     String?
+  profileImage    String? // Profile photo URL
+  
+  // Workforce affiliation (registry pattern)
+  companyUnitId   String?
+  divisionUnitId  String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user WorkMe @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      WorkMe         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   CompanyUnit?   @relation(fields: [companyUnitId], references: [id])
+  division  DivisionUnit?   @relation(fields: [divisionUnitId], references: [id])
 
   @@index([userId])
   @@index([handle])
+  @@index([companyUnitId])
+  @@index([divisionUnitId])
 }
 
 // ============================================
@@ -213,17 +221,40 @@ model Company {
 // ============================================
 // Registry pattern like RaceRegistry - search or create
 // Simple, searchable company unit registry
+// ============================================
+// COMPANY UNIT REGISTRY (Final Form)
+// ============================================
+// One canonical record per company, reusable by many WorkMeIDs
+// Matches RaceRegistry architecture pattern
 model CompanyUnit {
-  id        String   @id @default(cuid())
-  name      String   @unique // Company/employer name (unique globally)
-  domain    String? // Optional domain for matching
+  id        String   @id @default(uuid())
+  name      String   @unique // Company name (unique globally)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  workEntries WorkEntry[]
+  divisions DivisionUnit[]
+  profiles  WorkProfile[]
+  workEntries WorkEntry[] // Legacy - for WorkEntry junction table
 
   @@index([name])
-  @@index([domain])
+}
+
+// ============================================
+// DIVISION UNIT REGISTRY (Final Form)
+// ============================================
+// Parent → CompanyUnit, reusable, unique on (name + companyUnitId)
+model DivisionUnit {
+  id            String   @id @default(uuid())
+  name          String
+  companyUnitId String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  company CompanyUnit @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
+  profiles WorkProfile[]
+
+  @@unique([name, companyUnitId])
+  @@index([companyUnitId])
 }
 
 // ============================================

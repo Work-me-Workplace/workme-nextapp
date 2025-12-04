@@ -104,23 +104,59 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 6. Return profile with Firebase data as fallback
+    // 6. Return profile with Firebase data as fallback, including company/division
+    const profileData = profile ? {
+      ...profile,
+      firstName: profile.firstName || firebaseFirstName || null,
+      lastName: profile.lastName || firebaseLastName || null,
+      profileImage: profile.profileImage || firebasePhotoUrl || null,
+    } : {
+      firstName: firebaseFirstName,
+      lastName: firebaseLastName,
+      headline: null,
+      currentRole: null,
+      handle: null,
+      linkedinUrl: null,
+      profileImage: firebasePhotoUrl || null,
+      companyUnitId: null,
+      divisionUnitId: null,
+    }
+
+    // 7. Load company and division if profile exists
+    if (profile && (profile.companyUnitId || profile.divisionUnitId)) {
+      try {
+        const [company, division] = await Promise.all([
+          profile.companyUnitId
+            ? prisma.companyUnit.findUnique({
+                where: { id: profile.companyUnitId },
+                select: { id: true, name: true },
+              })
+            : null,
+          profile.divisionUnitId
+            ? prisma.divisionUnit.findUnique({
+                where: { id: profile.divisionUnitId },
+                select: { id: true, name: true },
+              })
+            : null,
+        ])
+
+        return NextResponse.json({
+          success: true,
+          profile: {
+            ...profileData,
+            company: company || null,
+            division: division || null,
+          },
+        })
+      } catch (err) {
+        // If tables don't exist, return without company/division
+        console.warn('Could not load company/division:', err)
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      profile: profile ? {
-        ...profile,
-        firstName: profile.firstName || firebaseFirstName || null,
-        lastName: profile.lastName || firebaseLastName || null,
-        profileImage: profile.profileImage || firebasePhotoUrl || null,
-      } : {
-        firstName: firebaseFirstName,
-        lastName: firebaseLastName,
-        headline: null,
-        currentRole: null,
-        handle: null,
-        linkedinUrl: null,
-        profileImage: firebasePhotoUrl || null,
-      },
+      profile: profileData,
     })
   } catch (error: any) {
     console.error('❌ WorkMeProfileGet error:', error)

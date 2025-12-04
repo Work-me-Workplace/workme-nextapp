@@ -21,6 +21,7 @@ import {
   Radio,
   Eye,
   ClipboardList,
+  UserPlus,
 } from 'lucide-react'
 
 export default function SidebarNav() {
@@ -32,6 +33,7 @@ export default function SidebarNav() {
     if (path === '/mycompany/workforcestuff') return pathname?.startsWith(path)
     if (path === '/mycompany/milestones') return pathname?.startsWith(path)
     if (path === '/mycompany/worksignal') return pathname?.startsWith(path)
+    if (path === '/mywork/profile-build') return pathname === path
     if (path === '/mywork/create') return pathname === path
     if (path === '/mywork/fromcompanystuff') return pathname === path
     if (path === '/mywork/active') return pathname === path
@@ -66,6 +68,7 @@ export default function SidebarNav() {
     {
       name: 'MyWork',
       items: [
+        { name: 'My Workforce Profile', path: '/mywork/profile-build', icon: UserPlus },
         { name: 'Create Output', path: '/mywork/create', icon: FileText },
         { name: 'Work From Company Stuff', path: '/mywork/fromcompanystuff', icon: Briefcase },
         { name: "Stuff I'm Working On", path: '/mywork/active', icon: CheckSquare },

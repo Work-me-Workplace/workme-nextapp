@@ -53,14 +53,34 @@ export default function CompanyProfilePage() {
   async function loadCompany(workMeId: string) {
     try {
       setLoading(true)
-      const response = await api.get(`/api/workme/profile?workMeId=${workMeId}`)
-      if (response.data?.workMe?.company) {
-        setCompany(response.data.workMe.company)
-      } else if (response.data?.workMe?.companyId) {
-        // Try to load company by ID
-        const companyResponse = await api.get(`/api/workme/company?companyId=${response.data.workMe.companyId}`)
-        if (companyResponse.data?.company) {
-          setCompany(companyResponse.data.company)
+      // Load from WorkProfile (read-only registry values)
+      const response = await api.get('/api/workme/profile')
+      if (response.data?.profile) {
+        const profile = response.data.profile
+        // Show read-only company/division from registry
+        if (profile.company || profile.division) {
+          setCompany({
+            id: profile.company?.id || '',
+            name: profile.company?.name || 'No company set',
+            industry: null,
+            website: null,
+            city: null,
+            state: null,
+            description: null,
+            headcount: null,
+            missionStatement: null,
+            vision: null,
+            values: null,
+            ceoName: null,
+            ceoTitle: null,
+            deputyName: null,
+            deputyTitle: null,
+            chiefOfStaff: null,
+            directorates: [],
+            linkedinUrl: null,
+            phone: null,
+            brandLogoUrl: null,
+          })
         }
       }
     } catch (error) {
@@ -123,10 +143,10 @@ export default function CompanyProfilePage() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No Company Profile</h3>
                 <p className="text-gray-600 mb-4">Your company profile hasn't been set up yet.</p>
                 <Link
-                  href="/workme/company/enrich"
+                  href="/mywork/profile-build"
                   className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
                 >
-                  Enrich Company Profile
+                  Set Up Workforce Profile
                 </Link>
               </div>
             ) : (
@@ -150,10 +170,10 @@ export default function CompanyProfilePage() {
                       </div>
                     </div>
                     <Link
-                      href="/workme/company/enrich"
+                      href="/mywork/profile-build"
                       className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50"
                     >
-                      Edit Profile
+                      Edit Workforce Profile
                     </Link>
                   </div>
 

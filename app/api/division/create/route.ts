@@ -1,0 +1,91 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+
+/**
+ * POST /api/division/create
+ * 
+ * Create DivisionUnit in registry (matches RaceRegistry pattern)
+ * Search-before-create to prevent duplicates within a CompanyUnit
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { name, companyUnitId } = body
+
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Division name is required' },
+        { status: 400 },
+      )
+    }
+
+    if (!companyUnitId || typeof companyUnitId !== 'string') {
+      return NextResponse.json(
+        { success: false, error: 'companyUnitId is required' },
+        { status: 400 },
+      )
+    }
+
+    const divisionName = name.trim()
+
+    // Verify CompanyUnit exists
+    const company = await prisma.companyUnit.findUnique({
+      where: { id: companyUnitId },
+    })
+
+    if (!company) {
+      return NextResponse.json(
+        { success: false, error: 'Company not found' },
+        { status: 404 },
+      )
+    }
+
+    // Search-before-create: check if division already exists in this company
+    const existing = await prisma.divisionUnit.findFirst({
+      where: {
+        companyUnitId,
+        name: {
+          equals: divisionName,
+          mode: 'insensitive',
+        },
+      },
+    })
+
+    if (existing) {
+      return NextResponse.json({
+        success: true,
+        division: existing,
+        message: 'Division already exists in this company',
+      })
+    }
+
+    // Create new DivisionUnit
+    const division = await prisma.divisionUnit.create({
+      data: {
+        name: divisionName,
+        companyUnitId,
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      division,
+    })
+  } catch (error: any) {
+    console.error('❌ Division create error:', error)
+    
+    // Handle unique constraint violation
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { success: false, error: 'Division with this name already exists in this company' },
+        { status: 400 },
+      )
+    }
+
+    return NextResponse.json(
+      { success: false, error: error.message || 'Failed to create division' },
+      { status: 500 },
+    )
+  }
+}
+
