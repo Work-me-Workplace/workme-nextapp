@@ -24,35 +24,43 @@ export async function GET(request: Request) {
     
     // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMe
+    const { id: workMeId } = workMe
 
     console.log('[API GET /api/workme/hydrate] Auth verified:', {
       workMeId,
-      companyUnit,
-      companyDivision,
       firebaseId,
     })
 
-    // Fetch WorkMe with additional fields not in loadWorkMe
-    const workMeRecord = await prisma.workMe.findUnique({
-      where: { id: workMeId },
-      select: {
-        id: true,
-        firebaseId: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        photoUrl: true,
-        companyUnit: true,
-        companyDivision: true,
-        jobTitle: true,
-        specialty: true,
-        industry: true,
-        jobRole: true,
-        salaryRange: true,
-        createdAt: true,
-      },
-    })
+    // Fetch WorkMe, WorkProfile, and current WorkEntry
+    const [workMeRecord, profile, currentWorkEntry] = await Promise.all([
+      prisma.workMe.findUnique({
+        where: { id: workMeId },
+        select: {
+          id: true,
+          firebaseId: true,
+          email: true,
+          createdAt: true,
+        },
+      }),
+      prisma.workProfile.findUnique({
+        where: { userId: workMeId },
+      }),
+      prisma.workEntry.findFirst({
+        where: {
+          userId: workMeId,
+          endDate: null, // Current job
+        },
+        include: {
+          companyUnit: {
+            select: {
+              id: true,
+              name: true,
+              domain: true,
+            },
+          },
+        },
+      }),
+    ])
 
     if (!workMeRecord) {
       console.error('[API GET /api/workme/hydrate] WorkMe not found:', workMeId)
@@ -65,10 +73,13 @@ export async function GET(request: Request) {
       )
     }
 
+    const companyUnit = currentWorkEntry?.companyUnit.name || null
+    const companyDivision = currentWorkEntry?.division || null
+
     console.log('[API GET /api/workme/hydrate] Hydration successful:', {
       workMeId: workMeRecord.id,
-      companyUnit: workMeRecord.companyUnit,
-      companyDivision: workMeRecord.companyDivision,
+      companyUnit,
+      companyDivision,
     })
 
     return NextResponse.json({
@@ -77,16 +88,11 @@ export async function GET(request: Request) {
         id: workMeRecord.id,
         firebaseId: workMeRecord.firebaseId,
         email: workMeRecord.email,
-        firstName: workMeRecord.firstName,
-        lastName: workMeRecord.lastName,
-        photoUrl: workMeRecord.photoUrl,
-        companyUnit: workMeRecord.companyUnit,
-        companyDivision: workMeRecord.companyDivision,
-        jobTitle: workMeRecord.jobTitle,
-        specialty: workMeRecord.specialty,
-        industry: workMeRecord.industry,
-        jobRole: workMeRecord.jobRole,
-        salaryRange: workMeRecord.salaryRange,
+        firstName: profile?.firstName || null,
+        lastName: profile?.lastName || null,
+        photoUrl: profile?.profileImage || null,
+        companyUnit,
+        companyDivision,
         createdAt: workMeRecord.createdAt,
       },
     })

@@ -32,10 +32,15 @@ export async function POST(request: Request) {
       )
     }
 
-    // Verify WorkMe exists
-    const workMe = await prisma.workMe.findUnique({
-      where: { id: workMeId },
-    })
+    // Verify WorkMe exists and get profile
+    const [workMe, profile] = await Promise.all([
+      prisma.workMe.findUnique({
+        where: { id: workMeId },
+      }),
+      prisma.workProfile.findUnique({
+        where: { userId: workMeId },
+      }),
+    ])
 
     if (!workMe) {
       return NextResponse.json(
@@ -49,9 +54,9 @@ export async function POST(request: Request) {
       data: {
         firebaseId: workMe.firebaseId,
         email: workMe.email,
-        firstName: workMe.firstName,
-        lastName: workMe.lastName,
-        photoUrl: workMe.photoUrl,
+        firstName: profile?.firstName || null,
+        lastName: profile?.lastName || null,
+        photoUrl: profile?.profileImage || null,
         workMeId, // Optional link (may migrate away)
       },
       include: {

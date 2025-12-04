@@ -8,14 +8,16 @@ export const dynamic = 'force-dynamic'
 /**
  * POST /api/user/update
  * 
- * Update user's companyUnit and companyDivision
- * Called from /setup/unit page
+ * ⚠️ DEPRECATED: This route is deprecated. Use /api/work-entry/create instead.
+ * 
+ * Legacy route for updating companyUnit and companyDivision.
+ * Now redirects to new WorkEntry pattern.
  */
 export async function POST(request: NextRequest) {
   try {
     const { firebaseId } = await verifyAuth(request)
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit: currentCompanyUnit } = workMe
+    const { id: workMeId } = workMe
     const body = await request.json()
     const { companyUnit, companyDivision } = body
 
@@ -26,30 +28,75 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update user's companyUnit and companyDivision
-    const updated = await prisma.workMe.update({
-      where: { id: workMeId },
-      data: {
-        companyUnit: companyUnit.trim(),
-        companyDivision: companyDivision?.trim() || null,
-      },
-      select: {
-        id: true,
-        email: true,
-        companyUnit: true,
-        companyDivision: true,
+    // New architecture: Use CompanyUnit registry + WorkEntry
+    // 1. Search or create CompanyUnit
+    const normalizedName = companyUnit.trim()
+    let companyUnitRecord = await prisma.companyUnit.findFirst({
+      where: {
+        name: {
+          equals: normalizedName,
+          mode: 'insensitive',
+        },
       },
     })
 
-    console.log('[API POST /api/user/update] SUCCESS', {
-      workMeId: updated.id,
-      companyUnit: updated.companyUnit,
-      companyDivision: updated.companyDivision,
+    if (!companyUnitRecord) {
+      companyUnitRecord = await prisma.companyUnit.create({
+        data: {
+          name: normalizedName,
+        },
+      })
+    }
+
+    // 2. Create or update WorkEntry (end current entry if exists, create new)
+    // End any current work entries
+    await prisma.workEntry.updateMany({
+      where: {
+        userId: workMeId,
+        endDate: null, // Current job
+      },
+      data: {
+        endDate: new Date(), // End current job
+      },
+    })
+
+    // Create new WorkEntry
+    const workEntry = await prisma.workEntry.create({
+      data: {
+        userId: workMeId,
+        companyUnitId: companyUnitRecord.id,
+        division: companyDivision?.trim() || null,
+        startDate: new Date(),
+        endDate: null, // Current job
+      },
+      include: {
+        companyUnit: {
+          select: {
+            id: true,
+            name: true,
+            domain: true,
+          },
+        },
+      },
+    })
+
+    console.log('[API POST /api/user/update] SUCCESS (migrated to WorkEntry)', {
+      workMeId,
+      workEntryId: workEntry.id,
+      companyUnit: companyUnitRecord.name,
+      division: workEntry.division,
     })
 
     return NextResponse.json({
       success: true,
-      user: updated,
+      message: 'Migrated to new WorkEntry pattern',
+      workEntry: {
+        id: workEntry.id,
+        companyUnit: workEntry.companyUnit,
+        division: workEntry.division,
+        startDate: workEntry.startDate,
+        endDate: workEntry.endDate,
+      },
     })
   } catch (error: any) {
     console.error('[API POST /api/user/update] ERROR:', error)

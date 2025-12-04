@@ -8,6 +8,7 @@ import { nanoid } from 'nanoid'
  * POST /api/workme/companyunit
  * 
  * Set user's workspace (companyUnit) and optional division via registry
+ * Creates WorkEntry linking WorkMe to CompanyUnit
  * 
  * Body: { 
  *   unitName: string | null,  // Required: workspace name (or blank for auto-generated)
@@ -15,9 +16,10 @@ import { nanoid } from 'nanoid'
  * }
  * 
  * Behavior:
- * - If unitName provided → upsert into CompanyUnitRegistry (public)
+ * - If unitName provided → search/create CompanyUnit registry (public)
  * - If unitName blank → generate unique private unit name
- * - Update WorkMe.companyUnit and WorkMe.companyDivision
+ * - End any current WorkEntry (endDate = now)
+ * - Create new WorkEntry with companyUnit and division
  */
 export async function POST(request: NextRequest) {
   try {
@@ -32,66 +34,92 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { unitName, division } = body
     
-    let finalUnitName: string
+    let companyUnitRecord
     
     if (unitName && unitName.trim()) {
-      // User provided a name - upsert into registry (public)
+      // User provided a name - search or create CompanyUnit registry
       const normalizedName = unitName.trim()
       
-      const registry = await prisma.companyUnitRegistry.upsert({
-        where: { name: normalizedName },
-        create: { 
-          name: normalizedName, 
-          visibility: 'public' 
+      // Search-before-create pattern (like RaceRegistry)
+      companyUnitRecord = await prisma.companyUnit.findFirst({
+        where: {
+          name: {
+            equals: normalizedName,
+            mode: 'insensitive',
+          },
         },
-        update: {} // No update needed - just ensure it exists
       })
       
-      finalUnitName = registry.name
-      console.log('✅ Upserted public workspace:', finalUnitName)
+      if (!companyUnitRecord) {
+        companyUnitRecord = await prisma.companyUnit.create({
+          data: {
+            name: normalizedName,
+          },
+        })
+        console.log('✅ Created new CompanyUnit:', companyUnitRecord.name)
+      } else {
+        console.log('✅ Found existing CompanyUnit:', companyUnitRecord.name)
+      }
     } else {
       // User left blank - generate unique private unit
       const generated = `unit_${nanoid(8)}`
       
-      // Create registry entry with private visibility
-      await prisma.companyUnitRegistry.create({
+      companyUnitRecord = await prisma.companyUnit.create({
         data: { 
-          name: generated, 
-          visibility: 'private' 
+          name: generated,
         }
       })
       
-      finalUnitName = generated
-      console.log('✅ Generated private workspace:', finalUnitName)
+      console.log('✅ Generated private workspace:', generated)
     }
     
-    // 4. Update WorkMe.companyUnit and companyDivision
-    const updated = await prisma.workMe.update({
-      where: { id: workMeId },
-      data: {
-        companyUnit: finalUnitName,
-        companyDivision: division?.trim() || null,
+    // 4. End any current work entries
+    await prisma.workEntry.updateMany({
+      where: {
+        userId: workMeId,
+        endDate: null, // Current job
       },
-      select: {
-        id: true,
-        firebaseId: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        companyUnit: true,
-        companyDivision: true,
+      data: {
+        endDate: new Date(), // End current job
       },
     })
     
-    console.log('✅ Updated WorkMe workspace:', {
-      companyUnit: finalUnitName,
-      companyDivision: division?.trim() || null,
+    // 5. Create new WorkEntry
+    const workEntry = await prisma.workEntry.create({
+      data: {
+        userId: workMeId,
+        companyUnitId: companyUnitRecord.id,
+        division: division?.trim() || null,
+        startDate: new Date(),
+        endDate: null, // Current job
+      },
+      include: {
+        companyUnit: {
+          select: {
+            id: true,
+            name: true,
+            domain: true,
+          },
+        },
+      },
+    })
+    
+    console.log('✅ Created WorkEntry:', {
+      workEntryId: workEntry.id,
+      companyUnit: companyUnitRecord.name,
+      division: division?.trim() || null,
     })
     
     return NextResponse.json({
       success: true,
-      workMe: updated,
-      unitName: finalUnitName,
+      workEntry: {
+        id: workEntry.id,
+        companyUnit: workEntry.companyUnit,
+        division: workEntry.division,
+        startDate: workEntry.startDate,
+        endDate: workEntry.endDate,
+      },
+      unitName: companyUnitRecord.name,
       division: division?.trim() || null,
     })
   } catch (error: any) {
@@ -105,4 +133,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

@@ -27,29 +27,38 @@ export async function GET(request: NextRequest) {
       firebaseId,
     })
 
-    // 3. Fetch full WorkMe record with all fields
-    const workMe = await prisma.workMe.findUnique({
-      where: { id: workMeId },
-      select: {
-        id: true,
-        firebaseId: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        photoUrl: true,
-        jobTitle: true,
-        specialty: true,
-        industry: true,
-        jobRole: true,
-        salaryRange: true,
-        companyUnit: true,
-        companyDivision: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    })
+    // 3. Fetch WorkMe, WorkProfile, and current WorkEntry
+    const [workMeRecord, profile, currentWorkEntry] = await Promise.all([
+      prisma.workMe.findUnique({
+        where: { id: workMeId },
+        select: {
+          id: true,
+          firebaseId: true,
+          email: true,
+          createdAt: true,
+        },
+      }),
+      prisma.workProfile.findUnique({
+        where: { userId: workMeId },
+      }),
+      prisma.workEntry.findFirst({
+        where: {
+          userId: workMeId,
+          endDate: null, // Current job
+        },
+        include: {
+          companyUnit: {
+            select: {
+              id: true,
+              name: true,
+              domain: true,
+            },
+          },
+        },
+      }),
+    ])
 
-    if (!workMe) {
+    if (!workMeRecord) {
       console.error('[API GET /api/workme/me] WorkMe not found:', workMeId)
       return NextResponse.json(
         {
@@ -60,14 +69,31 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const companyUnit = currentWorkEntry?.companyUnit.name || null
+    const companyDivision = currentWorkEntry?.division || null
+
     console.log('[API GET /api/workme/me] Success:', {
-      workMeId: workMe.id,
-      email: workMe.email,
+      workMeId: workMeRecord.id,
+      email: workMeRecord.email,
     })
 
     return NextResponse.json({
       success: true,
-      workMe,
+      workMe: {
+        id: workMeRecord.id,
+        firebaseId: workMeRecord.firebaseId,
+        email: workMeRecord.email,
+        firstName: profile?.firstName || null,
+        lastName: profile?.lastName || null,
+        photoUrl: profile?.profileImage || null,
+        headline: profile?.headline || null,
+        currentRole: profile?.currentRole || null,
+        handle: profile?.handle || null,
+        linkedinUrl: profile?.linkedinUrl || null,
+        companyUnit,
+        companyDivision,
+        createdAt: workMeRecord.createdAt,
+      },
     })
   } catch (error: any) {
     console.error('[API GET /api/workme/me] Error:', {
