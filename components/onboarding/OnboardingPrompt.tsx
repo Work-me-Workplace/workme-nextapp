@@ -31,18 +31,44 @@ export default function OnboardingPrompt() {
     try {
       setLoading(true)
 
-      // Check profile
-      const profileRes = await api.get('/api/workme/profile')
-      const profile = profileRes.data.profile
-      const hasProfile = !!(profile?.headline && profile?.handle)
+      // Check profile (WorkProfile with headline and handle)
+      let hasProfile = false
+      try {
+        const profileRes = await api.get('/api/workme/profile')
+        const profile = profileRes.data.profile
+        hasProfile = !!(profile?.headline && profile?.handle)
+      } catch (err) {
+        // Profile doesn't exist yet
+        hasProfile = false
+      }
 
       // Check work entries (company affiliation)
-      const workEntriesRes = await api.get('/api/work-entry/list')
-      const workEntries = workEntriesRes.data.workEntries || []
-      const hasCompanyAffiliation = workEntries.length > 0
+      let hasCompanyAffiliation = false
+      try {
+        const workEntriesRes = await api.get('/api/work-entry/list')
+        const workEntries = workEntriesRes.data.workEntries || []
+        hasCompanyAffiliation = workEntries.length > 0
+      } catch (err) {
+        // WorkEntry table might not exist yet or no entries
+        hasCompanyAffiliation = false
+      }
 
-      // Goals and skill sets - placeholder for now (always false)
-      const hasGoals = false
+      // Check goals (Objectives) - use Objective model
+      let hasGoals = false
+      try {
+        // Try to check objectives via a direct query
+        // For now, skip if endpoint doesn't exist - goals are optional
+        const objectivesRes = await api.get('/api/objectives/list')
+        const objectives = objectivesRes.data.objectives || []
+        hasGoals = objectives.length > 0
+      } catch (err) {
+        // Objectives endpoint doesn't exist yet or no objectives
+        // This is OK - goals are optional for MVP
+        hasGoals = false
+      }
+
+      // Check skills - placeholder for now (no skills model yet)
+      // TODO: Create Skills model or add to WorkProfile
       const hasSkillSets = false
 
       const newStatus = {
