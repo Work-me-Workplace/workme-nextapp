@@ -36,34 +36,32 @@ export default function PersonalUX() {
     try {
       setLoading(true)
 
+      // Run all checks in parallel for faster loading
+      const [profileRes, workEntriesRes, objectivesRes] = await Promise.allSettled([
+        api.get('/api/workme/profile'),
+        api.get('/api/work-entry/list'),
+        api.get('/api/objectives/list'),
+      ])
+
       // Check profile (WorkProfile with headline and handle)
       let hasProfile = false
-      try {
-        const profileRes = await api.get('/api/workme/profile')
-        const profile = profileRes.data.profile
+      if (profileRes.status === 'fulfilled') {
+        const profile = profileRes.value.data.profile
         hasProfile = !!(profile?.headline && profile?.handle)
-      } catch (err) {
-        hasProfile = false
       }
 
       // Check work entries (company affiliation)
       let hasCompanyAffiliation = false
-      try {
-        const workEntriesRes = await api.get('/api/work-entry/list')
-        const workEntries = workEntriesRes.data.workEntries || []
+      if (workEntriesRes.status === 'fulfilled') {
+        const workEntries = workEntriesRes.value.data.workEntries || []
         hasCompanyAffiliation = workEntries.length > 0
-      } catch (err) {
-        hasCompanyAffiliation = false
       }
 
       // Check goals (Objectives)
       let hasGoals = false
-      try {
-        const objectivesRes = await api.get('/api/objectives/list')
-        const objectives = objectivesRes.data.objectives || []
+      if (objectivesRes.status === 'fulfilled') {
+        const objectives = objectivesRes.value.data.objectives || []
         hasGoals = objectives.length > 0
-      } catch (err) {
-        hasGoals = false
       }
 
       // Check skills - placeholder for now
@@ -87,9 +85,37 @@ export default function PersonalUX() {
     localStorage.setItem('personalUX_dismissed', 'true')
   }
 
-  // Don't show if dismissed or if everything is complete
+  // Don't show if dismissed
+  if (dismissed) {
+    return null
+  }
+
+  // Show loading skeleton while checking status
+  if (loading) {
+    return (
+      <div className="mb-8 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+          <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-48 mt-2 animate-pulse"></div>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="p-4 rounded-lg border-2 border-gray-200 bg-gray-50 animate-pulse">
+                <div className="h-10 bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-1"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't show if everything is complete
   const allComplete = Object.values(status).every(Boolean)
-  if (dismissed || allComplete || loading) {
+  if (allComplete) {
     return null
   }
 
