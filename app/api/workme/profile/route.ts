@@ -11,14 +11,23 @@ import { prisma } from '@/lib/prisma'
  */
 export async function GET(request: NextRequest) {
   try {
-    // 1. Auth - get Firebase user data (includes photoUrl)
-    const { firebaseId, photoUrl: firebasePhotoUrl } = await verifyAuth(request as Request)
+    // 1. Auth - get Firebase user data (includes photoUrl, displayName)
+    const { firebaseId, photoUrl: firebasePhotoUrl, displayName: firebaseDisplayName } = await verifyAuth(request as Request)
     
-    // 2. Load WorkMe identity
+    // 2. Parse Firebase displayName for firstName/lastName
+    let firebaseFirstName = null
+    let firebaseLastName = null
+    if (firebaseDisplayName) {
+      const nameParts = firebaseDisplayName.split(' ')
+      firebaseFirstName = nameParts[0] || null
+      firebaseLastName = nameParts.slice(1).join(' ') || null
+    }
+    
+    // 3. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    // 3. Fetch WorkProfile (create if doesn't exist)
+    // 4. Fetch WorkProfile (create if doesn't exist)
     let profile
     try {
       profile = await prisma.workProfile.findUnique({
@@ -26,13 +35,12 @@ export async function GET(request: NextRequest) {
       })
 
       if (!profile) {
-        // Don't auto-create profile - let user fill it out themselves
-        // Just return empty structure so they can enter their own handle
+        // Don't auto-create profile - but return Firebase data for firstName/lastName
         return NextResponse.json({
           success: true,
           profile: {
-            firstName: null,
-            lastName: null,
+            firstName: firebaseFirstName,
+            lastName: firebaseLastName,
             headline: null,
             currentRole: null,
             handle: null, // User must enter their own handle
@@ -48,13 +56,13 @@ export async function GET(request: NextRequest) {
         })
       }
     } catch (error: any) {
-      // If table doesn't exist, return basic structure
+      // If table doesn't exist, return basic structure with Firebase data
       if (error.code === 'P2021') {
         return NextResponse.json({
           success: true,
           profile: {
-            firstName: null,
-            lastName: null,
+            firstName: firebaseFirstName,
+            lastName: firebaseLastName,
             headline: null,
             currentRole: null,
             handle: null, // User must enter their own handle
@@ -66,21 +74,53 @@ export async function GET(request: NextRequest) {
       throw error
     }
 
-    // 4. Always sync Firebase photoUrl if available and profile doesn't have it
-    if (firebasePhotoUrl && !profile.profileImage) {
-      try {
-        profile = await prisma.workProfile.update({
-          where: { userId: workMeId },
-          data: { profileImage: firebasePhotoUrl },
-        })
-      } catch (err) {
-        // Ignore update errors, just use what we have
+    // 5. Always sync Firebase data if profile fields are missing
+    if (profile) {
+      // Fill in firstName/lastName from Firebase if missing
+      if ((!profile.firstName || !profile.lastName) && (firebaseFirstName || firebaseLastName)) {
+        try {
+          profile = await prisma.workProfile.update({
+            where: { userId: workMeId },
+            data: {
+              firstName: profile.firstName || firebaseFirstName || null,
+              lastName: profile.lastName || firebaseLastName || null,
+            },
+          })
+        } catch (err) {
+          // Ignore update errors, just use what we have
+        }
+      }
+      
+      // Fill in photoUrl from Firebase if missing
+      if (firebasePhotoUrl && !profile.profileImage) {
+        try {
+          profile = await prisma.workProfile.update({
+            where: { userId: workMeId },
+            data: { profileImage: firebasePhotoUrl },
+          })
+        } catch (err) {
+          // Ignore update errors, just use what we have
+        }
       }
     }
 
+    // 6. Return profile with Firebase data as fallback
     return NextResponse.json({
       success: true,
-      profile,
+      profile: profile ? {
+        ...profile,
+        firstName: profile.firstName || firebaseFirstName || null,
+        lastName: profile.lastName || firebaseLastName || null,
+        profileImage: profile.profileImage || firebasePhotoUrl || null,
+      } : {
+        firstName: firebaseFirstName,
+        lastName: firebaseLastName,
+        headline: null,
+        currentRole: null,
+        handle: null,
+        linkedinUrl: null,
+        profileImage: firebasePhotoUrl || null,
+      },
     })
   } catch (error: any) {
     console.error('❌ WorkMeProfileGet error:', error)

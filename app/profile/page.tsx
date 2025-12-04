@@ -61,39 +61,46 @@ export default function ProfilePage() {
       const response = await api.get('/api/workme/profile')
       const firebaseUser = getAuth().currentUser
       
+      // Always ensure email is set from Firebase
+      if (firebaseUser?.email) {
+        setEmail(firebaseUser.email)
+      }
+      
       if (response.data?.profile) {
         const profile = response.data.profile
         
-        // Pre-populate: API data first, then Firebase, then empty
-        // Handle: use API handle if exists, otherwise keep empty (user will enter their own)
-        // Photo: prioritize API, then Firebase, then empty
+        // Pre-populate: API data first, then Firebase (from useEffect), then empty
+        // Preserve Firebase values if API returns null
         setFormData(prev => ({
           firstName: profile.firstName || prev.firstName || '',
           lastName: profile.lastName || prev.lastName || '',
-          headline: profile.headline || '',
-          currentRole: profile.currentRole || '',
-          handle: profile.handle || '', // User will enter their own handle
-          linkedinUrl: profile.linkedinUrl || '',
+          headline: profile.headline || prev.headline || '',
+          currentRole: profile.currentRole || prev.currentRole || '',
+          handle: profile.handle || prev.handle || '', // User will enter their own handle
+          linkedinUrl: profile.linkedinUrl || prev.linkedinUrl || '',
           profileImage: profile.profileImage || firebaseUser?.photoURL || prev.profileImage || '',
         }))
       } else {
-        // If no profile exists, ensure Firebase photo is loaded
-        if (firebaseUser?.photoURL) {
+        // If no profile exists, ensure Firebase data is preserved
+        if (firebaseUser) {
+          const displayName = firebaseUser.displayName || ''
+          const firstNameFromFirebase = displayName.split(' ')[0] || ''
+          const lastNameFromFirebase = displayName.split(' ').slice(1).join(' ') || ''
+          
           setFormData(prev => ({
             ...prev,
-            profileImage: firebaseUser.photoURL || prev.profileImage || '',
+            firstName: prev.firstName || firstNameFromFirebase || '',
+            lastName: prev.lastName || lastNameFromFirebase || '',
+            profileImage: prev.profileImage || firebaseUser.photoURL || '',
           }))
         }
       }
     } catch (error) {
       console.log('Profile not loaded (new user):', error)
-      // On error, still try to load Firebase photo
+      // On error, preserve Firebase data that was set in useEffect
       const firebaseUser = getAuth().currentUser
-      if (firebaseUser?.photoURL) {
-        setFormData(prev => ({
-          ...prev,
-          profileImage: firebaseUser.photoURL || prev.profileImage || '',
-        }))
+      if (firebaseUser?.email) {
+        setEmail(firebaseUser.email)
       }
     }
   }
