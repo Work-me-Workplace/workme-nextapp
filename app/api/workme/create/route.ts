@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
           },
         })
         
-        // Update WorkProfile if exists, or create it
+        // Update WorkProfile if exists, or create it (don't auto-generate handle - user must set it)
+        // Use a temporary placeholder handle since it's required, but user will replace it
         await prisma.workProfile.upsert({
           where: { userId: workMe.id },
           create: {
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
             firstName: firstName || null,
             lastName: lastName || null,
             profileImage: photoUrl || null,
-            handle: `user_${workMe.id.slice(0, 8)}`,
+            handle: `temp_${workMe.id.slice(0, 8)}`, // Temporary - user must set their own
           },
           update: {
             firstName: firstName !== undefined ? firstName : undefined,
@@ -67,14 +68,15 @@ export async function POST(request: NextRequest) {
           },
         })
         
-        // Create WorkProfile
+        // Create WorkProfile (don't auto-generate handle - user must set it)
+        // Use a temporary placeholder handle since it's required, but user will replace it
         await prisma.workProfile.create({
           data: {
             userId: workMe.id,
             firstName: firstName || null,
             lastName: lastName || null,
             profileImage: photoUrl || null,
-            handle: `user_${workMe.id.slice(0, 8)}`,
+            handle: `temp_${workMe.id.slice(0, 8)}`, // Temporary - user must set their own
           },
         })
         
