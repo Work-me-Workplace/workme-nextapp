@@ -49,6 +49,10 @@ model WorkMe {
   createdCompanyEvents         CompanyEvent[]                     @relation("CompanyEventCreator")
   createdCompanyCommunities    CompanyCommunity[]                 @relation("CompanyCommunityCreator")
   createdCompanyCareers        CompanyCareer[]                    @relation("CompanyCareerCreator")
+  
+  // Internal Productivity Relations
+  myWorkOutlook MyWorkOutlook?
+  adminWorkItems AdminWorkItem[]
 }
 
 // ============================================
@@ -988,4 +992,54 @@ model Asset {
 
   @@index([category])
   @@index([holidaySlug])
+}
+
+// ============================================
+// INTERNAL PRODUCTIVITY MODELS (MVP)
+// ============================================
+
+model MyWorkOutlook {
+  id        String   @id @default(cuid())
+  workMeId  String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workMe WorkMe  @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  items  MyWorkItem[]
+
+  @@index([workMeId])
+}
+
+model MyWorkItem {
+  id          String   @id @default(cuid())
+  outlookId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  title   String
+  notes   String?
+  status  String @default("open") // "open" | "done" | "blocked" | "watch"
+  dueDate DateTime?
+  tag     String? // optional: "comms" | "admin" | "personal" | etc.
+
+  outlook MyWorkOutlook @relation(fields: [outlookId], references: [id], onDelete: Cascade)
+
+  @@index([outlookId])
+  @@index([status])
+}
+
+model AdminWorkItem {
+  id          String   @id @default(cuid())
+  workMeId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  title  String
+  notes  String?
+  status String @default("open")
+
+  workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+
+  @@index([workMeId])
+  @@index([status])
 }
