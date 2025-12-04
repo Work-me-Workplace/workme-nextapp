@@ -9,28 +9,24 @@ datasource db {
 }
 
 // ============================================
-// CORE USER MODEL
+// CORE USER MODEL (Pure Identity)
 // ============================================
 model WorkMe {
   id              String         @id @default(uuid())
   firebaseId      String?        @unique
   email           String         @unique
-  firstName       String?
-  lastName        String?
-  photoUrl        String?
-  companyUnit     String? // required for WorkContext, but collected AFTER signup
-  companyDivision String? // optional grouping layer
+  createdAt       DateTime       @default(now())
+
   workMeCompanyId String?
   workMeCompany   WorkMeCompany? @relation(fields: [workMeCompanyId], references: [id])
 
-  jobTitle    String?
-  specialty   String?
-  industry    String?
-  jobRole     JobRole?
-  salaryRange SalaryRange?
-  createdAt   DateTime     @default(now())
-
   superAdmin SuperAdmin? // Optional link to SuperAdmin (may migrate away)
+
+  // Profile relation (one-to-one)
+  profile WorkProfile?
+
+  // Work History (one-to-many)
+  workEntries WorkEntry[]
 
   // WorkWorld Architecture Relations
   workplaces             Workplace[]
@@ -50,26 +46,53 @@ model WorkMe {
   createdCompanyEvents         CompanyEvent[]                     @relation("CompanyEventCreator")
   createdCompanyCommunities    CompanyCommunity[]                 @relation("CompanyCommunityCreator")
   createdCompanyCareers        CompanyCareer[]                    @relation("CompanyCareerCreator")
-
-  // connections Connection[]  // Commented out - not using
-  // events      Event[]       // Commented out - not using
-  // milestones  Milestone[]   // Commented out - not using
 }
 
-enum JobRole {
-  INDIVIDUAL_CONTRIBUTOR
-  MANAGER
-  DIRECTOR_LEVEL
-  PROJECT_LEAD
+// ============================================
+// WORK PROFILE MODEL (Personal Identity)
+// ============================================
+// Clean profile - personal identity only (like GoFast Athlete profile)
+// No employment data here - that belongs in WorkEntry
+model WorkProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique // References WorkMe.id
+  firstName    String?
+  lastName     String?
+  headline     String?  // LinkedIn-style headline
+  currentRole  String?  // Optional current role display
+  handle       String   @unique // Unique username for future "Connect" features
+  linkedinUrl  String?
+  profileImage String?  // Profile photo URL
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user WorkMe @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([handle])
 }
 
-enum SalaryRange {
-  BELOW_50K
-  K50_100K
-  K100_150K
-  K150_200K
-  ABOVE_200K
-}
+// ============================================
+// DEPRECATED ENUMS (Removed - employment data moved to WorkEntry)
+// ============================================
+// JobRole and SalaryRange enums removed
+// Employment data now stored in WorkEntry model
+// Keeping commented for reference during migration
+// enum JobRole {
+//   INDIVIDUAL_CONTRIBUTOR
+//   MANAGER
+//   DIRECTOR_LEVEL
+//   PROJECT_LEAD
+// }
+//
+// enum SalaryRange {
+//   BELOW_50K
+//   K50_100K
+//   K100_150K
+//   K150_200K
+//   ABOVE_200K
+// }
 
 enum EventAudience {
   ALL_WORKFORCE
@@ -179,11 +202,54 @@ model Company {
 }
 
 // ============================================
-// COMPANY UNIT REGISTRY (Open Joinable Workspace Registry)
+// COMPANY UNIT REGISTRY (Searchable Registry Pattern)
 // ============================================
+// Registry pattern like RaceRegistry - search or create
+// Simple, searchable company unit registry
+model CompanyUnit {
+  id        String      @id @default(cuid())
+  name      String      @unique // Company/employer name (unique globally)
+  domain    String?     // Optional domain for matching
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 
-// CompanyUnitRegistry: Open joinable workspace registry
-// Users can create or join workspaces by name
+  workEntries WorkEntry[]
+
+  @@index([name])
+  @@index([domain])
+}
+
+// ============================================
+// WORK ENTRY MODEL (Work History Junction Table)
+// ============================================
+// Links WorkMe to CompanyUnit with employment details
+// Each WorkMe can have multiple WorkEntries (current + past jobs)
+model WorkEntry {
+  id            String      @id @default(cuid())
+  userId        String      // References WorkMe.id
+  companyUnitId String      // References CompanyUnit.id
+  division      String?     // Simple string for MVP1 (team, department, etc.)
+  title         String?     // Job title
+  startDate     DateTime?   // Employment start date
+  endDate       DateTime?   // Employment end date (null = current)
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  user        WorkMe       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyUnit CompanyUnit  @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([companyUnitId])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+// ============================================
+// COMPANY UNIT REGISTRY (Legacy - Deprecated)
+// ============================================
+// DEPRECATED: Use CompanyUnit model above instead
+// Keeping for backward compatibility during migration
 model CompanyUnitRegistry {
   id         String   @id @default(cuid())
   name       String   @unique // Unique workspace name (user-defined or generated)
@@ -206,15 +272,17 @@ model CompanyRegistry {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  units      CompanyUnit[]
+  units      CompanyUnitHierarchy[]
   workplaces Workplace[]
 
   @@index([name])
   @@index([domain])
 }
 
-// CompanyUnit: Subdivision (HQ, directorates, departments) with hierarchical structure
-model CompanyUnit {
+// CompanyUnitHierarchy: Subdivision (HQ, directorates, departments) with hierarchical structure
+// NOTE: This is for WorkWorld/WorkConnect hierarchical org structure
+// For simple work history, use CompanyUnit registry + WorkEntry
+model CompanyUnitHierarchy {
   id           String   @id @default(cuid())
   companyId    String
   name         String
@@ -223,9 +291,9 @@ model CompanyUnit {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  company    CompanyRegistry      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  parentUnit CompanyUnit?         @relation("UnitHierarchy", fields: [parentUnitId], references: [id], onDelete: SetNull)
-  subUnits   CompanyUnit[]        @relation("UnitHierarchy")
+  company    CompanyRegistry         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parentUnit CompanyUnitHierarchy?  @relation("UnitHierarchy", fields: [parentUnitId], references: [id], onDelete: SetNull)
+  subUnits   CompanyUnitHierarchy[]  @relation("UnitHierarchy")
   members    CompanyUnitMembers[]
 
   @@index([companyId])
@@ -233,16 +301,18 @@ model CompanyUnit {
   @@index([unit])
 }
 
-// CompanyUnitMembers: Junction table linking WorkMe to CompanyUnit with role
+// CompanyUnitMembers: Junction table linking WorkMe to CompanyUnitHierarchy with role
+// NOTE: This is for WorkWorld/WorkConnect hierarchical org membership
+// For simple work history, use WorkEntry model instead
 model CompanyUnitMembers {
   id          String          @id @default(uuid())
   workMeId    String
-  companyUnit String // References CompanyUnit.unit
+  companyUnit String // References CompanyUnitHierarchy.unit
   role        CompanyUnitRole @default(MEMBER)
   createdAt   DateTime        @default(now())
 
-  workMe WorkMe      @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-  unit   CompanyUnit @relation(fields: [companyUnit], references: [unit], onDelete: Cascade)
+  workMe WorkMe              @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  unit   CompanyUnitHierarchy @relation(fields: [companyUnit], references: [unit], onDelete: Cascade)
 
   @@unique([workMeId, companyUnit])
   @@index([workMeId])

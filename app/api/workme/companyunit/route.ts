@@ -7,14 +7,17 @@ import { nanoid } from 'nanoid'
 /**
  * POST /api/workme/companyunit
  * 
- * Set user's workspace (companyUnit) via registry
+ * Set user's workspace (companyUnit) and optional division via registry
  * 
- * Body: { unitName: string | null }
+ * Body: { 
+ *   unitName: string | null,  // Required: workspace name (or blank for auto-generated)
+ *   division?: string | null   // Optional: division name
+ * }
  * 
  * Behavior:
- * - If name provided → upsert into CompanyUnitRegistry (public)
- * - If blank → generate unique private unit name
- * - Update WorkMe.companyUnit
+ * - If unitName provided → upsert into CompanyUnitRegistry (public)
+ * - If unitName blank → generate unique private unit name
+ * - Update WorkMe.companyUnit and WorkMe.companyDivision
  */
 export async function POST(request: NextRequest) {
   try {
@@ -25,9 +28,9 @@ export async function POST(request: NextRequest) {
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
     
-    // 3. Get unitName from body
+    // 3. Get unitName and division from body
     const body = await request.json()
-    const { unitName } = body
+    const { unitName, division } = body
     
     let finalUnitName: string
     
@@ -62,11 +65,12 @@ export async function POST(request: NextRequest) {
       console.log('✅ Generated private workspace:', finalUnitName)
     }
     
-    // 4. Update WorkMe.companyUnit
+    // 4. Update WorkMe.companyUnit and companyDivision
     const updated = await prisma.workMe.update({
       where: { id: workMeId },
       data: {
         companyUnit: finalUnitName,
+        companyDivision: division?.trim() || null,
       },
       select: {
         id: true,
@@ -79,12 +83,16 @@ export async function POST(request: NextRequest) {
       },
     })
     
-    console.log('✅ Updated WorkMe.companyUnit:', finalUnitName)
+    console.log('✅ Updated WorkMe workspace:', {
+      companyUnit: finalUnitName,
+      companyDivision: division?.trim() || null,
+    })
     
     return NextResponse.json({
       success: true,
       workMe: updated,
       unitName: finalUnitName,
+      division: division?.trim() || null,
     })
   } catch (error: any) {
     console.error('❌ CompanyUnitSet error:', error)

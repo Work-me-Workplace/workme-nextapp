@@ -7,13 +7,18 @@
 
 ## 🎯 **EXECUTIVE SUMMARY**
 
-WorkMe is a multi-tenant platform built on a **identity-first architecture** where:
-- **WorkMe** = Universal personal identity container (WORKMEID)
-- **companyUnit** = Multi-tenant routing key (required for all operations)
+WorkMe is a multi-tenant platform built on a **identity-first architecture** with clean separation:
+
+- **WorkMe** = Universal personal identity container (WORKMEID) - Pure identity only
+- **WorkProfile** = Personal identity (firstName, lastName, headline, handle, linkedinUrl) - Like GoFast Athlete profile
+- **WorkEntry** = Work history (employment data) - Links WorkMe to CompanyUnit
+- **CompanyUnit** = Searchable registry (like RaceRegistry) - Employer/company registry
 - **CompanyX Models** = Content ingestion layer (events, training, careers, etc.)
 - **Products** = Generated outputs (email digests, etc.)
 
-**Core Principle**: All operations flow through `Firebase Auth → WorkMe → companyUnit`
+**Core Principle**: Clean separation - Profile (personal identity) vs MyWork (employment history) vs CompanyUnit (registry)
+
+**Architecture Pattern**: Mirrors GoFast modularity - Profile is pure identity, WorkEntry is bolt-on module
 
 ---
 
@@ -44,33 +49,21 @@ WorkMe is a multi-tenant platform built on a **identity-first architecture** whe
 └─────────────────┘
 ```
 
-### 1.2 WorkMe Model (Core Identity)
+### 1.2 WorkMe Model (Pure Identity Container)
 
 ```prisma
 model WorkMe {
   id              String   @id @default(uuid())
   firebaseId      String?  @unique
   email           String   @unique
-  firstName       String?
-  lastName        String?
-  photoUrl        String?
-  
-  // ⚠️ CRITICAL: Multi-tenant scoping
-  companyUnit     String?  // Required for WorkContext, collected AFTER signup
-  companyDivision String?  // Optional grouping layer
-  
-  // Profile fields
-  jobTitle    String?
-  specialty   String?
-  industry    String?
-  jobRole     JobRole?
-  salaryRange SalaryRange?
-  
-  createdAt   DateTime @default(now())
+  createdAt       DateTime @default(now())
   
   // Relations
-  workplaces             Workplace[]              // Link to companies
-  companyUnitMemberships CompanyUnitMembers[]     // Unit membership with roles
+  profile WorkProfile?        // One-to-one: Personal identity
+  workEntries WorkEntry[]      // One-to-many: Work history
+  
+  workplaces             Workplace[]              // Link to companies (WorkWorld)
+  companyUnitMemberships CompanyUnitMembers[]     // Unit membership with roles (WorkWorld)
   
   // Reverse relations (for Prisma validation only - NOT queried)
   originatedCommsOutputs       CommsOutput[]
@@ -90,10 +83,88 @@ model WorkMe {
 **Key Points**:
 - `firebaseId` = Link to Firebase Auth (unique)
 - `email` = Unique identifier (can exist without firebaseId)
-- `companyUnit` = **REQUIRED** for all multi-tenant operations
-- `companyDivision` = Optional, only on WorkMe (not on domain objects)
+- **Pure Identity Only** - No profile fields, no employment data
+- Profile data → `WorkProfile` model
+- Employment data → `WorkEntry` model
 
-### 1.3 Authentication Flow
+### 1.3 WorkProfile Model (Personal Identity)
+
+```prisma
+model WorkProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique // References WorkMe.id
+  firstName    String?
+  lastName     String?
+  headline     String?  // LinkedIn-style headline
+  currentRole  String?  // Optional current role display
+  handle       String   @unique // Unique username for future "Connect" features
+  linkedinUrl  String?
+  profileImage String?  // Profile photo URL
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  user WorkMe @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+```
+
+**Key Points**:
+- **Personal Identity Only** - No employment data
+- Mirrors GoFast Athlete profile pattern
+- `handle` = Unique username (auto-generated on signup)
+- `headline` = LinkedIn-style professional headline
+- No specialties, no job metadata, no work skills here
+
+### 1.4 WorkEntry Model (Work History)
+
+```prisma
+model WorkEntry {
+  id            String      @id @default(cuid())
+  userId        String      // References WorkMe.id
+  companyUnitId String      // References CompanyUnit.id
+  division      String?     // Simple string for MVP1 (team, department, etc.)
+  title         String?     // Job title
+  startDate     DateTime?   // Employment start date
+  endDate       DateTime?   // Employment end date (null = current)
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  user        WorkMe       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyUnit CompanyUnit  @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
+}
+```
+
+**Key Points**:
+- **Employment Data Only** - Links WorkMe to CompanyUnit
+- Each WorkMe can have multiple WorkEntries (current + past jobs)
+- `division` = Simple string for MVP1 (can be normalized later)
+- `endDate = null` = Current job
+
+### 1.5 CompanyUnit Model (Registry Pattern)
+
+```prisma
+model CompanyUnit {
+  id        String      @id @default(cuid())
+  name      String      @unique // Company/employer name (unique globally)
+  domain    String?     // Optional domain for matching
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  
+  workEntries WorkEntry[]
+  
+  @@index([name])
+  @@index([domain])
+}
+```
+
+**Key Points**:
+- **Registry Pattern** - Like RaceRegistry in GoFast
+- Searchable by name (case-insensitive)
+- Search-before-create pattern (if exists, return; if not, create)
+- Public registry - no ownership required
+
+### 1.6 Authentication Flow
 
 **Every API Route Pattern**:
 ```typescript
@@ -103,12 +174,19 @@ export async function POST(request: Request) {
   
   // 2. Load WorkMe Identity
   const workMe = await loadWorkMe(firebaseId)
-  const { id: workMeId, companyUnit, companyDivision } = workMe
+  const { id: workMeId } = workMe
   
-  // 3. Validate companyUnit (if required)
-  if (!companyUnit) {
-    return error("User must set a companyUnit")
-  }
+  // 3. Business Logic
+  // For multi-tenant operations, get companyUnit from WorkEntry (current job)
+  const currentWorkEntry = await prisma.workEntry.findFirst({
+    where: { 
+      userId: workMeId,
+      endDate: null // Current job
+    },
+    include: { companyUnit: true }
+  })
+  
+  const companyUnit = currentWorkEntry?.companyUnit.name
   
   // 4. Business Logic (scoped by companyUnit)
   const items = await prisma.companyX.findMany({
@@ -123,12 +201,13 @@ export async function POST(request: Request) {
 
 ### 2.1 Tenant Scoping Model
 
-**Primary Key**: `companyUnit` (String)
+**Primary Key**: `companyUnit` (String from CompanyUnit registry)
 
 **Rules**:
 - All domain objects (CompanyX, Products, Editions) are scoped by `companyUnit`
+- `companyUnit` comes from `WorkEntry.companyUnit.name` (current job)
 - `companyUnit` is **required** for all multi-tenant operations
-- `companyDivision` is **optional** and only exists on `WorkMe` (not on domain objects)
+- `division` is **optional** and only exists on `WorkEntry` (not on domain objects)
 
 ### 2.2 Company Models
 
@@ -163,23 +242,18 @@ model CompanyRegistry {
 
 **Purpose**: Global company-level anchor for WorkConnect
 
-#### CompanyUnit (Hierarchical Structure)
-```prisma
-model CompanyUnit {
-  id           String   @id @default(cuid())
-  companyId    String   // References CompanyRegistry
-  name         String
-  unit         String   @unique  // Unique identifier for membership
-  parentUnitId String?  // Allows parent → child nesting
-  
-  company    CompanyRegistry      @relation(...)
-  parentUnit CompanyUnit?         @relation("UnitHierarchy", ...)
-  subUnits   CompanyUnit[]        @relation("UnitHierarchy")
-  members    CompanyUnitMembers[]
-}
-```
+#### CompanyUnit (Registry - Simple MVP1)
 
-**Purpose**: Subdivision (HQ, directorates, departments) with hierarchical structure
+**Purpose**: Searchable employer/company registry (like RaceRegistry)
+
+**Pattern**: Search-before-create
+- User types employer name → Search CompanyUnit
+- If exists → Return existing
+- If not → Create new
+
+**Usage**: Links WorkMe to employers via WorkEntry
+
+**Note**: For hierarchical org structure (WorkWorld/WorkConnect), see `CompanyUnitHierarchy` model below
 
 #### CompanyUnitMembers (Junction Table)
 ```prisma
@@ -583,12 +657,44 @@ app/
 - Returns: `{ success, workMe }`
 
 **`GET /api/workme/profile`**
-- Returns: Full WorkMe identity with `companyUnit`, `companyDivision`
+- Returns: WorkProfile (personal identity only)
+- Fields: firstName, lastName, headline, currentRole, handle, linkedinUrl, profileImage
+
+**`PUT /api/workme/profile`**
+- Updates WorkProfile fields
+- Validates handle uniqueness
+- Auto-generates handle if not provided
 
 **`GET /api/workme/hydrate`**
 - Returns: Full WorkMe data for client hydration
 
-### 9.2 Content Ingestion Endpoints
+### 9.2 Company Unit Registry Endpoints
+
+**`POST /api/company-unit/search`**
+- Search company units by name (case-insensitive)
+- Public search - no auth required
+- Returns: `{ success, companyUnits: [...] }`
+
+**`POST /api/company-unit/create`**
+- Create company unit in registry (search-before-create pattern)
+- If exists, returns existing; if not, creates new
+- Returns: `{ success, companyUnit }`
+
+### 9.3 Work Entry Endpoints
+
+**`POST /api/work-entry/create`**
+- Create work entry (employment history)
+- Links WorkMe to CompanyUnit
+- Fields: companyUnitId, division?, title?, startDate?, endDate?
+- Returns: `{ success, workEntry }`
+
+**`GET /api/work-entry/list`**
+- Get all work entries for current authenticated user
+- Returns current + past jobs
+- Ordered by: endDate DESC (current first), startDate DESC
+- Returns: `{ success, workEntries: [...] }`
+
+### 9.4 Content Ingestion Endpoints
 
 **`POST /api/ingest/event/ai`**
 - Parses raw event text with GPT
@@ -600,7 +706,7 @@ app/
 
 **Similar patterns for**: Training, Career, Campaign, etc.
 
-### 9.3 Product Endpoints
+### 9.5 Product Endpoints
 
 **`POST /api/workforce/enduring/email-digest`**
 - Creates new `WorkForceEnduringProdEmailDigest`
@@ -616,13 +722,39 @@ app/
 
 This architecture provides:
 
-✅ **Clear Identity Chain**: Firebase → WorkMe → CompanyUnit  
+✅ **Clean Identity Separation**: WorkMe (pure identity) → WorkProfile (personal) → WorkEntry (employment)  
+✅ **Registry Pattern**: CompanyUnit registry (like RaceRegistry) - search-before-create  
+✅ **Modular Design**: Mirrors GoFast - Profile is pure identity, WorkEntry is bolt-on module  
 ✅ **Standardized Content**: All CompanyX models share consistent contract  
 ✅ **Explicit Products**: No polymorphism, clear models for each type  
-✅ **Multi-Tenant Scoping**: `companyUnit` as universal routing key  
-✅ **Clean Separation**: Identity, content, and products are distinct layers  
+✅ **Multi-Tenant Scoping**: `companyUnit` from WorkEntry (current job)  
+✅ **Clean Separation**: Profile (personal identity) vs MyWork (employment history) vs CompanyUnit (registry)  
 ✅ **Maintainable**: Easy to extend with new product types or CompanyX models  
 ✅ **Type-Safe**: Prisma schema enforces structure at compile time  
+✅ **Future-Proof**: Handle field ready for "Connect" features, division can be normalized later
+
+## 11. REFACTOR SUMMARY (MVP1)
+
+### What Changed
+
+**Before**:
+- WorkMe had mixed concerns: identity + profile + employment data
+- CompanyUnit was a foreign key mess
+- No clear separation between personal identity and work history
+
+**After**:
+- WorkMe = Pure identity container only
+- WorkProfile = Personal identity (firstName, lastName, headline, handle, linkedinUrl)
+- WorkEntry = Employment history (links WorkMe to CompanyUnit)
+- CompanyUnit = Searchable registry (like RaceRegistry pattern)
+
+### Migration Notes
+
+- Old `jobTitle`, `specialty`, `industry`, `jobRole`, `salaryRange` fields removed from WorkMe
+- Employment data now stored in WorkEntry
+- CompanyUnit is now a registry (search-before-create pattern)
+- Profile setup flow: firstName, lastName, headline, currentRole, handle, linkedinUrl
+- Work setup flow: Search/create CompanyUnit → Create WorkEntry with division, title, dates  
 
 ---
 
