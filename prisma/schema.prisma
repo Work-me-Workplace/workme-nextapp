@@ -9,27 +9,34 @@ datasource db {
 }
 
 // ============================================
-// CORE USER MODEL (Pure Identity)
+// CORE USER MODEL (Pure Identity + Simple Public Profile)
 // ============================================
+// WorkMe = Core Identity (Personhood)
+// Contains ONLY stable identity fields + simple public-facing profile fields
 model WorkMe {
   id         String   @id @default(uuid())
   firebaseId String?  @unique
   email      String   @unique
   createdAt  DateTime @default(now())
 
+  // Simple public-facing profile fields (NOT work fields)
+  headline    String?
+  handle      String? @unique
+  title       String?
+  linkedinUrl String?
+
   workMeCompanyId String?
   workMeCompany   WorkMeCompany? @relation(fields: [workMeCompanyId], references: [id])
 
   superAdmin SuperAdmin? // Optional link to SuperAdmin (may migrate away)
 
-  // Profile relation (one-to-one)
-  profile WorkProfile?
-
-  // Work History (one-to-many)
-  workEntries WorkEntry[]
-
-  // Skills Intelligence (one-to-one)
-  mySkills MySkills?
+  // Bolt-on modules (all via foreign keys)
+  workProfile        WorkProfile?
+  companyAffiliation CompanyAffiliation?
+  workSkills         WorkSkills?
+  workEntries        WorkEntry[]
+  workOutlookItems   WorkOutlookItem[]
+  workGoals          WorkGoal[]
 
   // WorkWorld Architecture Relations
   workplaces             Workplace[]
@@ -53,39 +60,31 @@ model WorkMe {
   // Internal Productivity Relations
   myWorkOutlook  MyWorkOutlook?
   adminWorkItems AdminWorkItem[]
+
+  @@index([handle])
 }
 
 // ============================================
-// WORK PROFILE MODEL (Personal Identity)
+// WORK PROFILE MODEL (Professional Identity - "What I Do")
 // ============================================
-// Clean profile - personal identity only (like GoFast Athlete profile)
-// No employment data here - that belongs in WorkEntry
+// Professional metadata - describes WHAT the user does professionally
+// NOT personal identity, NOT skills, NOT company, NOT work history
 model WorkProfile {
-  id           String  @id @default(cuid())
-  userId       String  @unique // References WorkMe.id
-  firstName    String?
-  lastName     String?
-  headline     String? // LinkedIn-style headline
-  currentRole  String? // Optional current role display
-  handle       String  @unique // Unique username for future "Connect" features
-  linkedinUrl  String?
-  profileImage String? // Profile photo URL
+  id       String @id @default(uuid())
+  workMeId String @unique
 
-  // Workforce affiliation (registry pattern)
-  companyUnitId  String?
-  divisionUnitId String?
+  jobRole               String?
+  industry              String?
+  salaryRange           String?
+  responsibilitySummary String?
+  seniority             String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user     WorkMe        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company  CompanyUnit?  @relation(fields: [companyUnitId], references: [id])
-  division DivisionUnit? @relation(fields: [divisionUnitId], references: [id])
+  workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([handle])
-  @@index([companyUnitId])
-  @@index([divisionUnitId])
+  @@index([workMeId])
 }
 
 // ============================================
@@ -217,24 +216,41 @@ model Company {
 }
 
 // ============================================
+// COMPANY AFFILIATION MODEL (Employment Context)
+// ============================================
+// Company affiliation IS NOT part of identity OR profile
+// It is its own bolt-on module
+model CompanyAffiliation {
+  id             String  @id @default(uuid())
+  workMeId       String  @unique
+  companyUnitId  String?
+  divisionUnitId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workMe   WorkMe        @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  company  CompanyUnit?  @relation(fields: [companyUnitId], references: [id])
+  division DivisionUnit? @relation(fields: [divisionUnitId], references: [id])
+
+  @@index([workMeId])
+  @@index([companyUnitId])
+  @@index([divisionUnitId])
+}
+
+// ============================================
 // COMPANY UNIT REGISTRY (Searchable Registry Pattern)
 // ============================================
 // Registry pattern like RaceRegistry - search or create
 // Simple, searchable company unit registry
-// ============================================
-// COMPANY UNIT REGISTRY (Final Form)
-// ============================================
-// One canonical record per company, reusable by many WorkMeIDs
-// Matches RaceRegistry architecture pattern
 model CompanyUnit {
   id        String   @id @default(uuid())
   name      String   @unique // Company name (unique globally)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  divisions   DivisionUnit[]
-  profiles    WorkProfile[]
-  workEntries WorkEntry[] // Legacy - for WorkEntry junction table
+  divisions DivisionUnit[]
+  members   CompanyAffiliation[]
 
   @@index([name])
 }
@@ -250,60 +266,47 @@ model DivisionUnit {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  company  CompanyUnit   @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
-  profiles WorkProfile[]
+  company CompanyUnit          @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
+  members CompanyAffiliation[]
 
   @@unique([name, companyUnitId])
   @@index([companyUnitId])
 }
 
 // ============================================
-// WORK ENTRY MODEL (Work History Junction Table)
+// WORK ENTRY MODEL (Work History - LinkedIn-style Experience Items)
 // ============================================
-// Links WorkMe to CompanyUnit with employment details
-// Each WorkMe can have multiple WorkEntries (current + past jobs)
+// Work history - each WorkMe can have multiple WorkEntries (current + past jobs)
 model WorkEntry {
-  id            String    @id @default(cuid())
-  userId        String // References WorkMe.id
-  companyUnitId String // References CompanyUnit.id
-  division      String? // Simple string for MVP1 (team, department, etc.)
-  title         String? // Job title
-  startDate     DateTime? // Employment start date
-  endDate       DateTime? // Employment end date (null = current)
+  id          String    @id @default(uuid())
+  workMeId    String
+  companyName String?
+  title       String?
+  startDate   DateTime?
+  endDate     DateTime?
+  description String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user        WorkMe      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyUnit CompanyUnit @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
+  workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([companyUnitId])
+  @@index([workMeId])
   @@index([startDate])
   @@index([endDate])
 }
 
 // ============================================
-// MY SKILLS MODEL (Capability Intelligence)
+// WORK SKILLS MODEL (Human Capital Layer)
 // ============================================
 // Standalone intelligence module attached directly to WorkMe
-// Raw user inputs + AI-enriched fields for capability intelligence
-model MySkills {
-  id       String @id @default(cuid())
-  workMeId String @unique // Foreign key to WorkMe.id
-
-  // User-entered freeform inputs
-  mySkillsRaw              String? // "What do you do?"
-  myJobResponsibilitiesRaw String? // "What are your tasks?"
-  myStrengthsRaw           String? // "What are your specialties?"
-
-  // AI-enriched fields
-  mySkillsAI              String?
-  myJobResponsibilitiesAI String?
-  myStrengthsAI           String?
-
-  // Reserved for future: JSON snapshot for intelligence graph
-  insightSnapshot String? // optional, JSON blob
+model WorkSkills {
+  id             String  @id @default(uuid())
+  workMeId       String  @unique
+  skillsRaw      String?
+  strengthsRaw   String?
+  specialties    String?
+  certifications String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1073,4 +1076,43 @@ model AdminWorkItem {
 
   @@index([workMeId])
   @@index([status])
+}
+
+// ============================================
+// WORK OUTLOOK MODEL (Daily Work Lens - Productivity Layer)
+// ============================================
+// "Today / Up Next / Planning" module
+model WorkOutlookItem {
+  id       String   @id @default(uuid())
+  workMeId String
+  date     DateTime
+  item     String
+  status   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+
+  @@index([workMeId])
+  @@index([date])
+  @@index([status])
+}
+
+// ============================================
+// WORK GOAL MODEL (Goals Module)
+// ============================================
+model WorkGoal {
+  id         String    @id @default(uuid())
+  workMeId   String
+  goal       String
+  targetDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+
+  @@index([workMeId])
+  @@index([targetDate])
 }

@@ -6,160 +6,80 @@ import { prisma } from '@/lib/prisma'
 /**
  * GET /api/workme/profile
  * 
- * Get current authenticated user's clean profile
- * Returns WorkProfile data only (personal identity, no employment data)
+ * Get current authenticated user's complete profile
+ * Returns: WorkMe (identity), WorkProfile (professional), CompanyAffiliation, WorkSkills, WorkEntry list, WorkOutlook summary
  */
 export async function GET(request: NextRequest) {
   try {
-    // 1. Auth - get Firebase user data (includes photoUrl, displayName)
-    const { firebaseId, photoUrl: firebasePhotoUrl, displayName: firebaseDisplayName } = await verifyAuth(request as Request)
+    // 1. Auth - get Firebase user data
+    const { firebaseId } = await verifyAuth(request as Request)
     
-    // 2. Parse Firebase displayName for firstName/lastName
-    let firebaseFirstName = null
-    let firebaseLastName = null
-    if (firebaseDisplayName) {
-      const nameParts = firebaseDisplayName.split(' ')
-      firebaseFirstName = nameParts[0] || null
-      firebaseLastName = nameParts.slice(1).join(' ') || null
-    }
-    
-    // 3. Load WorkMe identity
+    // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    // 4. Fetch WorkProfile (create if doesn't exist)
-    let profile
-    try {
-      profile = await prisma.workProfile.findUnique({
-        where: { userId: workMeId },
-      })
-
-      if (!profile) {
-        // Don't auto-create profile - but return Firebase data for firstName/lastName
-        return NextResponse.json({
-          success: true,
-          profile: {
-            firstName: firebaseFirstName,
-            lastName: firebaseLastName,
-            headline: null,
-            currentRole: null,
-            handle: null, // User must enter their own handle
-            linkedinUrl: null,
-            profileImage: firebasePhotoUrl || null, // Auto-get from Firebase
-            company: null,
-            division: null,
-          },
-        })
-      } else if (!profile.profileImage && firebasePhotoUrl) {
-        // Update profileImage if missing but Firebase has it
-        profile = await prisma.workProfile.update({
-          where: { userId: workMeId },
-          data: { profileImage: firebasePhotoUrl },
-        })
-      }
-    } catch (error: any) {
-      // If table doesn't exist, return basic structure with Firebase data
-      if (error.code === 'P2021') {
-        return NextResponse.json({
-          success: true,
-          profile: {
-            firstName: firebaseFirstName,
-            lastName: firebaseLastName,
-            headline: null,
-            currentRole: null,
-            handle: null, // User must enter their own handle
-            linkedinUrl: null,
-            profileImage: firebasePhotoUrl || null,
-            company: null,
-            division: null,
-          },
-        })
-      }
-      throw error
-    }
-
-    // 5. Always sync Firebase data if profile fields are missing
-    if (profile) {
-      // Fill in firstName/lastName from Firebase if missing
-      if ((!profile.firstName || !profile.lastName) && (firebaseFirstName || firebaseLastName)) {
-        try {
-          profile = await prisma.workProfile.update({
-            where: { userId: workMeId },
-            data: {
-              firstName: profile.firstName || firebaseFirstName || null,
-              lastName: profile.lastName || firebaseLastName || null,
-            },
-          })
-        } catch (err) {
-          // Ignore update errors, just use what we have
-        }
-      }
-      
-      // Fill in photoUrl from Firebase if missing
-      if (firebasePhotoUrl && !profile.profileImage) {
-        try {
-          profile = await prisma.workProfile.update({
-            where: { userId: workMeId },
-            data: { profileImage: firebasePhotoUrl },
-          })
-        } catch (err) {
-          // Ignore update errors, just use what we have
-        }
-      }
-    }
-
-    // 6. Return profile with Firebase data as fallback, including company/division
-    const profileData = profile ? {
-      ...profile,
-      firstName: profile.firstName || firebaseFirstName || null,
-      lastName: profile.lastName || firebaseLastName || null,
-      profileImage: profile.profileImage || firebasePhotoUrl || null,
-    } : {
-      firstName: firebaseFirstName,
-      lastName: firebaseLastName,
-      headline: null,
-      currentRole: null,
-      handle: null,
-      linkedinUrl: null,
-      profileImage: firebasePhotoUrl || null,
-      companyUnitId: null,
-      divisionUnitId: null,
-    }
-
-    // 7. Load company and division if profile exists
-    let company = null
-    let division = null
-    if (profile && (profile.companyUnitId || profile.divisionUnitId)) {
-      try {
-        const [companyResult, divisionResult] = await Promise.all([
-          profile.companyUnitId
-            ? prisma.companyUnit.findUnique({
-                where: { id: profile.companyUnitId },
-                select: { id: true, name: true },
-              })
-            : null,
-          profile.divisionUnitId
-            ? prisma.divisionUnit.findUnique({
-                where: { id: profile.divisionUnitId },
-                select: { id: true, name: true },
-              })
-            : null,
-        ])
-        company = companyResult
-        division = divisionResult
-      } catch (err) {
-        // If tables don't exist, return without company/division
-        console.warn('Could not load company/division:', err)
-      }
-    }
+    // 3. Load all modules in parallel
+    const [workMeRecord, workProfile, companyAffiliation, workSkills, workEntries, workOutlookItems, workGoals] = await Promise.all([
+      // WorkMe (identity)
+      prisma.workMe.findUnique({
+        where: { id: workMeId },
+        select: {
+          id: true,
+          firebaseId: true,
+          email: true,
+          headline: true,
+          handle: true,
+          title: true,
+          linkedinUrl: true,
+          createdAt: true,
+        },
+      }),
+      // WorkProfile (professional identity)
+      prisma.workProfile.findUnique({
+        where: { workMeId },
+      }).catch(() => null),
+      // CompanyAffiliation
+      prisma.companyAffiliation.findUnique({
+        where: { workMeId },
+        include: {
+          company: { select: { id: true, name: true } },
+          division: { select: { id: true, name: true } },
+        },
+      }).catch(() => null),
+      // WorkSkills
+      prisma.workSkills.findUnique({
+        where: { workMeId },
+      }).catch(() => null),
+      // WorkEntry list
+      prisma.workEntry.findMany({
+        where: { workMeId },
+        orderBy: [
+          { endDate: 'desc' }, // Current jobs first (endDate = null)
+          { startDate: 'desc' },
+        ],
+      }).catch(() => []),
+      // WorkOutlook summary (recent items)
+      prisma.workOutlookItem.findMany({
+        where: { workMeId },
+        orderBy: { date: 'desc' },
+        take: 10,
+      }).catch(() => []),
+      // WorkGoals
+      prisma.workGoal.findMany({
+        where: { workMeId },
+        orderBy: { targetDate: 'asc' },
+      }).catch(() => []),
+    ])
 
     return NextResponse.json({
       success: true,
-      profile: {
-        ...profileData,
-        company: company || null,
-        division: division || null,
-      },
+      workMe: workMeRecord,
+      workProfile: workProfile || null,
+      companyAffiliation: companyAffiliation || null,
+      workSkills: workSkills || null,
+      workEntries: workEntries || [],
+      workOutlookItems: workOutlookItems || [],
+      workGoals: workGoals || [],
     })
   } catch (error: any) {
     console.error('❌ WorkMeProfileGet error:', error)
@@ -173,109 +93,32 @@ export async function GET(request: NextRequest) {
 /**
  * PUT /api/workme/profile
  * 
- * Update clean profile fields (personal identity only)
- * Fields: firstName, lastName, headline, currentRole, handle, linkedinUrl, profileImage
- * 
- * NOTE: Employment data belongs in WorkEntry, not here
+ * Update WorkMe identity fields only (headline, handle, title, linkedinUrl)
  */
 export async function PUT(request: NextRequest) {
   try {
-    // 1. Auth - get Firebase user data (includes photoUrl)
-    const { firebaseId, photoUrl: firebasePhotoUrl } = await verifyAuth(request as Request)
-    
-    // 2. Load WorkMe Identity
+    const { firebaseId } = await verifyAuth(request as Request)
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
-    
-    // 3. Get profile data from body
+
     const body = await request.json()
-    const {
-      firstName,
-      lastName,
-      headline,
-      currentRole,
-      handle,
-      linkedinUrl,
-      profileImage,
-    } = body
+    const { headline, handle, title, linkedinUrl } = body
 
-    // 4. Use Firebase photoUrl if profileImage not provided
-    const finalProfileImage = profileImage !== undefined 
-      ? profileImage 
-      : firebasePhotoUrl || null
-
-    // 5. Validate handle is provided (required)
-    if (!handle || !handle.trim()) {
-      return NextResponse.json(
-        { success: false, error: 'Handle is required' },
-        { status: 400 },
-      )
-    }
-
-    // 6. Check if handle is unique (if different from current)
-    try {
-      const existingProfile = await prisma.workProfile.findUnique({
-        where: { handle },
-      })
-      
-      if (existingProfile && existingProfile.userId !== workMeId) {
-        return NextResponse.json(
-          { success: false, error: 'Handle already taken. Please choose a different username.' },
-          { status: 400 },
-        )
-      }
-    } catch (error: any) {
-      // If table doesn't exist, skip handle check
-      if (error.code !== 'P2021') {
-        throw error
-      }
-    }
-
-    // 7. Upsert WorkProfile
-    try {
-      const profile = await prisma.workProfile.upsert({
-        where: { userId: workMeId },
-        create: {
-          userId: workMeId,
-          firstName: firstName !== undefined ? firstName : null,
-          lastName: lastName !== undefined ? lastName : null,
-          headline: headline !== undefined ? headline : null,
-          currentRole: currentRole !== undefined ? currentRole : null,
-          handle: handle.trim(), // User must provide their own handle
-          linkedinUrl: linkedinUrl !== undefined ? linkedinUrl : null,
-          profileImage: finalProfileImage, // Use Firebase photo if not provided
-        },
-        update: {
-        firstName: firstName !== undefined ? firstName : undefined,
-        lastName: lastName !== undefined ? lastName : undefined,
-          headline: headline !== undefined ? headline : undefined,
-          currentRole: currentRole !== undefined ? currentRole : undefined,
-          handle: handle !== undefined ? handle.trim() : undefined,
-          linkedinUrl: linkedinUrl !== undefined ? linkedinUrl : undefined,
-          profileImage: finalProfileImage !== undefined ? finalProfileImage : undefined,
+    // Update WorkMe identity fields only
+    const updated = await prisma.workMe.update({
+      where: { id: workMeId },
+      data: {
+        headline: headline !== undefined ? headline : undefined,
+        handle: handle !== undefined ? handle : undefined,
+        title: title !== undefined ? title : undefined,
+        linkedinUrl: linkedinUrl !== undefined ? linkedinUrl : undefined,
       },
     })
 
-      console.log('✅ Updated WorkProfile:', workMeId)
-
     return NextResponse.json({
       success: true,
-        profile,
-      })
-    } catch (error: any) {
-      // If table doesn't exist, return success but note migration needed
-      if (error.code === 'P2021') {
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: 'WorkProfile table does not exist. Please run migrations.',
-            code: 'MIGRATION_REQUIRED'
-          },
-          { status: 500 },
-        )
-      }
-      throw error
-    }
+      workMe: updated,
+    })
   } catch (error: any) {
     console.error('❌ WorkMeProfileUpdate error:', error)
     return NextResponse.json(

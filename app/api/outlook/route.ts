@@ -3,84 +3,88 @@ import { verifyAuth } from '@/lib/server/verifyAuth'
 import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
 
-// Force dynamic rendering
-export const dynamic = 'force-dynamic'
-
 /**
  * GET /api/outlook
- * Fetch or create MyWorkOutlook for the current user
+ * 
+ * Get WorkOutlookItems for current user
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('[API GET /api/outlook] Starting...')
-
-    // 1. Verify Firebase auth token
     const { firebaseId } = await verifyAuth(request as Request)
-    
-    // 2. Load WorkMe identity
-    const workMeIdentity = await loadWorkMe(firebaseId)
-    const { id: workMeId } = workMeIdentity
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId } = workMe
 
-    console.log('[API GET /api/outlook] Auth verified:', { workMeId })
+    const { searchParams } = new URL(request.url)
+    const date = searchParams.get('date')
 
-    // 3. Find or create MyWorkOutlook
-    let outlook = await prisma.myWorkOutlook.findUnique({
-      where: { workMeId },
-      include: {
-        items: {
-          orderBy: [
-            { status: 'asc' },
-            { createdAt: 'desc' },
-          ],
-        },
-      },
-    })
-
-    // If not found, create it
-    if (!outlook) {
-      outlook = await prisma.myWorkOutlook.create({
-        data: {
-          workMeId,
-        },
-        include: {
-          items: {
-            orderBy: [
-              { status: 'asc' },
-              { createdAt: 'desc' },
-            ],
-          },
-        },
-      })
+    const where: any = { workMeId }
+    if (date) {
+      const targetDate = new Date(date)
+      const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0))
+      const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999))
+      where.date = {
+        gte: startOfDay,
+        lte: endOfDay,
+      }
     }
 
-    console.log('[API GET /api/outlook] Success:', { outlookId: outlook.id, itemCount: outlook.items.length })
+    const workOutlookItems = await prisma.workOutlookItem.findMany({
+      where,
+      orderBy: { date: 'desc' },
+    })
 
     return NextResponse.json({
       success: true,
-      outlook: {
-        id: outlook.id,
-        workMeId: outlook.workMeId,
-        createdAt: outlook.createdAt,
-        updatedAt: outlook.updatedAt,
-        items: outlook.items,
-      },
+      workOutlookItems: workOutlookItems || [],
     })
   } catch (error: any) {
-    console.error('[API GET /api/outlook] Error:', {
-      error: error.message,
-      stack: error.stack,
-    })
-
-    const status = error.message?.includes('Unauthorized') || error.message?.includes('not found') ? 401 : 500
-
+    console.error('❌ WorkOutlookGet error:', error)
     return NextResponse.json(
-      {
-        success: false,
-        error: error.message || 'Failed to get outlook',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-      },
-      { status },
+      { success: false, error: error.message || 'Failed to get work outlook' },
+      { status: 500 },
     )
   }
 }
 
+/**
+ * POST /api/outlook
+ * 
+ * Create new WorkOutlookItem
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const { firebaseId } = await verifyAuth(request as Request)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId } = workMe
+
+    const body = await request.json()
+    const { date, item, status } = body
+
+    if (!date || !item) {
+      return NextResponse.json(
+        { success: false, error: 'date and item are required' },
+        { status: 400 },
+      )
+    }
+
+    const workOutlookItem = await prisma.workOutlookItem.create({
+      data: {
+        workMeId,
+        date: new Date(date),
+        item,
+        status: status || null,
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      workOutlookItem,
+    })
+  } catch (error: any) {
+    console.error('❌ WorkOutlookCreate error:', error)
+    return NextResponse.json(
+      { success: false, error: error.message || 'Failed to create work outlook item' },
+      { status: 500 },
+    )
+  }
+}
