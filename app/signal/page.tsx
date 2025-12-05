@@ -114,7 +114,8 @@ export default function SignalLandingPage() {
                 <Radio className="h-8 w-8 text-blue-600" />
                 <h1 className="text-3xl font-bold text-gray-900">Signals</h1>
               </div>
-              <p className="text-gray-600">OSINT-based signal ingestion and verification</p>
+              <p className="text-gray-600 mb-6">OSINT-based signal ingestion and verification</p>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">What do you want to do?</h2>
             </div>
 
             {/* Signal Types Grid */}
@@ -134,18 +135,21 @@ export default function SignalLandingPage() {
                     <Link
                       key={signal.path}
                       href={signal.path}
-                      className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-2 border-transparent hover:border-blue-500"
+                      className="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-all duration-200 border-2 border-transparent hover:border-blue-500 cursor-pointer group"
                     >
                       <div className="flex items-center justify-between mb-4">
-                        <div className={`p-3 rounded-lg ${colorClasses[signal.color as keyof typeof colorClasses]}`}>
+                        <div className={`p-3 rounded-lg ${colorClasses[signal.color as keyof typeof colorClasses]} group-hover:scale-110 transition-transform`}>
                           <Icon className="h-6 w-6" />
                         </div>
                         <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
                           Available
                         </span>
                       </div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{signal.name}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">{signal.name}</h3>
                       <p className="text-sm text-gray-600">{signal.description}</p>
+                      <div className="mt-4 text-blue-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                        Click to start →
+                      </div>
                     </Link>
                   )
                 }
@@ -153,7 +157,7 @@ export default function SignalLandingPage() {
                 return (
                   <div
                     key={signal.path}
-                    className="bg-white rounded-lg shadow p-6 opacity-60 border-2 border-gray-200"
+                    className="bg-white rounded-lg shadow p-6 opacity-60 border-2 border-gray-200 cursor-not-allowed"
                   >
                     <div className="flex items-center justify-between mb-4">
                       <div className={`p-3 rounded-lg ${colorClasses[signal.color as keyof typeof colorClasses]}`}>

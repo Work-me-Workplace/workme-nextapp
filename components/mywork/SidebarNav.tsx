@@ -21,6 +21,10 @@ import {
   Radio,
   Eye,
   ClipboardList,
+  Search,
+  Mail,
+  Twitter,
+  Newspaper,
 } from 'lucide-react'
 
 export default function SidebarNav() {
@@ -90,6 +94,11 @@ export default function SidebarNav() {
       name: 'Signals',
       items: [
         { name: 'Signals', path: '/signal', icon: Radio },
+        { name: 'Note Lookup', path: '/signal/note', icon: FileText },
+        { name: 'Google Scan', path: '/signal/google', icon: Search },
+        { name: 'X Feed', path: '/signal/x', icon: Twitter },
+        { name: 'Senior Email', path: '/signal/senior', icon: Mail },
+        { name: 'Clip Parser', path: '/signal/clip', icon: Newspaper },
       ],
     },
     {
