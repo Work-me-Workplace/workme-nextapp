@@ -24,6 +24,34 @@ BEGIN
   END IF;
 END $$;
 
+-- Step 1b: Remove CompanyUnit.unit if it exists (not in schema)
+DO $$
+BEGIN
+  -- Drop any constraints on unit column first
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'CompanyUnit_unit_key'
+  ) THEN
+    ALTER TABLE "CompanyUnit" DROP CONSTRAINT "CompanyUnit_unit_key";
+  END IF;
+  
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'CompanyUnit_unit_fkey'
+  ) THEN
+    ALTER TABLE "CompanyUnit" DROP CONSTRAINT "CompanyUnit_unit_fkey";
+  END IF;
+  
+  -- Drop indexes on unit
+  DROP INDEX IF EXISTS "CompanyUnit_unit_idx";
+  
+  -- Then drop the column if it exists
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'CompanyUnit' AND column_name = 'unit'
+  ) THEN
+    ALTER TABLE "CompanyUnit" DROP COLUMN "unit";
+  END IF;
+END $$;
+
 -- Step 2: Add new foreign key columns to WorkMe
 ALTER TABLE "WorkMe" ADD COLUMN IF NOT EXISTS "companyId" TEXT;
 ALTER TABLE "WorkMe" ADD COLUMN IF NOT EXISTS "companyUnitId" TEXT;
