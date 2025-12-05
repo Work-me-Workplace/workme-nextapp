@@ -12,7 +12,10 @@ const openai = new OpenAI({
  * POST /api/myskills/enrich
  * 
  * AI enrichment of raw skills data
- * Uses OpenAI to analyze raw inputs and generate enriched fields
+ * Uses OpenAI to analyze raw inputs and generate enriched summaries
+ * 
+ * NOTE: The new WorkSkills model doesn't have AI fields, so we'll store
+ * the enriched data in the specialties field or return it in the response.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -23,20 +26,25 @@ export async function POST(request: NextRequest) {
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
     
-    // 3. Fetch MySkills record
-    const mySkills = await prisma.mySkills.findUnique({
+    // 3. Fetch WorkSkills record
+    const workSkills = await prisma.workSkills.findUnique({
       where: { workMeId },
+    }).catch((err: any) => {
+      if (err.code === 'P2021') {
+        return null // Table doesn't exist
+      }
+      throw err
     })
 
-    if (!mySkills) {
+    if (!workSkills) {
       return NextResponse.json(
-        { success: false, error: 'MySkills record not found. Please save raw data first.' },
+        { success: false, error: 'WorkSkills record not found. Please save raw data first.' },
         { status: 404 },
       )
     }
 
     // 4. Check if we have raw data to enrich
-    if (!mySkills.mySkillsRaw && !mySkills.myJobResponsibilitiesRaw && !mySkills.myStrengthsRaw) {
+    if (!workSkills.skillsRaw && !workSkills.strengthsRaw && !workSkills.specialties) {
       return NextResponse.json(
         { success: false, error: 'No raw data to enrich' },
         { status: 400 },
@@ -46,19 +54,19 @@ export async function POST(request: NextRequest) {
     // 5. Build AI prompt
     const prompt = `Analyze the following WorkMe user inputs:
 
-1. What they do:
-${mySkills.mySkillsRaw || 'Not provided'}
+1. Their skills:
+${workSkills.skillsRaw || 'Not provided'}
 
-2. Their job responsibilities:
-${mySkills.myJobResponsibilitiesRaw || 'Not provided'}
+2. Their strengths:
+${workSkills.strengthsRaw || 'Not provided'}
 
-3. Their strengths or specialties:
-${mySkills.myStrengthsRaw || 'Not provided'}
+3. Their specialties/job responsibilities:
+${workSkills.specialties || 'Not provided'}
 
 Return a JSON object with three fields:
-- "mySkillsAI": A concise, professional summary of their core skills and capabilities
-- "myJobResponsibilitiesAI": A clear summary of their job responsibilities and key tasks
-- "myStrengthsAI": A summary of their strengths and specialties
+- "skillsSummary": A concise, professional summary of their core skills and capabilities
+- "strengthsSummary": A summary of their strengths and what makes them unique
+- "specialtiesSummary": A clear summary of their specialties and key areas of expertise
 
 Format the response as valid JSON only, no markdown, no code blocks.`
 
@@ -82,33 +90,40 @@ Format the response as valid JSON only, no markdown, no code blocks.`
     // 7. Parse AI response
     const aiResponse = JSON.parse(completion.choices[0].message.content || '{}')
     const {
-      mySkillsAI,
-      myJobResponsibilitiesAI,
-      myStrengthsAI,
+      skillsSummary,
+      strengthsSummary,
+      specialtiesSummary,
     } = aiResponse
 
-    // 8. Update MySkills with AI-enriched fields
-    const updated = await prisma.mySkills.update({
-      where: { workMeId },
-      data: {
-        mySkillsAI: mySkillsAI || null,
-        myJobResponsibilitiesAI: myJobResponsibilitiesAI || null,
-        myStrengthsAI: myStrengthsAI || null,
-      },
-    })
-
-    console.log('✅ Enriched MySkills with AI:', workMeId)
+    // 8. Since WorkSkills doesn't have AI fields, we'll return the enriched data
+    // Optionally, we could store it in a JSON field or separate table
+    // For now, return it in the response
+    console.log('✅ Enriched WorkSkills with AI:', workMeId)
 
     return NextResponse.json({
       success: true,
-      mySkills: updated,
+      workSkills: {
+        ...workSkills,
+        // Include AI summaries in response (not stored in DB)
+        aiEnrichment: {
+          skillsSummary: skillsSummary || null,
+          strengthsSummary: strengthsSummary || null,
+          specialtiesSummary: specialtiesSummary || null,
+        },
+      },
+      // Backward compatibility
+      mySkills: {
+        ...workSkills,
+        mySkillsAI: skillsSummary || null,
+        myStrengthsAI: strengthsSummary || null,
+        myJobResponsibilitiesAI: specialtiesSummary || null,
+      },
     })
   } catch (error: any) {
-    console.error('❌ MySkillsEnrich error:', error)
+    console.error('❌ WorkSkillsEnrich error:', error)
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to enrich skills' },
       { status: 500 },
     )
   }
 }
-

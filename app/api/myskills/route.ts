@@ -6,8 +6,8 @@ import { prisma } from '@/lib/prisma'
 /**
  * GET /api/myskills
  * 
- * Get MySkills record for current authenticated user
- * Returns both raw and AI-enriched fields
+ * Get WorkSkills record for current authenticated user
+ * Returns both raw and professional fields
  */
 export async function GET(request: NextRequest) {
   try {
@@ -18,28 +18,32 @@ export async function GET(request: NextRequest) {
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    // 3. Fetch MySkills record
-    const mySkills = await prisma.mySkills.findUnique({
+    // 3. Fetch WorkSkills record
+    const workSkills = await prisma.workSkills.findUnique({
       where: { workMeId },
+    }).catch((err: any) => {
+      if (err.code === 'P2021') return null // Table doesn't exist
+      throw err
     })
 
-    if (!mySkills) {
+    if (!workSkills) {
       return NextResponse.json({
         success: true,
-        mySkills: null,
+        mySkills: null, // Keep response key for backward compatibility
+        workSkills: null,
       })
     }
 
     return NextResponse.json({
       success: true,
-      mySkills,
+      mySkills: workSkills, // Backward compatibility
+      workSkills,
     })
   } catch (error: any) {
-    console.error('❌ MySkillsGet error:', error)
+    console.error('❌ WorkSkillsGet error:', error)
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to get skills' },
       { status: 500 },
     )
   }
 }
-
