@@ -49,9 +49,9 @@ model WorkMe {
   createdCompanyEvents         CompanyEvent[]                     @relation("CompanyEventCreator")
   createdCompanyCommunities    CompanyCommunity[]                 @relation("CompanyCommunityCreator")
   createdCompanyCareers        CompanyCareer[]                    @relation("CompanyCareerCreator")
-  
+
   // Internal Productivity Relations
-  myWorkOutlook MyWorkOutlook?
+  myWorkOutlook  MyWorkOutlook?
   adminWorkItems AdminWorkItem[]
 }
 
@@ -61,26 +61,26 @@ model WorkMe {
 // Clean profile - personal identity only (like GoFast Athlete profile)
 // No employment data here - that belongs in WorkEntry
 model WorkProfile {
-  id              String  @id @default(cuid())
-  userId          String  @unique // References WorkMe.id
-  firstName       String?
-  lastName        String?
-  headline        String? // LinkedIn-style headline
-  currentRole     String? // Optional current role display
-  handle          String  @unique // Unique username for future "Connect" features
-  linkedinUrl     String?
-  profileImage    String? // Profile photo URL
-  
+  id           String  @id @default(cuid())
+  userId       String  @unique // References WorkMe.id
+  firstName    String?
+  lastName     String?
+  headline     String? // LinkedIn-style headline
+  currentRole  String? // Optional current role display
+  handle       String  @unique // Unique username for future "Connect" features
+  linkedinUrl  String?
+  profileImage String? // Profile photo URL
+
   // Workforce affiliation (registry pattern)
-  companyUnitId   String?
-  divisionUnitId  String?
+  companyUnitId  String?
+  divisionUnitId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user      WorkMe         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company   CompanyUnit?   @relation(fields: [companyUnitId], references: [id])
-  division  DivisionUnit?   @relation(fields: [divisionUnitId], references: [id])
+  user     WorkMe        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company  CompanyUnit?  @relation(fields: [companyUnitId], references: [id])
+  division DivisionUnit? @relation(fields: [divisionUnitId], references: [id])
 
   @@index([userId])
   @@index([handle])
@@ -232,8 +232,8 @@ model CompanyUnit {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  divisions DivisionUnit[]
-  profiles  WorkProfile[]
+  divisions   DivisionUnit[]
+  profiles    WorkProfile[]
   workEntries WorkEntry[] // Legacy - for WorkEntry junction table
 
   @@index([name])
@@ -250,7 +250,7 @@ model DivisionUnit {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  company CompanyUnit @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
+  company  CompanyUnit   @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
   profiles WorkProfile[]
 
   @@unique([name, companyUnitId])
@@ -1035,21 +1035,21 @@ model MyWorkOutlook {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  workMe WorkMe  @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  workMe WorkMe       @relation(fields: [workMeId], references: [id], onDelete: Cascade)
   items  MyWorkItem[]
 
   @@index([workMeId])
 }
 
 model MyWorkItem {
-  id          String   @id @default(cuid())
-  outlookId   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  outlookId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   title   String
   notes   String?
-  status  String @default("open") // "open" | "done" | "blocked" | "watch"
+  status  String    @default("open") // "open" | "done" | "blocked" | "watch"
   dueDate DateTime?
   tag     String? // optional: "comms" | "admin" | "personal" | etc.
 
@@ -1060,14 +1060,14 @@ model MyWorkItem {
 }
 
 model AdminWorkItem {
-  id          String   @id @default(cuid())
-  workMeId    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  workMeId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   title  String
   notes  String?
-  status String @default("open")
+  status String  @default("open")
 
   workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
 

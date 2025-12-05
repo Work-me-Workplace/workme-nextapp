@@ -46,6 +46,8 @@ export async function GET(request: NextRequest) {
             handle: null, // User must enter their own handle
             linkedinUrl: null,
             profileImage: firebasePhotoUrl || null, // Auto-get from Firebase
+            company: null,
+            division: null,
           },
         })
       } else if (!profile.profileImage && firebasePhotoUrl) {
@@ -68,6 +70,8 @@ export async function GET(request: NextRequest) {
             handle: null, // User must enter their own handle
             linkedinUrl: null,
             profileImage: firebasePhotoUrl || null,
+            company: null,
+            division: null,
           },
         })
       }
@@ -123,14 +127,16 @@ export async function GET(request: NextRequest) {
     }
 
     // 7. Load company and division if profile exists
+    let company = null
+    let division = null
     if (profile && (profile.companyUnitId || profile.divisionUnitId)) {
       try {
-        const [company, division] = await Promise.all([
+        const [companyResult, divisionResult] = await Promise.all([
           profile.companyUnitId
             ? prisma.companyUnit.findUnique({
                 where: { id: profile.companyUnitId },
                 select: { id: true, name: true },
-    })
+              })
             : null,
           profile.divisionUnitId
             ? prisma.divisionUnit.findUnique({
@@ -139,15 +145,8 @@ export async function GET(request: NextRequest) {
               })
             : null,
         ])
-
-        return NextResponse.json({
-          success: true,
-          profile: {
-            ...profileData,
-            company: company || null,
-            division: division || null,
-          },
-        })
+        company = companyResult
+        division = divisionResult
       } catch (err) {
         // If tables don't exist, return without company/division
         console.warn('Could not load company/division:', err)
@@ -156,7 +155,11 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      profile: profileData,
+      profile: {
+        ...profileData,
+        company: company || null,
+        division: division || null,
+      },
     })
   } catch (error: any) {
     console.error('❌ WorkMeProfileGet error:', error)
