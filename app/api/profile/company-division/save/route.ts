@@ -8,8 +8,8 @@ import { prisma } from '@/lib/prisma'
  * 
  * DEPRECATED: Use /api/company-affiliation/save instead
  * 
- * Save companyUnitId and divisionUnitId to CompanyAffiliation
- * This is the source of truth for workforce affiliation
+ * Save companyUnitId and divisionId directly to WorkMe
+ * (CompanyAffiliation model has been removed)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -57,20 +57,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 5. Upsert CompanyAffiliation (not WorkProfile)
-    const companyAffiliation = await prisma.companyAffiliation.upsert({
-      where: { workMeId },
-      create: {
-        workMeId,
-        companyUnitId: companyUnitId || null,
-        divisionUnitId: divisionUnitId || null,
-      },
-      update: {
+    // 5. Update WorkMe directly (CompanyAffiliation model removed)
+    const updatedWorkMe = await prisma.workMe.update({
+      where: { id: workMeId },
+      data: {
         companyUnitId: companyUnitId !== undefined ? companyUnitId : undefined,
-        divisionUnitId: divisionUnitId !== undefined ? divisionUnitId : undefined,
+        divisionId: divisionUnitId !== undefined ? divisionUnitId : undefined,
       },
       include: {
-        company: {
+        companyUnit: {
           select: {
             id: true,
             name: true,
@@ -83,29 +78,22 @@ export async function POST(request: NextRequest) {
           },
         },
       },
-    }).catch((err: any) => {
-      if (err.code === 'P2021') {
-        throw new Error('CompanyAffiliation table does not exist. Please run migrations.')
-      }
-      throw err
     })
 
     return NextResponse.json({
       success: true,
       profile: {
-        id: companyAffiliation.id,
-        companyUnitId: companyAffiliation.companyUnitId,
-        divisionUnitId: companyAffiliation.divisionUnitId,
-        company: companyAffiliation.company,
-        division: companyAffiliation.division,
+        companyUnitId: updatedWorkMe.companyUnitId,
+        divisionId: updatedWorkMe.divisionId,
+        company: updatedWorkMe.companyUnit,
+        division: updatedWorkMe.division,
       },
       // Backward compatibility
       companyAffiliation: {
-        id: companyAffiliation.id,
-        companyUnitId: companyAffiliation.companyUnitId,
-        divisionUnitId: companyAffiliation.divisionUnitId,
-        company: companyAffiliation.company,
-        division: companyAffiliation.division,
+        companyUnitId: updatedWorkMe.companyUnitId,
+        divisionUnitId: updatedWorkMe.divisionId, // Note: field name changed to divisionId
+        company: updatedWorkMe.companyUnit,
+        division: updatedWorkMe.division,
       },
     })
   } catch (error: any) {
