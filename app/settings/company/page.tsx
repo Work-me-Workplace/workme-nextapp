@@ -60,15 +60,16 @@ export default function CompanySettingsPage() {
     try {
       setLoading(true)
       const response = await api.get('/api/workme/profile')
-      if (response.data?.profile) {
-        const profile = response.data.profile
-        if (profile.company) {
-          setCurrentCompany(profile.company)
-          setSelectedCompany(profile.company)
+      // New API structure: companyAffiliation with companyUnit and divisionUnit
+      const companyAffiliation = response.data?.companyAffiliation
+      if (companyAffiliation) {
+        if (companyAffiliation.companyUnit) {
+          setCurrentCompany(companyAffiliation.companyUnit)
+          setSelectedCompany(companyAffiliation.companyUnit)
         }
-        if (profile.division) {
-          setCurrentDivision(profile.division)
-          setSelectedDivision(profile.division)
+        if (companyAffiliation.divisionUnit) {
+          setCurrentDivision(companyAffiliation.divisionUnit)
+          setSelectedDivision(companyAffiliation.divisionUnit)
         }
       }
     } catch (error) {
@@ -85,12 +86,12 @@ export default function CompanySettingsPage() {
     }
 
     try {
-      const response = await api.post('/api/company/search', { query })
+      const response = await api.post('/api/company-unit/search', { query })
       if (response.data.success) {
         setCompanySearchResults(response.data.companyUnits || [])
       }
     } catch (error) {
-      console.error('Company search failed:', error)
+      console.error('CompanyUnit search failed:', error)
       setCompanySearchResults([])
     }
   }
@@ -99,7 +100,7 @@ export default function CompanySettingsPage() {
     if (!newCompanyName.trim()) return
 
     try {
-      const response = await api.post('/api/company/create', { name: newCompanyName })
+      const response = await api.post('/api/company-unit/create', { name: newCompanyName })
       if (response.data.success) {
         const company = response.data.companyUnit
         setSelectedCompany(company)
@@ -113,7 +114,7 @@ export default function CompanySettingsPage() {
         setCurrentDivision(null)
       }
     } catch (error: any) {
-      alert(`Failed to create company: ${error.response?.data?.error || error.message}`)
+      alert(`Failed to create CompanyUnit: ${error.response?.data?.error || error.message}`)
     }
   }
 
@@ -161,13 +162,14 @@ export default function CompanySettingsPage() {
 
   const saveProfile = async () => {
     if (!selectedCompany) {
-      alert('Please select a company')
+      alert('Please select a CompanyUnit')
       return
     }
 
     try {
       setSaving(true)
-      const response = await api.post('/api/profile/company-division/save', {
+      // Use the new CompanyAffiliation route
+      const response = await api.post('/api/company-affiliation/save', {
         companyUnitId: selectedCompany.id,
         divisionUnitId: selectedDivision?.id || null,
       })
@@ -179,7 +181,7 @@ export default function CompanySettingsPage() {
         router.push('/settings')
       }
     } catch (error: any) {
-      alert(`Failed to save profile: ${error.response?.data?.error || error.message}`)
+      alert(`Failed to save CompanyAffiliation: ${error.response?.data?.error || error.message}`)
     } finally {
       setSaving(false)
     }
@@ -214,15 +216,15 @@ export default function CompanySettingsPage() {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Settings
               </Link>
-              <h1 className="text-3xl font-bold text-gray-900">Company & Division</h1>
-              <p className="text-gray-600 mt-2">Manage your company and division affiliation</p>
+              <h1 className="text-3xl font-bold text-gray-900">CompanyUnit & DivisionUnit</h1>
+              <p className="text-gray-600 mt-2">Manage your CompanyUnit and DivisionUnit affiliation</p>
             </div>
 
             {/* Company Selection */}
             <div className="bg-white rounded-lg shadow p-6 mb-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
                 <Building2 className="h-5 w-5 mr-2 text-blue-600" />
-                Company
+                CompanyUnit
               </h2>
 
               {currentCompany && (
@@ -246,7 +248,7 @@ export default function CompanySettingsPage() {
                       setCompanySearchQuery(e.target.value)
                       searchCompanies(e.target.value)
                     }}
-                    placeholder="Search for your company..."
+                    placeholder="Search for your CompanyUnit..."
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -289,7 +291,7 @@ export default function CompanySettingsPage() {
                     className="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium"
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    Create new company
+                    Create new CompanyUnit
                   </button>
                 )}
 
@@ -299,7 +301,7 @@ export default function CompanySettingsPage() {
                       type="text"
                       value={newCompanyName}
                       onChange={(e) => setNewCompanyName(e.target.value)}
-                      placeholder="Enter company name"
+                      placeholder="Enter CompanyUnit name"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3"
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
@@ -334,7 +336,7 @@ export default function CompanySettingsPage() {
               <div className="bg-white rounded-lg shadow p-6 mb-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
                   <Building2 className="h-5 w-5 mr-2 text-purple-600" />
-                  Division (Optional)
+                  DivisionUnit (Optional)
                 </h2>
 
                 {currentDivision && (
@@ -358,7 +360,7 @@ export default function CompanySettingsPage() {
                         setDivisionSearchQuery(e.target.value)
                         searchDivisions(e.target.value)
                       }}
-                      placeholder="Search for division..."
+                      placeholder="Search for DivisionUnit..."
                       className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     />
                   </div>
@@ -400,7 +402,7 @@ export default function CompanySettingsPage() {
                       className="flex items-center text-purple-600 hover:text-purple-700 text-sm font-medium"
                     >
                       <Plus className="h-4 w-4 mr-1" />
-                      Create new division
+                      Create new DivisionUnit
                     </button>
                   )}
 
@@ -410,7 +412,7 @@ export default function CompanySettingsPage() {
                         type="text"
                         value={newDivisionName}
                         onChange={(e) => setNewDivisionName(e.target.value)}
-                        placeholder="Enter division name"
+                        placeholder="Enter DivisionUnit name"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3"
                         onKeyPress={(e) => {
                           if (e.key === 'Enter') {
