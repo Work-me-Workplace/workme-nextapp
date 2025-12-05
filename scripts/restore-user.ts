@@ -61,36 +61,35 @@ async function restoreUser(
       // Update or create WorkProfile
         if (firstName || lastName) {
         await prisma.workProfile.upsert({
-          where: { userId: workMe.id },
+          where: { workMeId: workMe.id },
           create: {
-            userId: workMe.id,
-            firstName: firstName || null,
-            lastName: lastName || null,
-            handle: `user_${workMe.id.slice(0, 8)}`,
+            workMeId: workMe.id,
+            jobRole: null,
+            industry: null,
           },
           update: {
-            firstName: firstName !== undefined ? firstName : undefined,
-            lastName: lastName !== undefined ? lastName : undefined,
-            },
-          })
+            // WorkProfile no longer has firstName/lastName
+          },
+        }).catch(() => {
+          // Table might not exist
+          console.log('⚠️  WorkProfile table does not exist, skipping')
+        })
         console.log('\n✅ Updated user name in WorkProfile')
         }
       
       // Get profile and work entry for display
       const [profile, currentWorkEntry] = await Promise.all([
-        prisma.workProfile.findUnique({ where: { userId: workMe.id } }),
+        prisma.workProfile.findUnique({ where: { workMeId: workMe.id } }),
         prisma.workEntry.findFirst({
-          where: { userId: workMe.id, endDate: null },
-          include: { companyUnit: { select: { name: true } } },
-        }),
+          where: { workMeId: workMe.id, endDate: null },
+        }).catch(() => null),
       ])
       
       console.log(`   WorkMe ID: ${workMe.id}`)
       console.log(`   Email: ${workMe.email}`)
       console.log(`   Firebase ID: ${workMe.firebaseId}`)
-      console.log(`   Name: ${formatName(profile?.firstName, profile?.lastName)}`)
-      console.log(`   Company Unit: ${currentWorkEntry?.companyUnit.name || '(none)'}`)
-      console.log(`   Company Division: ${currentWorkEntry?.division || '(none)'}`)
+      console.log(`   Company: ${currentWorkEntry?.companyName || '(none)'}`)
+      console.log(`   Title: ${currentWorkEntry?.title || '(none)'}`)
       
       return workMe
     }
@@ -129,12 +128,11 @@ async function restoreUser(
       // Update or create WorkProfile
       if (firstName || lastName) {
         await prisma.workProfile.upsert({
-          where: { userId: workMe.id },
+          where: { workMeId: workMe.id },
           create: {
-            userId: workMe.id,
-            firstName: firstName || null,
-            lastName: lastName || null,
-            handle: `user_${workMe.id.slice(0, 8)}`,
+            workMeId: workMe.id,
+            jobRole: null,
+            industry: null,
           },
           update: {
             firstName: firstName !== undefined ? firstName : undefined,
@@ -161,14 +159,16 @@ async function restoreUser(
       },
     })
 
-    // Create WorkProfile
+    // Create WorkProfile (new architecture)
     await prisma.workProfile.create({
       data: {
-        userId: workMe.id,
-        firstName: firstName || 'Adam',
-        lastName: lastName || 'Cole',
-        handle: `user_${workMe.id.slice(0, 8)}`,
+        workMeId: workMe.id,
+        jobRole: null,
+        industry: null,
       },
+    }).catch(() => {
+      // Table might not exist
+      console.log('⚠️  WorkProfile table does not exist, skipping')
     })
 
     console.log('\n✅ Created new user:')

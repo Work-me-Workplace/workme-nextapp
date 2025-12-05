@@ -32,15 +32,10 @@ export async function POST(request: Request) {
       )
     }
 
-    // Verify WorkMe exists and get profile
-    const [workMe, profile] = await Promise.all([
-      prisma.workMe.findUnique({
+    // Verify WorkMe exists
+    const workMe = await prisma.workMe.findUnique({
       where: { id: workMeId },
-      }),
-      prisma.workProfile.findUnique({
-        where: { userId: workMeId },
-      }),
-    ])
+    })
 
     if (!workMe) {
       return NextResponse.json(
@@ -50,13 +45,14 @@ export async function POST(request: Request) {
     }
 
     // Create standalone super admin (first user - Adam)
+    // WorkProfile no longer has firstName/lastName/photoUrl - those come from Firebase
     const superAdmin = await prisma.superAdmin.create({
       data: {
         firebaseId: workMe.firebaseId,
         email: workMe.email,
-        firstName: profile?.firstName || null,
-        lastName: profile?.lastName || null,
-        photoUrl: profile?.profileImage || null,
+        firstName: null, // Will be set separately if needed
+        lastName: null,
+        photoUrl: null, // Will be set from Firebase if needed
         workMeId, // Optional link (may migrate away)
       },
       include: {

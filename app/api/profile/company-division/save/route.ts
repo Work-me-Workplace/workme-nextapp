@@ -6,7 +6,9 @@ import { prisma } from '@/lib/prisma'
 /**
  * POST /api/profile/company-division/save
  * 
- * Save companyUnitId and divisionUnitId to WorkProfile
+ * DEPRECATED: Use /api/company-affiliation/save instead
+ * 
+ * Save companyUnitId and divisionUnitId to CompanyAffiliation
  * This is the source of truth for workforce affiliation
  */
 export async function POST(request: NextRequest) {
@@ -55,14 +57,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 5. Upsert WorkProfile with company/division affiliation
-    const profile = await prisma.workProfile.upsert({
-      where: { userId: workMeId },
+    // 5. Upsert CompanyAffiliation (not WorkProfile)
+    const companyAffiliation = await prisma.companyAffiliation.upsert({
+      where: { workMeId },
       create: {
-        userId: workMeId,
+        workMeId,
         companyUnitId: companyUnitId || null,
         divisionUnitId: divisionUnitId || null,
-        handle: `temp_${workMeId.slice(0, 8)}`, // Temporary handle - user must set their own
       },
       update: {
         companyUnitId: companyUnitId !== undefined ? companyUnitId : undefined,
@@ -82,16 +83,29 @@ export async function POST(request: NextRequest) {
           },
         },
       },
+    }).catch((err: any) => {
+      if (err.code === 'P2021') {
+        throw new Error('CompanyAffiliation table does not exist. Please run migrations.')
+      }
+      throw err
     })
 
     return NextResponse.json({
       success: true,
       profile: {
-        id: profile.id,
-        companyUnitId: profile.companyUnitId,
-        divisionUnitId: profile.divisionUnitId,
-        company: profile.company,
-        division: profile.division,
+        id: companyAffiliation.id,
+        companyUnitId: companyAffiliation.companyUnitId,
+        divisionUnitId: companyAffiliation.divisionUnitId,
+        company: companyAffiliation.company,
+        division: companyAffiliation.division,
+      },
+      // Backward compatibility
+      companyAffiliation: {
+        id: companyAffiliation.id,
+        companyUnitId: companyAffiliation.companyUnitId,
+        divisionUnitId: companyAffiliation.divisionUnitId,
+        company: companyAffiliation.company,
+        division: companyAffiliation.division,
       },
     })
   } catch (error: any) {
@@ -102,4 +116,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

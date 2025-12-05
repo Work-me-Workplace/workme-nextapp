@@ -43,7 +43,7 @@ async function upsertUser(email: string, firebaseId: string) {
       
       // Get profile for display
       const profile = await prisma.workProfile.findUnique({
-        where: { userId: workMe.id },
+        where: { workMeId: workMe.id },
       })
       
       console.log(`\n✅ Updated user with new Firebase ID`)
@@ -104,14 +104,16 @@ async function upsertUser(email: string, firebaseId: string) {
       },
     })
 
-    // Create WorkProfile
+    // Create WorkProfile (new architecture - no firstName/lastName/handle)
     await prisma.workProfile.create({
       data: {
-        userId: workMe.id,
-        firstName: 'Adam',
-        lastName: 'Cole',
-        handle: `user_${workMe.id.slice(0, 8)}`,
+        workMeId: workMe.id,
+        jobRole: null,
+        industry: null,
       },
+    }).catch(() => {
+      // Table might not exist yet
+      console.log('⚠️  WorkProfile table does not exist, skipping')
     })
 
     console.log(`\n✅ Created new user:`)

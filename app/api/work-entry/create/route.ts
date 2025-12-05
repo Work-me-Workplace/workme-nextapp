@@ -7,14 +7,14 @@ import { prisma } from '@/lib/prisma'
  * POST /api/work-entry/create
  * 
  * Create work entry (employment history)
- * Links WorkMe to CompanyUnit with employment details
+ * WorkEntry uses companyName (string) not companyUnitId
  * 
  * Body: {
- *   companyUnitId: string,
- *   division?: string,
+ *   companyName: string,
  *   title?: string,
  *   startDate?: string (ISO date),
  *   endDate?: string (ISO date) // null = current
+ *   description?: string
  * }
  */
 export async function POST(request: NextRequest) {
@@ -27,45 +27,30 @@ export async function POST(request: NextRequest) {
     const { id: workMeId } = workMe
 
     const body = await request.json()
-    const { companyUnitId, division, title, startDate, endDate } = body
+    const { companyName, title, startDate, endDate, description } = body
 
-    if (!companyUnitId) {
+    if (!companyName || !companyName.trim()) {
       return NextResponse.json(
-        { success: false, error: 'companyUnitId is required' },
+        { success: false, error: 'companyName is required' },
         { status: 400 },
       )
     }
 
-    // Verify CompanyUnit exists
-    const companyUnit = await prisma.companyUnit.findUnique({
-      where: { id: companyUnitId },
-    })
-
-    if (!companyUnit) {
-      return NextResponse.json(
-        { success: false, error: 'Company unit not found' },
-        { status: 404 },
-      )
-    }
-
-    // Create WorkEntry
+    // Create WorkEntry (uses companyName string, not companyUnitId)
     const workEntry = await prisma.workEntry.create({
       data: {
-        userId: workMeId,
-        companyUnitId,
-        division: division?.trim() || null,
+        workMeId,
+        companyName: companyName.trim(),
         title: title?.trim() || null,
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
+        description: description?.trim() || null,
       },
-      include: {
-        companyUnit: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
+    }).catch((err: any) => {
+      if (err.code === 'P2021') {
+        throw new Error('WorkEntry table does not exist. Please run migrations.')
+      }
+      throw err
     })
 
     console.log('✅ WorkEntry created:', workEntry.id)
@@ -74,12 +59,12 @@ export async function POST(request: NextRequest) {
       success: true,
       workEntry: {
         id: workEntry.id,
-        userId: workEntry.userId,
-        companyUnit: workEntry.companyUnit,
-        division: workEntry.division,
+        workMeId: workEntry.workMeId,
+        companyName: workEntry.companyName,
         title: workEntry.title,
         startDate: workEntry.startDate,
         endDate: workEntry.endDate,
+        description: workEntry.description,
         createdAt: workEntry.createdAt,
         updatedAt: workEntry.updatedAt,
       },
@@ -92,4 +77,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

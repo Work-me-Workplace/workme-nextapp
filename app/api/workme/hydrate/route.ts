@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
 import { loadWorkMe } from '@/lib/auth/loadWorkMe'
+import { prisma } from '@/lib/prisma'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -22,7 +23,27 @@ export async function GET(request: Request) {
     const { firebaseId, photoUrl, displayName } = await verifyAuth(request)
     
     // 2. Load WorkMe identity - just the basic WorkMe object
-    const workMe = await loadWorkMe(firebaseId)
+    const workMeIdentity = await loadWorkMe(firebaseId)
+    const { id: workMeId } = workMeIdentity
+
+    // 3. Fetch full WorkMe record to get headline, handle, title, linkedinUrl
+    const workMe = await prisma.workMe.findUnique({
+      where: { id: workMeId },
+      select: {
+        id: true,
+        firebaseId: true,
+        email: true,
+        headline: true,
+        handle: true,
+        title: true,
+        linkedinUrl: true,
+        createdAt: true,
+      },
+    })
+
+    if (!workMe) {
+      throw new Error('WorkMe not found')
+    }
 
     console.log('[API GET /api/workme/hydrate] Hydration successful:', {
       workMeId: workMe.id,

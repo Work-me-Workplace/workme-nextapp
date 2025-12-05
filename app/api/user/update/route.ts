@@ -52,38 +52,42 @@ export async function POST(request: NextRequest) {
     // End any current work entries
     await prisma.workEntry.updateMany({
       where: {
-        userId: workMeId,
+        workMeId: workMeId,
         endDate: null, // Current job
       },
       data: {
         endDate: new Date(), // End current job
       },
+    }).catch((err: any) => {
+      if (err.code === 'P2021') {
+        // Table doesn't exist yet, skip
+        return
+      }
+      throw err
     })
 
-    // Create new WorkEntry
+    // Create new WorkEntry (WorkEntry uses companyName string, not companyUnitId)
     const workEntry = await prisma.workEntry.create({
       data: {
-        userId: workMeId,
-        companyUnitId: companyUnitRecord.id,
-        division: companyDivision?.trim() || null,
+        workMeId: workMeId,
+        companyName: companyUnitRecord.name, // Store company name as string
+        title: null, // User can set this later
         startDate: new Date(),
         endDate: null, // Current job
+        description: companyDivision?.trim() || null, // Store division in description for now
       },
-      include: {
-        companyUnit: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
+    }).catch((err: any) => {
+      if (err.code === 'P2021') {
+        throw new Error('WorkEntry table does not exist. Please run migrations.')
+      }
+      throw err
     })
 
     console.log('[API POST /api/user/update] SUCCESS (migrated to WorkEntry)', {
       workMeId,
       workEntryId: workEntry.id,
-      companyUnit: companyUnitRecord.name,
-      division: workEntry.division,
+      companyName: workEntry.companyName,
+      description: workEntry.description,
     })
 
     return NextResponse.json({
@@ -91,10 +95,10 @@ export async function POST(request: NextRequest) {
       message: 'Migrated to new WorkEntry pattern',
       workEntry: {
         id: workEntry.id,
-        companyUnit: workEntry.companyUnit,
-        division: workEntry.division,
+        companyName: workEntry.companyName,
         startDate: workEntry.startDate,
         endDate: workEntry.endDate,
+        description: workEntry.description,
       },
     })
   } catch (error: any) {

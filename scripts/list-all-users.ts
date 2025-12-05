@@ -23,28 +23,19 @@ async function listAllUsers() {
       users.map(async (user) => {
         const [profile, currentWorkEntry] = await Promise.all([
           prisma.workProfile.findUnique({
-            where: { userId: user.id },
+            where: { workMeId: user.id },
           }),
           prisma.workEntry.findFirst({
             where: {
-              userId: user.id,
+              workMeId: user.id,
               endDate: null,
             },
-            include: {
-              companyUnit: {
-                select: {
-                  name: true,
-                },
-              },
-            },
-          }),
+          }).catch(() => null),
         ])
         return {
           ...user,
-          firstName: profile?.firstName || null,
-          lastName: profile?.lastName || null,
-          companyUnit: currentWorkEntry?.companyUnit.name || null,
-          companyDivision: currentWorkEntry?.division || null,
+          companyName: currentWorkEntry?.companyName || null,
+          title: currentWorkEntry?.title || null,
         }
       })
     )
@@ -57,9 +48,8 @@ async function listAllUsers() {
       console.log(`   WorkMe ID: ${user.id}`)
       console.log(`   Email: ${user.email}`)
       console.log(`   Firebase ID: ${user.firebaseId || '(none)'}`)
-      console.log(`   Name: ${user.firstName || ''} ${user.lastName || ''}`.trim() || '(no name)')
-      console.log(`   Company Unit: ${user.companyUnit || '(none)'}`)
-      console.log(`   Company Division: ${user.companyDivision || '(none)'}`)
+      console.log(`   Company: ${user.companyName || '(none)'}`)
+      console.log(`   Title: ${user.title || '(none)'}`)
       console.log(`   Created: ${user.createdAt.toISOString()}`)
       console.log('-'.repeat(80))
     })

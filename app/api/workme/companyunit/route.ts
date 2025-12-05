@@ -19,7 +19,7 @@ import { nanoid } from 'nanoid'
  * - If unitName provided → search/create CompanyUnit registry (public)
  * - If unitName blank → generate unique private unit name
  * - End any current WorkEntry (endDate = now)
- * - Create new WorkEntry with companyUnit and division
+ * - Create new WorkEntry with companyName (string)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
     const { unitName, division } = body
     
     let companyUnitRecord
+    let companyName: string
     
     if (unitName && unitName.trim()) {
       // User provided a name - search or create CompanyUnit registry
@@ -53,72 +54,72 @@ export async function POST(request: NextRequest) {
       if (!companyUnitRecord) {
         companyUnitRecord = await prisma.companyUnit.create({
           data: {
-          name: normalizedName, 
+            name: normalizedName, 
           },
         })
         console.log('✅ Created new CompanyUnit:', companyUnitRecord.name)
       } else {
         console.log('✅ Found existing CompanyUnit:', companyUnitRecord.name)
       }
+      
+      companyName = companyUnitRecord.name
     } else {
       // User left blank - generate unique private unit
       const generated = `unit_${nanoid(8)}`
-      
-      companyUnitRecord = await prisma.companyUnit.create({
-        data: { 
-          name: generated, 
-        }
-      })
-      
+      companyName = generated
       console.log('✅ Generated private workspace:', generated)
     }
     
     // 4. End any current work entries
     await prisma.workEntry.updateMany({
       where: {
-        userId: workMeId,
+        workMeId,
         endDate: null, // Current job
       },
       data: {
         endDate: new Date(), // End current job
       },
+    }).catch((err: any) => {
+      if (err.code === 'P2021') {
+        // Table doesn't exist, skip
+        return
+      }
+      throw err
     })
     
-    // 5. Create new WorkEntry
+    // 5. Create new WorkEntry (uses companyName string, not companyUnitId)
     const workEntry = await prisma.workEntry.create({
       data: {
-        userId: workMeId,
-        companyUnitId: companyUnitRecord.id,
-        division: division?.trim() || null,
+        workMeId,
+        companyName,
+        title: null, // User can set this later
         startDate: new Date(),
         endDate: null, // Current job
+        description: division?.trim() || null, // Store division in description for now
       },
-      include: {
-        companyUnit: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
+    }).catch((err: any) => {
+      if (err.code === 'P2021') {
+        throw new Error('WorkEntry table does not exist. Please run migrations.')
+      }
+      throw err
     })
     
     console.log('✅ Created WorkEntry:', {
       workEntryId: workEntry.id,
-      companyUnit: companyUnitRecord.name,
-      division: division?.trim() || null,
+      companyName: workEntry.companyName,
+      description: workEntry.description,
     })
     
     return NextResponse.json({
       success: true,
       workEntry: {
         id: workEntry.id,
-        companyUnit: workEntry.companyUnit,
-        division: workEntry.division,
+        companyName: workEntry.companyName,
+        description: workEntry.description,
         startDate: workEntry.startDate,
         endDate: workEntry.endDate,
       },
-      unitName: companyUnitRecord.name,
+      unitName: companyName,
       division: division?.trim() || null,
     })
   } catch (error: any) {

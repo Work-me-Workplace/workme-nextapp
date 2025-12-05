@@ -54,30 +54,23 @@ async function deleteUser(identifier: string) {
     // Get profile and work entry for display
     const [profile, currentWorkEntry] = await Promise.all([
       prisma.workProfile.findUnique({
-        where: { userId: workMe.id },
-      }),
+        where: { workMeId: workMe.id },
+      }).catch(() => null),
       prisma.workEntry.findFirst({
         where: {
-          userId: workMe.id,
+          workMeId: workMe.id,
           endDate: null,
         },
-        include: {
-          companyUnit: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      }),
+      }).catch(() => null),
     ])
 
     console.log('✅ Found user:')
     console.log(`   WorkMe ID: ${workMe.id}`)
     console.log(`   Email: ${workMe.email}`)
     console.log(`   Firebase ID: ${workMe.firebaseId || '(none)'}`)
-    console.log(`   Name: ${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || '(no name)')
-    console.log(`   Company Unit: ${currentWorkEntry?.companyUnit.name || '(none)'}`)
-    console.log(`   Company Division: ${currentWorkEntry?.division || '(none)'}`)
+    console.log(`   Email: ${workMe.email}`)
+    console.log(`   Company: ${currentWorkEntry?.companyName || '(none)'}`)
+    console.log(`   Title: ${currentWorkEntry?.title || '(none)'}`)
     console.log('')
 
     // Delete the user

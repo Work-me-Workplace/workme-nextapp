@@ -24,9 +24,9 @@ async function lookupUser(firebaseId: string) {
     if (workMe) {
       // Get profile and work entry
       const [profile, currentWorkEntry] = await Promise.all([
-        prisma.workProfile.findUnique({ where: { userId: workMe.id } }),
+        prisma.workProfile.findUnique({ where: { workMeId: workMe.id } }),
         prisma.workEntry.findFirst({
-          where: { userId: workMe.id, endDate: null },
+          where: { workMeId: workMe.id, endDate: null },
           include: { companyUnit: { select: { name: true } } },
         }),
       ])
@@ -62,9 +62,9 @@ async function lookupUser(firebaseId: string) {
     const usersWithData = await Promise.all(
       allUsers.map(async (user) => {
         const [profile, currentWorkEntry] = await Promise.all([
-          prisma.workProfile.findUnique({ where: { userId: user.id } }),
+          prisma.workProfile.findUnique({ where: { workMeId: user.id } }),
           prisma.workEntry.findFirst({
-            where: { userId: user.id, endDate: null },
+            where: { workMeId: user.id, endDate: null },
             include: { companyUnit: { select: { name: true } } },
           }),
         ])
