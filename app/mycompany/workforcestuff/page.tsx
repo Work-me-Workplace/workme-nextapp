@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { getAuth } from 'firebase/auth'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { Calendar, Filter, Archive, Clock, CheckCircle, Users, AlertCircle } from 'lucide-react'
@@ -39,27 +40,76 @@ interface WorkforceStuffItem {
 export default function WorkforceStuffPage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
+  const [companyUnitId, setCompanyUnitId] = useState<string | null>(null)
   const [items, setItems] = useState<WorkforceStuffItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [authReady, setAuthReady] = useState(false)
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<'active' | 'archived' | 'all'>('active')
 
+  // Wait for auth to be ready before loading data
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const id = getWorkMeIdFromStorage()
-      if (!id) {
-        router.push('/signin')
+    if (typeof window === 'undefined') return
+
+    // Check Firebase auth
+    const auth = getAuth()
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setAuthReady(true)
+        const id = getWorkMeIdFromStorage()
+        if (id) {
+          setWorkMeId(id)
+          // Get companyUnitId from localStorage (set by welcome/dashboard)
+          const storedCompanyUnitId = localStorage.getItem('companyUnit')
+          if (storedCompanyUnitId) {
+            setCompanyUnitId(storedCompanyUnitId)
+          } else {
+            // If not in localStorage, try to get from WorkMe profile
+            loadCompanyUnitId(id)
+          }
+        } else {
+          router.push('/signin')
+        }
       } else {
-        setWorkMeId(id)
-        loadItems()
+        router.push('/signin')
       }
-    }
+    })
+
+    return () => unsubscribe()
   }, [router])
 
+  // Load companyUnitId from WorkMe profile if not in localStorage
+  async function loadCompanyUnitId(workMeId: string) {
+    try {
+      const response = await api.get('/api/workme/profile')
+      if (response.data.success && response.data.workMe?.companyUnitId) {
+        const unitId = response.data.workMe.companyUnitId
+        setCompanyUnitId(unitId)
+        localStorage.setItem('companyUnit', unitId)
+      }
+    } catch (error) {
+      console.error('Failed to load companyUnitId:', error)
+    }
+  }
+
+  // Load items only when auth is ready and companyUnitId is available
+  useEffect(() => {
+    if (authReady && workMeId && companyUnitId) {
+      loadItems()
+    }
+  }, [authReady, workMeId, companyUnitId])
+
   async function loadItems() {
+    if (!companyUnitId) {
+      console.warn('Cannot load items: companyUnitId not set')
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
-      const response = await api.get('/api/workforcestuff')
+      // Pass companyUnitId as query parameter
+      const response = await api.get(`/api/workforcestuff?companyUnitId=${encodeURIComponent(companyUnitId)}`)
       
       if (response.data.success && response.data.items) {
         setItems(response.data.items)
@@ -148,7 +198,7 @@ export default function WorkforceStuffPage() {
     return false
   })
 
-  if (!workMeId || loading) {
+  if (!authReady || !workMeId || !companyUnitId || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>

@@ -3,63 +3,68 @@
  * 
  * Fetches all CompanyX models (Events, Training, Campaigns, etc.)
  * and returns them in a unified format for the dashboard
+ * 
+ * AUTH: WorkMe-only (Firebase → WorkMe)
+ * SCOPE: companyUnitId from query parameter (NOT from WorkMe)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAuth } from '@/lib/server/verifyAuth'
-import { loadWorkMe } from '@/lib/auth/loadWorkMe'
+import { requireWorkMeAuth } from '@/lib/server/requireWorkMeAuth'
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const { firebaseId } = await verifyAuth(request)
-    const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
+    // AUTH: WorkMe-only
+    await requireWorkMeAuth(request)
 
-    if (!workMeId || !companyUnit) {
+    // SCOPE: companyUnitId from query parameter
+    const { searchParams } = new URL(request.url)
+    const companyUnitId = searchParams.get('companyUnitId')
+
+    if (!companyUnitId) {
       return NextResponse.json(
-        { success: false, error: 'Not authenticated or companyUnit not set' },
-        { status: 401 }
+        { success: false, error: 'companyUnitId query parameter is required' },
+        { status: 400 }
       )
     }
 
-    // Fetch all CompanyX models
+    // Fetch all CompanyX models scoped by companyUnitId
     const [trainings, events, campaigns, impactEvents, community, benefits, careers] = await Promise.all([
       // CompanyTraining
       prisma.companyTraining.findMany({
-        where: { companyUnit },
+        where: { companyUnit: companyUnitId },
         orderBy: { trainingDate: 'asc' },
       }),
       // CompanyEvent
       prisma.companyEvent.findMany({
-        where: { companyUnit },
+        where: { companyUnit: companyUnitId },
         orderBy: { createdAt: 'desc' },
       }),
       // CompanyCampaign
       prisma.companyCampaign.findMany({
-        where: { companyUnit },
+        where: { companyUnit: companyUnitId },
         orderBy: { createdAt: 'desc' },
       }),
       // CompanyImpactEvent
       prisma.companyImpactEvent.findMany({
-        where: { companyUnit },
+        where: { companyUnit: companyUnitId },
         orderBy: { createdAt: 'desc' },
       }),
       // CompanyCommunity
       prisma.companyCommunity.findMany({
-        where: { companyUnit },
+        where: { companyUnit: companyUnitId },
         orderBy: { createdAt: 'desc' },
       }),
       // CompanyBenefits
       prisma.companyBenefits.findMany({
-        where: { companyUnit },
+        where: { companyUnit: companyUnitId },
         orderBy: { createdAt: 'desc' },
       }),
       // CompanyCareer
       prisma.companyCareer.findMany({
-        where: { companyUnit },
+        where: { companyUnit: companyUnitId },
         orderBy: { createdAt: 'desc' },
       }),
     ])
