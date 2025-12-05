@@ -12,6 +12,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false)
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [email, setEmail] = useState<string>('')
+  const [photoURL, setPhotoURL] = useState<string>('')
   
   // WorkProfile data (personal identity only - like GoFast Athlete profile)
   const [formData, setFormData] = useState({
@@ -41,6 +42,7 @@ export default function ProfilePage() {
         const lastNameFromFirebase = displayName.split(' ').slice(1).join(' ') || ''
         
         setEmail(firebaseUser.email || '')
+        setPhotoURL(firebaseUser.photoURL || '')
         
         // Pre-populate form with Firebase data
         setFormData(prev => ({
@@ -60,9 +62,12 @@ export default function ProfilePage() {
       const response = await api.get('/api/workme/profile')
       const firebaseUser = getAuth().currentUser
       
-      // Always ensure email is set from Firebase
+      // Always ensure email and photoURL are set from Firebase
       if (firebaseUser?.email) {
         setEmail(firebaseUser.email)
+      }
+      if (firebaseUser?.photoURL) {
+        setPhotoURL(firebaseUser.photoURL)
       }
       
       // New API structure: workMe, workProfile, companyAffiliation, etc.
@@ -165,24 +170,20 @@ export default function ProfilePage() {
         {/* Header with icon */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-sky-100 rounded-full mb-4 overflow-hidden">
-            {(() => {
-              const firebaseUser = getAuth().currentUser
-              const photoURL = firebaseUser?.photoURL
-              return photoURL ? (
-                <img 
-                  src={photoURL} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    // Fallback to icon if image fails
-                    e.currentTarget.style.display = 'none'
-                    const icon = e.currentTarget.nextElementSibling as HTMLElement
-                    if (icon) icon.style.display = 'block'
-                  }}
-                />
-              ) : null
-            })()}
-            <User className={`h-8 w-8 text-sky-600 ${getAuth().currentUser?.photoURL ? 'hidden' : ''}`} />
+            {photoURL ? (
+              <img 
+                src={photoURL} 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback to icon if image fails
+                  e.currentTarget.style.display = 'none'
+                  const icon = e.currentTarget.nextElementSibling as HTMLElement
+                  if (icon) icon.style.display = 'block'
+                }}
+              />
+            ) : null}
+            <User className={`h-8 w-8 text-sky-600 ${photoURL ? 'hidden' : ''}`} />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Your Profile
