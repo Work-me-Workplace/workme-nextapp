@@ -41,17 +41,21 @@ async function upsertUser(email: string, firebaseId: string) {
         },
       })
       
-      // Get profile for display
-      const profile = await prisma.workProfile.findUnique({
-        where: { workMeId: workMe.id },
-      })
+      // Get profile and work entry for display
+      const [profile, currentWorkEntry] = await Promise.all([
+        prisma.workProfile.findUnique({
+          where: { workMeId: workMe.id },
+        }).catch(() => null),
+        prisma.workEntry.findFirst({
+          where: { workMeId: workMe.id, endDate: null },
+        }).catch(() => null),
+      ])
       
       console.log(`\n✅ Updated user with new Firebase ID`)
       console.log(`   WorkMe ID: ${workMe.id}`)
       console.log(`   Email: ${workMe.email}`)
       console.log(`   Firebase ID: ${workMe.firebaseId}`)
-      const companyName = currentWorkEntry?.companyName || '(no company)'
-    console.log(`   Company: ${companyName}`)
+      console.log(`   Company: ${currentWorkEntry?.companyName || '(no company)'}`)
       
       return workMe
     }
