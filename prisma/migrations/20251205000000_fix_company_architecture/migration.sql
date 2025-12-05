@@ -2,15 +2,25 @@
 -- Remove CompanyAffiliation, add direct foreign keys to WorkMe
 -- Make CompanyUnit.companyId nullable (it shouldn't be required)
 
--- Step 1: Make CompanyUnit.companyId nullable (if it exists and is required)
+-- Step 1: Remove CompanyUnit.companyId if it exists (CompanyUnit is a standalone registry)
+-- First, drop any foreign key constraints
 DO $$
 BEGIN
-  -- Check if companyId column exists and is NOT NULL
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'CompanyUnit_companyId_fkey'
+  ) THEN
+    ALTER TABLE "CompanyUnit" DROP CONSTRAINT "CompanyUnit_companyId_fkey";
+  END IF;
+END $$;
+
+-- Then drop the column if it exists
+DO $$
+BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'CompanyUnit' AND column_name = 'companyId' AND is_nullable = 'NO'
+    WHERE table_name = 'CompanyUnit' AND column_name = 'companyId'
   ) THEN
-    ALTER TABLE "CompanyUnit" ALTER COLUMN "companyId" DROP NOT NULL;
+    ALTER TABLE "CompanyUnit" DROP COLUMN "companyId";
   END IF;
 END $$;
 
