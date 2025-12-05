@@ -367,11 +367,21 @@ export default function CompanySettingsPage() {
                       No company HQ found matching "{companyHQSearchQuery}"
                     </p>
                     <button
-                      onClick={() => {
-                        setNewCompanyHQName(companyHQSearchQuery)
-                        setShowCompanyHQCreate(true)
-                        setCompanyHQSearchQuery('')
-                        setHasSearchedHQ(false)
+                      onClick={async () => {
+                        // Automatically create and select it
+                        try {
+                          const response = await api.post('/api/company-registry/create', { name: companyHQSearchQuery })
+                          if (response.data.success) {
+                            const companyHQ = response.data.company
+                            setSelectedCompanyHQ(companyHQ)
+                            setCurrentCompanyHQ(companyHQ)
+                            setCompanyHQSearchQuery('')
+                            setCompanyHQSearchResults([])
+                            setHasSearchedHQ(false)
+                          }
+                        } catch (error: any) {
+                          alert(`Failed to create company HQ: ${error.response?.data?.error || error.message}`)
+                        }
                       }}
                       className="flex items-center text-green-600 hover:text-green-700 text-sm font-medium"
                     >
@@ -507,11 +517,24 @@ export default function CompanySettingsPage() {
                       No company found matching "{companySearchQuery}"
                     </p>
                     <button
-                      onClick={() => {
-                        setNewCompanyName(companySearchQuery)
-                        setShowCompanyCreate(true)
-                        setCompanySearchQuery('')
-                        setHasSearched(false)
+                      onClick={async () => {
+                        // Automatically create and select it
+                        try {
+                          const response = await api.post('/api/company-unit/create', { name: companySearchQuery })
+                          if (response.data.success) {
+                            const company = response.data.companyUnit
+                            setSelectedCompany(company)
+                            setCurrentCompany(company)
+                            setCompanySearchQuery('')
+                            setCompanySearchResults([])
+                            setHasSearched(false)
+                            // Clear division when company changes
+                            setSelectedDivision(null)
+                            setCurrentDivision(null)
+                          }
+                        } catch (error: any) {
+                          alert(`Failed to create company: ${error.response?.data?.error || error.message}`)
+                        }
                       }}
                       className="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium"
                     >
