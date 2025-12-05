@@ -39,6 +39,20 @@ export async function POST(request: NextRequest) {
 
     const normalizedName = name.trim()
 
+    // Validate companyId exists if provided
+    if (companyId) {
+      const companyRegistry = await prisma.companyRegistry.findUnique({
+        where: { id: companyId },
+      })
+      
+      if (!companyRegistry) {
+        return NextResponse.json(
+          { success: false, error: 'Company HQ not found' },
+          { status: 404 },
+        )
+      }
+    }
+
     // REGISTRY PATTERN: Search first, if exists, return it. If not, create it.
     const existingCompanyUnit = await prisma.companyUnit.findFirst({
       where: {
@@ -88,7 +102,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    console.log('✅ CompanyUnit created:', companyUnit.id)
+    console.log('✅ CompanyUnit created:', companyUnit.id, companyId ? `linked to Company HQ: ${companyId}` : '(standalone)')
 
     return NextResponse.json({
       success: true,
