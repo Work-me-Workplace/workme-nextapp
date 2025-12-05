@@ -32,6 +32,8 @@ export default function CompanySettingsPage() {
   const [selectedCompany, setSelectedCompany] = useState<CompanyUnit | null>(null)
   const [showCompanyCreate, setShowCompanyCreate] = useState(false)
   const [newCompanyName, setNewCompanyName] = useState('')
+  const [hasSearched, setHasSearched] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
 
   // Division selection state
   const [divisionSearchQuery, setDivisionSearchQuery] = useState('')
@@ -82,17 +84,24 @@ export default function CompanySettingsPage() {
   const searchCompanies = async (query: string) => {
     if (!query.trim()) {
       setCompanySearchResults([])
+      setHasSearched(false)
       return
     }
 
     try {
+      setIsSearching(true)
+      setHasSearched(true)
       const response = await api.post('/api/company-unit/search', { query })
       if (response.data.success) {
         setCompanySearchResults(response.data.companyUnits || [])
+      } else {
+        setCompanySearchResults([])
       }
     } catch (error) {
       console.error('CompanyUnit search failed:', error)
       setCompanySearchResults([])
+    } finally {
+      setIsSearching(false)
     }
   }
 
@@ -109,6 +118,7 @@ export default function CompanySettingsPage() {
         setShowCompanyCreate(false)
         setCompanySearchQuery('')
         setCompanySearchResults([])
+        setHasSearched(false)
         // Clear division when company changes
         setSelectedDivision(null)
         setCurrentDivision(null)
@@ -253,7 +263,14 @@ export default function CompanySettingsPage() {
                   />
                 </div>
 
-                {companySearchResults.length > 0 && (
+                {isSearching && (
+                  <div className="p-4 text-center text-gray-500">
+                    <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
+                    <p className="text-sm">Searching...</p>
+                  </div>
+                )}
+
+                {!isSearching && companySearchResults.length > 0 && (
                   <div className="border border-gray-200 rounded-lg max-h-60 overflow-y-auto">
                     {companySearchResults.map((company) => (
                       <button
@@ -262,6 +279,7 @@ export default function CompanySettingsPage() {
                           setSelectedCompany(company)
                           setCompanySearchQuery('')
                           setCompanySearchResults([])
+                          setHasSearched(false)
                           setSelectedDivision(null) // Clear division when company changes
                         }}
                         className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
@@ -271,6 +289,26 @@ export default function CompanySettingsPage() {
                         <div className="font-medium text-gray-900">{company.name}</div>
                       </button>
                     ))}
+                  </div>
+                )}
+
+                {!isSearching && hasSearched && companySearchQuery.trim() && companySearchResults.length === 0 && (
+                  <div className="border border-yellow-200 bg-yellow-50 rounded-lg p-4">
+                    <p className="text-sm text-yellow-800 mb-3">
+                      No CompanyUnit found matching "{companySearchQuery}"
+                    </p>
+                    <button
+                      onClick={() => {
+                        setNewCompanyName(companySearchQuery)
+                        setShowCompanyCreate(true)
+                        setCompanySearchQuery('')
+                        setHasSearched(false)
+                      }}
+                      className="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Create "{companySearchQuery}" as new CompanyUnit
+                    </button>
                   </div>
                 )}
 
@@ -285,7 +323,7 @@ export default function CompanySettingsPage() {
                   </div>
                 )}
 
-                {!showCompanyCreate && (
+                {!showCompanyCreate && !hasSearched && (
                   <button
                     onClick={() => setShowCompanyCreate(true)}
                     className="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium"
@@ -320,6 +358,7 @@ export default function CompanySettingsPage() {
                         onClick={() => {
                           setShowCompanyCreate(false)
                           setNewCompanyName('')
+                          setHasSearched(false)
                         }}
                         className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                       >
