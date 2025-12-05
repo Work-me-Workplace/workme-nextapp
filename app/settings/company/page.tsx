@@ -124,7 +124,7 @@ export default function CompanySettingsPage() {
         setCurrentDivision(null)
       }
     } catch (error: any) {
-      alert(`Failed to create CompanyUnit: ${error.response?.data?.error || error.message}`)
+      alert(`Failed to create company: ${error.response?.data?.error || error.message}`)
     }
   }
 
@@ -172,7 +172,7 @@ export default function CompanySettingsPage() {
 
   const saveProfile = async () => {
     if (!selectedCompany) {
-      alert('Please select a CompanyUnit')
+      alert('Please select a company')
       return
     }
 
@@ -191,7 +191,7 @@ export default function CompanySettingsPage() {
         router.push('/settings')
       }
     } catch (error: any) {
-      alert(`Failed to save CompanyAffiliation: ${error.response?.data?.error || error.message}`)
+      alert(`Failed to save company affiliation: ${error.response?.data?.error || error.message}`)
     } finally {
       setSaving(false)
     }
@@ -226,15 +226,16 @@ export default function CompanySettingsPage() {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Settings
               </Link>
-              <h1 className="text-3xl font-bold text-gray-900">CompanyUnit & DivisionUnit</h1>
-              <p className="text-gray-600 mt-2">Manage your CompanyUnit and DivisionUnit affiliation</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Let's lock in your company affiliations so you can add work outputs with company context.
+              </h1>
             </div>
 
             {/* Company Selection */}
             <div className="bg-white rounded-lg shadow p-6 mb-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
                 <Building2 className="h-5 w-5 mr-2 text-blue-600" />
-                CompanyUnit
+                Company Unit
               </h2>
 
               {currentCompany && (
@@ -258,7 +259,7 @@ export default function CompanySettingsPage() {
                       setCompanySearchQuery(e.target.value)
                       searchCompanies(e.target.value)
                     }}
-                    placeholder="Search for your CompanyUnit..."
+                    placeholder="Search for your company..."
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -295,7 +296,7 @@ export default function CompanySettingsPage() {
                 {!isSearching && hasSearched && companySearchQuery.trim() && companySearchResults.length === 0 && (
                   <div className="border border-yellow-200 bg-yellow-50 rounded-lg p-4">
                     <p className="text-sm text-yellow-800 mb-3">
-                      No CompanyUnit found matching "{companySearchQuery}"
+                      No company found matching "{companySearchQuery}"
                     </p>
                     <button
                       onClick={() => {
@@ -307,7 +308,7 @@ export default function CompanySettingsPage() {
                       className="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium"
                     >
                       <Plus className="h-4 w-4 mr-1" />
-                      Create "{companySearchQuery}" as new CompanyUnit
+                      Create "{companySearchQuery}" as new company
                     </button>
                   </div>
                 )}
@@ -329,7 +330,7 @@ export default function CompanySettingsPage() {
                     className="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium"
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    Create new CompanyUnit
+                    Create new company
                   </button>
                 )}
 
@@ -339,7 +340,7 @@ export default function CompanySettingsPage() {
                       type="text"
                       value={newCompanyName}
                       onChange={(e) => setNewCompanyName(e.target.value)}
-                      placeholder="Enter CompanyUnit name"
+                      placeholder="Enter company name"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3"
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
@@ -375,7 +376,7 @@ export default function CompanySettingsPage() {
               <div className="bg-white rounded-lg shadow p-6 mb-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
                   <Building2 className="h-5 w-5 mr-2 text-purple-600" />
-                  DivisionUnit (Optional)
+                  Division (Optional)
                 </h2>
 
                 {currentDivision && (
@@ -399,7 +400,7 @@ export default function CompanySettingsPage() {
                         setDivisionSearchQuery(e.target.value)
                         searchDivisions(e.target.value)
                       }}
-                      placeholder="Search for DivisionUnit..."
+                      placeholder="Search for division..."
                       className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     />
                   </div>
@@ -441,7 +442,7 @@ export default function CompanySettingsPage() {
                       className="flex items-center text-purple-600 hover:text-purple-700 text-sm font-medium"
                     >
                       <Plus className="h-4 w-4 mr-1" />
-                      Create new DivisionUnit
+                      Create new division
                     </button>
                   )}
 
@@ -451,7 +452,7 @@ export default function CompanySettingsPage() {
                         type="text"
                         value={newDivisionName}
                         onChange={(e) => setNewDivisionName(e.target.value)}
-                        placeholder="Enter DivisionUnit name"
+                        placeholder="Enter division name"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3"
                         onKeyPress={(e) => {
                           if (e.key === 'Enter') {
