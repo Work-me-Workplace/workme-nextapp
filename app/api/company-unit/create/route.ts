@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingCompanyUnit) {
-      // If companyId provided and different, update it
-      if (companyId && existingCompanyUnit.companyId !== companyId) {
+      // If companyId provided and (different or unit has no companyId), update it
+      if (companyId && (existingCompanyUnit.companyId !== companyId || !existingCompanyUnit.companyId)) {
         const updated = await prisma.companyUnit.update({
           where: { id: existingCompanyUnit.id },
           data: { companyId },
