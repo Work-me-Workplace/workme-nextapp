@@ -54,7 +54,8 @@ export async function POST(request: NextRequest) {
     if (existing) {
       return NextResponse.json({
         success: true,
-        division: existing,
+        divisionUnit: existing, // Match frontend expectation
+        division: existing, // Also include for backward compatibility
         message: 'Division already exists in this company',
       })
     }
@@ -69,7 +70,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      division,
+      divisionUnit: division, // Match frontend expectation
+      division, // Also include for backward compatibility
     })
   } catch (error: any) {
     console.error('❌ Division create error:', error)

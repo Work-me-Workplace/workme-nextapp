@@ -224,13 +224,18 @@ export default function CompanySettingsPage() {
         companyUnitId: selectedCompany.id,
       })
       if (response.data.success) {
-        const division = response.data.divisionUnit
-        setSelectedDivision(division)
-        setCurrentDivision(division)
-        setNewDivisionName('')
-        setShowDivisionCreate(false)
-        setDivisionSearchQuery('')
-        setDivisionSearchResults([])
+        // API returns 'division' not 'divisionUnit'
+        const division = response.data.divisionUnit || response.data.division
+        if (division) {
+          setSelectedDivision(division)
+          setCurrentDivision(division)
+          setNewDivisionName('')
+          setShowDivisionCreate(false)
+          setDivisionSearchQuery('')
+          setDivisionSearchResults([])
+        } else {
+          alert('Division created but response format unexpected')
+        }
       }
     } catch (error: any) {
       alert(`Failed to create division: ${error.response?.data?.error || error.message}`)
