@@ -42,14 +42,16 @@ export default function PersonalUX() {
         api.get('/api/objectives/list'),
       ])
 
-      // Check profile (WorkProfile with headline and handle)
+      // Check profile (WorkMe with headline and handle)
       let hasProfile = false
       let hasCompanyAffiliation = false
       if (profileRes.status === 'fulfilled') {
-        const profile = profileRes.value.data.profile
-        hasProfile = !!(profile?.headline && profile?.handle)
-        // Check company affiliation from WorkProfile (companyUnitId)
-        hasCompanyAffiliation = !!profile?.company?.id
+        const workMe = profileRes.value.data.workMe
+        // Profile is complete if headline and handle are set
+        hasProfile = !!(workMe?.headline && workMe?.handle)
+        // Check company affiliation from CompanyAffiliation
+        const companyAffiliation = profileRes.value.data.companyAffiliation
+        hasCompanyAffiliation = !!(companyAffiliation?.companyUnit || companyAffiliation?.divisionUnit)
       }
 
       // Check goals (Objectives)

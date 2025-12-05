@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getAuth } from 'firebase/auth'
 import api from '@/lib/api'
-import { User } from 'lucide-react'
+import { User, ArrowLeft } from 'lucide-react'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -157,6 +157,15 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="max-w-2xl w-full bg-white rounded-lg p-8 shadow-lg border-2 border-sky-500">
+        {/* Go Back Button */}
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="mb-6 flex items-center text-gray-600 hover:text-gray-900 transition"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          <span className="text-sm font-medium">Go Back to Dashboard</span>
+        </button>
+
         {/* Header with icon */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-sky-100 rounded-full mb-4 overflow-hidden">
@@ -286,38 +295,14 @@ export default function ProfilePage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Profile Image URL (Optional)
-            </label>
-            <input
-              type="url"
-              value={formData.profileImage}
-              onChange={(e) => setFormData({ ...formData, profileImage: e.target.value })}
-              className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-              placeholder="Leave empty to use your Firebase profile photo"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              {formData.profileImage 
-                ? 'Your profile photo is loaded. Leave empty to use your Firebase profile photo automatically.'
-                : 'Your Firebase profile photo will be used automatically if left empty.'}
-            </p>
-            {formData.profileImage && (
-              <div className="mt-2">
-                <img 
-                  src={formData.profileImage} 
-                  alt="Profile preview" 
-                  className="h-20 w-20 rounded-full object-cover border-2 border-sky-500"
-                  onError={(e) => {
-                    // Hide broken images
-                    e.currentTarget.style.display = 'none'
-                  }}
-                />
-              </div>
-            )}
-          </div>
-
           <div className="flex gap-4 pt-4">
+            <button
+              type="button"
+              onClick={() => router.push('/dashboard')}
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition"
+            >
+              Go Back
+            </button>
             <button
               type="submit"
               disabled={loading}
