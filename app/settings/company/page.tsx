@@ -77,16 +77,20 @@ export default function CompanySettingsPage() {
     try {
       setLoading(true)
       const response = await api.get('/api/workme/profile')
-      // New API structure: companyAffiliation with companyUnit and divisionUnit
+      // New API structure: companyAffiliation with company (HQ), companyUnit, and division
       const companyAffiliation = response.data?.companyAffiliation
       if (companyAffiliation) {
+        if (companyAffiliation.company) {
+          setCurrentCompanyHQ(companyAffiliation.company)
+          setSelectedCompanyHQ(companyAffiliation.company)
+        }
         if (companyAffiliation.companyUnit) {
           setCurrentCompany(companyAffiliation.companyUnit)
           setSelectedCompany(companyAffiliation.companyUnit)
         }
-        if (companyAffiliation.divisionUnit) {
-          setCurrentDivision(companyAffiliation.divisionUnit)
-          setSelectedDivision(companyAffiliation.divisionUnit)
+        if (companyAffiliation.division) {
+          setCurrentDivision(companyAffiliation.division)
+          setSelectedDivision(companyAffiliation.division)
         }
       }
     } catch (error) {
@@ -230,6 +234,7 @@ export default function CompanySettingsPage() {
   }
 
   const saveProfile = async () => {
+    // Company Unit is required, but Company HQ and Division are optional
     if (!selectedCompany) {
       alert('Please select a company unit')
       return
@@ -686,8 +691,8 @@ export default function CompanySettingsPage() {
               </div>
             )}
 
-            {/* Save Button */}
-            {hasChanges && (
+            {/* Save Button - Show if there are changes OR if company unit is selected */}
+            {(hasChanges || selectedCompany) && (
               <div className="bg-white rounded-lg shadow p-6">
                 <button
                   onClick={saveProfile}

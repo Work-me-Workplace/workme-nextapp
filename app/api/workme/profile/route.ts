@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
     const { id: workMeId } = workMe
 
     // 3. Load all modules in parallel - handle table not existing gracefully
-    const [workMeRecord, workProfile, companyAffiliation, workSkills, workEntries, workOutlookItems] = await Promise.all([
-      // WorkMe (identity) - always exists
+    const [workMeRecord, workProfile, workSkills, workEntries, workOutlookItems] = await Promise.all([
+      // WorkMe (identity) with company relations - always exists
       prisma.workMe.findUnique({
         where: { id: workMeId },
         select: {
@@ -34,6 +34,12 @@ export async function GET(request: NextRequest) {
           title: true,
           linkedinUrl: true,
           createdAt: true,
+          companyId: true,
+          companyUnitId: true,
+          divisionId: true,
+          company: { select: { id: true, name: true } },
+          companyUnit: { select: { id: true, name: true } },
+          division: { select: { id: true, name: true } },
         },
       }).catch((err: any) => {
         console.error('Failed to load WorkMe:', err)
@@ -46,19 +52,6 @@ export async function GET(request: NextRequest) {
       }).catch((err: any) => {
         if (err.code === 'P2021') return null // Table doesn't exist
         console.error('Failed to load WorkProfile:', err)
-        return null
-      }),
-      
-      // CompanyAffiliation - may not exist
-      prisma.companyAffiliation.findUnique({
-        where: { workMeId },
-        include: {
-          company: { select: { id: true, name: true } },
-          division: { select: { id: true, name: true } },
-        },
-      }).catch((err: any) => {
-        if (err.code === 'P2021') return null // Table doesn't exist
-        console.error('Failed to load CompanyAffiliation:', err)
         return null
       }),
       
@@ -112,11 +105,13 @@ export async function GET(request: NextRequest) {
         displayName: displayName || null,
       },
       workProfile: workProfile || null,
-      companyAffiliation: companyAffiliation ? {
-        id: companyAffiliation.id,
-        workMeId: companyAffiliation.workMeId,
-        companyUnit: companyAffiliation.company || null,
-        divisionUnit: companyAffiliation.division || null,
+      companyAffiliation: workMeRecord ? {
+        companyId: workMeRecord.companyId,
+        companyUnitId: workMeRecord.companyUnitId,
+        divisionId: workMeRecord.divisionId,
+        company: workMeRecord.company || null, // CompanyRegistry (HQ)
+        companyUnit: workMeRecord.companyUnit || null,
+        division: workMeRecord.division || null,
       } : null,
       skills: workSkills || null,
       workEntries: workEntries || [],
