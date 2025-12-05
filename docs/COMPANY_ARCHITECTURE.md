@@ -107,8 +107,8 @@ model DivisionUnit {
   updatedAt     DateTime @updatedAt
 
   // Relations
-  company CompanyUnit          @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
-  members CompanyAffiliation[] // All WorkMe users in this division
+  company CompanyUnit @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
+  members WorkMe[]    // All WorkMe users in this division
 
   @@unique([name, companyUnitId]) // Unique per company
 }
