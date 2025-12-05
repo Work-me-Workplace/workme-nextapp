@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAuth } from '@/lib/server/verifyAuth'
-import { loadWorkMe } from '@/lib/auth/loadWorkMe'
+import { requireWorkMeAuth } from '@/lib/server/requireWorkMeAuth'
 import { prisma } from '@/lib/prisma'
 import { parseTraining } from '@/lib/services/training-parser-service'
 
@@ -12,19 +11,15 @@ export const dynamic = 'force-dynamic'
  * 
  * Pure function - reads ingestRawText, parses it, returns structured model.
  * No DB writes. Hydration is read-only.
+ * 
+ * AUTH: WorkMe-only (Firebase → WorkMe)
+ * SCOPE: Training record already has companyUnitId from creation
  */
 export async function POST(request: NextRequest) {
   try {
-    const { firebaseId } = await verifyAuth(request)
-    const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
+    // AUTH: WorkMe-only
+    await requireWorkMeAuth(request)
 
-    if (!workMeId || !companyUnit) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated or companyUnit not set' },
-        { status: 401 }
-      )
-    }
     const { trainingId } = await request.json()
 
     if (!trainingId) {
@@ -34,11 +29,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Load CompanyTraining
-    const training = await prisma.companyTraining.findFirst({
+    // Load CompanyTraining (no companyUnit check - training already has companyUnitId)
+    const training = await prisma.companyTraining.findUnique({
       where: {
         id: trainingId,
-        companyUnit, // Ensure user can only access their company unit's trainings
       },
     })
 

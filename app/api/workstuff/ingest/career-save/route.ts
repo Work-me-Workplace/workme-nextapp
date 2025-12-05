@@ -5,8 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAuth } from '@/lib/server/verifyAuth'
-import { loadWorkMe } from '@/lib/auth/loadWorkMe'
+import { requireWorkMeAuth } from '@/lib/server/requireWorkMeAuth'
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
@@ -35,16 +34,10 @@ interface CareerSaveRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const { firebaseId } = await verifyAuth(request)
-    const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
+    // AUTH: WorkMe-only
+    const workMe = await requireWorkMeAuth(request)
+    const { id: workMeId } = workMe
 
-    if (!workMeId || !companyUnit) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated or companyUnit not set' },
-        { status: 401 }
-      )
-    }
     const data: CareerSaveRequest = await request.json()
 
     if (!data.careerId) {
@@ -54,11 +47,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify career exists and belongs to company unit
-    const existing = await prisma.companyCareer.findFirst({
+    // Verify career exists (no companyUnit check - career already has companyUnitId from creation)
+    const existing = await prisma.companyCareer.findUnique({
       where: {
         id: data.careerId,
-        companyUnit,
       },
     })
 

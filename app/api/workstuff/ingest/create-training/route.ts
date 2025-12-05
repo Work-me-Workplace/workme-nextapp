@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAuth } from '@/lib/server/verifyAuth'
-import { loadWorkMe } from '@/lib/auth/loadWorkMe'
+import { requireWorkMeAuth } from '@/lib/server/requireWorkMeAuth'
 import { prisma } from '@/lib/prisma'
 
 // Force dynamic rendering
@@ -11,20 +10,25 @@ export const dynamic = 'force-dynamic'
  * 
  * Creates a new CompanyX row (currently only Training) with ONLY ingest fields populated.
  * All "real" fields remain null until Stage 2.
+ * 
+ * AUTH: WorkMe-only (Firebase → WorkMe)
+ * SCOPE: companyUnitId from payload (NOT from WorkMe)
  */
 export async function POST(request: NextRequest) {
   try {
-    const { firebaseId } = await verifyAuth(request)
-    const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
+    // AUTH: WorkMe-only
+    const workMe = await requireWorkMeAuth(request)
+    const { id: workMeId } = workMe
 
-    if (!workMeId || !companyUnit) {
+    // SCOPE: companyUnitId from payload
+    const { rawText, selectedType, companyUnitId } = await request.json()
+
+    if (!companyUnitId) {
       return NextResponse.json(
-        { success: false, error: 'Not authenticated or companyUnit not set' },
-        { status: 401 }
+        { success: false, error: 'companyUnitId is required' },
+        { status: 400 }
       )
     }
-    const { rawText, selectedType } = await request.json()
 
     if (!rawText || typeof rawText !== 'string') {
       return NextResponse.json(
@@ -51,14 +55,15 @@ export async function POST(request: NextRequest) {
 
     if (selectedType === 'training') {
       // Create CompanyTraining with ONLY ingest snapshot
+      // INGESTION WRITE PATTERN: workMeId (actor) + companyUnitId (scope)
       const training = await prisma.companyTraining.create({
         data: {
           ingestRawText: rawText,
           ingestType: selectedType,
           ingestStatus: 'pending',
           ingestCreatedAt: new Date(),
-          companyUnit,
-          createdByWorkMeId: workMeId,
+          companyUnit: companyUnitId, // From payload, not from WorkMe
+          createdByWorkMeId: workMeId, // From auth
           mandatory: false,
         },
       })
@@ -71,12 +76,13 @@ export async function POST(request: NextRequest) {
       })
     } else if (selectedType === 'career') {
       // Create CompanyCareer with ONLY ingest snapshot
+      // INGESTION WRITE PATTERN: workMeId (actor) + companyUnitId (scope)
       const career = await prisma.companyCareer.create({
         data: {
           ingestRawText: rawText,
           title: '', // Required field, will be updated in Stage 2
-          companyUnit,
-          createdByWorkMeId: workMeId,
+          companyUnit: companyUnitId, // From payload, not from WorkMe
+          createdByWorkMeId: workMeId, // From auth
         },
       })
 

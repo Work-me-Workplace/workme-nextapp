@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAuth } from '@/lib/server/verifyAuth'
-import { loadWorkMe } from '@/lib/auth/loadWorkMe'
+import { requireWorkMeAuth } from '@/lib/server/requireWorkMeAuth'
 import { inferCompanyXType } from '@/lib/services/companyx-topic-inference'
 
 // Force dynamic rendering
@@ -11,19 +10,13 @@ export const dynamic = 'force-dynamic'
  * 
  * Takes raw blob → Infers suggested type → Returns type only
  * No DB writes, no parsing, just type inference
+ * 
+ * AUTH: WorkMe-only (Firebase → WorkMe)
  */
 export async function POST(request: NextRequest) {
   try {
-    const { firebaseId } = await verifyAuth(request)
-    const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
-
-    if (!workMeId || !companyUnit) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated or companyUnit not set' },
-        { status: 401 }
-      )
-    }
+    // AUTH: WorkMe-only
+    await requireWorkMeAuth(request)
 
     const { blob } = await request.json()
 

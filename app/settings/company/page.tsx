@@ -6,7 +6,7 @@ import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import TopNav from '@/components/layout/TopNav'
 import api from '@/lib/api'
-import { Building2, Search, Plus, CheckCircle2, Loader2, ArrowLeft } from 'lucide-react'
+import { Building2, Search, Plus, CheckCircle2, Loader2, ArrowLeft, Edit2, X } from 'lucide-react'
 import Link from 'next/link'
 
 interface CompanyHQ {
@@ -61,6 +61,11 @@ export default function CompanySettingsPage() {
   const [currentCompany, setCurrentCompany] = useState<CompanyUnit | null>(null)
   const [currentDivision, setCurrentDivision] = useState<DivisionUnit | null>(null)
 
+  // Edit mode state
+  const [isEditingHQ, setIsEditingHQ] = useState(false)
+  const [isEditingCompany, setIsEditingCompany] = useState(false)
+  const [isEditingDivision, setIsEditingDivision] = useState(false)
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const id = getWorkMeIdFromStorage()
@@ -82,15 +87,15 @@ export default function CompanySettingsPage() {
       if (companyAffiliation) {
         if (companyAffiliation.company) {
           setCurrentCompanyHQ(companyAffiliation.company)
-          setSelectedCompanyHQ(companyAffiliation.company)
+          // Don't set selectedCompanyHQ unless editing
         }
         if (companyAffiliation.companyUnit) {
           setCurrentCompany(companyAffiliation.companyUnit)
-          setSelectedCompany(companyAffiliation.companyUnit)
+          // Don't set selectedCompany unless editing
         }
         if (companyAffiliation.division) {
           setCurrentDivision(companyAffiliation.division)
-          setSelectedDivision(companyAffiliation.division)
+          // Don't set selectedDivision unless editing
         }
       }
     } catch (error) {
@@ -263,9 +268,20 @@ export default function CompanySettingsPage() {
           setCurrentCompanyHQ(response.data.companyHQ)
         }
         setCurrentCompany(selectedCompany)
-        setCurrentDivision(selectedDivision)
+        if (response.data.divisionUnit) {
+          setCurrentDivision(response.data.divisionUnit)
+        } else {
+          setCurrentDivision(selectedDivision)
+        }
+        // Close edit modes
+        setIsEditingHQ(false)
+        setIsEditingCompany(false)
+        setIsEditingDivision(false)
+        // Clear selections
+        setSelectedCompanyHQ(null)
+        setSelectedCompany(null)
+        setSelectedDivision(null)
         alert('Company affiliation saved successfully!')
-        router.push('/settings')
       }
     } catch (error: any) {
       alert(`Failed to save company affiliation: ${error.response?.data?.error || error.message}`)
@@ -311,23 +327,58 @@ export default function CompanySettingsPage() {
 
             {/* Company HQ Selection */}
             <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <Building2 className="h-5 w-5 mr-2 text-green-600" />
-                Company HQ
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                  <Building2 className="h-5 w-5 mr-2 text-green-600" />
+                  Company HQ
+                </h2>
+                {!isEditingHQ && (
+                  <button
+                    onClick={() => {
+                      setIsEditingHQ(true)
+                      setSelectedCompanyHQ(currentCompanyHQ)
+                    }}
+                    className="flex items-center text-green-600 hover:text-green-700 text-sm font-medium"
+                  >
+                    <Edit2 className="h-4 w-4 mr-1" />
+                    Edit
+                  </button>
+                )}
+                {isEditingHQ && (
+                  <button
+                    onClick={() => {
+                      setIsEditingHQ(false)
+                      setSelectedCompanyHQ(null)
+                      setCompanyHQSearchQuery('')
+                      setCompanyHQSearchResults([])
+                      setHasSearchedHQ(false)
+                      setShowCompanyHQCreate(false)
+                    }}
+                    className="flex items-center text-gray-600 hover:text-gray-700 text-sm font-medium"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Cancel
+                  </button>
+                )}
+              </div>
 
-              {currentCompanyHQ && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 mr-2" />
-                    <span className="text-sm font-medium text-green-900">
-                      Current: {currentCompanyHQ.name}
-                    </span>
+              {!isEditingHQ && currentCompanyHQ && (
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-base font-medium text-gray-900">{currentCompanyHQ.name}</span>
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
                   </div>
                 </div>
               )}
 
-              <div className="space-y-4">
+              {!isEditingHQ && !currentCompanyHQ && (
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">No company HQ set</p>
+                </div>
+              )}
+
+              {isEditingHQ && (
+                <div className="space-y-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
@@ -478,28 +529,64 @@ export default function CompanySettingsPage() {
                     </div>
                   </div>
                 )}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Company Unit Selection */}
             <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <Building2 className="h-5 w-5 mr-2 text-blue-600" />
-                Company Unit
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                  <Building2 className="h-5 w-5 mr-2 text-blue-600" />
+                  Company Unit
+                </h2>
+                {!isEditingCompany && (
+                  <button
+                    onClick={() => {
+                      setIsEditingCompany(true)
+                      setSelectedCompany(currentCompany)
+                    }}
+                    className="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  >
+                    <Edit2 className="h-4 w-4 mr-1" />
+                    Edit
+                  </button>
+                )}
+                {isEditingCompany && (
+                  <button
+                    onClick={() => {
+                      setIsEditingCompany(false)
+                      setSelectedCompany(null)
+                      setCompanySearchQuery('')
+                      setCompanySearchResults([])
+                      setHasSearched(false)
+                      setShowCompanyCreate(false)
+                    }}
+                    className="flex items-center text-gray-600 hover:text-gray-700 text-sm font-medium"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Cancel
+                  </button>
+                )}
+              </div>
 
-              {currentCompany && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 mr-2" />
-                    <span className="text-sm font-medium text-green-900">
-                      Current: {currentCompany.name}
-                    </span>
+              {!isEditingCompany && currentCompany && (
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-base font-medium text-gray-900">{currentCompany.name}</span>
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
                   </div>
                 </div>
               )}
 
-              <div className="space-y-4">
+              {!isEditingCompany && !currentCompany && (
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">No company unit set</p>
+                </div>
+              )}
+
+              {isEditingCompany && (
+                <div className="space-y-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
@@ -659,29 +746,64 @@ export default function CompanySettingsPage() {
                     </div>
                   </div>
                 )}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Division Selection (only if company selected) */}
-            {selectedCompany && (
+            {currentCompany && (
               <div className="bg-white rounded-lg shadow p-6 mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                  <Building2 className="h-5 w-5 mr-2 text-purple-600" />
-                  Division (Optional)
-                </h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                    <Building2 className="h-5 w-5 mr-2 text-purple-600" />
+                    Division (Optional)
+                  </h2>
+                  {!isEditingDivision && (
+                    <button
+                      onClick={() => {
+                        setIsEditingDivision(true)
+                        setSelectedDivision(currentDivision)
+                      }}
+                      className="flex items-center text-purple-600 hover:text-purple-700 text-sm font-medium"
+                    >
+                      <Edit2 className="h-4 w-4 mr-1" />
+                      Edit
+                    </button>
+                  )}
+                  {isEditingDivision && (
+                    <button
+                      onClick={() => {
+                        setIsEditingDivision(false)
+                        setSelectedDivision(null)
+                        setDivisionSearchQuery('')
+                        setDivisionSearchResults([])
+                        setShowDivisionCreate(false)
+                      }}
+                      className="flex items-center text-gray-600 hover:text-gray-700 text-sm font-medium"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Cancel
+                    </button>
+                  )}
+                </div>
 
-                {currentDivision && (
-                  <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center">
-                      <CheckCircle2 className="h-5 w-5 text-green-600 mr-2" />
-                      <span className="text-sm font-medium text-green-900">
-                        Current: {currentDivision.name}
-                      </span>
+                {!isEditingDivision && currentDivision && (
+                  <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-base font-medium text-gray-900">{currentDivision.name}</span>
+                      <CheckCircle2 className="h-5 w-5 text-green-600" />
                     </div>
                   </div>
                 )}
 
-                <div className="space-y-4">
+                {!isEditingDivision && !currentDivision && (
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800">No division set</p>
+                  </div>
+                )}
+
+                {isEditingDivision && (
+                  <div className="space-y-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <input
@@ -779,12 +901,13 @@ export default function CompanySettingsPage() {
                       </div>
                     </div>
                   )}
-                </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Save Button - Show if there are changes OR if company unit is selected */}
-            {(hasChanges || selectedCompany) && (
+            {/* Save Button - Show if editing any section */}
+            {(isEditingHQ || isEditingCompany || isEditingDivision) && (selectedCompanyHQ || selectedCompany || selectedDivision) && (
               <div className="bg-white rounded-lg shadow p-6">
                 <button
                   onClick={saveProfile}
@@ -808,4 +931,7 @@ export default function CompanySettingsPage() {
     </div>
   )
 }
+
+
+
 

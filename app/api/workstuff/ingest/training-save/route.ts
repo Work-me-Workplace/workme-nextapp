@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAuth } from '@/lib/server/verifyAuth'
-import { loadWorkMe } from '@/lib/auth/loadWorkMe'
+import { requireWorkMeAuth } from '@/lib/server/requireWorkMeAuth'
 import { prisma } from '@/lib/prisma'
 
 // Force dynamic rendering
@@ -32,19 +31,16 @@ interface TrainingSaveRequest {
  * 
  * Updates ALL real training fields, sets ingestStatus = "saved"
  * Does NOT overwrite ingest fields (ingestRawText, ingestType, ingestCreatedAt)
+ * 
+ * AUTH: WorkMe-only (Firebase → WorkMe)
+ * SCOPE: Training record already has companyUnitId from creation
  */
 export async function POST(request: NextRequest) {
   try {
-    const { firebaseId } = await verifyAuth(request)
-    const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
+    // AUTH: WorkMe-only
+    const workMe = await requireWorkMeAuth(request)
+    const { id: workMeId } = workMe
 
-    if (!workMeId || !companyUnit) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated or companyUnit not set' },
-        { status: 401 }
-      )
-    }
     const data: TrainingSaveRequest = await request.json()
 
     if (!data.trainingId) {
@@ -54,11 +50,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify training exists and belongs to company unit
-    const existing = await prisma.companyTraining.findFirst({
+    // Verify training exists (no companyUnit check - training already has companyUnitId from creation)
+    const existing = await prisma.companyTraining.findUnique({
       where: {
         id: data.trainingId,
-        companyUnit,
       },
     })
 

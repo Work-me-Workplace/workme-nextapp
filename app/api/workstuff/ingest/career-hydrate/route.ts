@@ -6,25 +6,21 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAuth } from '@/lib/server/verifyAuth'
-import { loadWorkMe } from '@/lib/auth/loadWorkMe'
+import { requireWorkMeAuth } from '@/lib/server/requireWorkMeAuth'
 import { prisma } from '@/lib/prisma'
 import { parseCareer } from '@/lib/services/career-parser-service'
 
 export const dynamic = 'force-dynamic'
 
+/**
+ * AUTH: WorkMe-only (Firebase → WorkMe)
+ * SCOPE: Career record already has companyUnitId from creation
+ */
 export async function POST(request: NextRequest) {
   try {
-    const { firebaseId } = await verifyAuth(request)
-    const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
+    // AUTH: WorkMe-only
+    await requireWorkMeAuth(request)
 
-    if (!workMeId || !companyUnit) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated or companyUnit not set' },
-        { status: 401 }
-      )
-    }
     const { careerId } = await request.json()
 
     if (!careerId || typeof careerId !== 'string') {
@@ -34,9 +30,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Load the CompanyCareer row
-    const career = await prisma.companyCareer.findFirst({
-      where: { id: careerId, companyUnit },
+    // Load the CompanyCareer row (no companyUnit check - career already has companyUnitId)
+    const career = await prisma.companyCareer.findUnique({
+      where: { id: careerId },
     })
 
     if (!career) {
