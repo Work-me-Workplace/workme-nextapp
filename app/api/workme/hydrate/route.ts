@@ -18,8 +18,8 @@ export async function GET(request: Request) {
   try {
     console.log('[API GET /api/workme/hydrate] Starting hydration...')
 
-    // 1. Auth - Verify Firebase token
-    const { firebaseId } = await verifyAuth(request)
+    // 1. Auth - Verify Firebase token (includes photoUrl)
+    const { firebaseId, photoUrl, displayName } = await verifyAuth(request)
     
     // 2. Load WorkMe identity - just the basic WorkMe object
     const workMe = await loadWorkMe(firebaseId)
@@ -29,18 +29,20 @@ export async function GET(request: Request) {
       firebaseId,
     })
 
-    // Just return the WorkMe object - no WorkEntry/WorkProfile queries
+    // Return WorkMe with Firebase photoUrl
     return NextResponse.json({
       success: true,
       workMe: {
         id: workMe.id,
         firebaseId: workMe.firebaseId,
         email: workMe.email,
-        firstName: workMe.firstName,
-        lastName: workMe.lastName,
-        photoUrl: workMe.photoUrl,
-        companyUnit: workMe.companyUnit,
-        companyDivision: workMe.companyDivision,
+        headline: workMe.headline || null,
+        handle: workMe.handle || null,
+        title: workMe.title || null,
+        linkedinUrl: workMe.linkedinUrl || null,
+        photoUrl: photoUrl || null, // Always from Firebase
+        displayName: displayName || null,
+        createdAt: workMe.createdAt,
       },
     })
   } catch (error: any) {

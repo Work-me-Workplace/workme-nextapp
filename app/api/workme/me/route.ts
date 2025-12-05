@@ -7,58 +7,33 @@ import { prisma } from '@/lib/prisma'
  * GET /api/workme/me
  * 
  * Get current authenticated user's WorkMe profile
- * Uses Firebase auth token to identify the user
- * 
- * Returns full WorkMe record with all profile fields
+ * Returns WorkMe identity with photoUrl from Firebase
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('[API GET /api/workme/me] Starting...')
-
-    // 1. Verify Firebase auth token
-    const { firebaseId } = await verifyAuth(request as Request)
+    // 1. Verify Firebase auth token (includes photoUrl)
+    const { firebaseId, photoUrl, displayName } = await verifyAuth(request as Request)
     
     // 2. Load WorkMe identity
     const workMeIdentity = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMeIdentity
 
-    console.log('[API GET /api/workme/me] Auth verified:', {
-      workMeId,
-      firebaseId,
+    // 3. Fetch WorkMe record
+    const workMeRecord = await prisma.workMe.findUnique({
+      where: { id: workMeId },
+      select: {
+        id: true,
+        firebaseId: true,
+        email: true,
+        headline: true,
+        handle: true,
+        title: true,
+        linkedinUrl: true,
+        createdAt: true,
+      },
     })
 
-    // 3. Fetch WorkMe, WorkProfile, and current WorkEntry
-    const [workMeRecord, profile, currentWorkEntry] = await Promise.all([
-      prisma.workMe.findUnique({
-        where: { id: workMeId },
-        select: {
-          id: true,
-          firebaseId: true,
-          email: true,
-          createdAt: true,
-        },
-      }),
-      prisma.workProfile.findUnique({
-        where: { userId: workMeId },
-      }),
-      prisma.workEntry.findFirst({
-        where: {
-          userId: workMeId,
-          endDate: null, // Current job
-        },
-        include: {
-          companyUnit: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      }),
-    ])
-
     if (!workMeRecord) {
-      console.error('[API GET /api/workme/me] WorkMe not found:', workMeId)
       return NextResponse.json(
         {
           success: false,
@@ -68,30 +43,12 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const companyUnit = currentWorkEntry?.companyUnit.name || null
-    const companyDivision = currentWorkEntry?.division || null
-
-    console.log('[API GET /api/workme/me] Success:', {
-      workMeId: workMeRecord.id,
-      email: workMeRecord.email,
-    })
-
     return NextResponse.json({
       success: true,
       workMe: {
-        id: workMeRecord.id,
-        firebaseId: workMeRecord.firebaseId,
-        email: workMeRecord.email,
-        firstName: profile?.firstName || null,
-        lastName: profile?.lastName || null,
-        photoUrl: profile?.profileImage || null,
-        headline: profile?.headline || null,
-        currentRole: profile?.currentRole || null,
-        handle: profile?.handle || null,
-        linkedinUrl: profile?.linkedinUrl || null,
-        companyUnit,
-        companyDivision,
-        createdAt: workMeRecord.createdAt,
+        ...workMeRecord,
+        photoUrl: photoUrl || null, // Always from Firebase
+        displayName: displayName || null,
       },
     })
   } catch (error: any) {
@@ -113,4 +70,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-

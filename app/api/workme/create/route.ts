@@ -39,47 +39,15 @@ export async function POST(request: NextRequest) {
             firebaseId,
           },
         })
-        
-        // Update WorkProfile if exists, or create it (don't auto-generate handle - user must set it)
-        // Use a temporary placeholder handle since it's required, but user will replace it
-        await prisma.workProfile.upsert({
-          where: { userId: workMe.id },
-          create: {
-            userId: workMe.id,
-            firstName: firstName || null,
-            lastName: lastName || null,
-            profileImage: photoUrl || null,
-            handle: `temp_${workMe.id.slice(0, 8)}`, // Temporary - user must set their own
-          },
-          update: {
-            firstName: firstName !== undefined ? firstName : undefined,
-            lastName: lastName !== undefined ? lastName : undefined,
-            profileImage: photoUrl !== undefined ? photoUrl : undefined,
-          },
-        })
-        
         console.log('✅ Updated existing WorkMe with firebaseId:', workMe.id)
       } else {
-        // Create new WorkMe
+        // Create new WorkMe (identity only - no profile fields)
         workMe = await prisma.workMe.create({
           data: {
             firebaseId,
             email: email?.toLowerCase().trim() || '',
           },
         })
-        
-        // Create WorkProfile (don't auto-generate handle - user must set it)
-        // Use a temporary placeholder handle since it's required, but user will replace it
-        await prisma.workProfile.create({
-          data: {
-            userId: workMe.id,
-            firstName: firstName || null,
-            lastName: lastName || null,
-            profileImage: photoUrl || null,
-            handle: `temp_${workMe.id.slice(0, 8)}`, // Temporary - user must set their own
-          },
-        })
-        
         isNewUser = true
         console.log('✅ Created new WorkMe:', workMe.id)
       }
@@ -92,19 +60,15 @@ export async function POST(request: NextRequest) {
       const existingSuperAdmin = await prisma.superAdmin.findFirst()
       
       if (!existingSuperAdmin) {
-        // Get profile data for super admin
-        const profile = await prisma.workProfile.findUnique({
-          where: { userId: workMe.id },
-        })
-        
         // This is the first user - create standalone super admin
+        // photoUrl comes from Firebase, not from WorkProfile
         const superAdmin = await prisma.superAdmin.create({
           data: {
             firebaseId: workMe.firebaseId,
             email: workMe.email,
-            firstName: profile?.firstName || null,
-            lastName: profile?.lastName || null,
-            photoUrl: profile?.profileImage || null,
+            firstName: null, // Will be set separately if needed
+            lastName: null,
+            photoUrl: photoUrl || null, // From Firebase
             workMeId: workMe.id, // Link to WorkMe (optional, may migrate away)
           },
         })
