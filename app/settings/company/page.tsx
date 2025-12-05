@@ -355,11 +355,20 @@ export default function CompanySettingsPage() {
                           setCompanyHQSearchResults([])
                           setHasSearchedHQ(false)
                         }}
-                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
+                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 flex items-center gap-2 ${
                           selectedCompanyHQ?.id === companyHQ.id ? 'bg-green-50' : ''
                         }`}
                       >
-                        <div className="font-medium text-gray-900">{companyHQ.name}</div>
+                        <div className={`h-4 w-4 rounded-full border-2 flex-shrink-0 ${
+                          selectedCompanyHQ?.id === companyHQ.id 
+                            ? 'bg-green-600 border-green-600' 
+                            : 'border-gray-300'
+                        }`}>
+                          {selectedCompanyHQ?.id === companyHQ.id && (
+                            <div className="h-full w-full rounded-full bg-white scale-50"></div>
+                          )}
+                        </div>
+                        <div className="font-medium text-gray-900 flex-1">{companyHQ.name}</div>
                       </button>
                     ))}
                   </div>
@@ -399,9 +408,23 @@ export default function CompanySettingsPage() {
                   <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-green-900">{selectedCompanyHQ.name}</span>
-                      {selectedCompanyHQ.id === currentCompanyHQ?.id && (
-                        <CheckCircle2 className="h-5 w-5 text-green-600" />
-                      )}
+                      <div className="flex items-center gap-2">
+                        {selectedCompanyHQ.id === currentCompanyHQ?.id && (
+                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        )}
+                        <button
+                          onClick={() => {
+                            setSelectedCompanyHQ(null)
+                            setCompanyHQSearchQuery('')
+                            setCompanyHQSearchResults([])
+                            setHasSearchedHQ(false)
+                          }}
+                          className="text-red-600 hover:text-red-700 text-sm font-medium"
+                          title="Clear selection"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -505,11 +528,20 @@ export default function CompanySettingsPage() {
                           setHasSearched(false)
                           setSelectedDivision(null) // Clear division when company changes
                         }}
-                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
+                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 flex items-center gap-2 ${
                           selectedCompany?.id === company.id ? 'bg-blue-50' : ''
                         }`}
                       >
-                        <div className="font-medium text-gray-900">{company.name}</div>
+                        <div className={`h-4 w-4 rounded-full border-2 flex-shrink-0 ${
+                          selectedCompany?.id === company.id 
+                            ? 'bg-blue-600 border-blue-600' 
+                            : 'border-gray-300'
+                        }`}>
+                          {selectedCompany?.id === company.id && (
+                            <div className="h-full w-full rounded-full bg-white scale-50"></div>
+                          )}
+                        </div>
+                        <div className="font-medium text-gray-900 flex-1">{company.name}</div>
                       </button>
                     ))}
                   </div>
@@ -555,9 +587,25 @@ export default function CompanySettingsPage() {
                   <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-blue-900">{selectedCompany.name}</span>
-                      {selectedCompany.id === currentCompany?.id && (
-                        <CheckCircle2 className="h-5 w-5 text-green-600" />
-                      )}
+                      <div className="flex items-center gap-2">
+                        {selectedCompany.id === currentCompany?.id && (
+                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        )}
+                        <button
+                          onClick={() => {
+                            setSelectedCompany(null)
+                            setCompanySearchQuery('')
+                            setCompanySearchResults([])
+                            setHasSearched(false)
+                            setSelectedDivision(null)
+                            setCurrentDivision(null)
+                          }}
+                          className="text-red-600 hover:text-red-700 text-sm font-medium"
+                          title="Clear selection"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -653,11 +701,20 @@ export default function CompanySettingsPage() {
                             setDivisionSearchQuery('')
                             setDivisionSearchResults([])
                           }}
-                          className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
+                          className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 flex items-center gap-2 ${
                             selectedDivision?.id === division.id ? 'bg-purple-50' : ''
                           }`}
                         >
-                          <div className="font-medium text-gray-900">{division.name}</div>
+                          <div className={`h-4 w-4 rounded-full border-2 flex-shrink-0 ${
+                            selectedDivision?.id === division.id 
+                              ? 'bg-purple-600 border-purple-600' 
+                              : 'border-gray-300'
+                          }`}>
+                            {selectedDivision?.id === division.id && (
+                              <div className="h-full w-full rounded-full bg-white scale-50"></div>
+                            )}
+                          </div>
+                          <div className="font-medium text-gray-900 flex-1">{division.name}</div>
                         </button>
                       ))}
                     </div>
