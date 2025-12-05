@@ -2,13 +2,13 @@
 
 ## Overview
 
-The WorkMe company architecture uses a **clean separation** between personal identity (`WorkMe`), employment context (`CompanyAffiliation`), and company registries (`CompanyUnit`, `DivisionUnit`, `CompanyRegistry`).
+The WorkMe company architecture uses **direct foreign keys** on `WorkMe` to link to company registries. Each registry (`CompanyRegistry`, `CompanyUnit`, `DivisionUnit`) is searchable and reusable.
 
 ---
 
 ## Core Principle
 
-**WorkMe does NOT store company data directly.** All company affiliation is stored in the `CompanyAffiliation` model, which acts as a junction table linking `WorkMe` to company registries.
+**WorkMe has direct foreign keys to company registries.** No container model needed - each registry is a standalone entity that `WorkMe` references directly.
 
 ---
 
@@ -29,8 +29,15 @@ model WorkMe {
   title       String?
   linkedinUrl String?
 
-  // ONE-TO-ONE relationship with CompanyAffiliation
-  companyAffiliation CompanyAffiliation?
+  // Direct foreign keys to company registries
+  companyId     String? // Foreign key to CompanyRegistry (Company HQ)
+  companyUnitId String? // Foreign key to CompanyUnit
+  divisionId    String? // Foreign key to DivisionUnit
+
+  // Company registry relations
+  company     CompanyRegistry? @relation(fields: [companyId], references: [id])
+  companyUnit CompanyUnit?    @relation(fields: [companyUnitId], references: [id])
+  division    DivisionUnit?   @relation(fields: [divisionId], references: [id])
   
   // Other bolt-on modules...
   workProfile        WorkProfile?
@@ -41,42 +48,28 @@ model WorkMe {
 ```
 
 **Key Points:**
-- ✅ `WorkMe` has **ONE** `CompanyAffiliation` record (one-to-one via `workMeId`)
-- ❌ `WorkMe` does **NOT** have direct foreign keys to `CompanyUnit` or `DivisionUnit`
-- ❌ `WorkMe` does **NOT** store company names or division names directly
+- ✅ `WorkMe` has **direct foreign keys** to all three registries
+- ✅ `companyId` → `CompanyRegistry` (Company HQ)
+- ✅ `companyUnitId` → `CompanyUnit` (Company Unit)
+- ✅ `divisionId` → `DivisionUnit` (Division)
+- ✅ All foreign keys are **optional** (can be null)
 
 ---
 
-### 2. CompanyAffiliation (Employment Context)
-
-```prisma
-model CompanyAffiliation {
-  id             String  @id @default(uuid())
-  workMeId       String  @unique  // Foreign key to WorkMe
-  companyUnitId  String? // Foreign key to CompanyUnit (optional)
-  divisionUnitId String? // Foreign key to DivisionUnit (optional)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  workMe   WorkMe        @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-  company  CompanyUnit?  @relation(fields: [companyUnitId], references: [id])
-  division DivisionUnit? @relation(fields: [divisionUnitId], references: [id])
-}
-```
-
-**Key Points:**
-- ✅ **ONE** `CompanyAffiliation` per `WorkMe` (enforced by `workMeId @unique`)
-- ✅ Stores **optional** foreign keys to `CompanyUnit` and `DivisionUnit`
-- ✅ This is the **ONLY** place where `WorkMe` links to company data
-- ✅ All company affiliation queries go through `CompanyAffiliation`, not `WorkMe`
+### 2. Company Registries (Direct Relations)
 
 **Relationship Flow:**
 ```
-WorkMe → CompanyAffiliation → CompanyUnit
-                              DivisionUnit
+WorkMe → CompanyRegistry (Company HQ)
+      → CompanyUnit (Company Unit)
+      → DivisionUnit (Division)
 ```
+
+**Key Points:**
+- ✅ `WorkMe` has **direct foreign keys** to all three registries
+- ✅ No container model needed - simple and direct
+- ✅ Each registry is **optional** (can be null)
+- ✅ All registries are **reusable** (many `WorkMe` records can reference the same registry entry)
 
 ---
 
@@ -91,7 +84,7 @@ model CompanyUnit {
 
   // Reverse relations
   divisions DivisionUnit[]
-  members   CompanyAffiliation[] // All WorkMe users affiliated with this company
+  members   WorkMe[] // All WorkMe users affiliated with this company
 }
 ```
 
@@ -142,6 +135,7 @@ model CompanyRegistry {
   // WorkWorld/WorkConnect relations
   units      CompanyUnitHierarchy[]
   workplaces Workplace[]
+  members    WorkMe[] // All WorkMe users with this Company HQ
 }
 ```
 
@@ -157,34 +151,35 @@ model CompanyRegistry {
 
 ### How WorkMe Gets Company Data
 
-**WorkMe does NOT get company data directly.** All access flows through `CompanyAffiliation`:
+**WorkMe has direct foreign keys to company registries:**
 
 ```typescript
-// ✅ CORRECT: Query via CompanyAffiliation
+// ✅ CORRECT: Query WorkMe with company relations
 const workMe = await prisma.workMe.findUnique({
   where: { id: workMeId },
   include: {
-    companyAffiliation: {
-      include: {
-        company: true,  // CompanyUnit
-        division: true, // DivisionUnit
-      },
-    },
+    company: true,     // CompanyRegistry (Company HQ)
+    companyUnit: true, // CompanyUnit
+    division: true,    // DivisionUnit
   },
 })
 
-// Access company data:
-const companyName = workMe.companyAffiliation?.company?.name
-const divisionName = workMe.companyAffiliation?.division?.name
+// Access company data directly:
+const companyHQName = workMe.company?.name
+const companyUnitName = workMe.companyUnit?.name
+const divisionName = workMe.division?.name
 ```
 
 ```typescript
-// ❌ WRONG: WorkMe has no direct company fields
+// ✅ Also works: Access foreign key IDs directly
 const workMe = await prisma.workMe.findUnique({
   where: { id: workMeId },
+  select: {
+    companyId: true,
+    companyUnitId: true,
+    divisionId: true,
+  },
 })
-// workMe.companyName ❌ Does not exist!
-// workMe.companyUnitId ❌ Does not exist!
 ```
 
 ---
@@ -208,18 +203,14 @@ Body: {
 1. Search or create `CompanyRegistry` (HQ) from `companyName`
 2. Search or create `CompanyUnit` from `unitName`
 3. Search or create `DivisionUnit` from `divisionName` (requires `companyUnitId`)
-4. Upsert `CompanyAffiliation` with resolved IDs:
+4. Update `WorkMe` directly with resolved IDs:
    ```typescript
-   await prisma.companyAffiliation.upsert({
-     where: { workMeId },
-     create: {
-       workMeId,
+   await prisma.workMe.update({
+     where: { id: workMeId },
+     data: {
+       companyId: companyHQ.id,
        companyUnitId: companyUnit.id,
-       divisionUnitId: divisionUnit?.id || null,
-     },
-     update: {
-       companyUnitId: companyUnit.id,
-       divisionUnitId: divisionUnit?.id || null,
+       divisionId: divisionUnit?.id || null,
      },
    })
    ```
@@ -240,34 +231,31 @@ Body: {
 
 | Model | Foreign Keys | Notes |
 |-------|-------------|-------|
-| **WorkMe** | `companyAffiliation` (relation only) | No direct company FKs |
-| **CompanyAffiliation** | `workMeId` (required, unique)<br>`companyUnitId` (optional)<br>`divisionUnitId` (optional) | Junction table |
+| **WorkMe** | `companyId` (optional)<br>`companyUnitId` (optional)<br>`divisionId` (optional) | Direct FKs to all registries |
 | **CompanyUnit** | None | Registry (standalone) |
 | **DivisionUnit** | `companyUnitId` (required) | Belongs to CompanyUnit |
-| **CompanyRegistry** | None | WorkWorld architecture (separate) |
+| **CompanyRegistry** | None | Registry (standalone, Company HQ) |
 
 ---
 
 ## Query Examples
 
-### Get WorkMe with Company Affiliation
+### Get WorkMe with Company Data
 
 ```typescript
 const profile = await prisma.workMe.findUnique({
   where: { id: workMeId },
   include: {
-    companyAffiliation: {
-      include: {
-        company: { select: { id: true, name: true } },
-        division: { select: { id: true, name: true } },
-      },
-    },
+    company: { select: { id: true, name: true } },     // CompanyRegistry (HQ)
+    companyUnit: { select: { id: true, name: true } }, // CompanyUnit
+    division: { select: { id: true, name: true } },    // DivisionUnit
   },
 })
 
-// Access:
-const companyName = profile.companyAffiliation?.company?.name
-const divisionName = profile.companyAffiliation?.division?.name
+// Access directly:
+const companyHQName = profile.company?.name
+const companyUnitName = profile.companyUnit?.name
+const divisionName = profile.division?.name
 ```
 
 ### Get All Employees of a Company
@@ -277,17 +265,13 @@ const company = await prisma.companyUnit.findUnique({
   where: { id: companyUnitId },
   include: {
     members: {
-      include: {
-        workMe: {
-          select: { id: true, email: true, handle: true },
-        },
-      },
+      select: { id: true, email: true, handle: true },
     },
   },
 })
 
-// Access:
-const employees = company.members.map(m => m.workMe)
+// Access directly:
+const employees = company.members
 ```
 
 ### Get All Divisions in a Company
@@ -307,43 +291,25 @@ const company = await prisma.companyUnit.findUnique({
 
 ## Important Rules
 
-1. ✅ **Always query company data via `CompanyAffiliation`**
-2. ✅ **Never add company fields directly to `WorkMe`**
-3. ✅ **Use registry pattern** - search before create for `CompanyUnit` and `DivisionUnit`
-4. ✅ **One `CompanyAffiliation` per `WorkMe`** (enforced by unique constraint)
-5. ✅ **Optional company affiliation** - `companyUnitId` and `divisionUnitId` can be null
-6. ⚠️ **`CompanyRegistry` is separate** - currently used for HQ but not linked to `CompanyAffiliation` yet
-
----
-
-## Future Considerations
-
-### Potential Enhancement: Link CompanyRegistry to CompanyAffiliation
-
-Currently, `CompanyRegistry` (Company HQ) is created but not stored in `CompanyAffiliation`. Future enhancement:
-
-```prisma
-model CompanyAffiliation {
-  // ... existing fields
-  companyRegistryId String? // Add FK to CompanyRegistry (HQ)
-  companyRegistry   CompanyRegistry? @relation(...)
-}
-```
-
-This would allow tracking:
-- **Company HQ** (`CompanyRegistry`) - Top-level company
-- **Company Unit** (`CompanyUnit`) - Business unit/division
-- **Division** (`DivisionUnit`) - Sub-division within unit
+1. ✅ **WorkMe has direct foreign keys** to all three registries
+2. ✅ **No container model needed** - simple and direct relationships
+3. ✅ **Use registry pattern** - search before create for all registries
+4. ✅ **All foreign keys are optional** - `companyId`, `companyUnitId`, `divisionId` can be null
+5. ✅ **Registries are reusable** - many `WorkMe` records can reference the same registry entry
+6. ✅ **Direct queries** - query `WorkMe` with `include` to get company data
 
 ---
 
 ## Summary
 
-**WorkMe → CompanyAffiliation → CompanyUnit/DivisionUnit**
+**WorkMe → CompanyRegistry/CompanyUnit/DivisionUnit (Direct Foreign Keys)**
 
-- `WorkMe` has **ONE** `CompanyAffiliation` (one-to-one)
-- `CompanyAffiliation` has **optional** FKs to `CompanyUnit` and `DivisionUnit`
-- `WorkMe` does **NOT** have direct company foreign keys
-- All company queries go through `CompanyAffiliation`
+- `WorkMe` has **direct foreign keys** to all three registries:
+  - `companyId` → `CompanyRegistry` (Company HQ)
+  - `companyUnitId` → `CompanyUnit` (Company Unit)
+  - `divisionId` → `DivisionUnit` (Division)
+- **No container model** - simple and direct relationships
+- All foreign keys are **optional** (can be null)
 - Registry pattern ensures reusable, searchable company data
+- Direct queries - no need to go through a junction table
 

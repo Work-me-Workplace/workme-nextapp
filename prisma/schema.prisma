@@ -30,13 +30,22 @@ model WorkMe {
 
   superAdmin SuperAdmin? // Optional link to SuperAdmin (may migrate away)
 
+  // Company affiliation (direct foreign keys to registries)
+  companyId     String? // Foreign key to CompanyRegistry (Company HQ)
+  companyUnitId String? // Foreign key to CompanyUnit
+  divisionId    String? // Foreign key to DivisionUnit
+
   // Bolt-on modules (all via foreign keys)
-  workProfile        WorkProfile?
-  companyAffiliation CompanyAffiliation?
-  workSkills         WorkSkills?
-  workEntries        WorkEntry[]
-  workOutlookItems   WorkOutlookItem[]
-  workGoals          WorkGoal[]
+  workProfile      WorkProfile?
+  workSkills       WorkSkills?
+  workEntries      WorkEntry[]
+  workOutlookItems WorkOutlookItem[]
+  workGoals        WorkGoal[]
+
+  // Company registry relations
+  company     CompanyRegistry? @relation(fields: [companyId], references: [id])
+  companyUnit CompanyUnit?     @relation(fields: [companyUnitId], references: [id])
+  division    DivisionUnit?    @relation(fields: [divisionId], references: [id])
 
   // WorkWorld Architecture Relations
   workplaces             Workplace[]
@@ -62,6 +71,9 @@ model WorkMe {
   adminWorkItems AdminWorkItem[]
 
   @@index([handle])
+  @@index([companyId])
+  @@index([companyUnitId])
+  @@index([divisionId])
 }
 
 // ============================================
@@ -216,29 +228,6 @@ model Company {
 }
 
 // ============================================
-// COMPANY AFFILIATION MODEL (Employment Context)
-// ============================================
-// Company affiliation IS NOT part of identity OR profile
-// It is its own bolt-on module
-model CompanyAffiliation {
-  id             String  @id @default(uuid())
-  workMeId       String  @unique
-  companyUnitId  String?
-  divisionUnitId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  workMe   WorkMe        @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-  company  CompanyUnit?  @relation(fields: [companyUnitId], references: [id])
-  division DivisionUnit? @relation(fields: [divisionUnitId], references: [id])
-
-  @@index([workMeId])
-  @@index([companyUnitId])
-  @@index([divisionUnitId])
-}
-
-// ============================================
 // COMPANY UNIT REGISTRY (Searchable Registry Pattern)
 // ============================================
 // Registry pattern like RaceRegistry - search or create
@@ -250,7 +239,7 @@ model CompanyUnit {
   updatedAt DateTime @updatedAt
 
   divisions DivisionUnit[]
-  members   CompanyAffiliation[]
+  members   WorkMe[] // Direct relation to WorkMe
 
   @@index([name])
 }
@@ -266,8 +255,8 @@ model DivisionUnit {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  company CompanyUnit          @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
-  members CompanyAffiliation[]
+  company CompanyUnit @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
+  members WorkMe[] // Direct relation to WorkMe
 
   @@unique([name, companyUnitId])
   @@index([companyUnitId])
@@ -335,7 +324,7 @@ model CompanyUnitRegistry {
 // WORKWORLD ARCHITECTURE MODELS
 // ============================================
 
-// CompanyRegistry: Global company-level anchor for WorkConnect
+// CompanyRegistry: Global company-level anchor for WorkConnect (Company HQ)
 model CompanyRegistry {
   id        String   @id @default(cuid())
   name      String
@@ -345,6 +334,7 @@ model CompanyRegistry {
 
   units      CompanyUnitHierarchy[]
   workplaces Workplace[]
+  members    WorkMe[] // Direct relation to WorkMe (Company HQ affiliation)
 
   @@index([name])
   @@index([domain])

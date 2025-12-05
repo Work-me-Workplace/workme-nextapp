@@ -128,20 +128,17 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 4. Upsert CompanyAffiliation with the resolved IDs
-      const companyAffiliation = await prisma.companyAffiliation.upsert({
-        where: { workMeId },
-        create: {
-          workMeId,
+      // 4. Update WorkMe directly with the resolved IDs
+      const updatedWorkMe = await prisma.workMe.update({
+        where: { id: workMeId },
+        data: {
+          companyId: results.companyHQ?.id || null,
           companyUnitId: results.companyUnit?.id || null,
-          divisionUnitId: results.divisionUnit?.id || null,
-        },
-        update: {
-          companyUnitId: results.companyUnit?.id || undefined,
-          divisionUnitId: results.divisionUnit?.id || undefined,
+          divisionId: results.divisionUnit?.id || null,
         },
         include: {
           company: { select: { id: true, name: true } },
+          companyUnit: { select: { id: true, name: true } },
           division: { select: { id: true, name: true } },
         },
       })
@@ -151,12 +148,20 @@ export async function POST(request: NextRequest) {
         companyHQ: results.companyHQ || null,
         companyUnit: results.companyUnit || null,
         divisionUnit: results.divisionUnit || null,
-        companyAffiliation,
-        message: 'Affiliation saved successfully',
+        workMe: {
+          id: updatedWorkMe.id,
+          companyId: updatedWorkMe.companyId,
+          companyUnitId: updatedWorkMe.companyUnitId,
+          divisionId: updatedWorkMe.divisionId,
+          company: updatedWorkMe.company,
+          companyUnit: updatedWorkMe.companyUnit,
+          division: updatedWorkMe.division,
+        },
+        message: 'Company affiliation saved successfully',
       })
     }
 
-    // Existing logic for companyUnitId/divisionUnitId format (requires auth)
+    // Legacy logic for companyUnitId/divisionUnitId format (requires auth)
     const { firebaseId } = await verifyAuth(request as Request)
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
@@ -168,27 +173,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Upsert CompanyAffiliation (NOT WorkMe)
-    const companyAffiliation = await prisma.companyAffiliation.upsert({
-      where: { workMeId },
-      create: {
-        workMeId,
+    // Update WorkMe directly
+    const updatedWorkMe = await prisma.workMe.update({
+      where: { id: workMeId },
+      data: {
         companyUnitId: companyUnitId || null,
-        divisionUnitId: divisionUnitId || null,
-      },
-      update: {
-        companyUnitId: companyUnitId !== undefined ? companyUnitId : undefined,
-        divisionUnitId: divisionUnitId !== undefined ? divisionUnitId : undefined,
+        divisionId: divisionUnitId || null,
       },
       include: {
-        company: { select: { id: true, name: true } },
+        companyUnit: { select: { id: true, name: true } },
         division: { select: { id: true, name: true } },
       },
     })
 
     return NextResponse.json({
       success: true,
-      companyAffiliation,
+      workMe: {
+        id: updatedWorkMe.id,
+        companyUnitId: updatedWorkMe.companyUnitId,
+        divisionId: updatedWorkMe.divisionId,
+        companyUnit: updatedWorkMe.companyUnit,
+        division: updatedWorkMe.division,
+      },
     })
   } catch (error: any) {
     console.error('❌ CompanyAffiliationSave error:', error)
@@ -202,7 +208,7 @@ export async function POST(request: NextRequest) {
 /**
  * GET /api/company-affiliation
  * 
- * Get CompanyAffiliation for current user
+ * Get company affiliation for current user (from WorkMe)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -210,17 +216,29 @@ export async function GET(request: NextRequest) {
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    const companyAffiliation = await prisma.companyAffiliation.findUnique({
-      where: { workMeId },
-      include: {
+    const workMeWithCompany = await prisma.workMe.findUnique({
+      where: { id: workMeId },
+      select: {
+        id: true,
+        companyId: true,
+        companyUnitId: true,
+        divisionId: true,
         company: { select: { id: true, name: true } },
+        companyUnit: { select: { id: true, name: true } },
         division: { select: { id: true, name: true } },
       },
     })
 
     return NextResponse.json({
       success: true,
-      companyAffiliation: companyAffiliation || null,
+      companyAffiliation: workMeWithCompany ? {
+        companyId: workMeWithCompany.companyId,
+        companyUnitId: workMeWithCompany.companyUnitId,
+        divisionId: workMeWithCompany.divisionId,
+        company: workMeWithCompany.company,
+        companyUnit: workMeWithCompany.companyUnit,
+        division: workMeWithCompany.division,
+      } : null,
     })
   } catch (error: any) {
     console.error('❌ CompanyAffiliationGet error:', error)
