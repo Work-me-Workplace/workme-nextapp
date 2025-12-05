@@ -135,10 +135,9 @@ async function restoreUser(
             industry: null,
           },
           update: {
-            firstName: firstName !== undefined ? firstName : undefined,
-            lastName: lastName !== undefined ? lastName : undefined,
+            // WorkProfile no longer has firstName/lastName fields
           },
-        })
+          })
         console.log('\n✅ Updated name')
       }
       

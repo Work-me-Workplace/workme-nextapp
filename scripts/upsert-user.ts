@@ -50,8 +50,8 @@ async function upsertUser(email: string, firebaseId: string) {
       console.log(`   WorkMe ID: ${workMe.id}`)
       console.log(`   Email: ${workMe.email}`)
       console.log(`   Firebase ID: ${workMe.firebaseId}`)
-      const fullName = `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || '(no name)'
-    console.log(`   Name: ${fullName}`)
+      const companyName = currentWorkEntry?.companyName || '(no company)'
+    console.log(`   Company: ${companyName}`)
       
       return workMe
     }
