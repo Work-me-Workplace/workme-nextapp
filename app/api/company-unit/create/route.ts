@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name } = body
+    const { name, companyId } = body
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       return NextResponse.json(
@@ -50,21 +50,41 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingCompanyUnit) {
+      // If companyId provided and different, update it
+      if (companyId && existingCompanyUnit.companyId !== companyId) {
+        const updated = await prisma.companyUnit.update({
+          where: { id: existingCompanyUnit.id },
+          data: { companyId },
+        })
+        console.log('✅ CompanyUnit found and linked to Company HQ:', updated.id)
+        return NextResponse.json({
+          success: true,
+          companyUnit: {
+            id: updated.id,
+            name: updated.name,
+            companyId: updated.companyId,
+          },
+          message: 'Company unit found in registry and linked to Company HQ',
+        })
+      }
+      
       console.log('✅ CompanyUnit found in registry:', existingCompanyUnit.id)
       return NextResponse.json({
         success: true,
         companyUnit: {
           id: existingCompanyUnit.id,
           name: existingCompanyUnit.name,
+          companyId: existingCompanyUnit.companyId,
         },
         message: 'Company unit found in registry',
       })
     }
 
-    // Create new company unit
+    // Create new company unit (with optional companyId link to Company HQ)
     const companyUnit = await prisma.companyUnit.create({
       data: {
         name: normalizedName,
+        companyId: companyId || null,
       },
     })
 
@@ -75,6 +95,7 @@ export async function POST(request: NextRequest) {
       companyUnit: {
         id: companyUnit.id,
         name: companyUnit.name,
+        companyId: companyUnit.companyId,
       },
     })
   } catch (error: any) {

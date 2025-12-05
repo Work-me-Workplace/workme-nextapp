@@ -235,13 +235,16 @@ model Company {
 model CompanyUnit {
   id        String   @id @default(uuid())
   name      String   @unique // Company name (unique globally)
+  companyId String? // Foreign key to CompanyRegistry (Company HQ) - optional
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  company   CompanyRegistry? @relation(fields: [companyId], references: [id], onDelete: SetNull)
   divisions DivisionUnit[]
   members   WorkMe[] // Direct relation to WorkMe
 
   @@index([name])
+  @@index([companyId])
 }
 
 // ============================================
@@ -332,9 +335,10 @@ model CompanyRegistry {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  units      CompanyUnitHierarchy[]
-  workplaces Workplace[]
-  members    WorkMe[] // Direct relation to WorkMe (Company HQ affiliation)
+  units        CompanyUnitHierarchy[]
+  workplaces   Workplace[]
+  members      WorkMe[] // Direct relation to WorkMe (Company HQ affiliation)
+  companyUnits CompanyUnit[] // CompanyUnits that belong to this HQ
 
   @@index([name])
   @@index([domain])

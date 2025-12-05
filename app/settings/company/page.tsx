@@ -172,7 +172,11 @@ export default function CompanySettingsPage() {
     if (!newCompanyName.trim()) return
 
     try {
-      const response = await api.post('/api/company-unit/create', { name: newCompanyName })
+      // Pass companyId if Company HQ is selected
+      const response = await api.post('/api/company-unit/create', { 
+        name: newCompanyName,
+        companyId: selectedCompanyHQ?.id || null,
+      })
       if (response.data.success) {
         const company = response.data.companyUnit
         setSelectedCompany(company)
@@ -518,9 +522,12 @@ export default function CompanySettingsPage() {
                     </p>
                     <button
                       onClick={async () => {
-                        // Automatically create and select it
+                        // Automatically create and select it (link to Company HQ if selected)
                         try {
-                          const response = await api.post('/api/company-unit/create', { name: companySearchQuery })
+                          const response = await api.post('/api/company-unit/create', { 
+                            name: companySearchQuery,
+                            companyId: selectedCompanyHQ?.id || null,
+                          })
                           if (response.data.success) {
                             const company = response.data.companyUnit
                             setSelectedCompany(company)

@@ -69,16 +69,26 @@ export async function POST(request: NextRequest) {
           },
         })
 
-        // If not found, create it
+        // If not found, create it (link to Company HQ if available)
         if (!companyUnit) {
           companyUnit = await prisma.companyUnit.create({
             data: {
               name: normalizedUnitName,
+              companyId: results.companyHQ?.id || null, // Link to Company HQ if available
             },
           })
           console.log('✅ CompanyUnit created:', companyUnit.id)
         } else {
-          console.log('✅ CompanyUnit found:', companyUnit.id)
+          // If Company HQ exists and unit isn't linked, update it
+          if (results.companyHQ?.id && !companyUnit.companyId) {
+            companyUnit = await prisma.companyUnit.update({
+              where: { id: companyUnit.id },
+              data: { companyId: results.companyHQ.id },
+            })
+            console.log('✅ CompanyUnit linked to Company HQ:', companyUnit.id)
+          } else {
+            console.log('✅ CompanyUnit found:', companyUnit.id)
+          }
         }
 
         results.companyUnit = {
