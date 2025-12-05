@@ -27,16 +27,13 @@ async function lookupUser(firebaseId: string) {
         prisma.workProfile.findUnique({ where: { workMeId: workMe.id } }),
         prisma.workEntry.findFirst({
           where: { workMeId: workMe.id, endDate: null },
-          include: { companyUnit: { select: { name: true } } },
         }),
       ])
       
       const userData = {
         ...workMe,
-        firstName: profile?.firstName || null,
-        lastName: profile?.lastName || null,
-        companyUnit: currentWorkEntry?.companyUnit.name || null,
-        companyDivision: currentWorkEntry?.division || null,
+        companyName: currentWorkEntry?.companyName || null,
+        title: currentWorkEntry?.title || null,
       }
       
       console.log('\n✅ User found by firebaseId:')
@@ -65,15 +62,12 @@ async function lookupUser(firebaseId: string) {
           prisma.workProfile.findUnique({ where: { workMeId: user.id } }),
           prisma.workEntry.findFirst({
             where: { workMeId: user.id, endDate: null },
-            include: { companyUnit: { select: { name: true } } },
-          }),
+          }).catch(() => null),
         ])
         return {
           ...user,
-          firstName: profile?.firstName || null,
-          lastName: profile?.lastName || null,
-          companyUnit: currentWorkEntry?.companyUnit.name || null,
-          companyDivision: currentWorkEntry?.division || null,
+          companyName: currentWorkEntry?.companyName || null,
+          title: currentWorkEntry?.title || null,
         }
       })
     )
@@ -83,9 +77,8 @@ async function lookupUser(firebaseId: string) {
       console.log(`\n${index + 1}. ${user.email}`)
       console.log(`   ID: ${user.id}`)
       console.log(`   Firebase ID: ${user.firebaseId || '(none)'}`)
-      console.log(`   Name: ${user.firstName || ''} ${user.lastName || ''}`)
-      console.log(`   Company Unit: ${user.companyUnit || '(none)'}`)
-      console.log(`   Company Division: ${user.companyDivision || '(none)'}`)
+      console.log(`   Company: ${user.companyName || '(none)'}`)
+      console.log(`   Title: ${user.title || '(none)'}`)
       console.log(`   Created: ${user.createdAt}`)
     })
 
