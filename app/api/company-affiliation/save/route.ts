@@ -11,12 +11,29 @@ import { prisma } from '@/lib/prisma'
  */
 export async function POST(request: NextRequest) {
   try {
+    const body = await request.json()
+    const { companyName, unitName, divisionName, companyUnitId, divisionUnitId } = body
+
+    // Handle new simple 3-field format (just log for now)
+    if (companyName !== undefined || unitName !== undefined || divisionName !== undefined) {
+      console.log('Saving affiliation:', {
+        companyName: companyName || null,
+        unitName: unitName || null,
+        divisionName: divisionName || null,
+      })
+
+      // TODO: replace with actual save logic later
+      return NextResponse.json({ 
+        success: true,
+        status: 'ok',
+        message: 'Affiliation logged successfully',
+      })
+    }
+
+    // Existing logic for companyUnitId/divisionUnitId format (requires auth)
     const { firebaseId } = await verifyAuth(request as Request)
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
-
-    const body = await request.json()
-    const { companyUnitId, divisionUnitId } = body
 
     if (!companyUnitId) {
       return NextResponse.json(
