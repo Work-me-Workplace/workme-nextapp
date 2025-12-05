@@ -9,6 +9,11 @@ import api from '@/lib/api'
 import { Building2, Search, Plus, CheckCircle2, Loader2, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
+interface CompanyHQ {
+  id: string
+  name: string
+}
+
 interface CompanyUnit {
   id: string
   name: string
@@ -26,7 +31,16 @@ export default function CompanySettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  // Company selection state
+  // Company HQ selection state
+  const [companyHQSearchQuery, setCompanyHQSearchQuery] = useState('')
+  const [companyHQSearchResults, setCompanyHQSearchResults] = useState<CompanyHQ[]>([])
+  const [selectedCompanyHQ, setSelectedCompanyHQ] = useState<CompanyHQ | null>(null)
+  const [showCompanyHQCreate, setShowCompanyHQCreate] = useState(false)
+  const [newCompanyHQName, setNewCompanyHQName] = useState('')
+  const [hasSearchedHQ, setHasSearchedHQ] = useState(false)
+  const [isSearchingHQ, setIsSearchingHQ] = useState(false)
+
+  // Company Unit selection state
   const [companySearchQuery, setCompanySearchQuery] = useState('')
   const [companySearchResults, setCompanySearchResults] = useState<CompanyUnit[]>([])
   const [selectedCompany, setSelectedCompany] = useState<CompanyUnit | null>(null)
@@ -43,6 +57,7 @@ export default function CompanySettingsPage() {
   const [newDivisionName, setNewDivisionName] = useState('')
 
   // Current profile state
+  const [currentCompanyHQ, setCurrentCompanyHQ] = useState<CompanyHQ | null>(null)
   const [currentCompany, setCurrentCompany] = useState<CompanyUnit | null>(null)
   const [currentDivision, setCurrentDivision] = useState<DivisionUnit | null>(null)
 
@@ -78,6 +93,50 @@ export default function CompanySettingsPage() {
       console.error('Failed to load profile:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const searchCompanyHQ = async (query: string) => {
+    if (!query.trim()) {
+      setCompanyHQSearchResults([])
+      setHasSearchedHQ(false)
+      return
+    }
+
+    try {
+      setIsSearchingHQ(true)
+      setHasSearchedHQ(true)
+      const response = await api.post('/api/company-registry/search', { query })
+      if (response.data.success) {
+        setCompanyHQSearchResults(response.data.companies || [])
+      } else {
+        setCompanyHQSearchResults([])
+      }
+    } catch (error) {
+      console.error('CompanyRegistry search failed:', error)
+      setCompanyHQSearchResults([])
+    } finally {
+      setIsSearchingHQ(false)
+    }
+  }
+
+  const createCompanyHQ = async () => {
+    if (!newCompanyHQName.trim()) return
+
+    try {
+      const response = await api.post('/api/company-registry/create', { name: newCompanyHQName })
+      if (response.data.success) {
+        const companyHQ = response.data.company
+        setSelectedCompanyHQ(companyHQ)
+        setCurrentCompanyHQ(companyHQ)
+        setNewCompanyHQName('')
+        setShowCompanyHQCreate(false)
+        setCompanyHQSearchQuery('')
+        setCompanyHQSearchResults([])
+        setHasSearchedHQ(false)
+      }
+    } catch (error: any) {
+      alert(`Failed to create company HQ: ${error.response?.data?.error || error.message}`)
     }
   }
 
@@ -172,19 +231,23 @@ export default function CompanySettingsPage() {
 
   const saveProfile = async () => {
     if (!selectedCompany) {
-      alert('Please select a company')
+      alert('Please select a company unit')
       return
     }
 
     try {
       setSaving(true)
-      // Use the new CompanyAffiliation route
+      // Use the new 3-field format
       const response = await api.post('/api/company-affiliation/save', {
-        companyUnitId: selectedCompany.id,
-        divisionUnitId: selectedDivision?.id || null,
+        companyName: selectedCompanyHQ?.name || null,
+        unitName: selectedCompany.name,
+        divisionName: selectedDivision?.name || null,
       })
 
       if (response.data.success) {
+        if (response.data.companyHQ) {
+          setCurrentCompanyHQ(response.data.companyHQ)
+        }
         setCurrentCompany(selectedCompany)
         setCurrentDivision(selectedDivision)
         alert('Company affiliation saved successfully!')
@@ -206,6 +269,7 @@ export default function CompanySettingsPage() {
   }
 
   const hasChanges =
+    (selectedCompanyHQ?.id !== currentCompanyHQ?.id) ||
     (selectedCompany?.id !== currentCompany?.id) ||
     (selectedDivision?.id !== currentDivision?.id)
 
@@ -231,7 +295,146 @@ export default function CompanySettingsPage() {
               </h1>
             </div>
 
-            {/* Company Selection */}
+            {/* Company HQ Selection */}
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                <Building2 className="h-5 w-5 mr-2 text-green-600" />
+                Company HQ
+              </h2>
+
+              {currentCompanyHQ && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center">
+                    <CheckCircle2 className="h-5 w-5 text-green-600 mr-2" />
+                    <span className="text-sm font-medium text-green-900">
+                      Current: {currentCompanyHQ.name}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={companyHQSearchQuery}
+                    onChange={(e) => {
+                      setCompanyHQSearchQuery(e.target.value)
+                      searchCompanyHQ(e.target.value)
+                    }}
+                    placeholder="Search for company HQ..."
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
+
+                {isSearchingHQ && (
+                  <div className="p-4 text-center text-gray-500">
+                    <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
+                    <p className="text-sm">Searching...</p>
+                  </div>
+                )}
+
+                {!isSearchingHQ && companyHQSearchResults.length > 0 && (
+                  <div className="border border-gray-200 rounded-lg max-h-60 overflow-y-auto">
+                    {companyHQSearchResults.map((companyHQ) => (
+                      <button
+                        key={companyHQ.id}
+                        onClick={() => {
+                          setSelectedCompanyHQ(companyHQ)
+                          setCompanyHQSearchQuery('')
+                          setCompanyHQSearchResults([])
+                          setHasSearchedHQ(false)
+                        }}
+                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
+                          selectedCompanyHQ?.id === companyHQ.id ? 'bg-green-50' : ''
+                        }`}
+                      >
+                        <div className="font-medium text-gray-900">{companyHQ.name}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {!isSearchingHQ && hasSearchedHQ && companyHQSearchQuery.trim() && companyHQSearchResults.length === 0 && (
+                  <div className="border border-yellow-200 bg-yellow-50 rounded-lg p-4">
+                    <p className="text-sm text-yellow-800 mb-3">
+                      No company HQ found matching "{companyHQSearchQuery}"
+                    </p>
+                    <button
+                      onClick={() => {
+                        setNewCompanyHQName(companyHQSearchQuery)
+                        setShowCompanyHQCreate(true)
+                        setCompanyHQSearchQuery('')
+                        setHasSearchedHQ(false)
+                      }}
+                      className="flex items-center text-green-600 hover:text-green-700 text-sm font-medium"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Create "{companyHQSearchQuery}" as new company HQ
+                    </button>
+                  </div>
+                )}
+
+                {selectedCompanyHQ && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-green-900">{selectedCompanyHQ.name}</span>
+                      {selectedCompanyHQ.id === currentCompanyHQ?.id && (
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {!showCompanyHQCreate && !hasSearchedHQ && (
+                  <button
+                    onClick={() => setShowCompanyHQCreate(true)}
+                    className="flex items-center text-green-600 hover:text-green-700 text-sm font-medium"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Create new company HQ
+                  </button>
+                )}
+
+                {showCompanyHQCreate && (
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <input
+                      type="text"
+                      value={newCompanyHQName}
+                      onChange={(e) => setNewCompanyHQName(e.target.value)}
+                      placeholder="Enter company HQ name"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          createCompanyHQ()
+                        }
+                      }}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={createCompanyHQ}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                      >
+                        Create
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowCompanyHQCreate(false)
+                          setNewCompanyHQName('')
+                          setHasSearchedHQ(false)
+                        }}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Company Unit Selection */}
             <div className="bg-white rounded-lg shadow p-6 mb-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
                 <Building2 className="h-5 w-5 mr-2 text-blue-600" />
