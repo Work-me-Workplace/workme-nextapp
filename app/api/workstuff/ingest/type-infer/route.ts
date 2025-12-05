@@ -30,35 +30,13 @@ export async function POST(request: NextRequest) {
     // Infer type using hybrid inference service
     const inference = await inferCompanyXType(blob)
 
-    // Map CompanyXType to ingest type
-    // Supported: training, career, event, notice, task, other
-    let suggestedType: string
-    switch (inference.type) {
-      case 'training':
-        suggestedType = 'training'
-        break
-      case 'career':
-        suggestedType = 'career'
-        break
-      case 'event':
-        suggestedType = 'event'
-        break
-      case 'impact_event':
-        suggestedType = 'notice'
-        break
-      case 'campaign':
-      case 'benefits':
-      case 'community':
-      case 'employee_cause':
-        suggestedType = 'task'
-        break
-      default:
-        suggestedType = 'other'
-    }
-
+    // Return ContextType directly (matches CompanyX model types)
+    // All ContextType values are valid CompanyX types
     return NextResponse.json({
       success: true,
-      suggestedType,
+      suggestedType: inference.type, // ContextType: campaign, impact_event, training, event, community, benefits, career, employee_cause
+      confidence: inference.confidence,
+      explanation: inference.explanation,
     })
   } catch (error: any) {
     console.error('[Type Infer] Error:', error)

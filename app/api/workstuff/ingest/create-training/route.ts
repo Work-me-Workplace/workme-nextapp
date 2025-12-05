@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireWorkMeAuth } from '@/lib/server/requireWorkMeAuth'
 import { prisma } from '@/lib/prisma'
+import { createCompanyXWithIngest, getCompanyXRedirectPath, CONTEXT_TYPE_TO_MODEL } from '@/lib/services/companyx-mapper'
+import type { ContextType } from '@/lib/types/context-type'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -8,11 +10,14 @@ export const dynamic = 'force-dynamic'
 /**
  * STAGE 1: Create CompanyX model with Ingest Snapshot
  * 
- * Creates a new CompanyX row (currently only Training) with ONLY ingest fields populated.
+ * Creates a new CompanyX row with ONLY ingest fields populated.
  * All "real" fields remain null until Stage 2.
  * 
  * AUTH: WorkMe-only (Firebase → WorkMe)
  * SCOPE: companyUnitId from payload (NOT from WorkMe)
+ * 
+ * Supports all CompanyX types: training, career, event, campaign, impact_event, 
+ * community, benefits, employee_cause
  */
 export async function POST(request: NextRequest) {
   try {
@@ -44,65 +49,63 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate selectedType
-    const validTypes = ['training', 'career', 'event', 'notice', 'task', 'other']
-    if (!validTypes.includes(selectedType)) {
+    // Validate selectedType is a valid ContextType
+    const validTypes: ContextType[] = [
+      'training',
+      'career',
+      'event',
+      'campaign',
+      'impact_event',
+      'community',
+      'benefits',
+      'employee_cause',
+    ]
+
+    if (!validTypes.includes(selectedType as ContextType)) {
       return NextResponse.json(
         { success: false, error: `Invalid selectedType. Must be one of: ${validTypes.join(', ')}` },
         { status: 400 }
       )
     }
 
-    if (selectedType === 'training') {
-      // Create CompanyTraining with ONLY ingest snapshot
-      // INGESTION WRITE PATTERN: workMeId (actor) + companyUnitId (scope)
-      const training = await prisma.companyTraining.create({
-        data: {
-          ingestRawText: rawText,
-          ingestType: selectedType,
-          ingestStatus: 'pending',
-          ingestCreatedAt: new Date(),
-          companyUnit: companyUnitId, // From payload, not from WorkMe
-          createdByWorkMeId: workMeId, // From auth
-          mandatory: false,
-        },
-      })
+    // Create CompanyX model using mapper service
+    const result = await createCompanyXWithIngest(
+      prisma,
+      selectedType as ContextType,
+      rawText,
+      workMeId,
+      companyUnitId
+    )
 
-      return NextResponse.json({
-        success: true,
-        trainingId: training.id,
-        redirectTo: `/mycompany/workforcestuff/training/ingest/${training.id}`,
-        training,
-      })
-    } else if (selectedType === 'career') {
-      // Create CompanyCareer with ONLY ingest snapshot
-      // INGESTION WRITE PATTERN: workMeId (actor) + companyUnitId (scope)
-      const career = await prisma.companyCareer.create({
-        data: {
-          ingestRawText: rawText,
-          title: '', // Required field, will be updated in Stage 2
-          companyUnit: companyUnitId, // From payload, not from WorkMe
-          createdByWorkMeId: workMeId, // From auth
-        },
-      })
-
-      return NextResponse.json({
-        success: true,
-        careerId: career.id,
-        redirectTo: `/mycompany/workforcestuff/career/ingest/${career.id}`,
-        career,
-      })
-    } else {
-      // Other types coming soon
-      return NextResponse.json(
-        { success: false, error: `Type "${selectedType}" is coming soon. Only "training" and "career" are currently supported.` },
-        { status: 400 }
-      )
+    // Build response with type-specific ID field
+    const response: any = {
+      success: true,
+      redirectTo: getCompanyXRedirectPath(selectedType as ContextType, result.id),
+      [result.modelName]: result.record,
     }
+
+    // Add type-specific ID field for backward compatibility
+    const idFieldMap: Record<string, string> = {
+      companyTraining: 'trainingId',
+      companyCareer: 'careerId',
+      companyEvent: 'eventId',
+      companyCampaign: 'campaignId',
+      companyImpactEvent: 'impactEventId',
+      companyCommunity: 'communityId',
+      companyBenefits: 'benefitsId',
+      companyEmployeeCause: 'employeeCauseId',
+    }
+
+    const idField = idFieldMap[result.modelName]
+    if (idField) {
+      response[idField] = result.id
+    }
+
+    return NextResponse.json(response)
   } catch (error: any) {
-    console.error('[Create Training] Error:', error)
+    console.error('[Create CompanyX] Error:', error)
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to create training' },
+      { success: false, error: error.message || 'Failed to create CompanyX record' },
       { status: 500 }
     )
   }

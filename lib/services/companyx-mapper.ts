@@ -1,0 +1,135 @@
+/**
+ * CompanyX Mapper Service
+ * 
+ * Maps ContextType to Prisma model names and handles CompanyX creation
+ * This is the canonical mapping between CompanyX types and database models.
+ */
+
+import type { ContextType } from '@/lib/types/context-type'
+import { PrismaClient } from '@prisma/client'
+
+/**
+ * Map ContextType to Prisma model name
+ */
+export const CONTEXT_TYPE_TO_MODEL: Record<ContextType, string> = {
+  campaign: 'companyCampaign',
+  impact_event: 'companyImpactEvent',
+  training: 'companyTraining',
+  event: 'companyEvent',
+  community: 'companyCommunity',
+  benefits: 'companyBenefits',
+  career: 'companyCareer',
+  employee_cause: 'companyEmployeeCause',
+}
+
+/**
+ * Map ContextType to route path segment
+ */
+export const CONTEXT_TYPE_TO_ROUTE: Record<ContextType, string> = {
+  campaign: 'campaign',
+  impact_event: 'impact-event',
+  training: 'training',
+  event: 'event',
+  community: 'community',
+  benefits: 'benefits',
+  career: 'career',
+  employee_cause: 'employee-cause',
+}
+
+/**
+ * Required fields for each CompanyX model during creation
+ * These are the minimum fields needed to create a record
+ */
+export const REQUIRED_FIELDS: Record<ContextType, Record<string, any>> = {
+  training: {
+    mandatory: false,
+  },
+  career: {
+    title: '', // Required field, will be updated in Stage 2
+  },
+  campaign: {
+    title: '', // Required field, will be updated in Stage 2
+  },
+  impact_event: {
+    title: '', // Required field, will be updated in Stage 2
+  },
+  event: {
+    title: '', // Required field, will be updated in Stage 2
+  },
+  community: {
+    title: '', // Required field, will be updated in Stage 2
+  },
+  benefits: {
+    title: '', // Required field, will be updated in Stage 2
+  },
+  employee_cause: {
+    title: '', // Required field, will be updated in Stage 2
+  },
+}
+
+/**
+ * Create a CompanyX model with ingest snapshot
+ * 
+ * @param prisma - Prisma client instance
+ * @param type - ContextType (CompanyX type)
+ * @param rawText - Raw ingestion text
+ * @param workMeId - WorkMe ID (actor)
+ * @param companyUnitId - Company Unit ID (scope)
+ * @returns Created CompanyX record
+ */
+export async function createCompanyXWithIngest(
+  prisma: PrismaClient,
+  type: ContextType,
+  rawText: string,
+  workMeId: string,
+  companyUnitId: string
+) {
+  const modelName = CONTEXT_TYPE_TO_MODEL[type]
+  const requiredFields = REQUIRED_FIELDS[type]
+
+  // Base data for all CompanyX models
+  const baseData: any = {
+    ...requiredFields,
+    companyUnit: companyUnitId,
+    createdByWorkMeId: workMeId,
+  }
+
+  // Add ingest fields for models that support them
+  if (type === 'training') {
+    baseData.ingestRawText = rawText
+    baseData.ingestType = type
+    baseData.ingestStatus = 'pending'
+    baseData.ingestCreatedAt = new Date()
+  } else if (type === 'career') {
+    baseData.ingestRawText = rawText
+  } else if (type === 'benefits') {
+    baseData.ingestRawText = rawText
+  } else if (type === 'employee_cause') {
+    baseData.ingestRawText = rawText
+  } else {
+    // For other types, store raw text in a summary or description field if available
+    // Most CompanyX models don't have ingestRawText, so we'll store it in description
+    baseData.description = rawText.substring(0, 500) // Truncate for description field
+  }
+
+  // Create the CompanyX model
+  const created = await (prisma as any)[modelName].create({
+    data: baseData,
+  })
+
+  return {
+    id: created.id,
+    type,
+    modelName,
+    record: created,
+  }
+}
+
+/**
+ * Get redirect path for a CompanyX type
+ */
+export function getCompanyXRedirectPath(type: ContextType, id: string): string {
+  const routeSegment = CONTEXT_TYPE_TO_ROUTE[type]
+  return `/mycompany/workforcestuff/${routeSegment}/ingest/${id}`
+}
+
