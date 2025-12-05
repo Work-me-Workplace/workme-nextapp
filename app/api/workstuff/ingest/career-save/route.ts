@@ -2,6 +2,9 @@
  * API Route: Save Career Model
  * 
  * Stage 2 Save: Updates all real career fields, does NOT overwrite ingestRawText
+ * 
+ * AUTH: WorkMe-only (Firebase → WorkMe)
+ * SCOPE: Career record already has companyUnitId from creation
  */
 
 import { NextRequest, NextResponse } from 'next/server'
