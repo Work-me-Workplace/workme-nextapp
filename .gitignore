@@ -35,6 +35,11 @@ yarn-error.log*
 .env.development
 .env.test
 .env.production
+# Backup and temporary env files
+*.env*.bak
+*.env*.tmp
+.env*.bak
+.env*.tmp
 
 # vercel
 .vercel
