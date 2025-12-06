@@ -12,7 +12,6 @@ import {
   BookOpen,
   Network,
   UserPlus,
-  Sparkles,
   Calendar,
   FileText,
   Settings,
@@ -34,7 +33,6 @@ export default function SidebarNav() {
     if (path === '/dashboard') return pathname === path
     if (path === '/mycompany/workforcestuff') return pathname?.startsWith(path)
     if (path === '/mycompany/milestones') return pathname?.startsWith(path)
-    if (path === '/mycompany/worksignal') return pathname?.startsWith(path)
     if (path === '/mywork/create') return pathname === path
     if (path === '/mywork/fromcompanystuff') return pathname === path
     if (path === '/mywork/active') return pathname === path
@@ -62,7 +60,17 @@ export default function SidebarNav() {
       items: [
         { name: 'Workforce Stuff', path: '/mycompany/workforcestuff', icon: Users },
         { name: 'Company Milestones', path: '/mycompany/milestones', icon: TrendingUp },
-        { name: 'WorkSignal', path: '/mycompany/worksignal', icon: Sparkles },
+      ],
+    },
+    {
+      name: 'Signals',
+      items: [
+        { name: 'Signals', path: '/signal', icon: Radio },
+        { name: 'Note Lookup', path: '/signal/note', icon: FileText },
+        { name: 'Google Scan', path: '/signal/google', icon: Search },
+        { name: 'X Feed', path: '/signal/x', icon: Twitter },
+        { name: 'Senior Email', path: '/signal/senior', icon: Mail },
+        { name: 'Clip Parser', path: '/signal/clip', icon: Newspaper },
       ],
     },
     {
@@ -88,17 +96,6 @@ export default function SidebarNav() {
       items: [
         { name: 'Connections', path: '/mynetwork/connections', icon: Network },
         { name: 'Suggested Interactions', path: '/mynetwork/suggestions', icon: UserPlus },
-      ],
-    },
-    {
-      name: 'Signals',
-      items: [
-        { name: 'Signals', path: '/signal', icon: Radio },
-        { name: 'Note Lookup', path: '/signal/note', icon: FileText },
-        { name: 'Google Scan', path: '/signal/google', icon: Search },
-        { name: 'X Feed', path: '/signal/x', icon: Twitter },
-        { name: 'Senior Email', path: '/signal/senior', icon: Mail },
-        { name: 'Clip Parser', path: '/signal/clip', icon: Newspaper },
       ],
     },
     {

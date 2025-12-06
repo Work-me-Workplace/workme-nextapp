@@ -55,7 +55,7 @@ export default function SignalLandingPage() {
       path: '/signal/x',
       icon: Twitter,
       color: 'purple',
-      available: false,
+      available: true,
     },
     {
       name: 'Senior Email',
