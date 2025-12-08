@@ -1,5 +1,5 @@
-export default function TaskDetail({ params }: { params: Record<string, string> }) {
-  const resolved = params
+export default async function TaskDetail({ params }: { params: Promise<Record<string, string>> }) {
+  const resolved = await params
   const taskId = resolved.taskId
   return (
     <div>
