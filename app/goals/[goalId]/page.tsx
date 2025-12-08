@@ -1,5 +1,5 @@
-export default function GoalDetail({ params }: { params: Record<string, string> }) {
-  const resolved = params
+export default async function GoalDetail({ params }: { params: Promise<Record<string, string>> }) {
+  const resolved = await params
   const goalId = resolved.goalId
   return (
     <div>
