@@ -1,11 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { FileText, MessageSquare, Monitor, Mail, Image, FileCheck } from 'lucide-react'
+
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = 'force-dynamic'
 
 const outputTypes = [
   { value: 'workforce_comms', name: 'Workforce Comms', icon: MessageSquare, description: 'Internal communications' },
@@ -16,7 +19,6 @@ const outputTypes = [
 
 export default function CreateOutputPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [step, setStep] = useState<'type' | 'source' | 'hydrate'>('type')
   const [selectedType, setSelectedType] = useState<string | null>(null)
