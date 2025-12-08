@@ -1,9 +1,6 @@
-import { use } from 'react'
-
-type Props = { params: { taskId: string } }
-
-export default function TaskDetail({ params }: Props){
-  const { taskId } = params
+export default function TaskDetail({ params }: { params: Record<string, string> }) {
+  const resolved = params
+  const taskId = resolved.taskId
   return (
     <div>
       <h2 className="text-xl font-medium mb-4">Task {taskId}</h2>
