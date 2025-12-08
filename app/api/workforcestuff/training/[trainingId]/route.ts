@@ -2,7 +2,7 @@
  * API Route: Fetch a single CompanyTraining by ID
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
 import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
@@ -10,8 +10,8 @@ import { prisma } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { trainingId: string } }
+  request: Request,
+  { params }: { params: Promise<{ trainingId: string }> }
 ) {
   try {
     const { firebaseId } = await verifyAuth(request)
@@ -24,7 +24,7 @@ export async function GET(
         { status: 401 }
       )
     }
-    const { trainingId } = params
+    const { trainingId } = await params
 
     const training = await prisma.companyTraining.findFirst({
       where: {
