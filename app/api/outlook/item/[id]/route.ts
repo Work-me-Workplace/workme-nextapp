@@ -12,10 +12,11 @@ export const dynamic = 'force-dynamic'
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    console.log('[API PUT /api/outlook/item/[id]] Starting...', { id: params.id })
+    const { id } = await params
+    console.log('[API PUT /api/outlook/item/[id]] Starting...', { id })
 
     // 1. Verify Firebase auth token
     const { firebaseId } = await verifyAuth(request as Request)
@@ -26,7 +27,7 @@ export async function PUT(
 
     // 3. Verify the item belongs to the user's outlook
     const item = await prisma.myWorkItem.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         outlook: true,
       },
@@ -58,7 +59,7 @@ export async function PUT(
 
     // 5. Update the item
     const updatedItem = await prisma.myWorkItem.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(title !== undefined && { title: title.trim() }),
         ...(notes !== undefined && { notes: notes?.trim() || null }),
@@ -99,10 +100,11 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    console.log('[API DELETE /api/outlook/item/[id]] Starting...', { id: params.id })
+    const { id } = await params
+    console.log('[API DELETE /api/outlook/item/[id]] Starting...', { id })
 
     // 1. Verify Firebase auth token
     const { firebaseId } = await verifyAuth(request as Request)
@@ -113,7 +115,7 @@ export async function DELETE(
 
     // 3. Verify the item belongs to the user's outlook
     const item = await prisma.myWorkItem.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         outlook: true,
       },
@@ -141,10 +143,10 @@ export async function DELETE(
 
     // 4. Delete the item
     await prisma.myWorkItem.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
-    console.log('[API DELETE /api/outlook/item/[id]] Success:', { itemId: params.id })
+    console.log('[API DELETE /api/outlook/item/[id]] Success:', { itemId: id })
 
     return NextResponse.json({
       success: true,

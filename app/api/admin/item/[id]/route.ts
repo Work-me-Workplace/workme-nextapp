@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
 import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
@@ -11,14 +11,15 @@ export const dynamic = 'force-dynamic'
  * Update an AdminWorkItem
  */
 export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } },
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('[API PUT /api/admin/item/[id]] Starting...', { id: params.id })
+    const { id } = await params
+    console.log('[API PUT /api/admin/item/[id]] Starting...', { id })
 
     // 1. Verify Firebase auth token
-    const { firebaseId } = await verifyAuth(request as Request)
+    const { firebaseId } = await verifyAuth(request)
     
     // 2. Load WorkMe identity
     const workMeIdentity = await loadWorkMe(firebaseId)
@@ -26,7 +27,7 @@ export async function PUT(
 
     // 3. Verify the item belongs to the user
     const item = await prisma.adminWorkItem.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!item) {
@@ -55,7 +56,7 @@ export async function PUT(
 
     // 5. Update the item
     const updatedItem = await prisma.adminWorkItem.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(title !== undefined && { title: title.trim() }),
         ...(notes !== undefined && { notes: notes?.trim() || null }),
@@ -93,14 +94,15 @@ export async function PUT(
  * Delete an AdminWorkItem
  */
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } },
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('[API DELETE /api/admin/item/[id]] Starting...', { id: params.id })
+    const { id } = await params
+    console.log('[API DELETE /api/admin/item/[id]] Starting...', { id })
 
     // 1. Verify Firebase auth token
-    const { firebaseId } = await verifyAuth(request as Request)
+    const { firebaseId } = await verifyAuth(request)
     
     // 2. Load WorkMe identity
     const workMeIdentity = await loadWorkMe(firebaseId)
@@ -108,7 +110,7 @@ export async function DELETE(
 
     // 3. Verify the item belongs to the user
     const item = await prisma.adminWorkItem.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!item) {
@@ -133,10 +135,10 @@ export async function DELETE(
 
     // 4. Delete the item
     await prisma.adminWorkItem.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
-    console.log('[API DELETE /api/admin/item/[id]] Success:', { itemId: params.id })
+    console.log('[API DELETE /api/admin/item/[id]] Success:', { itemId: id })
 
     return NextResponse.json({
       success: true,

@@ -10,9 +10,10 @@ import { prisma } from '@/lib/prisma'
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { firebaseId } = await verifyAuth(request as Request)
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
@@ -22,7 +23,7 @@ export async function PUT(
 
     // Verify ownership
     const existing = await prisma.workEntry.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!existing || existing.workMeId !== workMeId) {
@@ -33,7 +34,7 @@ export async function PUT(
     }
 
     const workEntry = await prisma.workEntry.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         companyName: companyName !== undefined ? companyName : undefined,
         title: title !== undefined ? title : undefined,
@@ -63,16 +64,17 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { firebaseId } = await verifyAuth(request as Request)
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
     // Verify ownership
     const existing = await prisma.workEntry.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!existing || existing.workMeId !== workMeId) {
@@ -83,7 +85,7 @@ export async function DELETE(
     }
 
     await prisma.workEntry.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     return NextResponse.json({
