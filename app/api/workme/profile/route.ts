@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
           companyId: true,
           companyUnitId: true,
           divisionId: true,
-          company: { select: { id: true, name: true } },
+          Company: { select: { id: true, name: true } },
           companyUnit: { select: { id: true, name: true } },
           division: { select: { id: true, name: true } },
         },
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
         companyId: workMeRecord.companyId,
         companyUnitId: workMeRecord.companyUnitId,
         divisionId: workMeRecord.divisionId,
-        company: workMeRecord.company || null, // CompanyRegistry (HQ)
+        company: workMeRecord.Company || null, // CompanyRegistry (HQ)
         companyUnit: workMeRecord.companyUnit || null,
         division: workMeRecord.division || null,
       } : null,
