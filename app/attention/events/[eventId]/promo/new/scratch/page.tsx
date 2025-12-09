@@ -1,14 +1,44 @@
 'use client'
 
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense, useCallback } from 'react'
 import Link from 'next/link'
 import { createPromotionalWorkItem } from '@/lib/actions/promotional-work-item'
+
+function SearchParamsInitializer({ onParamsLoaded }: { onParamsLoaded: (params: Record<string, string>) => void }) {
+  const searchParams = useSearchParams()
+  
+  useEffect(() => {
+    if (searchParams) {
+      const params: Record<string, string> = {
+        name: searchParams.get('name') || '',
+        type: searchParams.get('type') || '',
+        title: searchParams.get('title') || '',
+        headline: searchParams.get('headline') || '',
+        subheadline: searchParams.get('subheadline') || '',
+        details: searchParams.get('details') || '',
+        perks: searchParams.get('perks') || '',
+        participation: searchParams.get('participation') || '',
+        foodProvided: searchParams.get('foodProvided') || '',
+        foodTypes: searchParams.get('foodTypes') || '',
+        theme: searchParams.get('theme') || '',
+        eventDateBlock: searchParams.get('eventDateBlock') || '',
+        eventTimeBlock: searchParams.get('eventTimeBlock') || '',
+        rsvpLink: searchParams.get('rsvpLink') || '',
+      }
+      
+      if (params.name || params.type || params.title) {
+        onParamsLoaded(params)
+      }
+    }
+  }, [searchParams, onParamsLoaded])
+  
+  return null
+}
 
 export default function PromotionalProductScratchPage() {
   const router = useRouter()
   const params = useParams()
-  const searchParams = useSearchParams()
   const eventId = params.eventId as string
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -28,44 +58,24 @@ export default function PromotionalProductScratchPage() {
     rsvpLink: '',
   })
 
-  // Pre-fill from query params if coming from previous product
-  useEffect(() => {
-    if (searchParams) {
-      const name = searchParams.get('name')
-      const type = searchParams.get('type')
-      const title = searchParams.get('title')
-      const headline = searchParams.get('headline')
-      const subheadline = searchParams.get('subheadline')
-      const details = searchParams.get('details')
-      const perks = searchParams.get('perks')
-      const participation = searchParams.get('participation')
-      const foodProvided = searchParams.get('foodProvided')
-      const foodTypes = searchParams.get('foodTypes')
-      const theme = searchParams.get('theme')
-      const eventDateBlock = searchParams.get('eventDateBlock')
-      const eventTimeBlock = searchParams.get('eventTimeBlock')
-      const rsvpLink = searchParams.get('rsvpLink')
-
-      if (name || type || title) {
-        setFormData({
-          name: name || '',
-          type: type || 'poster_22x26',
-          title: title || '',
-          headline: headline || '',
-          subheadline: subheadline || '',
-          details: details || '',
-          perks: perks || '',
-          participation: participation || '',
-          foodProvided: foodProvided || '',
-          foodTypes: foodTypes || '',
-          theme: theme || '',
-          eventDateBlock: eventDateBlock || '',
-          eventTimeBlock: eventTimeBlock || '',
-          rsvpLink: rsvpLink || '',
-        })
-      }
-    }
-  }, [searchParams])
+  const handleParamsLoaded = useCallback((params: Record<string, string>) => {
+    setFormData({
+      name: params.name || '',
+      type: params.type || 'poster_22x26',
+      title: params.title || '',
+      headline: params.headline || '',
+      subheadline: params.subheadline || '',
+      details: params.details || '',
+      perks: params.perks || '',
+      participation: params.participation || '',
+      foodProvided: params.foodProvided || '',
+      foodTypes: params.foodTypes || '',
+      theme: params.theme || '',
+      eventDateBlock: params.eventDateBlock || '',
+      eventTimeBlock: params.eventTimeBlock || '',
+      rsvpLink: params.rsvpLink || '',
+    })
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -93,6 +103,9 @@ export default function PromotionalProductScratchPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Suspense fallback={null}>
+        <SearchParamsInitializer onParamsLoaded={handleParamsLoaded} />
+      </Suspense>
       <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">

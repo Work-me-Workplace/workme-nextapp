@@ -34,9 +34,9 @@ export default function XFeedLandingPage() {
 
   const xFeedOptions = [
     {
-      name: 'Tune X Feed',
-      description: 'Select organizations, people, and hashtags to follow',
-      path: '/signal/x/tune',
+      name: 'Find People in Ecosystem',
+      description: 'Search for journalists, influencers, and defense experts',
+      path: '/ecosystem/search',
       icon: Settings,
       color: 'purple',
     },

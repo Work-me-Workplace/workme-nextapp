@@ -28,19 +28,19 @@ model WorkMe {
   workMeCompanyId String?
   workMeCompany   WorkMeCompany? @relation(fields: [workMeCompanyId], references: [id])
 
-  superAdmin SuperAdmin? // Optional link to SuperAdmin (may migrate away)
-
   // Company affiliation (direct foreign keys to registries)
   companyId     String? // Foreign key to CompanyRegistry (Company HQ)
   companyUnitId String? // Foreign key to CompanyUnit
   divisionId    String? // Foreign key to DivisionUnit
 
   // Bolt-on modules (all via foreign keys)
-  workProfile      WorkProfile?
-  workSkills       WorkSkills?
-  workEntries      WorkEntry[]
-  workOutlookItems WorkOutlookItem[]
-  workGoals        WorkGoal[]
+  workProfile        WorkProfile?
+  workSkills         WorkSkills?
+  workEntries        WorkEntry[]
+  workOutlookItems   WorkOutlookItem[]
+  workGoals          WorkGoal[]
+  ecosystemCompanies WorkMeEcosystemCompany[]
+  ecosystemContacts  MyEcosystemContact[]
 
   // Company registry relations
   company     CompanyRegistry? @relation(fields: [companyId], references: [id])
@@ -156,24 +156,6 @@ model WorkMeCompany {
   // NO companies relation - Company is independent
 
   @@map("workme_company")
-}
-
-// ============================================
-// SUPER ADMIN MODEL (Standalone Identity)
-// ============================================
-model SuperAdmin {
-  id         String   @id @default(uuid())
-  firebaseId String?  @unique // Firebase Auth UID (optional)
-  email      String   @unique // Super admin email
-  firstName  String?
-  lastName   String?
-  photoUrl   String?
-  workMeId   String?  @unique // Optional link to WorkMe (may migrate away)
-  workMe     WorkMe?  @relation(fields: [workMeId], references: [id], onDelete: SetNull)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@map("super_admin")
 }
 
 // ============================================
@@ -1109,4 +1091,225 @@ model WorkGoal {
 
   @@index([workMeId])
   @@index([targetDate])
+}
+
+// ============================================
+// DEFENSE ECOSYSTEM INTELLIGENCE MODELS
+// ============================================
+
+// Platform: Core object for defense platforms (air, surface, subsurface, land, space systems)
+model Platform {
+  id           String   @id @default(cuid())
+  name         String
+  platformType String // air | surface | subsurface | land | space
+  category     String // platform | weapon | sensor | comms | munition | c2
+  isNextGen    Boolean  @default(false)
+  status       String? // concept | development | testing | fielding | deployed | retired
+  description  String?
+  latestSignal String? // rolling summary (AI synthesized)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  capabilities       PlatformCapability[]
+  communications     PlatformCommNode[]
+  contractors        PlatformContract[]
+  signals            PlatformSignal[]
+  ecosystemCompanies EcosystemDefenseCompany[] @relation("EcosystemCompanyPlatforms")
+
+  @@index([platformType])
+  @@index([category])
+}
+
+// PlatformCapability: What platforms can do
+model PlatformCapability {
+  id         String   @id @default(cuid())
+  platformId String
+  capability String // e.g., stealth, long-range, A2AD-penetration, hypersonic-defense
+  createdAt  DateTime @default(now())
+
+  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@index([platformId])
+  @@index([capability])
+}
+
+// PlatformCommNode: Datalinks, SATCOM, sensors, C2 nodes, JADC2 integrations
+model PlatformCommNode {
+  id         String   @id @default(cuid())
+  platformId String
+  nodeType   String // datalink | satcom | radar | ew | c2 | sensor_fusion
+  nodeName   String? // e.g., Link-16, TTNT, MADL, JADC2 node
+  createdAt  DateTime @default(now())
+
+  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@index([platformId])
+  @@index([nodeType])
+}
+
+// EcosystemDefenseCompany: Defense-industrial-base entities (Boeing, Lockheed, RTX, HII, L3Harris)
+// This is NOT a BD CRM company
+model EcosystemDefenseCompany {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  website     String?
+  hqCity      String?
+  hqState     String?
+  hqCountry   String?
+
+  // Industry role (prime, sub, integrator, supplier)
+  role String?
+
+  // AI-enriched attributes (nullable)
+  specialties    String[] @default([]) // e.g., stealth, propulsion, sensors
+  marketTier     String? // major_prime | mid_tier | boutique
+  influenceScore Int? // optional scoring placeholder
+
+  // Relations
+  platforms       Platform[]               @relation("EcosystemCompanyPlatforms")
+  contracts       PlatformContract[]
+  workMeFollowers WorkMeEcosystemCompany[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([role])
+}
+
+// PlatformContract: Links a platform to a defense company and indicates contract status
+model PlatformContract {
+  id            String   @id @default(cuid())
+  platformId    String
+  companyId     String
+  prime         Boolean  @default(false)
+  onContract    Boolean  @default(false)
+  contractNotes String?
+  createdAt     DateTime @default(now())
+
+  platform Platform                @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  company  EcosystemDefenseCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([platformId])
+  @@index([companyId])
+}
+
+// PlatformSignal: The beating heart of the system - every ingestion creates one of these
+model PlatformSignal {
+  id         String   @id @default(cuid())
+  platformId String
+  sourceUrl  String?
+  sourceType String? // tweet | article | report | press_release | document
+  signalType String // procurement | contract | capability | threat | testing | failure | policy_hint
+  headline   String?
+  rawSnippet String?
+  aiSummary  String?
+  confidence Float? // optional scoring
+  createdAt  DateTime @default(now())
+
+  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@index([platformId])
+  @@index([signalType])
+  @@index([createdAt])
+}
+
+// WorkMeEcosystemCompany: Junction table for tracking who YOU care about
+// Allows WorkMe users to "follow" or "track" ecosystem companies
+model WorkMeEcosystemCompany {
+  id        String   @id @default(cuid())
+  workMeId  String
+  companyId String
+  createdAt DateTime @default(now())
+
+  workMe  WorkMe                  @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  company EcosystemDefenseCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([workMeId, companyId])
+  @@index([workMeId])
+  @@index([companyId])
+}
+
+// EcosystemPerson: Your "ecosystemdude" — the actual human
+// Minimal, inference-friendly, no overbuilding
+model EcosystemPerson {
+  id        String  @id @default(cuid())
+  fullName  String
+  xHandle   String? @unique
+  xUserId   String? @unique // Twitter/X user ID
+  title     String?
+  seniority String?
+  domain    String? // what space they play in (naval aviation, acquisition, AI, etc.)
+  beat      String? // optional: reporters / analysts
+
+  companyName String? // inference only — NOT RELATION
+  companyId   String? // FK to EcosystemCompany for org linking
+  yearsAt     Int? // inference
+  influence   Int? // inference
+
+  // X/Twitter profile data
+  profileImage String?
+  bio          String?
+  followers    Int?
+
+  // Intelligence fields (GPT-inferred)
+  topics              String[] @default([]) // e.g., ["FA-XX", "procurement", "carriers"]
+  affinityIndustry    String? // e.g., "Defense"
+  affinityToMyOrg     String? // e.g., "High", "Medium", "Low"
+  latestSignalSummary String? // AI-created summary of latest signals
+
+  updatedSummary String? // dynamic AI-created summary of who they are to you
+  lastHydratedAt DateTime? // when we last fetched fresh data from X
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  // Relations
+  workMeContacts MyEcosystemContact[]
+  company        EcosystemCompany?    @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@index([xHandle])
+  @@index([xUserId])
+  @@index([domain])
+  @@index([companyId])
+}
+
+// EcosystemCompany: Simple org model used ONLY for inference + enrichment
+// This is NOT a CRM, minimal identity
+model EcosystemCompany {
+  id      String  @id @default(cuid())
+  name    String
+  domain  String? @unique
+  type    String? // media | contractor | gov | OEM | think-tank
+  summary String? // AI curated description
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  // Relations
+  people EcosystemPerson[] // people linked to this company
+
+  @@index([name])
+  @@index([type])
+}
+
+// MyEcosystemContact: Your CRM container — the only junction table you need
+model MyEcosystemContact {
+  id       String @id @default(cuid())
+  workMeId String
+  personId String
+
+  notes String?
+  tags  String[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workMe WorkMe          @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  person EcosystemPerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([workMeId, personId])
+  @@index([workMeId])
+  @@index([personId])
 }
