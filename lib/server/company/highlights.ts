@@ -27,6 +27,12 @@ export interface UpdateHighlightData extends Partial<CreateHighlightData> {
 
 /**
  * Create a new employee highlight
+ * 
+ * ✅ CANONICAL RULES:
+ * - companyUnit = creator's companyUnit (scoping dimension)
+ * - unit = employee's actual org (from parser/user input, NEVER overridden)
+ * - DO NOT auto-assign unit from creator's companyUnit
+ * - DO NOT overwrite unit with creator's unit
  */
 export async function createHighlight(
   data: CreateHighlightData,
@@ -37,16 +43,19 @@ export async function createHighlight(
     workMeId,
     companyUnit,
     fullName: data.fullName,
+    unit: data.unit, // Employee's unit (from parser, never overridden)
   })
 
   if (!workMeId) {
     throw new Error('workMeId is required')
   }
 
+  // ✅ unit comes from data (parser/user input) - NEVER override
+  // ✅ companyUnit comes from creator - scoping dimension only
   const highlight = await prisma.companyEmployeeHighlight.create({
     data: {
-      ...data,
-      companyUnit,
+      ...data, // Includes unit from parser (employee's org)
+      companyUnit, // Creator's companyUnit (scoping)
       createdByWorkMeId: workMeId,
     },
   })
@@ -111,6 +120,9 @@ export async function getHighlight(id: string) {
 
 /**
  * List all highlights for a company unit
+ * 
+ * ✅ CANONICAL RULE: Scope queries to companyUnit ONLY (creator's companyUnit)
+ * ❌ DO NOT filter by unit (employee's org) - that's just metadata
  */
 export async function listHighlights(companyUnit: string | null) {
   console.log('[listHighlights]', { companyUnit })
@@ -119,9 +131,11 @@ export async function listHighlights(companyUnit: string | null) {
     return []
   }
 
+  // ✅ Filter by companyUnit (creator's scoping dimension)
+  // ❌ NOT by unit (employee's org - that's just metadata)
   const highlights = await prisma.companyEmployeeHighlight.findMany({
     where: {
-      companyUnit,
+      companyUnit, // Creator's companyUnit (scoping)
     },
     orderBy: {
       updatedAt: 'desc',

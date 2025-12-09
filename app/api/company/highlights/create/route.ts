@@ -12,8 +12,13 @@ export const dynamic = 'force-dynamic'
  * 
  * Body: { rawText: string }
  * 
+ * ✅ CANONICAL RULES:
+ * - companyUnit = creator's companyUnit (scoping dimension)
+ * - unit = employee's actual org (from parser, NEVER overridden)
+ * - DO NOT auto-assign unit from creator's companyUnit
+ * 
  * Flow:
- * - Call parseHighlight(rawText)
+ * - Call parseHighlight(rawText) - extracts unit from citation
  * - Insert into CompanyEmployeeHighlight
  * - Return the created record id
  */

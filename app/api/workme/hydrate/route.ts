@@ -22,9 +22,9 @@ export async function GET(request: Request) {
     // 1. Auth - Verify Firebase token (includes photoUrl)
     const { firebaseId, photoUrl, displayName } = await verifyAuth(request)
     
-    // 2. Load WorkMe identity - just the basic WorkMe object
+    // 2. Load WorkMe identity - includes companyUnit and companyDivision
     const workMeIdentity = await loadWorkMe(firebaseId)
-    const { id: workMeId } = workMeIdentity
+    const { id: workMeId, companyUnit, companyDivision } = workMeIdentity
 
     // 3. Fetch full WorkMe record to get headline, handle, title, linkedinUrl
     const workMe = await prisma.workMe.findUnique({
@@ -48,9 +48,11 @@ export async function GET(request: Request) {
     console.log('[API GET /api/workme/hydrate] Hydration successful:', {
       workMeId: workMe.id,
       firebaseId,
+      companyUnit,
+      companyDivision,
     })
 
-    // Return WorkMe with Firebase photoUrl
+    // Return WorkMe with Firebase photoUrl, companyUnit, and companyDivision
     return NextResponse.json({
       success: true,
       workMe: {
@@ -63,6 +65,8 @@ export async function GET(request: Request) {
         linkedinUrl: workMe.linkedinUrl || null,
         photoUrl: photoUrl || null, // Always from Firebase
         displayName: displayName || null,
+        companyUnit: companyUnit || null,
+        companyDivision: companyDivision || null,
         createdAt: workMe.createdAt,
       },
     })

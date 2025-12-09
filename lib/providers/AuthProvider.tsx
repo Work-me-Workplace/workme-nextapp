@@ -103,6 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('email', newSession.email || '')
         if (newSession.companyUnit) {
           localStorage.setItem('companyUnit', newSession.companyUnit)
+          // Dispatch custom event for same-tab updates
+          window.dispatchEvent(new Event('companyUnitUpdated'))
         }
         if (newSession.companyDivision) {
           localStorage.setItem('companyDivision', newSession.companyDivision)

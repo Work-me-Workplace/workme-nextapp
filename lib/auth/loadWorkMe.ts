@@ -38,6 +38,18 @@ export async function loadWorkMe(firebaseId: string): Promise<WorkMeIdentity> {
       id: true,
       firebaseId: true,
       email: true,
+      companyUnitId: true,
+      divisionId: true,
+      companyUnit: {
+        select: {
+          name: true,
+        },
+      },
+      division: {
+        select: {
+          name: true,
+        },
+      },
     },
   })
 
@@ -45,8 +57,7 @@ export async function loadWorkMe(firebaseId: string): Promise<WorkMeIdentity> {
     throw new Error('WorkMe identity not found. Please complete sign up.')
   }
 
-  // Just return basic WorkMe - no WorkEntry/WorkProfile queries
-  // This keeps it simple and avoids errors when tables don't exist
+  // Return companyUnit and companyDivision from the relations
   return {
     id: workMe.id,
     firebaseId: workMe.firebaseId,
@@ -54,8 +65,8 @@ export async function loadWorkMe(firebaseId: string): Promise<WorkMeIdentity> {
     firstName: null, // Will be populated from WorkProfile when available
     lastName: null,  // Will be populated from WorkProfile when available
     photoUrl: null,   // Will be populated from WorkProfile when available
-    companyUnit: null, // Will be populated from WorkEntry when available
-    companyDivision: null, // Will be populated from WorkEntry when available
+    companyUnit: workMe.companyUnit?.name || null,
+    companyDivision: workMe.division?.name || null,
   }
 }
 
