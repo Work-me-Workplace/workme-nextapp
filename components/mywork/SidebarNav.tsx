@@ -60,6 +60,7 @@ export default function SidebarNav() {
       items: [
         { name: 'Workforce Stuff', path: '/mycompany/workforcestuff', icon: Users },
         { name: 'Company Milestones', path: '/mycompany/milestones', icon: TrendingUp },
+        { name: 'Employee Highlights', path: '/mycompany/highlights', icon: Award },
       ],
     },
     {

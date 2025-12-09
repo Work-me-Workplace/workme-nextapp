@@ -65,6 +65,7 @@ model WorkMe {
   createdCompanyCommunities  CompanyCommunity[]                 @relation("CompanyCommunityCreator")
   createdCompanyCareers      CompanyCareer[]                    @relation("CompanyCareerCreator")
   createdDigitalSignProducts ProductDigitalSign[]               @relation("ProductDigitalSignCreator")
+  createdEmployeeHighlights  CompanyEmployeeHighlight[]         @relation("CompanyEmployeeHighlightCreator")
 
   // Internal Productivity Relations
   myWorkOutlook  MyWorkOutlook?
@@ -835,6 +836,42 @@ model CompanyEmployeeCause {
   companyUnit String?
 
   @@index([companyUnit])
+}
+
+model CompanyEmployeeHighlight {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Core person identity
+  fullName String
+  title    String? // role or billet: Engineer, TWH, Analyst
+  unit     String? // NAVSEA 05, SEA 08, etc.
+
+  // Award metadata
+  awardName      String? // e.g., "Rosenblatt Young Naval Engineer Award"
+  awardingAgency String? // e.g., "American Society of Naval Engineers"
+  awardYear      Int?
+
+  // Primary content
+  citationText   String // full citation, multi-paragraph
+  achievement    String? // single-sentence distilled summary
+  narrative      String? // optional AI-synthesized story
+  classification String? // "Leadership", "Innovation", etc.
+
+  // Media
+  photoUrl String?
+
+  // Optional extras
+  supervisorQuote String?
+
+  // Relations
+  companyUnit       String?
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation("CompanyEmployeeHighlightCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
+  @@index([companyUnit])
+  @@index([createdByWorkMeId])
 }
 
 // ============================================
