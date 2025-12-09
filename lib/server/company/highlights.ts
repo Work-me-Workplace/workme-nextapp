@@ -28,16 +28,21 @@ export interface UpdateHighlightData extends Partial<CreateHighlightData> {
 /**
  * Create a new employee highlight
  * 
- * ✅ CANONICAL RULES:
- * - companyUnit = creator's companyUnit (scoping dimension)
- * - unit = employee's actual org (from parser/user input, NEVER overridden)
- * - DO NOT auto-assign unit from creator's companyUnit
- * - DO NOT overwrite unit with creator's unit
+ * ✅ CANONICAL ARCHITECTURE:
+ * - Employee carries the canonical org metadata (companyUnitId)
+ * - Highlight inherits from Employee via CompanyEmployeeHighlightLink
+ * - Unit scoping is inferred from Employee → companyUnitId
+ * - No need to store companyUnit separately on highlight
+ * 
+ * Flow:
+ * 1. Create highlight (no companyUnit field)
+ * 2. Link highlight ↔ employee (via CompanyEmployeeHighlightLink)
+ * 3. Unit is inferred from employee.companyUnitId
  */
 export async function createHighlight(
   data: CreateHighlightData,
   workMeId: string,
-  companyUnit: string | null
+  companyUnit: string | null // Used for authorization/validation only, not stored
 ) {
   console.log('[createHighlight]', {
     workMeId,
@@ -50,15 +55,27 @@ export async function createHighlight(
     throw new Error('workMeId is required')
   }
 
-  // ✅ unit comes from data (parser/user input) - NEVER override
-  // ✅ companyUnit comes from creator - scoping dimension only
+  // ✅ Create highlight with only valid fields (exclude fullName, title, unit - those are employee fields)
+  // ✅ Unit scoping is inferred from employee, not stored on highlight
   const highlight = await prisma.companyEmployeeHighlight.create({
     data: {
-      ...data, // Includes unit from parser (employee's org)
-      companyUnit, // Creator's companyUnit (scoping)
+      citationText: data.citationText,
+      achievement: data.achievement || null,
+      narrative: data.narrative || null,
+      classification: data.classification || null,
+      awardName: data.awardName || null,
+      awardingAgency: data.awardingAgency || null,
+      awardYear: data.awardYear || null,
+      supervisorQuote: data.supervisorQuote || null,
+      photoUrl: data.photoUrl || null,
       createdByWorkMeId: workMeId,
     },
   })
+
+  // Note: Employee linking and unit inference happens in the calling code
+  // Employee → belongs to unit
+  // Highlight → belongs to employee
+  // Therefore Highlight → unit is inferred
 
   console.log('[createHighlight] SUCCESS', { highlightId: highlight.id })
 
@@ -91,9 +108,17 @@ export async function updateHighlight(
     throw new Error('Unauthorized: You can only edit highlights you created')
   }
 
+  // Only update valid fields (exclude fullName, title, unit - those are employee fields)
+  const {
+    fullName,
+    title,
+    unit,
+    ...validFields
+  } = data
+
   const updated = await prisma.companyEmployeeHighlight.update({
     where: { id },
-    data,
+    data: validFields,
   })
 
   console.log('[updateHighlight] SUCCESS', { highlightId: id })
@@ -116,7 +141,6 @@ export async function getHighlight(id: string) {
           employee: true,
         },
       },
-      units: true,
       createdBy: {
         select: {
           id: true,
@@ -136,8 +160,11 @@ export async function getHighlight(id: string) {
 /**
  * List all highlights for a company unit
  * 
- * ✅ CANONICAL RULE: Tenantization via CompanyEmployeeHighlightUnit junction table
- * Filters by companyUnit string in the junction table
+ * ✅ CANONICAL ARCHITECTURE:
+ * - Filter by employee's companyUnitId (inferred from employee)
+ * - Employee → belongs to unit
+ * - Highlight → belongs to employee
+ * - Therefore Highlight → unit is inferred via employee
  */
 export async function listHighlights(companyUnit: string | null) {
   console.log('[listHighlights]', { companyUnit })
@@ -146,12 +173,24 @@ export async function listHighlights(companyUnit: string | null) {
     return []
   }
 
-  // ✅ Filter by companyUnit via junction table (tenantization)
+  // First, find the CompanyUnit by name to get its ID
+  const companyUnitRecord = await prisma.companyUnit.findUnique({
+    where: { name: companyUnit },
+    select: { id: true },
+  })
+
+  if (!companyUnitRecord) {
+    return []
+  }
+
+  // ✅ Filter by employee's companyUnitId (inferred architecture)
   const highlights = await prisma.companyEmployeeHighlight.findMany({
     where: {
-      units: {
+      employees: {
         some: {
-          companyUnit: companyUnit,
+          employee: {
+            companyUnitId: companyUnitRecord.id,
+          },
         },
       },
     },
@@ -161,7 +200,6 @@ export async function listHighlights(companyUnit: string | null) {
           employee: true,
         },
       },
-      units: true,
     },
     orderBy: {
       updatedAt: 'desc',
