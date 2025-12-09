@@ -41,11 +41,11 @@ export async function POST(request: NextRequest) {
 
     // Validate companyId exists if provided
     if (companyId) {
-      const companyRegistry = await prisma.companyRegistry.findUnique({
+      const company = await prisma.company.findUnique({
         where: { id: companyId },
       })
       
-      if (!companyRegistry) {
+      if (!company) {
         return NextResponse.json(
           { success: false, error: 'Company HQ not found' },
           { status: 404 },

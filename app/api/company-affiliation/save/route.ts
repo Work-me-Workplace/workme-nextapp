@@ -23,12 +23,12 @@ export async function POST(request: NextRequest) {
 
       const results: any = {}
 
-      // 1. Company HQ (CompanyRegistry) - search or create
+      // 1. Company HQ (Company) - search or create
       if (companyName && typeof companyName === 'string' && companyName.trim()) {
         const normalizedHQName = companyName.trim()
         
-        // Search for existing CompanyRegistry
-        let companyHQ = await prisma.companyRegistry.findFirst({
+        // Search for existing Company
+        let companyHQ = await prisma.company.findFirst({
           where: {
             name: {
               equals: normalizedHQName,
@@ -39,14 +39,14 @@ export async function POST(request: NextRequest) {
 
         // If not found, create it
         if (!companyHQ) {
-          companyHQ = await prisma.companyRegistry.create({
+          companyHQ = await prisma.company.create({
             data: {
               name: normalizedHQName,
             },
           })
-          console.log('✅ CompanyRegistry (HQ) created:', companyHQ.id)
+          console.log('✅ Company (HQ) created:', companyHQ.id)
         } else {
-          console.log('✅ CompanyRegistry (HQ) found:', companyHQ.id)
+          console.log('✅ Company (HQ) found:', companyHQ.id)
         }
 
         results.companyHQ = {

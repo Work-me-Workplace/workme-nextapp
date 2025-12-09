@@ -1,6 +1,6 @@
 /**
- * Quick script to link an existing CompanyUnit to a CompanyRegistry (HQ)
- * Usage: npx tsx scripts/link-companyunit-to-hq.ts "CompanyUnit Name" "CompanyRegistry ID"
+ * Quick script to link an existing CompanyUnit to a Company (HQ)
+ * Usage: npx tsx scripts/link-companyunit-to-hq.ts "CompanyUnit Name" "Company ID"
  */
 
 import { PrismaClient } from '@prisma/client'
@@ -9,10 +9,10 @@ const prisma = new PrismaClient()
 
 async function main() {
   const companyUnitName = process.argv[2]
-  const companyRegistryId = process.argv[3]
+  const companyId = process.argv[3]
 
   if (!companyUnitName) {
-    console.error('Usage: npx tsx scripts/link-companyunit-to-hq.ts "CompanyUnit Name" "CompanyRegistry ID"')
+    console.error('Usage: npx tsx scripts/link-companyunit-to-hq.ts "CompanyUnit Name" "Company ID"')
     process.exit(1)
   }
 
@@ -32,24 +32,24 @@ async function main() {
       process.exit(1)
     }
 
-    // If companyRegistryId provided, validate it exists
-    if (companyRegistryId) {
-      const companyRegistry = await prisma.companyRegistry.findUnique({
-        where: { id: companyRegistryId },
+    // If companyId provided, validate it exists
+    if (companyId) {
+      const company = await prisma.company.findUnique({
+        where: { id: companyId },
       })
 
-      if (!companyRegistry) {
-        console.error(`❌ CompanyRegistry with ID "${companyRegistryId}" not found`)
+      if (!company) {
+        console.error(`❌ Company with ID "${companyId}" not found`)
         process.exit(1)
       }
 
       // Update the CompanyUnit
       const updated = await prisma.companyUnit.update({
         where: { id: companyUnit.id },
-        data: { companyId: companyRegistryId },
+        data: { companyId: companyId },
       })
 
-      console.log(`✅ CompanyUnit "${companyUnitName}" linked to Company HQ "${companyRegistry.name}"`)
+      console.log(`✅ CompanyUnit "${companyUnitName}" linked to Company HQ "${company.name}"`)
       console.log(`   CompanyUnit ID: ${updated.id}`)
       console.log(`   Company HQ ID: ${updated.companyId}`)
     } else {

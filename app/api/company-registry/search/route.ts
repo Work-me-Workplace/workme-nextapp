@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 /**
  * POST /api/company-registry/search
  * 
- * Search company registry (CompanyRegistry) - for Company HQ
+ * Search company (Company) - for Company HQ
  * Public search - no auth required
  * 
  * Body: { query: string }
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fuzzy search by name (case-insensitive, partial match)
-    const companies = await prisma.companyRegistry.findMany({
+    const companies = await prisma.company.findMany({
       where: {
         name: {
           contains: query,

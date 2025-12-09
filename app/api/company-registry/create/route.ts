@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 /**
  * POST /api/company-registry/create
  * 
- * Create company registry entry (CompanyRegistry) - for Company HQ
+ * Create company entry (Company) - for Company HQ
  * Search-before-create pattern like RaceRegistry
  * 
  * Body: { name: string }
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const normalizedName = name.trim()
 
     // REGISTRY PATTERN: Search first, if exists, return it. If not, create it.
-    const existing = await prisma.companyRegistry.findFirst({
+    const existing = await prisma.company.findFirst({
       where: {
         name: {
           equals: normalizedName,
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (existing) {
-      console.log('✅ CompanyRegistry (HQ) found in registry:', existing.id)
+      console.log('✅ Company (HQ) found in registry:', existing.id)
       return NextResponse.json({
         success: true,
         company: {
@@ -50,14 +50,14 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Create new company registry entry
-    const company = await prisma.companyRegistry.create({
+    // Create new company entry
+    const company = await prisma.company.create({
       data: {
         name: normalizedName,
       },
     })
 
-    console.log('✅ CompanyRegistry (HQ) created:', company.id)
+    console.log('✅ Company (HQ) created:', company.id)
 
     return NextResponse.json({
       success: true,
