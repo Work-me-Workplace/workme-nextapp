@@ -163,17 +163,17 @@ const workMeCompanyId = workMe.workMeCompanyId
 Use the helper function:
 
 ```typescript
-import { getWorkMeScope } from '@/lib/server/getWorkMeScope'
+import { getWorkMeContext } from '@/lib/server/getWorkMeContext'
 
 export async function POST(request: NextRequest) {
-  // Get scoping values
-  const scope = await getWorkMeScope(request)
+  // Get WorkMe context
+  const workme = await getWorkMeContext(request)
   
   // Use for object creation
   const employee = await prisma.companyEmployee.create({
     data: {
       ...employeeData,
-      companyId: scope.companyId, // Authoritative org FK
+      companyId: workme.companyId, // Authoritative org FK
       // workMeCompanyId can be auto-stamped if model supports it
     },
   })

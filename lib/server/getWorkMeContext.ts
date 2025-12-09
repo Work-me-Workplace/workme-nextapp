@@ -1,14 +1,14 @@
 /**
- * Server-side helper to get WorkMe scoping values
+ * Server-side helper to get WorkMe context for route operations
  * 
  * Use this in routes to get workMeId, companyId, and workMeCompanyId
  * for stamping objects with organizational context.
  * 
  * Pattern:
- * const scope = await getWorkMeScope(request)
- * // scope.workMeId - for createdByWorkMeId
- * // scope.companyId - for companyId FK
- * // scope.workMeCompanyId - for background tagging
+ * const workme = await getWorkMeContext(request)
+ * // workme.workMeId - for createdByWorkMeId
+ * // workme.companyId - for companyId FK (authoritative)
+ * // workme.workMeCompanyId - for background tagging
  */
 
 'use server'
@@ -17,7 +17,7 @@ import { NextRequest } from 'next/server'
 import { verifyAuth } from './verifyAuth'
 import { prisma } from '@/lib/prisma'
 
-export interface WorkMeScope {
+export interface WorkMeContext {
   workMeId: string
   companyId: string | null
   companyUnit: string | null
@@ -26,13 +26,13 @@ export interface WorkMeScope {
 }
 
 /**
- * Get WorkMe scoping values from authenticated request
+ * Get WorkMe context from authenticated request
  * 
  * @param request - Next.js Request object
- * @returns {WorkMeScope} Scoping values for route operations
+ * @returns {WorkMeContext} Context values for route operations
  * @throws Error if WorkMe not found
  */
-export async function getWorkMeScope(request: NextRequest): Promise<WorkMeScope> {
+export async function getWorkMeContext(request: NextRequest): Promise<WorkMeContext> {
   // 1. Verify Firebase token
   const { firebaseId } = await verifyAuth(request as Request)
   
@@ -60,8 +60,4 @@ export async function getWorkMeScope(request: NextRequest): Promise<WorkMeScope>
     workMeCompanyId: workMe.workMeCompanyId,
   }
 }
-
-// Legacy export for backward compatibility
-export const getWorkMeScope = getWorkMeContext
-export type WorkMeScope = WorkMeContext
 

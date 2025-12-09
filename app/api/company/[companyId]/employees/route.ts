@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getWorkMeContext } from '@/lib/server/getWorkMeScope'
+import { getWorkMeContext } from '@/lib/server/getWorkMeContext'
 import { prisma } from '@/lib/prisma'
 
 /**
