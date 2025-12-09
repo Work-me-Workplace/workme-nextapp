@@ -31,11 +31,22 @@ export async function loadMembership(
   workMeId: string,
   companyUnit: string
 ): Promise<Membership> {
+  // First, find the CompanyUnit by name to get its ID
+  const companyUnitRecord = await prisma.companyUnit.findUnique({
+    where: { name: companyUnit },
+    select: { id: true },
+  })
+
+  if (!companyUnitRecord) {
+    throw new Error(`CompanyUnit "${companyUnit}" not found`)
+  }
+
+  // Then use the ID with the unique constraint
   const membership = await prisma.companyUnitMembers.findUnique({
     where: {
-      workMeId_companyUnit: {
+      workMeId_companyUnitId: {
         workMeId,
-        companyUnit,
+        companyUnitId: companyUnitRecord.id,
       },
     },
   })
@@ -44,7 +55,14 @@ export async function loadMembership(
     throw new Error(`Access denied: not a member of companyUnit "${companyUnit}"`)
   }
 
-  return membership
+  // Map Prisma result to Membership interface (companyUnitId -> companyUnit name)
+  return {
+    id: membership.id,
+    workMeId: membership.workMeId,
+    companyUnit: companyUnit, // Use the name passed as parameter
+    role: membership.role,
+    createdAt: membership.createdAt,
+  }
 }
 
 /**
