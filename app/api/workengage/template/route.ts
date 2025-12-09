@@ -48,8 +48,8 @@ export async function POST(request: NextRequest) {
     // 1. Auth - Verify Firebase token
     await verifyAuth(request as Request)
 
-    const body = await request.json()
-    const { name, body } = body
+    const requestBody = await request.json()
+    const { name, body } = requestBody
 
     if (!name || name.trim().length === 0) {
       return NextResponse.json(
