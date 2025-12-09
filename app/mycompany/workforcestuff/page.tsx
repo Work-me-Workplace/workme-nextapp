@@ -99,29 +99,84 @@ export default function WorkforceStuffPage() {
     }
   }, [authReady, workMeId, companyUnitId])
 
-  async function loadItems() {
+  async function loadItems(forceRefresh = false) {
     if (!companyUnitId) {
       console.warn('Cannot load items: companyUnitId not set')
       setLoading(false)
       return
     }
 
+    const cacheKey = `workforcestuff_${companyUnitId}`
+    const cacheTimestampKey = `workforcestuff_${companyUnitId}_timestamp`
+
     try {
-      setLoading(true)
+      // Try localStorage first (instant load) unless forcing refresh
+      if (!forceRefresh) {
+        const cached = localStorage.getItem(cacheKey)
+        const cachedTimestamp = localStorage.getItem(cacheTimestampKey)
+        
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached)
+            setItems(parsed)
+            setLoading(false)
+            
+            // Check if cache is stale (older than 5 minutes)
+            const now = Date.now()
+            const timestamp = cachedTimestamp ? parseInt(cachedTimestamp, 10) : 0
+            const fiveMinutes = 5 * 60 * 1000
+            const isStale = (now - timestamp) > fiveMinutes
+            
+            // Refresh in background if stale or just refresh silently
+            refreshFromAPI(cacheKey, cacheTimestampKey, false)
+            return
+          } catch (e) {
+            console.warn('Failed to parse cached items:', e)
+            // Fall through to API fetch
+          }
+        }
+      }
+
+      // If not in localStorage or forcing refresh, fetch from API
+      await refreshFromAPI(cacheKey, cacheTimestampKey, true)
+    } catch (error) {
+      console.error('Failed to load workforce stuff:', error)
+      setItems([])
+      setLoading(false)
+    }
+  }
+
+  async function refreshFromAPI(cacheKey: string, cacheTimestampKey: string, showLoading: boolean) {
+    if (!companyUnitId) return
+
+    try {
+      if (showLoading) {
+        setLoading(true)
+      }
+      
       // Pass companyUnitId as query parameter
       const response = await api.get(`/api/workforcestuff?companyUnitId=${encodeURIComponent(companyUnitId)}`)
       
       if (response.data.success && response.data.items) {
         setItems(response.data.items)
+        
+        // Store in localStorage for next time
+        localStorage.setItem(cacheKey, JSON.stringify(response.data.items))
+        localStorage.setItem(cacheTimestampKey, Date.now().toString())
       } else {
         console.error('Failed to load items:', response.data.error)
         setItems([])
       }
     } catch (error) {
-      console.error('Failed to load workforce stuff:', error)
-      setItems([])
+      console.error('Failed to fetch workforce stuff from API:', error)
+      // Don't clear items if we have cached data
+      if (showLoading) {
+        setItems([])
+      }
     } finally {
-      setLoading(false)
+      if (showLoading) {
+        setLoading(false)
+      }
     }
   }
 
@@ -198,7 +253,8 @@ export default function WorkforceStuffPage() {
     return false
   })
 
-  if (!authReady || !workMeId || !companyUnitId || loading) {
+  // Show cached data immediately if available, even while loading
+  if (!authReady || !workMeId || !companyUnitId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
