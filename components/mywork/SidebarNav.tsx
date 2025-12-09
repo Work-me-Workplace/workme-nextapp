@@ -3,10 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard,
-  Building2,
   Users,
-  Briefcase,
   Target,
   Award,
   BookOpen,
@@ -14,12 +11,9 @@ import {
   UserPlus,
   Calendar,
   FileText,
-  Settings,
   TrendingUp,
   CheckSquare,
   Radio,
-  Eye,
-  ClipboardList,
   Search,
   Mail,
   Twitter,
@@ -60,13 +54,7 @@ export default function SidebarNav() {
 
   const navigationGroups = [
     {
-      name: 'Dashboard',
-      items: [
-        { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-      ],
-    },
-    {
-      name: 'MyCompany',
+      name: 'mycompany',
       items: [
         { name: 'Workforce Stuff', path: '/mycompany/workforcestuff', icon: Users },
         { name: 'Company Milestones', path: '/mycompany/milestones', icon: TrendingUp },
@@ -76,7 +64,24 @@ export default function SidebarNav() {
       ],
     },
     {
-      name: 'Signals',
+      name: 'Mywork',
+      items: [
+        { name: 'MyWork Products', path: '/mywork/products', icon: Package },
+        { name: "Stuff I'm Working On", path: '/mywork/active', icon: CheckSquare },
+      ],
+    },
+    {
+      name: 'workops',
+      items: [
+        { name: 'Daily Outlook', path: '/workops/daily', icon: Calendar },
+        { name: 'Overall Outlook', path: '/workops/overall', icon: BarChart3 },
+        { name: 'Boss Briefing', path: '/workops/boss-briefing', icon: Presentation },
+        { name: 'Outlook Captures', path: '/workops/captures', icon: Camera },
+        { name: 'Downstream Work Generator', path: '/workops/downstream', icon: ArrowDown },
+      ],
+    },
+    {
+      name: 'signals',
       items: [
         { name: 'Signals', path: '/signal', icon: Radio },
         { name: 'Note Lookup', path: '/signal/note', icon: FileText },
@@ -87,41 +92,18 @@ export default function SidebarNav() {
       ],
     },
     {
-      name: 'MyWork',
-      items: [
-        { name: 'MyWork Products', path: '/mywork/products', icon: Package },
-        { name: "Stuff I'm Working On", path: '/mywork/active', icon: CheckSquare },
-      ],
-    },
-    {
-      name: 'WorkOps',
-      items: [
-        { name: 'Daily Outlook', path: '/workops/daily', icon: Calendar },
-        { name: 'Overall Outlook', path: '/workops/overall', icon: BarChart3 },
-        { name: 'Boss Briefing', path: '/workops/boss-briefing', icon: Presentation },
-        { name: 'Outlook Captures', path: '/workops/captures', icon: Camera },
-        { name: 'Downstream Work Generator', path: '/workops/downstream', icon: ArrowDown },
-      ],
-    },
-    {
-      name: 'MyCareer',
-      items: [
-        { name: 'Career Track', path: '/mycareer/track', icon: Target },
-        { name: 'Achievements', path: '/mycareer/achievements', icon: Award },
-        { name: 'Reflections', path: '/mycareer/reflections', icon: BookOpen },
-      ],
-    },
-    {
-      name: 'MyNetwork',
+      name: 'mynetwork',
       items: [
         { name: 'Connections', path: '/mynetwork/connections', icon: Network },
         { name: 'Suggested Interactions', path: '/mynetwork/suggestions', icon: UserPlus },
       ],
     },
     {
-      name: 'Settings',
+      name: 'mycareer',
       items: [
-        { name: 'Settings', path: '/setup', icon: Settings },
+        { name: 'Career Track', path: '/mycareer/track', icon: Target },
+        { name: 'Achievements', path: '/mycareer/achievements', icon: Award },
+        { name: 'Reflections', path: '/mycareer/reflections', icon: BookOpen },
       ],
     },
   ]

@@ -103,12 +103,27 @@ export async function updateHighlight(
 
 /**
  * Get a single highlight by ID
+ * Includes employee and unit relations
  */
 export async function getHighlight(id: string) {
   console.log('[getHighlight]', { id })
 
   const highlight = await prisma.companyEmployeeHighlight.findUnique({
     where: { id },
+    include: {
+      employees: {
+        include: {
+          employee: true,
+        },
+      },
+      units: true,
+      createdBy: {
+        select: {
+          id: true,
+          email: true,
+        },
+      },
+    },
   })
 
   if (!highlight) {
@@ -121,8 +136,8 @@ export async function getHighlight(id: string) {
 /**
  * List all highlights for a company unit
  * 
- * ✅ CANONICAL RULE: Scope queries to companyUnit ONLY (creator's companyUnit)
- * ❌ DO NOT filter by unit (employee's org) - that's just metadata
+ * ✅ CANONICAL RULE: Tenantization via CompanyEmployeeHighlightUnit junction table
+ * Filters by companyUnit string in the junction table
  */
 export async function listHighlights(companyUnit: string | null) {
   console.log('[listHighlights]', { companyUnit })
@@ -131,11 +146,22 @@ export async function listHighlights(companyUnit: string | null) {
     return []
   }
 
-  // ✅ Filter by companyUnit (creator's scoping dimension)
-  // ❌ NOT by unit (employee's org - that's just metadata)
+  // ✅ Filter by companyUnit via junction table (tenantization)
   const highlights = await prisma.companyEmployeeHighlight.findMany({
     where: {
-      companyUnit, // Creator's companyUnit (scoping)
+      units: {
+        some: {
+          companyUnit: companyUnit,
+        },
+      },
+    },
+    include: {
+      employees: {
+        include: {
+          employee: true,
+        },
+      },
+      units: true,
     },
     orderBy: {
       updatedAt: 'desc',

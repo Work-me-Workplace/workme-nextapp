@@ -8,12 +8,35 @@ import SidebarNav from '@/components/mywork/SidebarNav'
 import { Sparkles, ArrowLeft } from 'lucide-react'
 import api from '@/lib/api'
 
+interface ParsedData {
+  employee: {
+    fullName: string
+    title?: string | null
+    email?: string | null
+    unitRaw?: string | null
+  }
+  highlight: {
+    citationText: string
+    achievement?: string | null
+    narrative?: string | null
+    classification?: string | null
+    awardName?: string | null
+    awardingAgency?: string | null
+    awardYear?: number | null
+    supervisorQuote?: string | null
+    photoUrl?: string | null
+  }
+}
+
 export default function NewHighlightPage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [rawText, setRawText] = useState('')
+  const [photoUrl, setPhotoUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [parsedData, setParsedData] = useState<ParsedData | null>(null)
+  const [highlightId, setHighlightId] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -26,7 +49,7 @@ export default function NewHighlightPage() {
     }
   }, [router])
 
-  async function handleGenerate() {
+  async function handleExtract() {
     if (!rawText.trim()) {
       setError('Please enter citation text')
       return
@@ -36,18 +59,67 @@ export default function NewHighlightPage() {
     setError(null)
 
     try {
-      const response = await api.post('/api/company/highlights/create', {
-        rawText: rawText.trim(),
+      const response = await api.post('/api/company/highlights/ingest', {
+        text: rawText.trim(),
+        photoUrl: photoUrl.trim() || undefined,
       })
 
       if (response.data.success) {
-        router.push(`/mycompany/highlights/${response.data.highlightId}`)
+        const highlight = response.data.highlight
+        const employee = response.data.employee
+        
+        setParsedData({
+          employee: {
+            fullName: employee.fullName,
+            title: employee.title,
+            email: employee.email,
+            unitRaw: employee.unitRaw || null,
+          },
+          highlight: {
+            citationText: highlight.citationText,
+            achievement: highlight.achievement,
+            narrative: highlight.narrative,
+            classification: highlight.classification,
+            awardName: highlight.awardName,
+            awardingAgency: highlight.awardingAgency,
+            awardYear: highlight.awardYear,
+            supervisorQuote: highlight.supervisorQuote,
+            photoUrl: highlight.photoUrl,
+          },
+        })
+        setHighlightId(highlight.id)
       } else {
-        setError(response.data.error || 'Failed to create highlight')
+        setError(response.data.error || 'Failed to extract highlight')
       }
     } catch (err: any) {
-      console.error('Failed to create highlight:', err)
-      setError(err.response?.data?.error || err.message || 'Failed to create highlight')
+      console.error('Failed to extract highlight:', err)
+      setError(err.response?.data?.error || err.message || 'Failed to extract highlight')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSave() {
+    if (!parsedData || !highlightId) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await api.post('/api/company/highlights/save', {
+        highlightId,
+        employee: parsedData.employee,
+        highlight: parsedData.highlight,
+      })
+
+      if (response.data.success) {
+        router.push(`/mycompany/highlights/${highlightId}`)
+      } else {
+        setError(response.data.error || 'Failed to save highlight')
+      }
+    } catch (err: any) {
+      console.error('Failed to save highlight:', err)
+      setError(err.response?.data?.error || err.message || 'Failed to save highlight')
     } finally {
       setLoading(false)
     }
@@ -107,47 +179,217 @@ export default function NewHighlightPage() {
                 </div>
               )}
 
-              <div className="space-y-6">
-                <div>
-                  <label htmlFor="rawText" className="block text-sm font-medium text-gray-700 mb-2">
-                    Paste Award Citation or Highlight Text <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    id="rawText"
-                    rows={12}
-                    value={rawText}
-                    onChange={(e) => setRawText(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Paste the full award citation, recognition text, or highlight writeup here..."
-                  />
-                </div>
+              {!parsedData ? (
+                <div className="space-y-6">
+                  <div>
+                    <label htmlFor="rawText" className="block text-sm font-medium text-gray-700 mb-2">
+                      Paste Award Citation or Highlight Text <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      id="rawText"
+                      rows={12}
+                      value={rawText}
+                      onChange={(e) => setRawText(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Paste the full award citation, recognition text, or highlight writeup here..."
+                    />
+                  </div>
 
-                <div className="flex items-center justify-end space-x-4">
-                  <Link
-                    href="/mycompany/highlights"
-                    className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
-                  >
-                    Cancel
-                  </Link>
-                  <button
-                    onClick={handleGenerate}
-                    disabled={loading || !rawText.trim()}
-                    className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-5 w-5 mr-2" />
-                        Generate Highlight
-                      </>
-                    )}
-                  </button>
+                  <div>
+                    <label htmlFor="photoUrl" className="block text-sm font-medium text-gray-700 mb-2">
+                      Photo URL (Optional)
+                    </label>
+                    <input
+                      id="photoUrl"
+                      type="url"
+                      value={photoUrl}
+                      onChange={(e) => setPhotoUrl(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="https://..."
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end space-x-4">
+                    <Link
+                      href="/mycompany/highlights"
+                      className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                    >
+                      Cancel
+                    </Link>
+                    <button
+                      onClick={handleExtract}
+                      disabled={loading || !rawText.trim()}
+                      className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Extracting...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-5 w-5 mr-2" />
+                          Extract with AI
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded mb-6">
+                    <p className="font-medium">Review and edit the extracted data:</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Employee Information</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                          <input
+                            type="text"
+                            value={parsedData.employee.fullName}
+                            onChange={(e) => setParsedData({
+                              ...parsedData,
+                              employee: { ...parsedData.employee, fullName: e.target.value }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                          <input
+                            type="text"
+                            value={parsedData.employee.title || ''}
+                            onChange={(e) => setParsedData({
+                              ...parsedData,
+                              employee: { ...parsedData.employee, title: e.target.value || null }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                          <input
+                            type="text"
+                            value={parsedData.employee.unitRaw || ''}
+                            onChange={(e) => setParsedData({
+                              ...parsedData,
+                              employee: { ...parsedData.employee, unitRaw: e.target.value || null }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="SEA 05, SEA08D1, etc."
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Award Information</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Award Name</label>
+                          <input
+                            type="text"
+                            value={parsedData.highlight.awardName || ''}
+                            onChange={(e) => setParsedData({
+                              ...parsedData,
+                              highlight: { ...parsedData.highlight, awardName: e.target.value || null }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Awarding Agency</label>
+                          <input
+                            type="text"
+                            value={parsedData.highlight.awardingAgency || ''}
+                            onChange={(e) => setParsedData({
+                              ...parsedData,
+                              highlight: { ...parsedData.highlight, awardingAgency: e.target.value || null }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                          <input
+                            type="number"
+                            value={parsedData.highlight.awardYear || ''}
+                            onChange={(e) => setParsedData({
+                              ...parsedData,
+                              highlight: { ...parsedData.highlight, awardYear: e.target.value ? parseInt(e.target.value) : null }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Classification</label>
+                          <input
+                            type="text"
+                            value={parsedData.highlight.classification || ''}
+                            onChange={(e) => setParsedData({
+                              ...parsedData,
+                              highlight: { ...parsedData.highlight, classification: e.target.value || null }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Achievement Summary</label>
+                    <textarea
+                      rows={2}
+                      value={parsedData.highlight.achievement || ''}
+                      onChange={(e) => setParsedData({
+                        ...parsedData,
+                        highlight: { ...parsedData.highlight, achievement: e.target.value || null }
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Citation Text</label>
+                    <textarea
+                      rows={6}
+                      value={parsedData.highlight.citationText}
+                      onChange={(e) => setParsedData({
+                        ...parsedData,
+                        highlight: { ...parsedData.highlight, citationText: e.target.value }
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end space-x-4">
+                    <button
+                      onClick={() => setParsedData(null)}
+                      className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                    >
+                      Start Over
+                    </button>
+                    <button
+                      onClick={handleSave}
+                      disabled={loading}
+                      className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Saving...
+                        </>
+                      ) : (
+                        'Save Highlight'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </main>
@@ -155,4 +397,3 @@ export default function NewHighlightPage() {
     </div>
   )
 }
-

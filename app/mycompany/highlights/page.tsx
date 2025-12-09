@@ -5,15 +5,27 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Award, Plus, Sparkles } from 'lucide-react'
+import { Award, Plus } from 'lucide-react'
 import api from '@/lib/api'
 
 interface Highlight {
   id: string
-  fullName: string
-  awardName?: string | null
+  citationText: string
+  achievement?: string | null
   classification?: string | null
+  awardName?: string | null
+  awardingAgency?: string | null
+  awardYear?: number | null
+  photoUrl?: string | null
+  createdAt: string
   updatedAt: string
+  employees: Array<{
+    id: string
+    fullName: string
+    title?: string | null
+    photoUrl?: string | null
+  }>
+  companyUnits: string[]
 }
 
 export default function EmployeeHighlightsPage() {
@@ -37,7 +49,7 @@ export default function EmployeeHighlightsPage() {
   async function loadHighlights() {
     try {
       setLoading(true)
-      const response = await api.get('/api/company/highlights')
+      const response = await api.get('/api/highlights')
       
       if (response.data.success && response.data.highlights) {
         setHighlights(response.data.highlights)
@@ -60,6 +72,11 @@ export default function EmployeeHighlightsPage() {
     if (lower.includes('innovation')) return 'bg-purple-100 text-purple-800'
     if (lower.includes('excellence')) return 'bg-green-100 text-green-800'
     return 'bg-gray-100 text-gray-800'
+  }
+
+  function getCitationExcerpt(text: string, maxLength: number = 150): string {
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength) + '...'
   }
 
   if (!workMeId || loading) {
@@ -113,7 +130,7 @@ export default function EmployeeHighlightsPage() {
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
               >
                 <Plus className="h-5 w-5 mr-2" />
-                Add Highlight
+                Add Employee Highlight
               </Link>
             </div>
 
@@ -131,15 +148,35 @@ export default function EmployeeHighlightsPage() {
                         {new Date(highlight.updatedAt).toLocaleDateString()}
                       </span>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{highlight.fullName}</h3>
+                    
+                    {/* Employee names */}
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      {highlight.employees.map(e => e.fullName).join(', ')}
+                    </h3>
+                    
+                    {/* Award name */}
                     {highlight.awardName && (
-                      <p className="text-sm text-gray-600 mb-3">{highlight.awardName}</p>
+                      <p className="text-sm font-medium text-gray-700 mb-2">{highlight.awardName}</p>
                     )}
-                    {highlight.classification && (
-                      <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${getClassificationColor(highlight.classification)}`}>
-                        {highlight.classification}
-                      </span>
-                    )}
+                    
+                    {/* Citation excerpt */}
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-3">
+                      {getCitationExcerpt(highlight.citationText)}
+                    </p>
+                    
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-2">
+                      {highlight.classification && (
+                        <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${getClassificationColor(highlight.classification)}`}>
+                          {highlight.classification}
+                        </span>
+                      )}
+                      {highlight.awardYear && (
+                        <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-800">
+                          {highlight.awardYear}
+                        </span>
+                      )}
+                    </div>
                   </Link>
                 ))}
               </div>
@@ -162,4 +199,3 @@ export default function EmployeeHighlightsPage() {
     </div>
   )
 }
-

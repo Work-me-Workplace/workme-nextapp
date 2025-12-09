@@ -26,6 +26,7 @@ export interface ParsedHighlight {
   achievement?: string | null
   narrative?: string | null
   classification?: string | null
+  supervisorQuote?: string | null
   citationText: string // MUST return full verbatim text
 }
 
@@ -49,6 +50,7 @@ Return JSON with these exact fields:
   "achievement": "Single-sentence distilled summary of what they achieved or null",
   "narrative": "Optional AI-synthesized story or narrative or null",
   "classification": "Category like 'Leadership', 'Innovation', 'Excellence', etc. or null",
+  "supervisorQuote": "Quote from supervisor or leadership about the employee or null",
   "citationText": "FULL VERBATIM citation text - preserve EXACTLY as provided (REQUIRED)"
 }
 
@@ -92,6 +94,7 @@ ${raw.substring(0, 4000)}`
       achievement: parsed.achievement || null,
       narrative: parsed.narrative || null,
       classification: parsed.classification || null,
+      supervisorQuote: parsed.supervisorQuote || null,
       citationText: parsed.citationText || raw, // Fallback to original if not extracted
     }
   } catch (error) {
@@ -107,6 +110,7 @@ ${raw.substring(0, 4000)}`
       achievement: null,
       narrative: null,
       classification: null,
+      supervisorQuote: null,
       citationText: raw,
     }
   }

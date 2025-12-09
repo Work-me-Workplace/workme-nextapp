@@ -28,11 +28,6 @@ model WorkMe {
   workMeCompanyId String?
   workMeCompany   WorkMeCompany? @relation(fields: [workMeCompanyId], references: [id])
 
-  // Company affiliation (direct foreign keys to registries)
-  companyId     String? // Foreign key to CompanyRegistry (Company HQ)
-  companyUnitId String? // Foreign key to CompanyUnit
-  divisionId    String? // Foreign key to DivisionUnit
-
   // Bolt-on modules (all via foreign keys)
   workProfile        WorkProfile?
   workSkills         WorkSkills?
@@ -41,14 +36,12 @@ model WorkMe {
   ecosystemCompanies WorkMeEcosystemCompany[]
   ecosystemContacts  MyEcosystemContact[]
 
-  // Company registry relations
-  company     CompanyRegistry? @relation(fields: [companyId], references: [id])
-  companyUnit CompanyUnit?     @relation(fields: [companyUnitId], references: [id])
-  division    DivisionUnit?    @relation(fields: [divisionId], references: [id])
+  // Company membership (canonical - via junction table with roles)
+  // Company and division are inferred via CompanyUnitMembers → CompanyUnit → Company
+  companyUnitMemberships CompanyUnitMembers[]
 
   // WorkWorld Architecture Relations
-  workplaces             Workplace[]
-  companyUnitMemberships CompanyUnitMembers[]
+  workplaces Workplace[]
 
   // Minimal reverse relations (required by Prisma, but NOT to be queried)
   // WorkMe is pure identity - work outputs reference WorkMe via createdByWorkMeId
@@ -64,19 +57,18 @@ model WorkMe {
   createdCompanyCommunities  CompanyCommunity[]                 @relation("CompanyCommunityCreator")
   createdCompanyCareers      CompanyCareer[]                    @relation("CompanyCareerCreator")
   createdDigitalSignProducts ProductDigitalSign[]               @relation("ProductDigitalSignCreator")
-  createdEmployeeHighlights  CompanyEmployeeHighlight[]         @relation("CompanyEmployeeHighlightCreator")
+  createdEmployeeHighlights   CompanyEmployeeHighlight[]        @relation("CompanyEmployeeHighlightCreator")
 
   // WorkOps Relations
   workOpsOutlook WorkOpsOutlook?
 
   // Company Products Relations
-  companyProducts         CompanyProduct[]
+  companyProducts          CompanyProduct[]
   externalCompanyPressures ExternalCompanyPressure[]
+  Company                  Company?                  @relation(fields: [companyId], references: [id])
+  companyId                String?
 
   @@index([handle])
-  @@index([companyId])
-  @@index([companyUnitId])
-  @@index([divisionId])
 }
 
 // ============================================
@@ -212,9 +204,11 @@ model Company {
   // Address (Apollo Enrichment)
   country String?
 
-  // Note: Work models now use companyUnit instead of Company relations
-  // Company model remains as an independent entity for enterprise-level metadata
-  // No direct relation to WorkMe - users are scoped by companyUnit strings
+  // Relations
+  members      WorkMe[] // Direct relation to WorkMe (Company HQ affiliation)
+  companyUnits CompanyUnit[] // CompanyUnits that belong to this HQ
+  workplaces   Workplace[] // Workplace relations
+  employees    CompanyEmployee[] // Organizational employees
 
   @@index([name]) // Index for directory lookups
 }
@@ -227,13 +221,14 @@ model Company {
 model CompanyUnit {
   id        String   @id @default(uuid())
   name      String   @unique // Company name (unique globally)
-  companyId String? // Foreign key to CompanyRegistry (Company HQ) - optional
+  companyId String? // Foreign key to Company (Company HQ) - optional
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company   CompanyRegistry? @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  divisions DivisionUnit[]
-  members   WorkMe[] // Direct relation to WorkMe
+  company     Company?             @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  divisions   DivisionUnit[]
+  unitMembers CompanyUnitMembers[] // Members with roles (canonical membership)
+  employees   CompanyEmployee[] // Organizational employees
 
   @@index([name])
   @@index([companyId])
@@ -250,11 +245,31 @@ model DivisionUnit {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  company CompanyUnit @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
-  members WorkMe[] // Direct relation to WorkMe
+  company   CompanyUnit       @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
+  employees CompanyEmployee[] // Organizational employees
 
   @@unique([name, companyUnitId])
   @@index([companyUnitId])
+}
+
+// ============================================
+// COMPANY UNIT MEMBERS (Junction table with roles)
+// ============================================
+// Links WorkMe to CompanyUnit with role (MEMBER, MANAGER, ADMIN)
+model CompanyUnitMembers {
+  id            String          @id @default(uuid())
+  workMeId      String
+  companyUnitId String // References CompanyUnit.id
+  role          CompanyUnitRole @default(MEMBER)
+  createdAt     DateTime        @default(now())
+
+  workMe WorkMe      @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  unit   CompanyUnit @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
+
+  @@unique([workMeId, companyUnitId])
+  @@index([workMeId])
+  @@index([companyUnitId])
+  @@index([role])
 }
 
 // ============================================
@@ -315,68 +330,6 @@ model CompanyUnitRegistry {
   @@index([visibility])
 }
 
-// ============================================
-// WORKWORLD ARCHITECTURE MODELS
-// ============================================
-
-// CompanyRegistry: Global company-level anchor for WorkConnect (Company HQ)
-model CompanyRegistry {
-  id        String   @id @default(cuid())
-  name      String
-  domain    String? // Optional for domain matching
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  units        CompanyUnitHierarchy[]
-  workplaces   Workplace[]
-  members      WorkMe[] // Direct relation to WorkMe (Company HQ affiliation)
-  companyUnits CompanyUnit[] // CompanyUnits that belong to this HQ
-
-  @@index([name])
-  @@index([domain])
-}
-
-// CompanyUnitHierarchy: Subdivision (HQ, directorates, departments) with hierarchical structure
-// NOTE: This is for WorkWorld/WorkConnect hierarchical org structure
-// For simple work history, use CompanyUnit registry + WorkEntry
-model CompanyUnitHierarchy {
-  id           String   @id @default(cuid())
-  companyId    String
-  name         String
-  unit         String   @unique // Unique identifier for membership references
-  parentUnitId String? // Allows parent → child nesting
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  company    CompanyRegistry        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  parentUnit CompanyUnitHierarchy?  @relation("UnitHierarchy", fields: [parentUnitId], references: [id], onDelete: SetNull)
-  subUnits   CompanyUnitHierarchy[] @relation("UnitHierarchy")
-  members    CompanyUnitMembers[]
-
-  @@index([companyId])
-  @@index([parentUnitId])
-  @@index([unit])
-}
-
-// CompanyUnitMembers: Junction table linking WorkMe to CompanyUnitHierarchy with role
-// NOTE: This is for WorkWorld/WorkConnect hierarchical org membership
-// For simple work history, use WorkEntry model instead
-model CompanyUnitMembers {
-  id          String          @id @default(uuid())
-  workMeId    String
-  companyUnit String // References CompanyUnitHierarchy.unit
-  role        CompanyUnitRole @default(MEMBER)
-  createdAt   DateTime        @default(now())
-
-  workMe WorkMe               @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-  unit   CompanyUnitHierarchy @relation(fields: [companyUnit], references: [unit], onDelete: Cascade)
-
-  @@unique([workMeId, companyUnit])
-  @@index([workMeId])
-  @@index([companyUnit])
-  @@index([role])
-}
-
 // Workplace: Link between a user (WORKMEID) and a specific company
 model Workplace {
   id        String   @id @default(cuid())
@@ -385,8 +338,8 @@ model Workplace {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  workMe  WorkMe          @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-  company CompanyRegistry @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  workMe  WorkMe  @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   // Note: roles relation removed - CompanyRole model deleted
 
@@ -840,40 +793,102 @@ model CompanyEmployeeCause {
   @@index([companyUnit])
 }
 
+// ====================================================
+// COMPANY EMPLOYEE
+// ====================================================
+model CompanyEmployee {
+  id          String   @id @default(cuid())
+  fullName    String
+  title       String?
+  email       String?
+  phone       String?
+  photoUrl    String?
+
+  companyId     String?
+  companyUnitId String?
+  divisionId    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Junctions
+  highlights CompanyEmployeeHighlightLink[]
+
+  company     Company?      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyUnit CompanyUnit?   @relation(fields: [companyUnitId], references: [id], onDelete: SetNull)
+  division    DivisionUnit?  @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+
+  @@index([companyUnitId])
+  @@index([divisionId])
+  @@index([fullName])
+  @@index([email])
+}
+
+// ====================================================
+// HIGHLIGHT (Award, Citation, Spotlight)
+// ====================================================
 model CompanyEmployeeHighlight {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Core person identity
-  fullName String
-  title    String? // role or billet: Engineer, TWH, Analyst
-  unit     String? // NAVSEA 05, SEA 08, etc.
+  // Core content
+  citationText   String
+  achievement    String?
+  narrative      String?
+  classification String?
 
   // Award metadata
-  awardName      String? // e.g., "Rosenblatt Young Naval Engineer Award"
-  awardingAgency String? // e.g., "American Society of Naval Engineers"
+  awardName      String?
+  awardingAgency String?
   awardYear      Int?
 
-  // Primary content
-  citationText   String // full citation, multi-paragraph
-  achievement    String? // single-sentence distilled summary
-  narrative      String? // optional AI-synthesized story
-  classification String? // "Leadership", "Innovation", etc.
-
-  // Media
-  photoUrl String?
-
-  // Optional extras
   supervisorQuote String?
+  photoUrl        String?
 
-  // Relations
-  companyUnit       String?
+  // Who created the highlight
   createdByWorkMeId String
-  createdBy         WorkMe  @relation("CompanyEmployeeHighlightCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  createdBy         WorkMe @relation("CompanyEmployeeHighlightCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
+  // Junctions
+  employees CompanyEmployeeHighlightLink[]
+  units     CompanyEmployeeHighlightUnit[]
+
+  @@index([createdByWorkMeId])
+}
+
+// ====================================================
+// JUNCTION: highlight ↔ person
+// ====================================================
+model CompanyEmployeeHighlightLink {
+  id          String   @id @default(cuid())
+  employeeId  String
+  highlightId String
+
+  createdAt DateTime @default(now())
+
+  employee  CompanyEmployee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  highlight CompanyEmployeeHighlight @relation(fields: [highlightId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, highlightId])
+  @@index([employeeId])
+  @@index([highlightId])
+}
+
+// ====================================================
+// JUNCTION: highlight ↔ company unit (tenantization)
+// ====================================================
+model CompanyEmployeeHighlightUnit {
+  id          String   @id @default(cuid())
+  highlightId String
+  companyUnit String   // SEA05, SEA08, NAVSEA HQ, etc.
+
+  createdAt DateTime @default(now())
+
+  highlight CompanyEmployeeHighlight @relation(fields: [highlightId], references: [id], onDelete: Cascade)
 
   @@index([companyUnit])
-  @@index([createdByWorkMeId])
+  @@index([highlightId])
 }
 
 // ============================================
@@ -1447,19 +1462,19 @@ model CompanyProduct {
 
   // Core Identity
   name        String
-  category    String?     // e.g., "Surface Ship", "Digital Service"
+  category    String? // e.g., "Surface Ship", "Digital Service"
   description String?
 
   // Public Specs (comms-visible)
-  missionRole       String?
-  keyCapabilities   String[] @default([])
-  limitations       String[] @default([])
-  publicSources     Json?                    // GAO/CRS/public summaries
-  productionStatus  String?
+  missionRole      String?
+  keyCapabilities  String[] @default([])
+  limitations      String[] @default([])
+  publicSources    Json? // GAO/CRS/public summaries
+  productionStatus String?
 
   // Narrative + Messaging
   leadershipFraming String?
-  talkingPoints     Json?  // structured messaging blocks
+  talkingPoints     Json? // structured messaging blocks
 
   // Relations
   highlights ProductHighlight[]
@@ -1473,12 +1488,12 @@ model CompanyProduct {
 }
 
 model ProductPressure {
-  id          String   @id @default(cuid())
-  productId   String
-  source      String   // "GAO", "CRS", "Congress", etc.
-  summary     String
-  riskLevel   String?   // low | medium | high
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  productId String
+  source    String // "GAO", "CRS", "Congress", etc.
+  summary   String
+  riskLevel String? // low | medium | high
+  createdAt DateTime @default(now())
 
   product CompanyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
@@ -1494,10 +1509,10 @@ model ProductHighlight {
 }
 
 model ProductUpdate {
-  id          String   @id @default(cuid())
-  productId   String
-  updateText  String
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  productId  String
+  updateText String
+  createdAt  DateTime @default(now())
 
   product CompanyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
@@ -1509,10 +1524,10 @@ model ProductUpdate {
 model ExternalCompanyPressure {
   id        String   @id @default(cuid())
   workMeId  String
-  source    String   // "GAO", "Congress", "Industry", etc.
-  category  String?  // "Budget", "Legislation", "Testing", "Ops", etc.
+  source    String // "GAO", "Congress", "Industry", etc.
+  category  String? // "Budget", "Legislation", "Testing", "Ops", etc.
   summary   String
-  impact    String?   // optional "why this matters"
+  impact    String? // optional "why this matters"
   createdAt DateTime @default(now())
 
   workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
