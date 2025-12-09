@@ -37,7 +37,6 @@ model WorkMe {
   workProfile        WorkProfile?
   workSkills         WorkSkills?
   workEntries        WorkEntry[]
-  workOutlookItems   WorkOutlookItem[]
   workGoals          WorkGoal[]
   ecosystemCompanies WorkMeEcosystemCompany[]
   ecosystemContacts  MyEcosystemContact[]
@@ -67,9 +66,8 @@ model WorkMe {
   createdDigitalSignProducts ProductDigitalSign[]               @relation("ProductDigitalSignCreator")
   createdEmployeeHighlights  CompanyEmployeeHighlight[]         @relation("CompanyEmployeeHighlightCreator")
 
-  // Internal Productivity Relations
-  myWorkOutlook  MyWorkOutlook?
-  adminWorkItems AdminWorkItem[]
+  // WorkOps Relations
+  workOpsOutlook WorkOpsOutlook?
 
   @@index([handle])
   @@index([companyId])
@@ -1098,74 +1096,100 @@ model Asset {
 }
 
 // ============================================
-// INTERNAL PRODUCTIVITY MODELS (MVP)
+// WORKOPS MODELS (New Architecture)
 // ============================================
 
-model MyWorkOutlook {
+enum WorkOpsItemType {
+  task
+  capture
+  meeting
+  signal
+  fire
+  boss_request
+  tech_work
+  admin
+  workforce_comms
+  external_pressure
+  personal
+}
+
+enum WorkOpsUrgency {
+  low
+  medium
+  high
+  critical
+}
+
+enum WorkOpsStatus {
+  open
+  in_progress
+  blocked
+  done
+}
+
+enum WorkOpsSource {
+  manual
+  ai
+  boss
+  system
+}
+
+model WorkOpsOutlook {
   id        String   @id @default(cuid())
   workMeId  String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  workMe WorkMe       @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-  items  MyWorkItem[]
+  workMe           WorkMe                   @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  items            WorkOpsItem[]
+  dailyAssignments WorkOpsDailyAssignment[]
 
   @@index([workMeId])
 }
 
-model MyWorkItem {
+model WorkOpsItem {
   id        String   @id @default(cuid())
   outlookId String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  title   String
-  notes   String?
-  status  String    @default("open") // "open" | "done" | "blocked" | "watch"
-  dueDate DateTime?
-  tag     String? // optional: "comms" | "admin" | "personal" | etc.
+  title String
+  body  String?
 
-  outlook MyWorkOutlook @relation(fields: [outlookId], references: [id], onDelete: Cascade)
+  itemType WorkOpsItemType
+  urgency  WorkOpsUrgency?
+  status   WorkOpsStatus   @default(open)
+  source   WorkOpsSource?
+
+  priority   Int?
+  dueDate    DateTime?
+  assignedBy String?
+
+  outlook          WorkOpsOutlook           @relation(fields: [outlookId], references: [id], onDelete: Cascade)
+  dailyAssignments WorkOpsDailyAssignment[]
 
   @@index([outlookId])
   @@index([status])
+  @@index([itemType])
 }
 
-model AdminWorkItem {
+model WorkOpsDailyAssignment {
   id        String   @id @default(cuid())
-  workMeId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  title  String
-  notes  String?
-  status String  @default("open")
-
-  workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-
-  @@index([workMeId])
-  @@index([status])
-}
-
-// ============================================
-// WORK OUTLOOK MODEL (Daily Work Lens - Productivity Layer)
-// ============================================
-// "Today / Up Next / Planning" module
-model WorkOutlookItem {
-  id       String   @id @default(uuid())
-  workMeId String
-  date     DateTime
-  item     String
-  status   String?
+  outlookId String
+  itemId    String
+  day       DateTime // midnight key for the planned day
+  dayIndex  Int? // user-controlled ordering for the day
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  outlook WorkOpsOutlook @relation(fields: [outlookId], references: [id], onDelete: Cascade)
+  item    WorkOpsItem    @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
-  @@index([workMeId])
-  @@index([date])
-  @@index([status])
+  @@unique([itemId, day]) // prevents duplicate assignment to same day
+  @@index([outlookId])
+  @@index([itemId])
+  @@index([day])
 }
 
 // ============================================

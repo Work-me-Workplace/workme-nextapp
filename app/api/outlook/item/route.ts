@@ -1,7 +1,10 @@
+// TEMPORARILY COMMENTED OUT - Phase 1 WorkOps Refactor
+// This file will be rebuilt in Phase 2 with WorkOps models
+
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
 import { loadWorkMe } from '@/lib/auth/loadWorkMe'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -9,6 +12,7 @@ export const dynamic = 'force-dynamic'
 /**
  * POST /api/outlook/item
  * Create a new MyWorkItem
+ * TODO: Rebuild with WorkOpsItem in Phase 2
  */
 export async function POST(request: NextRequest) {
   try {
@@ -21,49 +25,41 @@ export async function POST(request: NextRequest) {
     const workMeIdentity = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMeIdentity
 
-    // 3. Parse request body
-    const body = await request.json()
-    const { title, notes, status, dueDate, tag } = body
-
-    if (!title || typeof title !== 'string' || title.trim().length === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Title is required',
-        },
-        { status: 400 },
-      )
-    }
-
-    // 4. Find or create MyWorkOutlook
-    let outlook = await prisma.myWorkOutlook.findUnique({
-      where: { workMeId },
-    })
-
-    if (!outlook) {
-      outlook = await prisma.myWorkOutlook.create({
-        data: { workMeId },
-      })
-    }
-
-    // 5. Create the item
-    const item = await prisma.myWorkItem.create({
-      data: {
-        outlookId: outlook.id,
-        title: title.trim(),
-        notes: notes?.trim() || null,
-        status: status || 'open',
-        dueDate: dueDate ? new Date(dueDate) : null,
-        tag: tag?.trim() || null,
-      },
-    })
-
-    console.log('[API POST /api/outlook/item] Success:', { itemId: item.id })
+    // TEMPORARILY DISABLED - Phase 1 refactor
+    // const body = await request.json()
+    // const { title, notes, status, dueDate, tag } = body
+    // if (!title || typeof title !== 'string' || title.trim().length === 0) {
+    //   return NextResponse.json(
+    //     {
+    //       success: false,
+    //       error: 'Title is required',
+    //     },
+    //     { status: 400 },
+    //   )
+    // }
+    // let outlook = await prisma.myWorkOutlook.findUnique({
+    //   where: { workMeId },
+    // })
+    // if (!outlook) {
+    //   outlook = await prisma.myWorkOutlook.create({
+    //     data: { workMeId },
+    //   })
+    // }
+    // const item = await prisma.myWorkItem.create({
+    //   data: {
+    //     outlookId: outlook.id,
+    //     title: title.trim(),
+    //     notes: notes?.trim() || null,
+    //     status: status || 'open',
+    //     dueDate: dueDate ? new Date(dueDate) : null,
+    //     tag: tag?.trim() || null,
+    //   },
+    // })
 
     return NextResponse.json({
-      success: true,
-      item,
-    })
+      success: false,
+      error: 'API temporarily disabled - Phase 1 WorkOps refactor in progress',
+    }, { status: 503 })
   } catch (error: any) {
     console.error('[API POST /api/outlook/item] Error:', {
       error: error.message,
@@ -82,4 +78,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

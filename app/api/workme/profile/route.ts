@@ -77,16 +77,17 @@ export async function GET(request: NextRequest) {
         return []
       }),
       
-      // WorkOutlook summary (recent items) - may not exist
-      prisma.workOutlookItem.findMany({
-        where: { workMeId },
-        orderBy: { date: 'desc' },
-        take: 10,
-      }).catch((err: any) => {
-        if (err.code === 'P2021') return [] // Table doesn't exist
-        console.error('Failed to load WorkOutlookItem:', err)
-        return []
-      }),
+      // WorkOutlook summary (recent items) - TEMPORARILY DISABLED - Phase 1 refactor
+      // TODO: Rebuild with WorkOpsItem in Phase 2
+      Promise.resolve([]), // prisma.workOutlookItem.findMany({
+      //   where: { workMeId },
+      //   orderBy: { date: 'desc' },
+      //   take: 10,
+      // }).catch((err: any) => {
+      //   if (err.code === 'P2021') return [] // Table doesn't exist
+      //   console.error('Failed to load WorkOutlookItem:', err)
+      //   return []
+      // }),
     ])
 
     if (!workMeRecord) {

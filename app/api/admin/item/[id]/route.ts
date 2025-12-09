@@ -1,7 +1,10 @@
+// TEMPORARILY COMMENTED OUT - Phase 1 WorkOps Refactor
+// This file will be rebuilt in Phase 2 with WorkOps models
+
 import { NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
 import { loadWorkMe } from '@/lib/auth/loadWorkMe'
-import { prisma } from '@/lib/prisma'
+// import { prisma } from '@/lib/prisma'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -9,6 +12,7 @@ export const dynamic = 'force-dynamic'
 /**
  * PUT /api/admin/item/[id]
  * Update an AdminWorkItem
+ * TODO: Rebuild with WorkOpsItem in Phase 2
  */
 export async function PUT(
   request: Request,
@@ -18,73 +22,23 @@ export async function PUT(
     const { id } = await params
     console.log('[API PUT /api/admin/item/[id]] Starting...', { id })
 
-    // 1. Verify Firebase auth token
-    const { firebaseId } = await verifyAuth(request)
-    
-    // 2. Load WorkMe identity
-    const workMeIdentity = await loadWorkMe(firebaseId)
-    const { id: workMeId } = workMeIdentity
-
-    // 3. Verify the item belongs to the user
-    const item = await prisma.adminWorkItem.findUnique({
-      where: { id },
-    })
-
-    if (!item) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Item not found',
-        },
-        { status: 404 },
-      )
-    }
-
-    if (item.workMeId !== workMeId) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized',
-        },
-        { status: 403 },
-      )
-    }
-
-    // 4. Parse request body
-    const body = await request.json()
-    const { title, notes, status } = body
-
-    // 5. Update the item
-    const updatedItem = await prisma.adminWorkItem.update({
-      where: { id },
-      data: {
-        ...(title !== undefined && { title: title.trim() }),
-        ...(notes !== undefined && { notes: notes?.trim() || null }),
-        ...(status !== undefined && { status }),
-      },
-    })
-
-    console.log('[API PUT /api/admin/item/[id]] Success:', { itemId: updatedItem.id })
+    // TEMPORARILY DISABLED - Phase 1 refactor
+    // const { firebaseId } = await verifyAuth(request)
+    // const workMeIdentity = await loadWorkMe(firebaseId)
+    // const { id: workMeId } = workMeIdentity
+    // const item = await prisma.adminWorkItem.findUnique({ where: { id } })
+    // if (!item || item.workMeId !== workMeId) { ... }
+    // const updatedItem = await prisma.adminWorkItem.update({ where: { id }, data: { ... } })
 
     return NextResponse.json({
-      success: true,
-      item: updatedItem,
-    })
+      success: false,
+      error: 'API temporarily disabled - Phase 1 WorkOps refactor in progress',
+    }, { status: 503 })
   } catch (error: any) {
-    console.error('[API PUT /api/admin/item/[id]] Error:', {
-      error: error.message,
-      stack: error.stack,
-    })
-
-    const status = error.message?.includes('Unauthorized') || error.message?.includes('not found') ? 401 : 500
-
+    console.error('[API PUT /api/admin/item/[id]] Error:', error)
     return NextResponse.json(
-      {
-        success: false,
-        error: error.message || 'Failed to update admin item',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-      },
-      { status },
+      { success: false, error: error.message || 'Failed to update admin item' },
+      { status: 500 },
     )
   }
 }
@@ -92,6 +46,7 @@ export async function PUT(
 /**
  * DELETE /api/admin/item/[id]
  * Delete an AdminWorkItem
+ * TODO: Rebuild with WorkOpsItem in Phase 2
  */
 export async function DELETE(
   request: Request,
@@ -101,64 +56,23 @@ export async function DELETE(
     const { id } = await params
     console.log('[API DELETE /api/admin/item/[id]] Starting...', { id })
 
-    // 1. Verify Firebase auth token
-    const { firebaseId } = await verifyAuth(request)
-    
-    // 2. Load WorkMe identity
-    const workMeIdentity = await loadWorkMe(firebaseId)
-    const { id: workMeId } = workMeIdentity
-
-    // 3. Verify the item belongs to the user
-    const item = await prisma.adminWorkItem.findUnique({
-      where: { id },
-    })
-
-    if (!item) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Item not found',
-        },
-        { status: 404 },
-      )
-    }
-
-    if (item.workMeId !== workMeId) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized',
-        },
-        { status: 403 },
-      )
-    }
-
-    // 4. Delete the item
-    await prisma.adminWorkItem.delete({
-      where: { id },
-    })
-
-    console.log('[API DELETE /api/admin/item/[id]] Success:', { itemId: id })
+    // TEMPORARILY DISABLED - Phase 1 refactor
+    // const { firebaseId } = await verifyAuth(request)
+    // const workMeIdentity = await loadWorkMe(firebaseId)
+    // const { id: workMeId } = workMeIdentity
+    // const item = await prisma.adminWorkItem.findUnique({ where: { id } })
+    // if (!item || item.workMeId !== workMeId) { ... }
+    // await prisma.adminWorkItem.delete({ where: { id } })
 
     return NextResponse.json({
-      success: true,
-    })
+      success: false,
+      error: 'API temporarily disabled - Phase 1 WorkOps refactor in progress',
+    }, { status: 503 })
   } catch (error: any) {
-    console.error('[API DELETE /api/admin/item/[id]] Error:', {
-      error: error.message,
-      stack: error.stack,
-    })
-
-    const status = error.message?.includes('Unauthorized') || error.message?.includes('not found') ? 401 : 500
-
+    console.error('[API DELETE /api/admin/item/[id]] Error:', error)
     return NextResponse.json(
-      {
-        success: false,
-        error: error.message || 'Failed to delete admin item',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-      },
-      { status },
+      { success: false, error: error.message || 'Failed to delete admin item' },
+      { status: 500 },
     )
   }
 }
-

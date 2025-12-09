@@ -24,6 +24,11 @@ import {
   Mail,
   Twitter,
   Newspaper,
+  BarChart3,
+  Presentation,
+  Camera,
+  ArrowDown,
+  Package,
 } from 'lucide-react'
 
 export default function SidebarNav() {
@@ -33,11 +38,13 @@ export default function SidebarNav() {
     if (path === '/dashboard') return pathname === path
     if (path === '/mycompany/workforcestuff') return pathname?.startsWith(path)
     if (path === '/mycompany/milestones') return pathname?.startsWith(path)
-    if (path === '/mywork/create') return pathname === path
-    if (path === '/mywork/fromcompanystuff') return pathname === path
+    if (path === '/mywork/products') return pathname === path
     if (path === '/mywork/active') return pathname === path
-    if (path === '/my/outlook') return pathname === path
-    if (path === '/my/admin') return pathname === path
+    if (path === '/workops/daily') return pathname === path
+    if (path === '/workops/overall') return pathname === path
+    if (path === '/workops/boss-briefing') return pathname === path
+    if (path === '/workops/captures') return pathname === path
+    if (path === '/workops/downstream') return pathname === path
     if (path === '/mycareer/track') return pathname === path
     if (path === '/mycareer/achievements') return pathname === path
     if (path === '/mycareer/reflections') return pathname === path
@@ -77,11 +84,18 @@ export default function SidebarNav() {
     {
       name: 'MyWork',
       items: [
-        { name: 'Create Output', path: '/mywork/create', icon: FileText },
-        { name: 'Work From Company Stuff', path: '/mywork/fromcompanystuff', icon: Briefcase },
+        { name: 'MyWork Products', path: '/mywork/products', icon: Package },
         { name: "Stuff I'm Working On", path: '/mywork/active', icon: CheckSquare },
-        { name: 'My Work Outlook', path: '/my/outlook', icon: Eye },
-        { name: 'Admin', path: '/my/admin', icon: ClipboardList },
+      ],
+    },
+    {
+      name: 'WorkOps',
+      items: [
+        { name: 'Daily Outlook', path: '/workops/daily', icon: Calendar },
+        { name: 'Overall Outlook', path: '/workops/overall', icon: BarChart3 },
+        { name: 'Boss Briefing', path: '/workops/boss-briefing', icon: Presentation },
+        { name: 'Outlook Captures', path: '/workops/captures', icon: Camera },
+        { name: 'Downstream Work Generator', path: '/workops/downstream', icon: ArrowDown },
       ],
     },
     {
