@@ -29,6 +29,7 @@ import {
   Camera,
   ArrowDown,
   Package,
+  AlertTriangle,
 } from 'lucide-react'
 
 export default function SidebarNav() {
@@ -38,6 +39,8 @@ export default function SidebarNav() {
     if (path === '/dashboard') return pathname === path
     if (path === '/mycompany/workforcestuff') return pathname?.startsWith(path)
     if (path === '/mycompany/milestones') return pathname?.startsWith(path)
+    if (path === '/mycompany/products') return pathname?.startsWith(path)
+    if (path === '/mycompany/external-pressures') return pathname?.startsWith(path)
     if (path === '/mywork/products') return pathname === path
     if (path === '/mywork/active') return pathname === path
     if (path === '/workops/daily') return pathname === path
@@ -68,6 +71,8 @@ export default function SidebarNav() {
         { name: 'Workforce Stuff', path: '/mycompany/workforcestuff', icon: Users },
         { name: 'Company Milestones', path: '/mycompany/milestones', icon: TrendingUp },
         { name: 'Employee Highlights', path: '/mycompany/highlights', icon: Award },
+        { name: 'Company Products', path: '/mycompany/products', icon: Package },
+        { name: 'External Company Pressures', path: '/mycompany/external-pressures', icon: AlertTriangle },
       ],
     },
     {

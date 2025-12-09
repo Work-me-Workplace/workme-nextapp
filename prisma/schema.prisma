@@ -69,6 +69,10 @@ model WorkMe {
   // WorkOps Relations
   workOpsOutlook WorkOpsOutlook?
 
+  // Company Products Relations
+  companyProducts         CompanyProduct[]
+  externalCompanyPressures ExternalCompanyPressure[]
+
   @@index([handle])
   @@index([companyId])
   @@index([companyUnitId])
@@ -1429,4 +1433,90 @@ model MyEcosystemContact {
   @@unique([workMeId, personId])
   @@index([workMeId])
   @@index([personId])
+}
+
+// ============================================
+// COMPANY PRODUCTS MODELS
+// ============================================
+
+model CompanyProduct {
+  id        String   @id @default(cuid())
+  workMeId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Core Identity
+  name        String
+  category    String?     // e.g., "Surface Ship", "Digital Service"
+  description String?
+
+  // Public Specs (comms-visible)
+  missionRole       String?
+  keyCapabilities   String[] @default([])
+  limitations       String[] @default([])
+  publicSources     Json?                    // GAO/CRS/public summaries
+  productionStatus  String?
+
+  // Narrative + Messaging
+  leadershipFraming String?
+  talkingPoints     Json?  // structured messaging blocks
+
+  // Relations
+  highlights ProductHighlight[]
+  pressures  ProductPressure[]
+  updates    ProductUpdate[]
+
+  workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+
+  @@index([name])
+  @@index([category])
+}
+
+model ProductPressure {
+  id          String   @id @default(cuid())
+  productId   String
+  source      String   // "GAO", "CRS", "Congress", etc.
+  summary     String
+  riskLevel   String?   // low | medium | high
+  createdAt   DateTime @default(now())
+
+  product CompanyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductHighlight {
+  id          String   @id @default(cuid())
+  productId   String
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+
+  product CompanyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductUpdate {
+  id          String   @id @default(cuid())
+  productId   String
+  updateText  String
+  createdAt   DateTime @default(now())
+
+  product CompanyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// EXTERNAL COMPANY PRESSURE MODEL
+// ============================================
+
+model ExternalCompanyPressure {
+  id        String   @id @default(cuid())
+  workMeId  String
+  source    String   // "GAO", "Congress", "Industry", etc.
+  category  String?  // "Budget", "Legislation", "Testing", "Ops", etc.
+  summary   String
+  impact    String?   // optional "why this matters"
+  createdAt DateTime @default(now())
+
+  workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+
+  @@index([source])
+  @@index([category])
 }
