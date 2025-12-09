@@ -38,28 +38,46 @@ export async function POST(request: NextRequest) {
     const normalizedHandle = xHandle?.replace(/^@/, '') || null
 
     // Upsert EcosystemPerson
-    // Use xHandle or xUserId as unique identifier
-    const person = await prisma.ecosystemPerson.upsert({
-      where: {
-        ...(normalizedHandle ? { xHandle: normalizedHandle } : { xUserId: xUserId || '' }),
-      },
-      update: {
-        fullName: fullName.trim(),
-        xHandle: normalizedHandle,
-        xUserId: xUserId || undefined,
-        profileImage: profileImage || undefined,
-        bio: bio || undefined,
-        followers: followers || undefined,
-      },
-      create: {
-        fullName: fullName.trim(),
-        xHandle: normalizedHandle,
-        xUserId: xUserId || undefined,
-        profileImage: profileImage || undefined,
-        bio: bio || undefined,
-        followers: followers || undefined,
-      },
-    })
+    // Try to find by xHandle first, then xUserId
+    let person = null
+    if (normalizedHandle) {
+      person = await prisma.ecosystemPerson.findUnique({
+        where: { xHandle: normalizedHandle },
+      })
+    }
+    
+    if (!person && xUserId) {
+      person = await prisma.ecosystemPerson.findUnique({
+        where: { xUserId },
+      })
+    }
+
+    if (person) {
+      // Update existing
+      person = await prisma.ecosystemPerson.update({
+        where: { id: person.id },
+        data: {
+          fullName: fullName.trim(),
+          xHandle: normalizedHandle || undefined,
+          xUserId: xUserId || undefined,
+          profileImage: profileImage || undefined,
+          bio: bio || undefined,
+          followers: followers || undefined,
+        },
+      })
+    } else {
+      // Create new
+      person = await prisma.ecosystemPerson.create({
+        data: {
+          fullName: fullName.trim(),
+          xHandle: normalizedHandle || undefined,
+          xUserId: xUserId || undefined,
+          profileImage: profileImage || undefined,
+          bio: bio || undefined,
+          followers: followers || undefined,
+        },
+      })
+    }
 
     // Create or find MyEcosystemContact link
     const contact = await prisma.myEcosystemContact.upsert({

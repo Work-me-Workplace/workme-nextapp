@@ -250,7 +250,7 @@ export default function ContactDetailPage() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-gray-900">Signal Intelligence</h2>
                 <button
-                  onClick={handleRefreshSignals}
+                  onClick={() => handleRefreshSignals()}
                   disabled={refreshing}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center gap-2"
                 >

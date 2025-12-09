@@ -55,37 +55,7 @@ export async function POST(request: NextRequest) {
       console.log('✅ Found existing WorkMe:', workMe.id)
     }
 
-    // 4. If this is the first user (Adam - the first man), make them super admin
-    if (isNewUser) {
-      const existingSuperAdmin = await prisma.superAdmin.findFirst()
-      
-      if (!existingSuperAdmin) {
-        // This is the first user - create standalone super admin
-        // photoUrl comes from Firebase, not from WorkProfile
-        const superAdmin = await prisma.superAdmin.create({
-          data: {
-            firebaseId: workMe.firebaseId,
-            email: workMe.email,
-            firstName: null, // Will be set separately if needed
-            lastName: null,
-            photoUrl: photoUrl || null, // From Firebase
-            workMeId: workMe.id, // Link to WorkMe (optional, may migrate away)
-          },
-        })
-        console.log('✅ Created first super admin (Adam):', superAdmin.id)
-        
-        return NextResponse.json({
-          success: true,
-          workMe,
-          superAdmin: {
-            id: superAdmin.id,
-            email: superAdmin.email,
-          },
-          isSuperAdmin: true,
-          message: 'First user created and granted super admin status',
-        })
-      }
-    }
+    // 4. SuperAdmin creation removed - model deprecated
 
     return NextResponse.json({
       success: true,

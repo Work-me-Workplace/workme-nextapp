@@ -1,12 +1,12 @@
 /**
  * POST /api/signalingest/x/feed
  * 
- * X Feed Signal - Live Twitter/X feed signals
+ * X Feed Signal - Live X feed signals from user's ecosystem contacts
  * 
- * Uses user's saved X Feed preferences to fetch relevant tweets
+ * Uses user's saved ecosystem contacts to fetch relevant tweets
  * 
  * Purpose: Pull feed → AI classify → Normalize
- * High frequency, public-facing signals from X/Twitter
+ * High frequency, public-facing signals from X
  */
 
 import { NextResponse } from 'next/server'
@@ -21,53 +21,54 @@ export async function POST(request: Request) {
     const { firebaseId } = await verifyAuth(request)
     const workMe = await loadWorkMe(firebaseId)
 
-    // Load user's X Feed preferences
-    const follows = await prisma.xFeedFollow.findMany({
-      where: { workMeId: workMe.id },
-      orderBy: [{ type: 'asc' }, { displayName: 'asc' }],
+    // Load user's ecosystem contacts (people they're tracking)
+    const contacts = await prisma.myEcosystemContact.findMany({
+      where: { 
+        workMeId: workMe.id,
+        person: {
+          xHandle: { not: null }, // Only people with X handles
+        },
+      },
+      include: {
+        person: true,
+      },
     })
 
-    if (follows.length === 0) {
+    // Extract handles from contacts
+    const handles = contacts
+      .map((c) => c.person)
+      .filter((p) => p && p.xHandle)
+      .map((p) => p!.xHandle!.replace('@', ''))
+
+    if (handles.length === 0) {
       return NextResponse.json({
         success: true,
         results: [],
-        message: 'No X Feed preferences found. Visit /signal/x/tune to configure your feed.',
+        message: 'No ecosystem contacts with X handles found. Visit /ecosystem/search to add people.',
       })
     }
-
-    // Extract handles for API calls
-    const handles = follows
-      .filter((f) => f.handle && (f.type === 'organization' || f.type === 'person'))
-      .map((f) => f.handle!.replace('@', ''))
-    const hashtags = follows
-      .filter((f) => f.type === 'hashtag' && f.handle)
-      .map((f) => f.handle!.replace('#', ''))
 
     console.log('[API POST /api/signalingest/x/feed]', {
       workMeId: workMe.id,
       handlesCount: handles.length,
-      hashtagsCount: hashtags.length,
       handles,
-      hashtags,
     })
 
-    // TODO: Call Twitter/X API v2 to fetch tweets
+    // TODO: Call X API v2 to fetch tweets from these handles
     // Example:
     // const tweets = await fetchTweetsFromHandles(handles)
-    // const hashtagTweets = await fetchTweetsByHashtags(hashtags)
-    // const results = await classifyAndNormalizeTweets([...tweets, ...hashtagTweets])
+    // const results = await classifyAndNormalizeTweets(tweets)
 
     // For now, return structured response indicating what would be fetched
     return NextResponse.json({
       success: true,
       results: [],
-      message: 'X Feed endpoint ready. Twitter API integration pending.',
+      message: 'X Feed endpoint ready. X API integration pending.',
       preferences: {
         handles,
-        hashtags,
-        totalFollows: follows.length,
+        totalContacts: handles.length,
       },
-      note: 'Once Twitter API is integrated, this will return actual tweets from the handles and hashtags you follow.',
+      note: 'Once X API is integrated, this will return actual tweets from the people in your ecosystem.',
     })
   } catch (error: any) {
     console.error('❌ POST /api/signalingest/x/feed error:', error)
