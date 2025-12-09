@@ -24,6 +24,9 @@ import {
   ArrowDown,
   Package,
   AlertTriangle,
+  MessageSquare,
+  Sparkles,
+  History,
 } from 'lucide-react'
 
 export default function SidebarNav() {
@@ -49,6 +52,7 @@ export default function SidebarNav() {
     if (path === '/mynetwork/suggestions') return pathname === path
     if (path === '/signal') return pathname?.startsWith(path)
     if (path === '/worksupport') return pathname?.startsWith(path) || pathname?.startsWith('/mywork/support')
+    if (path === '/engage') return pathname?.startsWith(path)
     return pathname?.startsWith(path)
   }
 
@@ -104,6 +108,15 @@ export default function SidebarNav() {
         { name: 'Career Track', path: '/mycareer/track', icon: Target },
         { name: 'Achievements', path: '/mycareer/achievements', icon: Award },
         { name: 'Reflections', path: '/mycareer/reflections', icon: BookOpen },
+      ],
+    },
+    {
+      name: 'Engage',
+      items: [
+        { name: 'Compose', path: '/engage/compose', icon: MessageSquare },
+        { name: 'Templates', path: '/engage/templates', icon: FileText },
+        { name: 'Highlights', path: '/engage/highlights', icon: Sparkles },
+        { name: 'History', path: '/engage/history', icon: History },
       ],
     },
   ]

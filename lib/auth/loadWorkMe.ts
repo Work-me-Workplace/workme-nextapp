@@ -38,16 +38,17 @@ export async function loadWorkMe(firebaseId: string): Promise<WorkMeIdentity> {
       id: true,
       firebaseId: true,
       email: true,
-      companyUnitId: true,
-      divisionId: true,
-      companyUnit: {
-        select: {
-          name: true,
+      companyUnitMemberships: {
+        take: 1, // Get first membership (primary unit)
+        include: {
+          unit: {
+            select: {
+              name: true,
+            },
+          },
         },
-      },
-      division: {
-        select: {
-          name: true,
+        orderBy: {
+          createdAt: 'asc', // Oldest membership is likely primary
         },
       },
     },
@@ -57,7 +58,14 @@ export async function loadWorkMe(firebaseId: string): Promise<WorkMeIdentity> {
     throw new Error('WorkMe identity not found. Please complete sign up.')
   }
 
-  // Return companyUnit and companyDivision from the relations
+  // Get companyUnit from first membership
+  const primaryMembership = workMe.companyUnitMemberships[0]
+  const companyUnit = primaryMembership?.unit?.name || null
+
+  // For companyDivision, we'd need to check if the CompanyUnit has a DivisionUnit
+  // For now, return null (can be enhanced later)
+  const companyDivision = null
+
   return {
     id: workMe.id,
     firebaseId: workMe.firebaseId,
@@ -65,8 +73,8 @@ export async function loadWorkMe(firebaseId: string): Promise<WorkMeIdentity> {
     firstName: null, // Will be populated from WorkProfile when available
     lastName: null,  // Will be populated from WorkProfile when available
     photoUrl: null,   // Will be populated from WorkProfile when available
-    companyUnit: workMe.companyUnit?.name || null,
-    companyDivision: workMe.division?.name || null,
+    companyUnit,
+    companyDivision,
   }
 }
 

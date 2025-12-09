@@ -47,6 +47,8 @@ async function normalizeUnit(
   }
 
   // Try to match against DivisionUnit names
+  // DivisionUnit belongs to CompanyUnit, so we need to check if the CompanyUnit's company matches
+  // DivisionUnit.company -> CompanyUnit, and CompanyUnit has companyId
   const divisionUnit = await prisma.divisionUnit.findFirst({
     where: {
       name: {
@@ -59,13 +61,9 @@ async function normalizeUnit(
         },
       }),
     },
-    include: {
-      company: {
-        select: {
-          id: true,
-          companyId: true,
-        },
-      },
+    select: {
+      id: true,
+      companyUnitId: true,
     },
   })
 

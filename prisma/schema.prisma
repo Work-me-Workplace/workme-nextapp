@@ -57,7 +57,8 @@ model WorkMe {
   createdCompanyCommunities  CompanyCommunity[]                 @relation("CompanyCommunityCreator")
   createdCompanyCareers      CompanyCareer[]                    @relation("CompanyCareerCreator")
   createdDigitalSignProducts ProductDigitalSign[]               @relation("ProductDigitalSignCreator")
-  createdEmployeeHighlights   CompanyEmployeeHighlight[]        @relation("CompanyEmployeeHighlightCreator")
+  createdEmployeeHighlights  CompanyEmployeeHighlight[]         @relation("CompanyEmployeeHighlightCreator")
+  engageMessages             EngageMessage[]
 
   // WorkOps Relations
   workOpsOutlook WorkOpsOutlook?
@@ -67,8 +68,15 @@ model WorkMe {
   externalCompanyPressures ExternalCompanyPressure[]
   Company                  Company?                  @relation(fields: [companyId], references: [id])
   companyId                String?
+  companyUnitId            String?
+  divisionId               String?
+  companyUnit              CompanyUnit?              @relation("WorkMeCompanyUnit", fields: [companyUnitId], references: [id], onDelete: SetNull)
+  division                 DivisionUnit?              @relation("WorkMeDivision", fields: [divisionId], references: [id], onDelete: SetNull)
 
   @@index([handle])
+  @@index([companyId])
+  @@index([companyUnitId])
+  @@index([divisionId])
 }
 
 // ============================================
@@ -229,6 +237,7 @@ model CompanyUnit {
   divisions   DivisionUnit[]
   unitMembers CompanyUnitMembers[] // Members with roles (canonical membership)
   employees   CompanyEmployee[] // Organizational employees
+  workMeMembers WorkMe[] @relation("WorkMeCompanyUnit") // WorkMe users with this company unit
 
   @@index([name])
   @@index([companyId])
@@ -247,6 +256,7 @@ model DivisionUnit {
 
   company   CompanyUnit       @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
   employees CompanyEmployee[] // Organizational employees
+  workMeMembers WorkMe[] @relation("WorkMeDivision") // WorkMe users with this division
 
   @@unique([name, companyUnitId])
   @@index([companyUnitId])
@@ -797,12 +807,12 @@ model CompanyEmployeeCause {
 // COMPANY EMPLOYEE
 // ====================================================
 model CompanyEmployee {
-  id          String   @id @default(cuid())
-  fullName    String
-  title       String?
-  email       String?
-  phone       String?
-  photoUrl    String?
+  id       String  @id @default(cuid())
+  fullName String
+  title    String?
+  email    String?
+  phone    String?
+  photoUrl String?
 
   companyId     String?
   companyUnitId String?
@@ -815,8 +825,8 @@ model CompanyEmployee {
   highlights CompanyEmployeeHighlightLink[]
 
   company     Company?      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyUnit CompanyUnit?   @relation(fields: [companyUnitId], references: [id], onDelete: SetNull)
-  division    DivisionUnit?  @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  companyUnit CompanyUnit?  @relation(fields: [companyUnitId], references: [id], onDelete: SetNull)
+  division    DivisionUnit? @relation(fields: [divisionId], references: [id], onDelete: SetNull)
 
   @@index([companyUnitId])
   @@index([divisionId])
@@ -851,8 +861,9 @@ model CompanyEmployeeHighlight {
   createdBy         WorkMe @relation("CompanyEmployeeHighlightCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   // Junctions
-  employees CompanyEmployeeHighlightLink[]
-  units     CompanyEmployeeHighlightUnit[]
+  employees      CompanyEmployeeHighlightLink[]
+  units          CompanyEmployeeHighlightUnit[]
+  engageMessages EngageMessage[]
 
   @@index([createdByWorkMeId])
 }
@@ -861,13 +872,13 @@ model CompanyEmployeeHighlight {
 // JUNCTION: highlight ↔ person
 // ====================================================
 model CompanyEmployeeHighlightLink {
-  id          String   @id @default(cuid())
+  id          String @id @default(cuid())
   employeeId  String
   highlightId String
 
   createdAt DateTime @default(now())
 
-  employee  CompanyEmployee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee  CompanyEmployee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   highlight CompanyEmployeeHighlight @relation(fields: [highlightId], references: [id], onDelete: Cascade)
 
   @@unique([employeeId, highlightId])
@@ -879,9 +890,9 @@ model CompanyEmployeeHighlightLink {
 // JUNCTION: highlight ↔ company unit (tenantization)
 // ====================================================
 model CompanyEmployeeHighlightUnit {
-  id          String   @id @default(cuid())
+  id          String @id @default(cuid())
   highlightId String
-  companyUnit String   // SEA05, SEA08, NAVSEA HQ, etc.
+  companyUnit String // SEA05, SEA08, NAVSEA HQ, etc.
 
   createdAt DateTime @default(now())
 
@@ -1534,4 +1545,37 @@ model ExternalCompanyPressure {
 
   @@index([source])
   @@index([category])
+}
+
+// ============================================
+// WORKENGAGE MODELS (Engagement Messaging)
+// ============================================
+
+model EngageTemplate {
+  id        String   @id @default(cuid())
+  name      String // "Promotion Congrats", "Team Win", etc.
+  body      String // template text
+  createdAt DateTime @default(now())
+
+  messages EngageMessage[]
+
+  @@index([name])
+}
+
+model EngageMessage {
+  id          String   @id @default(cuid())
+  ownerId     String
+  templateId  String?
+  highlightId String? // link to CompanyEmployeeHighlight
+  message     String
+  createdAt   DateTime @default(now())
+
+  owner     WorkMe                    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  template  EngageTemplate?           @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  highlight CompanyEmployeeHighlight? @relation(fields: [highlightId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId])
+  @@index([templateId])
+  @@index([highlightId])
+  @@index([createdAt])
 }
