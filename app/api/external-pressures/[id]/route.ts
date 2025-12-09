@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 1. Auth - Verify Firebase token
@@ -22,7 +22,7 @@ export async function GET(
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    const pressureId = params.id
+    const { id: pressureId } = await params
 
     console.log('[API GET /api/external-pressures/[id]]', {
       workMeId,
