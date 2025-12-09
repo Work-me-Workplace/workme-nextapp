@@ -9,10 +9,11 @@ import { prisma } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 
 /**
- * POST /api/company/highlights/ingest
+ * POST /api/company/highlights/ingest (MVP1 Architecture)
  * 
  * Ingests raw citation text and extracts structured data with AI.
- * Creates/updates employee and creates highlight with junction tables.
+ * Creates/updates employee and creates highlight.
+ * Uses companyId for organizational identity, companyUnit as string label.
  * 
  * Body: {
  *   text: string,
@@ -25,15 +26,15 @@ export async function POST(request: NextRequest) {
     // 1. Auth - Verify Firebase token
     const { firebaseId } = await verifyAuth(request as Request)
     
-    // 2. Load WorkMe identity
+    // 2. Load WorkMe identity (MVP1 - returns companyId directly, no lookups)
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
+    const { id: workMeId, companyId, companyUnit } = workMe
 
-    if (!companyUnit) {
+    if (!companyId) {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'User must set a companyUnit before creating highlights' 
+          error: 'User must belong to a company before creating highlights' 
         },
         { status: 400 },
       )
@@ -54,6 +55,7 @@ export async function POST(request: NextRequest) {
 
     console.log('[API POST /api/company/highlights/ingest]', {
       workMeId,
+      companyId,
       companyUnit,
       textLength: text.length,
     })
@@ -64,64 +66,19 @@ export async function POST(request: NextRequest) {
     // Apply overrides if provided
     const finalParsed = override ? { ...parsed, ...override } : parsed
 
-    // 4. Get user's companyId from their companyUnitMemberships
-    // companyUnit is a string (e.g., "SEA 05"), so we need to find the CompanyUnit by name
-    const userMembership = await prisma.companyUnitMembers.findFirst({
-      where: { workMeId },
-      include: {
-        unit: {
-          select: {
-            id: true,
-            name: true,
-            companyId: true,
-          },
-        },
-      },
-    })
-
-    // If no membership found, try to find CompanyUnit by the companyUnit string
-    let companyId = userMembership?.unit?.companyId || null
-    
-    if (!companyId && companyUnit) {
-      const companyUnitRecord = await prisma.companyUnit.findFirst({
-        where: {
-          name: {
-            equals: companyUnit,
-            mode: 'insensitive',
-          },
-        },
-        select: {
-          id: true,
-          companyId: true,
-        },
-      })
-      companyId = companyUnitRecord?.companyId || null
-    }
-
-    if (!companyId) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'User must belong to a company unit with a company' 
-        },
-        { status: 400 },
-      )
-    }
-
-    // 5. Upsert employee
+    // 4. Upsert employee (use parsed unit or workMe's companyUnit)
     const employee = await upsertEmployee({
       fullName: finalParsed.fullName,
       title: finalParsed.title,
       email: null, // Could extract from citation if available
       phone: null,
       photoUrl: photoUrl || null,
-      unitRaw: finalParsed.unit,
       companyId,
-      companyUnitId: null, // Will be normalized by upsertEmployee
-      divisionId: null,
+      companyUnit: finalParsed.unit || companyUnit || null,
+      division: null,
     })
 
-    // 6. Create highlight
+    // 5. Create highlight with companyUnitLabel
     const highlight = await prisma.companyEmployeeHighlight.create({
       data: {
         citationText: finalParsed.citationText,
@@ -133,11 +90,12 @@ export async function POST(request: NextRequest) {
         awardYear: finalParsed.awardYear,
         supervisorQuote: finalParsed.supervisorQuote,
         photoUrl: photoUrl || null,
+        companyUnitLabel: companyUnit || finalParsed.unit || null,
         createdByWorkMeId: workMeId,
       },
     })
 
-    // 7. Link highlight to employee
+    // 6. Link highlight to employee (for multi-employee highlights)
     await prisma.companyEmployeeHighlightLink.create({
       data: {
         employeeId: employee.id,
@@ -145,15 +103,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // 8. Link highlight to companyUnit for tenantization
-    await prisma.companyEmployeeHighlightUnit.create({
-      data: {
-        highlightId: highlight.id,
-        companyUnit: companyUnit,
-      },
-    })
-
-    // 9. Return full object
+    // 7. Return full object
     const result = await prisma.companyEmployeeHighlight.findUnique({
       where: { id: highlight.id },
       include: {
@@ -162,7 +112,6 @@ export async function POST(request: NextRequest) {
             employee: true,
           },
         },
-        units: true,
       },
     })
 

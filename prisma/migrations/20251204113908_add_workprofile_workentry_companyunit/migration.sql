@@ -4,7 +4,7 @@
 -- Create WorkProfile table (personal identity)
 CREATE TABLE "WorkProfile" (
   "id" TEXT PRIMARY KEY,
-  "userId" TEXT NOT NULL UNIQUE,
+  "userId" UUID NOT NULL UNIQUE,
   "firstName" TEXT,
   "lastName" TEXT,
   "headline" TEXT,
@@ -28,7 +28,7 @@ CREATE TABLE "CompanyUnit" (
 -- Create WorkEntry table (work history junction)
 CREATE TABLE "WorkEntry" (
   "id" TEXT PRIMARY KEY,
-  "userId" TEXT NOT NULL,
+  "userId" UUID NOT NULL,
   "companyUnitId" TEXT NOT NULL,
   "division" TEXT,
   "title" TEXT,

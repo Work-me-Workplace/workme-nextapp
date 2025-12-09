@@ -1,6 +1,6 @@
 CREATE TABLE "XFeedFollow" (
     "id" TEXT NOT NULL,
-    "workMeId" TEXT NOT NULL,
+    "workMeId" UUID NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "type" TEXT NOT NULL,
@@ -100,7 +100,7 @@ CREATE TABLE "PlatformSignal" (
 -- CreateTable
 CREATE TABLE "WorkMeEcosystemCompany" (
     "id" TEXT NOT NULL,
-    "workMeId" TEXT NOT NULL,
+    "workMeId" UUID NOT NULL,
     "companyId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -142,7 +142,7 @@ CREATE TABLE "EcosystemCompany" (
 -- CreateTable
 CREATE TABLE "MyEcosystemContact" (
     "id" TEXT NOT NULL,
-    "workMeId" TEXT NOT NULL,
+    "workMeId" UUID NOT NULL,
     "personId" TEXT NOT NULL,
     "notes" TEXT,
     "tags" TEXT[] DEFAULT ARRAY[]::TEXT[],
@@ -158,20 +158,24 @@ CREATE TABLE "_EcosystemCompanyPlatforms" (
     "B" TEXT NOT NULL
 );
 
--- CreateIndex
-CREATE INDEX "WorkEntry_workMeId_idx" ON "WorkEntry"("workMeId");
-
--- CreateIndex
-CREATE INDEX "WorkEntry_startDate_idx" ON "WorkEntry"("startDate");
-
--- CreateIndex
-CREATE INDEX "WorkEntry_endDate_idx" ON "WorkEntry"("endDate");
-
--- CreateIndex
-CREATE UNIQUE INDEX "WorkSkills_workMeId_key" ON "WorkSkills"("workMeId");
-
--- CreateIndex
-CREATE INDEX "WorkSkills_workMeId_idx" ON "WorkSkills"("workMeId");
+-- CreateIndex (only if columns exist)
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'WorkEntry') THEN
+        IF EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'WorkEntry' AND column_name = 'workMeId') THEN
+            CREATE INDEX IF NOT EXISTS "WorkEntry_workMeId_idx" ON "WorkEntry"("workMeId");
+        END IF;
+        CREATE INDEX IF NOT EXISTS "WorkEntry_startDate_idx" ON "WorkEntry"("startDate");
+        CREATE INDEX IF NOT EXISTS "WorkEntry_endDate_idx" ON "WorkEntry"("endDate");
+    END IF;
+    
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'WorkSkills') THEN
+        IF EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'WorkSkills' AND column_name = 'workMeId') THEN
+            CREATE UNIQUE INDEX IF NOT EXISTS "WorkSkills_workMeId_key" ON "WorkSkills"("workMeId");
+            CREATE INDEX IF NOT EXISTS "WorkSkills_workMeId_idx" ON "WorkSkills"("workMeId");
+        END IF;
+    END IF;
+END $$;
 
 -- CreateIndex
 CREATE UNIQUE INDEX "CompanyUnitHierarchy_unit_key" ON "CompanyUnitHierarchy"("unit");
@@ -308,8 +312,15 @@ CREATE INDEX "WorkMe_handle_idx" ON "WorkMe"("handle");
 -- CreateIndex
 CREATE UNIQUE INDEX "WorkProfile_workMeId_key" ON "WorkProfile"("workMeId");
 
--- CreateIndex
-CREATE INDEX "WorkProfile_workMeId_idx" ON "WorkProfile"("workMeId");
+-- CreateIndex (only if column exists)
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'WorkProfile') THEN
+        IF EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'WorkProfile' AND column_name = 'workMeId') THEN
+            CREATE INDEX IF NOT EXISTS "WorkProfile_workMeId_idx" ON "WorkProfile"("workMeId");
+        END IF;
+    END IF;
+END $$;
 
 -- AddForeignKey
 ALTER TABLE "WorkProfile" ADD CONSTRAINT "WorkProfile_workMeId_fkey" FOREIGN KEY ("workMeId") REFERENCES "WorkMe"("id") ON DELETE CASCADE ON UPDATE CASCADE;

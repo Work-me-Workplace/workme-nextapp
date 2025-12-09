@@ -16,7 +16,7 @@ CREATE TABLE "CompanyEmployeeHighlight" (
     "photoUrl" TEXT,
     "supervisorQuote" TEXT,
     "companyUnit" TEXT,
-    "createdByWorkMeId" TEXT NOT NULL,
+    "createdByWorkMeId" UUID NOT NULL,
 
     CONSTRAINT "CompanyEmployeeHighlight_pkey" PRIMARY KEY ("id")
 );

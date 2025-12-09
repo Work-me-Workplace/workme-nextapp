@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "blockedFlags": [
+    "--force-reset",
+    "--reset",
+    "--accept-data-loss",
+    "--skip-seed"
+  ],
+  "blockedCommandPatterns": [
+    "migrate reset",
+    "db push --force-reset",
+    "db push --reset"
+  ],
+  "requireExplicitOverride": true,
+  "overrideEnvVar": "ALLOW_DESTRUCTIVE_PRISMA"
+}
+

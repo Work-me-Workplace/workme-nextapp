@@ -6,47 +6,40 @@ import { prisma } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 
 /**
- * GET /api/highlights
+ * GET /api/highlights (MVP1 Architecture)
  * 
- * Returns all highlights for current user's companyUnit
- * Filters by companyUnit via CompanyEmployeeHighlightUnit junction table
+ * Returns all highlights for current user's company.
+ * Filters by companyId (authoritative) and optional companyUnit string.
+ * 
+ * NOTE: This route conflicts with /api/company/highlights - consider consolidating.
  */
 export async function GET(request: NextRequest) {
   try {
     // 1. Auth
     const { firebaseId } = await verifyAuth(request as Request)
     const workMe = await loadWorkMe(firebaseId)
-    const { companyUnit } = workMe
+    const { companyId, companyUnit } = workMe
 
-    if (!companyUnit) {
+    if (!companyId) {
       return NextResponse.json(
-        { success: false, error: 'User must set a companyUnit' },
+        { success: false, error: 'User must belong to a company' },
         { status: 400 }
       )
     }
 
-    console.log('[API GET /api/highlights]', { companyUnit })
+    console.log('[API GET /api/highlights]', { companyId, companyUnit })
 
-    // 2. Find all highlights for this companyUnit
-    // Get highlight IDs from CompanyEmployeeHighlightUnit junction table
-    const unitLinks = await prisma.companyEmployeeHighlightUnit.findMany({
-      where: { companyUnit },
-      select: { highlightId: true },
-    })
-
-    const highlightIds = unitLinks.map(link => link.highlightId)
-
-    if (highlightIds.length === 0) {
-      return NextResponse.json({
-        success: true,
-        highlights: [],
-      })
-    }
-
-    // 3. Fetch highlights with employees
+    // 2. Filter by companyId and optional companyUnit string
     const highlights = await prisma.companyEmployeeHighlight.findMany({
       where: {
-        id: { in: highlightIds },
+        employees: {
+          some: {
+            employee: {
+              companyId,
+              ...(companyUnit ? { companyUnit } : {}),
+            },
+          },
+        },
       },
       include: {
         employees: {
@@ -61,18 +54,13 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        units: {
-          select: {
-            companyUnit: true,
-          },
-        },
       },
       orderBy: {
         createdAt: 'desc',
       },
     })
 
-    // 4. Transform for frontend
+    // 3. Transform for frontend
     const transformed = highlights.map(h => ({
       id: h.id,
       citationText: h.citationText,
@@ -82,6 +70,7 @@ export async function GET(request: NextRequest) {
       awardingAgency: h.awardingAgency,
       awardYear: h.awardYear,
       photoUrl: h.photoUrl,
+      companyUnitLabel: h.companyUnitLabel,
       createdAt: h.createdAt,
       updatedAt: h.updatedAt,
       employees: h.employees.map(e => ({
@@ -90,7 +79,6 @@ export async function GET(request: NextRequest) {
         title: e.employee.title,
         photoUrl: e.employee.photoUrl,
       })),
-      companyUnits: h.units.map(u => u.companyUnit),
     }))
 
     console.log('[API GET /api/highlights] Success', {

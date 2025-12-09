@@ -4,7 +4,7 @@
 -- Create MySkills table
 CREATE TABLE "MySkills" (
   "id" TEXT PRIMARY KEY,
-  "workMeId" TEXT NOT NULL UNIQUE,
+  "workMeId" UUID NOT NULL UNIQUE,
   "mySkillsRaw" TEXT,
   "myJobResponsibilitiesRaw" TEXT,
   "myStrengthsRaw" TEXT,

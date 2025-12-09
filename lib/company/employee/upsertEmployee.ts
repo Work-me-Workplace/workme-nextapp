@@ -1,8 +1,8 @@
 /**
- * Company Employee Upsert Service
+ * Company Employee Upsert Service (MVP1 Architecture)
  * 
  * Upserts a CompanyEmployee record by searching email first, then fullName fallback.
- * Normalizes unitRaw into companyUnitId/divisionId if possible.
+ * Uses simple string fields for companyUnit and division - no normalization or lookups.
  */
 
 'use server'
@@ -15,67 +15,9 @@ export interface UpsertEmployeeData {
   email?: string | null
   phone?: string | null
   photoUrl?: string | null
-  unitRaw?: string | null // e.g. "SEA 05", "SEA05D1" as imported
   companyId?: string | null
-  companyUnitId?: string | null
-  divisionId?: string | null
-}
-
-/**
- * Normalize unitRaw into companyUnitId or divisionId if possible
- */
-async function normalizeUnit(
-  unitRaw: string | null | undefined,
-  companyId: string | null | undefined
-): Promise<{ companyUnitId: string | null; divisionId: string | null }> {
-  if (!unitRaw) {
-    return { companyUnitId: null, divisionId: null }
-  }
-
-  // Try to match against CompanyUnit names
-  const companyUnit = await prisma.companyUnit.findFirst({
-    where: {
-      name: {
-        equals: unitRaw,
-        mode: 'insensitive',
-      },
-    },
-  })
-
-  if (companyUnit) {
-    return { companyUnitId: companyUnit.id, divisionId: null }
-  }
-
-  // Try to match against DivisionUnit names
-  // DivisionUnit belongs to CompanyUnit, so we need to check if the CompanyUnit's company matches
-  // DivisionUnit.company -> CompanyUnit, and CompanyUnit has companyId
-  const divisionUnit = await prisma.divisionUnit.findFirst({
-    where: {
-      name: {
-        equals: unitRaw,
-        mode: 'insensitive',
-      },
-      ...(companyId && {
-        company: {
-          companyId: companyId,
-        },
-      }),
-    },
-    select: {
-      id: true,
-      companyUnitId: true,
-    },
-  })
-
-  if (divisionUnit) {
-    return {
-      companyUnitId: divisionUnit.companyUnitId,
-      divisionId: divisionUnit.id,
-    }
-  }
-
-  // No match found - return nulls (unitRaw will be stored separately if needed)
-  return { companyUnitId: null, divisionId: null }
+  companyUnit?: string | null  // Optional string label ("SEA 05", "NAVSEA HQ")
+  division?: string | null     // Optional string label
 }
 
 /**
@@ -83,15 +25,10 @@ async function normalizeUnit(
  * 
  * Searches by email first, then fullName fallback.
  * Auto-creates if not found.
- * Normalizes unitRaw into companyUnitId/divisionId if possible.
+ * Uses simple string fields - NO unit/division lookups or normalization.
  */
 export async function upsertEmployee(data: UpsertEmployeeData) {
-  const { fullName, title, email, phone, photoUrl, unitRaw, companyId, companyUnitId, divisionId } = data
-
-  // Normalize unitRaw if provided
-  const normalized = await normalizeUnit(unitRaw, companyId)
-  const finalCompanyUnitId = companyUnitId || normalized.companyUnitId
-  const finalDivisionId = divisionId || normalized.divisionId
+  const { fullName, title, email, phone, photoUrl, companyId, companyUnit, division } = data
 
   // Search by email first
   let employee = null
@@ -130,8 +67,8 @@ export async function upsertEmployee(data: UpsertEmployeeData) {
         phone: phone || employee.phone,
         photoUrl: photoUrl || employee.photoUrl,
         companyId: companyId || employee.companyId,
-        companyUnitId: finalCompanyUnitId || employee.companyUnitId,
-        divisionId: finalDivisionId || employee.divisionId,
+        companyUnit: companyUnit !== undefined ? companyUnit : employee.companyUnit,
+        division: division !== undefined ? division : employee.division,
       },
     })
   } else {
@@ -148,8 +85,8 @@ export async function upsertEmployee(data: UpsertEmployeeData) {
         phone: phone || null,
         photoUrl: photoUrl || null,
         companyId,
-        companyUnitId: finalCompanyUnitId,
-        divisionId: finalDivisionId,
+        companyUnit: companyUnit || null,
+        division: division || null,
       },
     })
   }

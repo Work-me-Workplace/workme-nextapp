@@ -22,22 +22,81 @@ export async function GET(request: Request) {
     // 1. Auth - Verify Firebase token (includes photoUrl)
     const { firebaseId, photoUrl, displayName } = await verifyAuth(request)
     
-    // 2. Load WorkMe identity - includes companyUnit and companyDivision
-    const workMeIdentity = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit, companyDivision } = workMeIdentity
-
-    // 3. Fetch full WorkMe record to get headline, handle, title, linkedinUrl
+    // 2. Fetch full WorkMe record (same as /api/workme/me)
+    // This endpoint is kept for backward compatibility but should use /api/workme/me
     const workMe = await prisma.workMe.findUnique({
-      where: { id: workMeId },
-      select: {
-        id: true,
-        firebaseId: true,
-        email: true,
-        headline: true,
-        handle: true,
-        title: true,
-        linkedinUrl: true,
-        createdAt: true,
+      where: { firebaseId },
+      include: {
+        workMeCompany: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        workProfile: true,
+        workSkills: true,
+        workEntries: {
+          orderBy: {
+            startDate: 'desc',
+          },
+        },
+        workGoals: {
+          orderBy: {
+            targetDate: 'asc',
+          },
+        },
+        workplaces: {
+          include: {
+            company: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        ecosystemCompanies: {
+          include: {
+            company: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+              },
+            },
+          },
+        },
+        ecosystemContacts: {
+          include: {
+            person: {
+              select: {
+                id: true,
+                fullName: true,
+                xHandle: true,
+                title: true,
+              },
+            },
+          },
+        },
+        workOpsOutlook: {
+          include: {
+            items: {
+              orderBy: {
+                createdAt: 'desc',
+              },
+            },
+          },
+        },
+        companyProducts: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+        externalCompanyPressures: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
       },
     })
 
@@ -45,29 +104,14 @@ export async function GET(request: Request) {
       throw new Error('WorkMe not found')
     }
 
-    console.log('[API GET /api/workme/hydrate] Hydration successful:', {
-      workMeId: workMe.id,
-      firebaseId,
-      companyUnit,
-      companyDivision,
-    })
-
-    // Return WorkMe with Firebase photoUrl, companyUnit, and companyDivision
+    // Return full WorkMe object with Firebase photoUrl/displayName
+    // companyId is important; companyUnit/division are optional strings
     return NextResponse.json({
       success: true,
       workMe: {
-        id: workMe.id,
-        firebaseId: workMe.firebaseId,
-        email: workMe.email,
-        headline: workMe.headline || null,
-        handle: workMe.handle || null,
-        title: workMe.title || null,
-        linkedinUrl: workMe.linkedinUrl || null,
-        photoUrl: photoUrl || null, // Always from Firebase
+        ...workMe,
+        photoUrl: photoUrl || null,
         displayName: displayName || null,
-        companyUnit: companyUnit || null,
-        companyDivision: companyDivision || null,
-        createdAt: workMe.createdAt,
       },
     })
   } catch (error: any) {

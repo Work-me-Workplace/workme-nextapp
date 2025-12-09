@@ -8,17 +8,16 @@ import { prisma } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 
 /**
- * POST /api/company/highlights/save
+ * POST /api/company/highlights/save (MVP1 Architecture)
  * 
  * Saves an edited highlight after user review.
  * Updates highlight and employee records.
+ * Uses companyId for organizational identity.
  * 
  * Body: {
  *   highlightId: string,
- *   employee: { fullName, title, email, ... },
+ *   employee: { fullName, title, email, companyUnit?, division?, ... },
  *   highlight: { citationText, achievement, ... },
- *   companyUnitId?: string,
- *   divisionId?: string,
  * }
  */
 export async function POST(request: NextRequest) {
@@ -26,22 +25,22 @@ export async function POST(request: NextRequest) {
     // 1. Auth - Verify Firebase token
     const { firebaseId } = await verifyAuth(request as Request)
     
-    // 2. Load WorkMe identity
+    // 2. Load WorkMe identity (MVP1 - returns companyId directly)
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
+    const { id: workMeId, companyId, companyUnit } = workMe
 
-    if (!companyUnit) {
+    if (!companyId) {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'User must set a companyUnit before saving highlights' 
+          error: 'User must belong to a company before saving highlights' 
         },
         { status: 400 },
       )
     }
 
     const body = await request.json()
-    const { highlightId, employee, highlight, companyUnitId, divisionId } = body
+    const { highlightId, employee, highlight } = body
 
     if (!highlightId) {
       return NextResponse.json(
@@ -78,39 +77,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get companyId from user's companyUnit
-    const companyUnitRecord = await prisma.companyUnit.findFirst({
-      where: {
-        name: {
-          equals: companyUnit,
-          mode: 'insensitive',
-        },
-      },
-    })
-
-    const companyId = companyUnitRecord?.companyId || null
-
-    if (!companyId) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'User must belong to a company unit with a company' 
-        },
-        { status: 400 },
-      )
-    }
-
-    // 3. Upsert employee with provided data
+    // 3. Upsert employee with provided data (use strings directly)
     const employeeRecord = await upsertEmployee({
       fullName: employee.fullName,
       title: employee.title || null,
       email: employee.email || null,
       phone: employee.phone || null,
       photoUrl: employee.photoUrl || null,
-      unitRaw: employee.unitRaw || null,
       companyId,
-      companyUnitId: companyUnitId || null,
-      divisionId: divisionId || null,
+      companyUnit: employee.companyUnit || companyUnit || null,
+      division: employee.division || null,
     })
 
     // 4. Update highlight
@@ -126,6 +102,7 @@ export async function POST(request: NextRequest) {
         awardYear: highlight.awardYear || null,
         supervisorQuote: highlight.supervisorQuote || null,
         photoUrl: highlight.photoUrl || null,
+        companyUnitLabel: companyUnit || employee.companyUnit || null,
       },
     })
 
@@ -162,7 +139,6 @@ export async function POST(request: NextRequest) {
             employee: true,
           },
         },
-        units: true,
       },
     })
 

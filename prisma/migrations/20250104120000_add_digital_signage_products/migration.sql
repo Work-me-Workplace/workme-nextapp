@@ -8,7 +8,7 @@ CREATE TABLE "ProductDigitalSign" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "signType" "DigitalSignType" NOT NULL,
     "companyUnit" TEXT,
-    "createdByWorkMeId" TEXT NOT NULL,
+    "createdByWorkMeId" UUID NOT NULL,
 
     CONSTRAINT "ProductDigitalSign_pkey" PRIMARY KEY ("id")
 );

@@ -3,7 +3,7 @@
 -- Create MyWorkOutlook table
 CREATE TABLE "MyWorkOutlook" (
   "id" TEXT PRIMARY KEY,
-  "workMeId" TEXT NOT NULL UNIQUE,
+  "workMeId" UUID NOT NULL UNIQUE,
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -24,7 +24,7 @@ CREATE TABLE "MyWorkItem" (
 -- Create AdminWorkItem table
 CREATE TABLE "AdminWorkItem" (
   "id" TEXT PRIMARY KEY,
-  "workMeId" TEXT NOT NULL,
+  "workMeId" UUID NOT NULL,
   "title" TEXT NOT NULL,
   "notes" TEXT,
   "status" TEXT NOT NULL DEFAULT 'open',

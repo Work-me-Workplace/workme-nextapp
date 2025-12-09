@@ -2,7 +2,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Switch to PostgreSQL for production/RDS. Set `DATABASE_URL` in environment.
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -14,7 +13,7 @@ datasource db {
 // WorkMe = Core Identity (Personhood)
 // Contains ONLY stable identity fields + simple public-facing profile fields
 model WorkMe {
-  id         String   @id @default(uuid())
+  id         String   @id @default(uuid()) @db.Uuid
   firebaseId String?  @unique
   email      String   @unique
   createdAt  DateTime @default(now())
@@ -25,8 +24,14 @@ model WorkMe {
   title       String?
   linkedinUrl String?
 
+  // WorkMeCompany - silent background tag for tenant partitioning
   workMeCompanyId String?
   workMeCompany   WorkMeCompany? @relation(fields: [workMeCompanyId], references: [id])
+
+  // Organizational context (MVP1 - string labels only)
+  companyId   String? // Authoritative organizational FK
+  companyUnit String? // Optional string label ("SEA 05", "NAVSEA HQ")
+  division    String? // Optional string label
 
   // Bolt-on modules (all via foreign keys)
   workProfile        WorkProfile?
@@ -35,10 +40,6 @@ model WorkMe {
   workGoals          WorkGoal[]
   ecosystemCompanies WorkMeEcosystemCompany[]
   ecosystemContacts  MyEcosystemContact[]
-
-  // Company membership (canonical - via junction table with roles)
-  // Company and division are inferred via CompanyUnitMembers → CompanyUnit → Company
-  companyUnitMemberships CompanyUnitMembers[]
 
   // WorkWorld Architecture Relations
   workplaces Workplace[]
@@ -58,6 +59,7 @@ model WorkMe {
   createdCompanyCareers      CompanyCareer[]                    @relation("CompanyCareerCreator")
   createdDigitalSignProducts ProductDigitalSign[]               @relation("ProductDigitalSignCreator")
   createdEmployeeHighlights  CompanyEmployeeHighlight[]         @relation("CompanyEmployeeHighlightCreator")
+  createdCompanyEmployees    CompanyEmployee[]                   @relation("CompanyEmployeeCreator")
   engageMessages             EngageMessage[]
 
   // WorkOps Relations
@@ -66,27 +68,19 @@ model WorkMe {
   // Company Products Relations
   companyProducts          CompanyProduct[]
   externalCompanyPressures ExternalCompanyPressure[]
-  Company                  Company?                  @relation(fields: [companyId], references: [id])
-  companyId                String?
-  companyUnitId            String?
-  divisionId               String?
-  companyUnit              CompanyUnit?              @relation("WorkMeCompanyUnit", fields: [companyUnitId], references: [id], onDelete: SetNull)
-  division                 DivisionUnit?              @relation("WorkMeDivision", fields: [divisionId], references: [id], onDelete: SetNull)
+  Company                  Company? @relation(fields: [companyId], references: [id])
 
   @@index([handle])
   @@index([companyId])
-  @@index([companyUnitId])
-  @@index([divisionId])
+  @@index([companyUnit])
 }
 
 // ============================================
 // WORK PROFILE MODEL (Professional Identity - "What I Do")
 // ============================================
-// Professional metadata - describes WHAT the user does professionally
-// NOT personal identity, NOT skills, NOT company, NOT work history
 model WorkProfile {
   id       String @id @default(uuid())
-  workMeId String @unique
+  workMeId String @unique @db.Uuid
 
   jobRole               String?
   industry              String?
@@ -103,26 +97,8 @@ model WorkProfile {
 }
 
 // ============================================
-// DEPRECATED ENUMS (Removed - employment data moved to WorkEntry)
+// ENUMS
 // ============================================
-// JobRole and SalaryRange enums removed
-// Employment data now stored in WorkEntry model
-// Keeping commented for reference during migration
-// enum JobRole {
-//   INDIVIDUAL_CONTRIBUTOR
-//   MANAGER
-//   DIRECTOR_LEVEL
-//   PROJECT_LEAD
-// }
-//
-// enum SalaryRange {
-//   BELOW_50K
-//   K50_100K
-//   K100_150K
-//   K150_200K
-//   ABOVE_200K
-// }
-
 enum EventAudience {
   ALL_WORKFORCE
   LEADERS
@@ -139,12 +115,6 @@ enum EventCategory {
   FAMILY
 }
 
-enum CompanyUnitRole {
-  MEMBER
-  MANAGER
-  ADMIN
-}
-
 enum DigitalSignType {
   WORKFORCE
   COMPANY_NEWS
@@ -153,17 +123,18 @@ enum DigitalSignType {
 }
 
 // ============================================
-// WORKME COMPANY MODEL (Container/Tenant)
+// WORKME COMPANY MODEL (Silent Background Tag)
 // ============================================
+// WorkMeCompany exists ONLY as a silent tag for tenant partitioning.
+// It does NOT affect routing, hydration, API shape, permissions, or component logic.
 model WorkMeCompany {
   id          String   @id @default(uuid())
-  name        String // WorkMe platform name
+  name        String
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   employees WorkMe[]
-  // NO companies relation - Company is independent
 
   @@map("workme_company")
 }
@@ -173,7 +144,7 @@ model WorkMeCompany {
 // ============================================
 model Company {
   id           String        @id @default(uuid())
-  name         String        @unique // Company name (unique globally)
+  name         String        @unique
   industry     String?
   website      String?
   city         String?
@@ -187,7 +158,7 @@ model Company {
   // Identity (Apollo Enrichment)
   missionStatement    String?
   vision              String?
-  values              String? // CSV string
+  values              String?
   brandTagline        String?
   brandLogoUrl        String?
   brandColorPrimary   String?
@@ -201,7 +172,7 @@ model Company {
   chiefOfStaff String?
 
   // Organization (Apollo Enrichment)
-  directorates String[] @default([]) // e.g. ["SEA 02", "SEA 05", "SEA 10"]
+  directorates String[] @default([])
 
   // Social / Public (Apollo Enrichment)
   linkedinUrl String?
@@ -213,149 +184,11 @@ model Company {
   country String?
 
   // Relations
-  members      WorkMe[] // Direct relation to WorkMe (Company HQ affiliation)
-  companyUnits CompanyUnit[] // CompanyUnits that belong to this HQ
-  workplaces   Workplace[] // Workplace relations
-  employees    CompanyEmployee[] // Organizational employees
-
-  @@index([name]) // Index for directory lookups
-}
-
-// ============================================
-// COMPANY UNIT REGISTRY (Searchable Registry Pattern)
-// ============================================
-// Registry pattern like RaceRegistry - search or create
-// Simple, searchable company unit registry
-model CompanyUnit {
-  id        String   @id @default(uuid())
-  name      String   @unique // Company name (unique globally)
-  companyId String? // Foreign key to Company (Company HQ) - optional
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  company     Company?             @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  divisions   DivisionUnit[]
-  unitMembers CompanyUnitMembers[] // Members with roles (canonical membership)
-  employees   CompanyEmployee[] // Organizational employees
-  workMeMembers WorkMe[] @relation("WorkMeCompanyUnit") // WorkMe users with this company unit
+  members      WorkMe[]
+  workplaces   Workplace[]
+  employees    CompanyEmployee[]
 
   @@index([name])
-  @@index([companyId])
-}
-
-// ============================================
-// DIVISION UNIT REGISTRY (Final Form)
-// ============================================
-// Parent → CompanyUnit, reusable, unique on (name + companyUnitId)
-model DivisionUnit {
-  id            String   @id @default(uuid())
-  name          String
-  companyUnitId String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  company   CompanyUnit       @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
-  employees CompanyEmployee[] // Organizational employees
-  workMeMembers WorkMe[] @relation("WorkMeDivision") // WorkMe users with this division
-
-  @@unique([name, companyUnitId])
-  @@index([companyUnitId])
-}
-
-// ============================================
-// COMPANY UNIT MEMBERS (Junction table with roles)
-// ============================================
-// Links WorkMe to CompanyUnit with role (MEMBER, MANAGER, ADMIN)
-model CompanyUnitMembers {
-  id            String          @id @default(uuid())
-  workMeId      String
-  companyUnitId String // References CompanyUnit.id
-  role          CompanyUnitRole @default(MEMBER)
-  createdAt     DateTime        @default(now())
-
-  workMe WorkMe      @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-  unit   CompanyUnit @relation(fields: [companyUnitId], references: [id], onDelete: Cascade)
-
-  @@unique([workMeId, companyUnitId])
-  @@index([workMeId])
-  @@index([companyUnitId])
-  @@index([role])
-}
-
-// ============================================
-// WORK ENTRY MODEL (Work History - LinkedIn-style Experience Items)
-// ============================================
-// Work history - each WorkMe can have multiple WorkEntries (current + past jobs)
-model WorkEntry {
-  id          String    @id @default(uuid())
-  workMeId    String
-  companyName String?
-  title       String?
-  startDate   DateTime?
-  endDate     DateTime?
-  description String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-
-  @@index([workMeId])
-  @@index([startDate])
-  @@index([endDate])
-}
-
-// ============================================
-// WORK SKILLS MODEL (Human Capital Layer)
-// ============================================
-// Standalone intelligence module attached directly to WorkMe
-model WorkSkills {
-  id             String  @id @default(uuid())
-  workMeId       String  @unique
-  skillsRaw      String?
-  strengthsRaw   String?
-  specialties    String?
-  certifications String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-
-  @@index([workMeId])
-}
-
-// ============================================
-// COMPANY UNIT REGISTRY (Legacy - Deprecated)
-// ============================================
-// DEPRECATED: Use CompanyUnit model above instead
-// Keeping for backward compatibility during migration
-model CompanyUnitRegistry {
-  id         String   @id @default(cuid())
-  name       String   @unique // Unique workspace name (user-defined or generated)
-  visibility String   @default("public") // "public" or "private"
-  createdAt  DateTime @default(now())
-
-  @@index([name])
-  @@index([visibility])
-}
-
-// Workplace: Link between a user (WORKMEID) and a specific company
-model Workplace {
-  id        String   @id @default(cuid())
-  workMeId  String
-  companyId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  workMe  WorkMe  @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  // Note: roles relation removed - CompanyRole model deleted
-
-  @@unique([workMeId, companyId]) // One workplace per user-company pair
-  @@index([workMeId])
-  @@index([companyId])
 }
 
 enum CompanyType {
@@ -376,6 +209,65 @@ enum RevenueRange {
 }
 
 // ============================================
+// WORK ENTRY MODEL (Work History)
+// ============================================
+model WorkEntry {
+  id          String    @id @default(uuid())
+  workMeId    String    @db.Uuid
+  companyName String?
+  title       String?
+  startDate   DateTime?
+  endDate     DateTime?
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+
+  @@index([workMeId])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+// ============================================
+// WORK SKILLS MODEL
+// ============================================
+model WorkSkills {
+  id             String  @id @default(uuid())
+  workMeId       String  @unique @db.Uuid
+  skillsRaw      String?
+  strengthsRaw   String?
+  specialties    String?
+  certifications String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+
+  @@index([workMeId])
+}
+
+// ============================================
+// WORKPLACE MODEL
+// ============================================
+model Workplace {
+  id        String   @id @default(cuid())
+  workMeId  String   @db.Uuid
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workMe  WorkMe  @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([workMeId, companyId])
+  @@index([workMeId])
+  @@index([companyId])
+}
+
+// ============================================
 // ACHIEVEMENTS MODULE MODELS
 // ============================================
 enum AchievementCategory {
@@ -393,10 +285,10 @@ model CommsOutput {
   id String @id @default(cuid())
 
   companyUnit  String?
-  originatorId String
+  originatorId String  @db.Uuid
   originator   WorkMe  @relation("CommsOutputOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
-  type        String // "email", "flyer", "digest", etc.
+  type        String
   title       String
   description String?
   wordCount   Int?
@@ -415,7 +307,7 @@ model Objective {
   id String @id @default(cuid())
 
   companyUnit  String?
-  originatorId String
+  originatorId String  @db.Uuid
   originator   WorkMe  @relation("ObjectiveOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   title       String
@@ -435,7 +327,7 @@ model Achievement {
   id String @id @default(cuid())
 
   companyUnit  String?
-  originatorId String
+  originatorId String  @db.Uuid
   originator   WorkMe  @relation("AchievementOriginator", fields: [originatorId], references: [id], onDelete: Cascade)
 
   title    String
@@ -451,10 +343,10 @@ model Achievement {
   commsOutput   CommsOutput? @relation(fields: [commsOutputId], references: [id], onDelete: SetNull)
 
   whatYouDid String
-  frequency  String? // weekly, recurring, one-time
+  frequency  String?
   volume     Int?
 
-  processSteps Json? // array of steps
+  processSteps Json?
   impact       String?
 
   createdAt DateTime @default(now())
@@ -466,14 +358,8 @@ model Achievement {
 }
 
 // ============================================
-// WORK ARCHITECTURE MODELS
+// COMPANY MODELS (CompanyX)
 // ============================================
-
-// ============================================
-// COMPANY MODELS (Renamed from WorkContext*)
-// ============================================
-// NOTE: ContextType is now a TypeScript type in lib/types/context-type.ts
-// It's no longer a Prisma enum since WorkEventRouter was removed
 
 model CompanyCampaign {
   id           String    @id @default(cuid())
@@ -492,7 +378,7 @@ model CompanyCampaign {
   summary String?
 
   companyUnit       String?
-  createdByWorkMeId String
+  createdByWorkMeId String  @db.Uuid
   createdBy         WorkMe  @relation("CompanyCampaignCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyUnit])
@@ -515,7 +401,7 @@ model CompanyImpactEvent {
   summary String?
 
   companyUnit       String?
-  createdByWorkMeId String
+  createdByWorkMeId String  @db.Uuid
   createdBy         WorkMe  @relation("CompanyImpactEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyUnit])
@@ -526,31 +412,26 @@ model CompanyTraining {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  // Core
   title            String?
   topic            String?
   description      String?
   mandatory        Boolean @default(false)
   sponsoringOffice String?
 
-  // Date / Time
   trainingDate DateTime?
   startTime    String?
   endTime      String?
 
-  // Format / Location
   location String?
   format   String?
   link     String?
 
-  // POC
   pocFirstName   String?
   pocLastName    String?
   pocEmail       String?
   pocPhone       String?
   pocRankOrTitle String?
 
-  // Stage 1 Ingest Snapshot
   ingestRawText   String?
   ingestType      String?
   ingestStatus    String?   @default("pending")
@@ -558,9 +439,8 @@ model CompanyTraining {
 
   summary String?
 
-  // Relations
   companyUnit       String?
-  createdByWorkMeId String
+  createdByWorkMeId String  @db.Uuid
   createdBy         WorkMe  @relation("CompanyTrainingCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyUnit])
@@ -572,45 +452,37 @@ model CompanyEvent {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Core identity
   title       String
-  theme       String? // NEW (tagline / theme)
+  theme       String?
   description String?
 
-  // Timing
   eventDate DateTime?
   startTime String?
   endTime   String?
 
-  // Category (enum)
   eventCategory EventCategory?
 
-  // Registration
   registrationRequired String?
   registrationLink     String?
 
-  // Highlights extracted from GPT
   audience      EventAudience?
   vibe          String?
   perks         String[]       @default([])
   participation String[]       @default([])
 
-  // Food
   foodProvided String?
   foodTypes    String?
 
-  // Speaker + POC
   speakers String[] @default([])
   pocEmail String?
   pocPhone String?
 
-  summary String? // Stage 3 synthesized paragraph
+  summary String?
 
   companyUnit       String?
-  createdByWorkMeId String
+  createdByWorkMeId String  @db.Uuid
   createdBy         WorkMe  @relation("CompanyEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  // Relations
   eventItems EventItem[]
 
   @@index([companyUnit])
@@ -649,7 +521,7 @@ model CompanyCommunity {
   summary String?
 
   companyUnit       String?
-  createdByWorkMeId String
+  createdByWorkMeId String  @db.Uuid
   createdBy         WorkMe  @relation("CompanyCommunityCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyUnit])
@@ -657,47 +529,29 @@ model CompanyCommunity {
 }
 
 model CompanyBenefits {
-  // -----------------------
-  // IDENTITY
-  // -----------------------
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // -----------------------
-  // CORE CONTENT
-  // -----------------------
   title                  String
-  description            String? // 1–2 sentence plain explainer
-  employeeBenefitSummary String? // why employees should care
+  description            String?
+  employeeBenefitSummary String?
 
-  // -----------------------
-  // UNIVERSAL BENEFIT STRUCTURE
-  // -----------------------
-  windowStart DateTime? // enrollment or action window start
-  windowEnd   DateTime? // enrollment or action window end
+  windowStart DateTime?
+  windowEnd   DateTime?
 
-  deadlines Json? // { enrollBy, mailInDeadline, systemClose, etc. }
+  deadlines Json?
 
-  actionLink String? // GRB / TSP.gov / OPM / portal / signup
-  resources  Json? // { brochures: [...], guides: [...], instructions: [...] }
+  actionLink String?
+  resources  Json?
 
-  pocList           Json? // [{ name, email, phone }]
-  extraInstructions Json? // ["Review FEHB options", "Log into GRB", ...]
+  pocList           Json?
+  extraInstructions Json?
 
-  // -----------------------
-  // AI SYNTHESIS (Stage 3)
-  // -----------------------
-  summary String? // NTK synthesized paragraph
+  summary String?
 
-  // -----------------------
-  // RAW INGESTION (Stage 1)
-  // -----------------------
   ingestRawText String?
 
-  // -----------------------
-  // RELATIONS
-  // -----------------------
   companyUnit String?
 
   @@index([companyUnit])
@@ -722,32 +576,21 @@ model CompanyCareer {
   title       String
   description String?
 
-  // Classification enums
-  level CareerLevel? // NAVSEA | NAVY | DOD
-  type  CareerType? // Leadership | Fellowship | Other
+  level CareerLevel?
+  type  CareerType?
 
-  // Eligibility JSON
-  eligibility Json? // {
-  //   paygradeRange: { min: string | null, max: string | null },
-  //   timeInServiceMonths?: number | null,
-  //   timeInPositionMonths?: number | null,
-  //   who?: string | null
-  // }
+  eligibility Json?
 
-  // Application JSON
-  application Json? // { instructions: string | null, link?: string | null }
+  application Json?
 
-  // Optional extras
-  extras Json? // { cost?: string | null, notes?: string[] | null }
+  extras Json?
 
-  // Raw ingest text (no workflow status)
   ingestRawText String?
 
   summary String?
 
-  // Relations
   companyUnit       String?
-  createdByWorkMeId String
+  createdByWorkMeId String  @db.Uuid
   createdBy         WorkMe  @relation("CompanyCareerCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyUnit])
@@ -755,56 +598,38 @@ model CompanyCareer {
 }
 
 model CompanyEmployeeCause {
-  // -----------------------
-  // IDENTITY
-  // -----------------------
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // -----------------------
-  // CORE CONTENT
-  // -----------------------
   title         String
-  description   String? // 1–2 sentence "what is this thing?"
-  impactSummary String? // 1 sentence "why this matters / who it helps"
+  description   String?
+  impactSummary String?
 
-  // -----------------------
-  // STRUCTURED FIELDS
-  // -----------------------
   partnerOrg           String?
   sponsoringDepartment String?
 
   windowStart DateTime?
   windowEnd   DateTime?
-  deadlines   Json? // { mailed, dropoff, delivery }
+  deadlines   Json?
 
-  locations String[] @default([]) // drop-off or event locations
+  locations String[] @default([])
   link      String?
 
-  pocList           Json? // [{ name, email, phone }]
-  extraInstructions Json? // ["avoid toy weapons", ...]
+  pocList           Json?
+  extraInstructions Json?
 
-  // -----------------------
-  // AI SYNTHESIS (Stage 3)
-  // -----------------------
   summary String?
 
-  // -----------------------
-  // RAW INGESTION (Stage 1)
-  // -----------------------
   ingestRawText String?
 
-  // -----------------------
-  // RELATIONS
-  // -----------------------
   companyUnit String?
 
   @@index([companyUnit])
 }
 
 // ====================================================
-// COMPANY EMPLOYEE
+// COMPANY EMPLOYEE (Employee-First Architecture)
 // ====================================================
 model CompanyEmployee {
   id       String  @id @default(cuid())
@@ -814,41 +639,43 @@ model CompanyEmployee {
   phone    String?
   photoUrl String?
 
-  companyId     String?
-  companyUnitId String?
-  divisionId    String?
+  // Organizational context (employee-first architecture)
+  companyId       String  // Authoritative organizational FK (required)
+  workMeCompanyId String  // Silent background tag for tenant partitioning
+  companyUnit     String? // Optional string label ("SEA 05", "NAVSEA HQ")
+  division        String? // Optional string label (ignored by app logic)
+
+  // Audit trail
+  createdByWorkMeId String @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Junctions
+  // Relations
   highlights CompanyEmployeeHighlightLink[]
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy  WorkMe  @relation("CompanyEmployeeCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  company     Company?      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyUnit CompanyUnit?  @relation(fields: [companyUnitId], references: [id], onDelete: SetNull)
-  division    DivisionUnit? @relation(fields: [divisionId], references: [id], onDelete: SetNull)
-
-  @@index([companyUnitId])
-  @@index([divisionId])
+  @@index([companyId])
+  @@index([workMeCompanyId])
+  @@index([companyUnit])
   @@index([fullName])
   @@index([email])
 }
 
 // ====================================================
-// HIGHLIGHT (Award, Citation, Spotlight)
+// COMPANY EMPLOYEE HIGHLIGHT
 // ====================================================
 model CompanyEmployeeHighlight {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Core content
   citationText   String
   achievement    String?
   narrative      String?
   classification String?
 
-  // Award metadata
   awardName      String?
   awardingAgency String?
   awardYear      Int?
@@ -856,20 +683,20 @@ model CompanyEmployeeHighlight {
   supervisorQuote String?
   photoUrl        String?
 
-  // Who created the highlight
-  createdByWorkMeId String
+  companyUnitLabel String?
+
+  createdByWorkMeId String @db.Uuid
   createdBy         WorkMe @relation("CompanyEmployeeHighlightCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  // Junctions
   employees      CompanyEmployeeHighlightLink[]
-  units          CompanyEmployeeHighlightUnit[]
   engageMessages EngageMessage[]
 
   @@index([createdByWorkMeId])
+  @@index([companyUnitLabel])
 }
 
 // ====================================================
-// JUNCTION: highlight ↔ person
+// JUNCTION: highlight ↔ employee
 // ====================================================
 model CompanyEmployeeHighlightLink {
   id          String @id @default(cuid())
@@ -886,33 +713,16 @@ model CompanyEmployeeHighlightLink {
   @@index([highlightId])
 }
 
-// ====================================================
-// JUNCTION: highlight ↔ company unit (tenantization)
-// ====================================================
-model CompanyEmployeeHighlightUnit {
-  id          String @id @default(cuid())
-  highlightId String
-  companyUnit String // SEA05, SEA08, NAVSEA HQ, etc.
-
-  createdAt DateTime @default(now())
-
-  highlight CompanyEmployeeHighlight @relation(fields: [highlightId], references: [id], onDelete: Cascade)
-
-  @@index([companyUnit])
-  @@index([highlightId])
-}
-
 // ============================================
-// WORKFORCE ENDURING PRODUCTS (Clean Architecture)
+// WORKFORCE ENDURING PRODUCTS
 // ============================================
 
-// Email Digest Enduring Product
 model WorkForceEnduringProdEmailDigest {
   id                String   @id @default(uuid())
   title             String
   description       String?
   companyUnit       String
-  createdByWorkMeId String
+  createdByWorkMeId String   @db.Uuid
   createdAt         DateTime @default(now())
 
   createdBy WorkMe               @relation("EmailDigestProductCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
@@ -923,7 +733,6 @@ model WorkForceEnduringProdEmailDigest {
   @@index([createdAt])
 }
 
-// Email Digest Edition
 model EmailDigestEdition {
   id            String                           @id @default(uuid())
   emailDigestId String
@@ -943,7 +752,6 @@ model EmailDigestEdition {
 // DIGITAL SIGNAGE PRODUCT MODELS
 // ============================================
 
-// Master container model
 model ProductDigitalSign {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
@@ -952,10 +760,9 @@ model ProductDigitalSign {
   signType DigitalSignType
 
   companyUnit       String?
-  createdByWorkMeId String
+  createdByWorkMeId String  @db.Uuid
   createdBy         WorkMe  @relation("ProductDigitalSignCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  // 1:1 subtype relations
   workforce            ProductDigitalSignWorkforce?
   companyNews          ProductDigitalSignCompanyNews?
   workforceAchievement ProductDigitalSignWorkforceAchievement?
@@ -966,7 +773,6 @@ model ProductDigitalSign {
   @@index([signType])
 }
 
-// A. Workforce signage
 model ProductDigitalSignWorkforce {
   id        String @id @default(cuid())
   signageId String @unique
@@ -982,7 +788,6 @@ model ProductDigitalSignWorkforce {
   signage ProductDigitalSign @relation(fields: [signageId], references: [id], onDelete: Cascade)
 }
 
-// B. Company News signage
 model ProductDigitalSignCompanyNews {
   id        String @id @default(cuid())
   signageId String @unique
@@ -996,7 +801,6 @@ model ProductDigitalSignCompanyNews {
   signage ProductDigitalSign @relation(fields: [signageId], references: [id], onDelete: Cascade)
 }
 
-// C. Workforce Achievement signage
 model ProductDigitalSignWorkforceAchievement {
   id        String @id @default(cuid())
   signageId String @unique
@@ -1010,7 +814,6 @@ model ProductDigitalSignWorkforceAchievement {
   signage ProductDigitalSign @relation(fields: [signageId], references: [id], onDelete: Cascade)
 }
 
-// D. Company Event signage
 model ProductDigitalSignCompanyEvent {
   id        String @id @default(cuid())
   signageId String @unique
@@ -1028,74 +831,6 @@ model ProductDigitalSignCompanyEvent {
 }
 
 // ============================================
-// COMMENTED OUT - NOT CURRENTLY USED
-// ============================================
-
-// model Connection {
-//   id          String   @id @default(uuid())
-//   name        String
-//   email       String?
-//   company     String?
-//   jobTitle    String?
-//   linkedinUrl String?
-//   notes       String?
-//   tags        String[] // e.g., ["mentor", "industry", "alumni"]
-//   workMeId    String
-//   workMe      WorkMe   @relation(fields: [workMeId], references: [id])
-//   createdAt   DateTime @default(now())
-//   updatedAt   DateTime @updatedAt
-// }
-
-// model Event {
-//   id          String   @id @default(uuid())
-//   title       String
-//   description String?
-//   eventType   EventType
-//   location    String?
-//   startDate   DateTime
-//   endDate     DateTime?
-//   isVirtual   Boolean  @default(false)
-//   url         String?  // For virtual events
-//   workMeId    String
-//   workMe      WorkMe   @relation(fields: [workMeId], references: [id])
-//   createdAt   DateTime @default(now())
-// }
-
-// enum EventType {
-//   NETWORKING
-//   CONFERENCE
-//   WORKSHOP
-//   MEETUP
-//   WEBINAR
-//   INTERVIEW
-//   COFFEE_CHAT
-//   OTHER
-// }
-
-// model Milestone {
-//   id          String   @id @default(uuid())
-//   title       String
-//   description String?
-//   milestoneType MilestoneType
-//   date        DateTime @default(now())
-//   workMeId    String
-//   workMe      WorkMe   @relation(fields: [workMeId], references: [id])
-//   createdAt   DateTime @default(now())
-// }
-
-// enum MilestoneType {
-//   PROMOTION
-//   NEW_ROLE
-//   CERTIFICATION
-//   SKILL_ACQUIRED
-//   PROJECT_COMPLETED
-//   AWARD
-//   PUBLICATION
-//   SPEAKING_ENGAGEMENT
-//   OTHER
-// }
-
-// ============================================
 // HOLIDAY BUILDER SYSTEM MODELS
 // ============================================
 model Holiday {
@@ -1105,7 +840,6 @@ model Holiday {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
   assets Asset[]
 
   @@index([slug])
@@ -1115,7 +849,7 @@ model Asset {
   id          String   @id @default(cuid())
   url         String
   fileName    String
-  category    String // "holiday", "workforce", "shipyard", "general"
+  category    String
   holidaySlug String?
   createdAt   DateTime @default(now())
 
@@ -1126,7 +860,7 @@ model Asset {
 }
 
 // ============================================
-// WORKOPS MODELS (New Architecture)
+// WORKOPS MODELS
 // ============================================
 
 enum WorkOpsItemType {
@@ -1166,7 +900,7 @@ enum WorkOpsSource {
 
 model WorkOpsOutlook {
   id        String   @id @default(cuid())
-  workMeId  String   @unique
+  workMeId  String   @unique @db.Uuid
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1207,8 +941,8 @@ model WorkOpsDailyAssignment {
   id        String   @id @default(cuid())
   outlookId String
   itemId    String
-  day       DateTime // midnight key for the planned day
-  dayIndex  Int? // user-controlled ordering for the day
+  day       DateTime
+  dayIndex  Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1216,18 +950,18 @@ model WorkOpsDailyAssignment {
   outlook WorkOpsOutlook @relation(fields: [outlookId], references: [id], onDelete: Cascade)
   item    WorkOpsItem    @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
-  @@unique([itemId, day]) // prevents duplicate assignment to same day
+  @@unique([itemId, day])
   @@index([outlookId])
   @@index([itemId])
   @@index([day])
 }
 
 // ============================================
-// WORK GOAL MODEL (Goals Module)
+// WORK GOAL MODEL
 // ============================================
 model WorkGoal {
   id         String    @id @default(uuid())
-  workMeId   String
+  workMeId   String    @db.Uuid
   goal       String
   targetDate DateTime?
 
@@ -1244,16 +978,15 @@ model WorkGoal {
 // DEFENSE ECOSYSTEM INTELLIGENCE MODELS
 // ============================================
 
-// Platform: Core object for defense platforms (air, surface, subsurface, land, space systems)
 model Platform {
   id           String   @id @default(cuid())
   name         String
-  platformType String // air | surface | subsurface | land | space
-  category     String // platform | weapon | sensor | comms | munition | c2
+  platformType String
+  category     String
   isNextGen    Boolean  @default(false)
-  status       String? // concept | development | testing | fielding | deployed | retired
+  status       String?
   description  String?
-  latestSignal String? // rolling summary (AI synthesized)
+  latestSignal String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -1267,11 +1000,10 @@ model Platform {
   @@index([category])
 }
 
-// PlatformCapability: What platforms can do
 model PlatformCapability {
   id         String   @id @default(cuid())
   platformId String
-  capability String // e.g., stealth, long-range, A2AD-penetration, hypersonic-defense
+  capability String
   createdAt  DateTime @default(now())
 
   platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
@@ -1280,12 +1012,11 @@ model PlatformCapability {
   @@index([capability])
 }
 
-// PlatformCommNode: Datalinks, SATCOM, sensors, C2 nodes, JADC2 integrations
 model PlatformCommNode {
   id         String   @id @default(cuid())
   platformId String
-  nodeType   String // datalink | satcom | radar | ew | c2 | sensor_fusion
-  nodeName   String? // e.g., Link-16, TTNT, MADL, JADC2 node
+  nodeType   String
+  nodeName   String?
   createdAt  DateTime @default(now())
 
   platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
@@ -1294,8 +1025,6 @@ model PlatformCommNode {
   @@index([nodeType])
 }
 
-// EcosystemDefenseCompany: Defense-industrial-base entities (Boeing, Lockheed, RTX, HII, L3Harris)
-// This is NOT a BD CRM company
 model EcosystemDefenseCompany {
   id          String  @id @default(cuid())
   name        String
@@ -1305,15 +1034,12 @@ model EcosystemDefenseCompany {
   hqState     String?
   hqCountry   String?
 
-  // Industry role (prime, sub, integrator, supplier)
   role String?
 
-  // AI-enriched attributes (nullable)
-  specialties    String[] @default([]) // e.g., stealth, propulsion, sensors
-  marketTier     String? // major_prime | mid_tier | boutique
-  influenceScore Int? // optional scoring placeholder
+  specialties    String[] @default([])
+  marketTier     String?
+  influenceScore Int?
 
-  // Relations
   platforms       Platform[]               @relation("EcosystemCompanyPlatforms")
   contracts       PlatformContract[]
   workMeFollowers WorkMeEcosystemCompany[]
@@ -1325,7 +1051,6 @@ model EcosystemDefenseCompany {
   @@index([role])
 }
 
-// PlatformContract: Links a platform to a defense company and indicates contract status
 model PlatformContract {
   id            String   @id @default(cuid())
   platformId    String
@@ -1342,17 +1067,16 @@ model PlatformContract {
   @@index([companyId])
 }
 
-// PlatformSignal: The beating heart of the system - every ingestion creates one of these
 model PlatformSignal {
   id         String   @id @default(cuid())
   platformId String
   sourceUrl  String?
-  sourceType String? // tweet | article | report | press_release | document
-  signalType String // procurement | contract | capability | threat | testing | failure | policy_hint
+  sourceType String?
+  signalType String
   headline   String?
   rawSnippet String?
   aiSummary  String?
-  confidence Float? // optional scoring
+  confidence Float?
   createdAt  DateTime @default(now())
 
   platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
@@ -1362,11 +1086,9 @@ model PlatformSignal {
   @@index([createdAt])
 }
 
-// WorkMeEcosystemCompany: Junction table for tracking who YOU care about
-// Allows WorkMe users to "follow" or "track" ecosystem companies
 model WorkMeEcosystemCompany {
   id        String   @id @default(cuid())
-  workMeId  String
+  workMeId  String   @db.Uuid
   companyId String
   createdAt DateTime @default(now())
 
@@ -1378,43 +1100,38 @@ model WorkMeEcosystemCompany {
   @@index([companyId])
 }
 
-// EcosystemPerson: Your "ecosystemdude" — the actual human
-// Minimal, inference-friendly, no overbuilding
 model EcosystemPerson {
   id        String  @id @default(cuid())
   fullName  String
   xHandle   String? @unique
-  xUserId   String? @unique // Twitter/X user ID
+  xUserId   String? @unique
   title     String?
   seniority String?
-  domain    String? // what space they play in (naval aviation, acquisition, AI, etc.)
-  beat      String? // optional: reporters / analysts
+  domain    String?
+  beat      String?
 
-  companyName String? // inference only — NOT RELATION
-  companyId   String? // FK to EcosystemCompany for org linking
-  yearsAt     Int? // inference
-  influence   Int? // inference
+  companyName String?
+  companyId   String?
+  yearsAt     Int?
+  influence   Int?
 
-  // X/Twitter profile data
   profileImage String?
   bio          String?
   followers    Int?
 
-  // Intelligence fields (GPT-inferred)
-  topics              String[] @default([]) // e.g., ["FA-XX", "procurement", "carriers"]
-  affinityIndustry    String? // e.g., "Defense"
-  affinityToMyOrg     String? // e.g., "High", "Medium", "Low"
-  latestSignalSummary String? // AI-created summary of latest signals
+  topics              String[] @default([])
+  affinityIndustry    String?
+  affinityToMyOrg     String?
+  latestSignalSummary String?
 
-  updatedSummary String? // dynamic AI-created summary of who they are to you
-  lastHydratedAt DateTime? // when we last fetched fresh data from X
+  updatedSummary String?
+  lastHydratedAt DateTime?
 
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 
-  // Relations
   workMeContacts MyEcosystemContact[]
-  company        EcosystemCompany?    @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  company        EcosystemCompany? @relation(fields: [companyId], references: [id], onDelete: SetNull)
 
   @@index([xHandle])
   @@index([xUserId])
@@ -1422,29 +1139,25 @@ model EcosystemPerson {
   @@index([companyId])
 }
 
-// EcosystemCompany: Simple org model used ONLY for inference + enrichment
-// This is NOT a CRM, minimal identity
 model EcosystemCompany {
   id      String  @id @default(cuid())
   name    String
   domain  String? @unique
-  type    String? // media | contractor | gov | OEM | think-tank
-  summary String? // AI curated description
+  type    String?
+  summary String?
 
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 
-  // Relations
-  people EcosystemPerson[] // people linked to this company
+  people EcosystemPerson[]
 
   @@index([name])
   @@index([type])
 }
 
-// MyEcosystemContact: Your CRM container — the only junction table you need
 model MyEcosystemContact {
   id       String @id @default(cuid())
-  workMeId String
+  workMeId String @db.Uuid
   personId String
 
   notes String?
@@ -1467,27 +1180,23 @@ model MyEcosystemContact {
 
 model CompanyProduct {
   id        String   @id @default(cuid())
-  workMeId  String
+  workMeId  String   @db.Uuid
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Core Identity
   name        String
-  category    String? // e.g., "Surface Ship", "Digital Service"
+  category    String?
   description String?
 
-  // Public Specs (comms-visible)
   missionRole      String?
   keyCapabilities  String[] @default([])
   limitations      String[] @default([])
-  publicSources    Json? // GAO/CRS/public summaries
+  publicSources    Json?
   productionStatus String?
 
-  // Narrative + Messaging
   leadershipFraming String?
-  talkingPoints     Json? // structured messaging blocks
+  talkingPoints     Json?
 
-  // Relations
   highlights ProductHighlight[]
   pressures  ProductPressure[]
   updates    ProductUpdate[]
@@ -1501,9 +1210,9 @@ model CompanyProduct {
 model ProductPressure {
   id        String   @id @default(cuid())
   productId String
-  source    String // "GAO", "CRS", "Congress", etc.
+  source    String
   summary   String
-  riskLevel String? // low | medium | high
+  riskLevel String?
   createdAt DateTime @default(now())
 
   product CompanyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -1531,14 +1240,13 @@ model ProductUpdate {
 // ============================================
 // EXTERNAL COMPANY PRESSURE MODEL
 // ============================================
-
 model ExternalCompanyPressure {
   id        String   @id @default(cuid())
-  workMeId  String
-  source    String // "GAO", "Congress", "Industry", etc.
-  category  String? // "Budget", "Legislation", "Testing", "Ops", etc.
+  workMeId  String   @db.Uuid
+  source    String
+  category  String?
   summary   String
-  impact    String? // optional "why this matters"
+  impact    String?
   createdAt DateTime @default(now())
 
   workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
@@ -1548,13 +1256,13 @@ model ExternalCompanyPressure {
 }
 
 // ============================================
-// WORKENGAGE MODELS (Engagement Messaging)
+// WORKENGAGE MODELS
 // ============================================
 
 model EngageTemplate {
   id        String   @id @default(cuid())
-  name      String // "Promotion Congrats", "Team Win", etc.
-  body      String // template text
+  name      String
+  body      String
   createdAt DateTime @default(now())
 
   messages EngageMessage[]
@@ -1564,9 +1272,9 @@ model EngageTemplate {
 
 model EngageMessage {
   id          String   @id @default(cuid())
-  ownerId     String
+  ownerId     String   @db.Uuid
   templateId  String?
-  highlightId String? // link to CompanyEmployeeHighlight
+  highlightId String?
   message     String
   createdAt   DateTime @default(now())
 

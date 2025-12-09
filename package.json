@@ -9,8 +9,12 @@
     "lint": "next lint",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev --name init",
-    "migrate:deploy": "prisma migrate deploy"
+    "prisma:migrate": "node scripts/safe-prisma.js migrate dev --name init",
+    "migrate:deploy": "node scripts/safe-prisma.js migrate deploy",
+    "db:push": "node scripts/safe-prisma.js db push",
+    "db:pull": "node scripts/safe-prisma.js db pull",
+    "db:status": "node scripts/safe-prisma.js migrate status",
+    "prisma:safe": "node scripts/safe-prisma.js"
   },
   "dependencies": {
     "@prisma/client": "5.14.0",

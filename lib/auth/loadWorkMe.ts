@@ -17,15 +17,16 @@ export interface WorkMeIdentity {
   firstName: string | null
   lastName: string | null
   photoUrl: string | null
-  companyUnit: string | null // From current WorkEntry
-  companyDivision: string | null // From current WorkEntry
+  companyId: string | null      // Authoritative organizational FK
+  companyUnit: string | null    // Optional string label ("SEA 05", "NAVSEA HQ")
+  division: string | null       // Optional string label
 }
 
 /**
- * Load WorkMe identity by Firebase ID
+ * Load WorkMe identity by Firebase ID (MVP1 Architecture)
  * 
- * Simplified - just returns the WorkMe object without related data
- * This avoids errors when WorkEntry/WorkProfile tables don't exist yet
+ * Returns ONLY what is stored directly on WorkMe record.
+ * NO membership resolution, NO unit lookups, NO relational navigation.
  * 
  * @param firebaseId - Firebase user ID from verifyAuth
  * @throws Error if WorkMe record not found
@@ -38,33 +39,15 @@ export async function loadWorkMe(firebaseId: string): Promise<WorkMeIdentity> {
       id: true,
       firebaseId: true,
       email: true,
-      companyUnitMemberships: {
-        take: 1, // Get first membership (primary unit)
-        include: {
-          unit: {
-            select: {
-              name: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: 'asc', // Oldest membership is likely primary
-        },
-      },
+      companyId: true,
+      companyUnit: true,
+      division: true,
     },
   })
 
   if (!workMe) {
     throw new Error('WorkMe identity not found. Please complete sign up.')
   }
-
-  // Get companyUnit from first membership
-  const primaryMembership = workMe.companyUnitMemberships[0]
-  const companyUnit = primaryMembership?.unit?.name || null
-
-  // For companyDivision, we'd need to check if the CompanyUnit has a DivisionUnit
-  // For now, return null (can be enhanced later)
-  const companyDivision = null
 
   return {
     id: workMe.id,
@@ -73,8 +56,9 @@ export async function loadWorkMe(firebaseId: string): Promise<WorkMeIdentity> {
     firstName: null, // Will be populated from WorkProfile when available
     lastName: null,  // Will be populated from WorkProfile when available
     photoUrl: null,   // Will be populated from WorkProfile when available
-    companyUnit,
-    companyDivision,
+    companyId: workMe.companyId,
+    companyUnit: workMe.companyUnit,
+    division: workMe.division,
   }
 }
 

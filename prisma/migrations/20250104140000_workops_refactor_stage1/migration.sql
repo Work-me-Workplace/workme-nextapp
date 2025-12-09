@@ -10,13 +10,24 @@ CREATE TYPE "WorkOpsStatus" AS ENUM ('open', 'in_progress', 'blocked', 'done');
 -- CreateEnum
 CREATE TYPE "WorkOpsSource" AS ENUM ('manual', 'ai', 'boss', 'system');
 
--- DropForeignKey
-ALTER TABLE "MyWorkItem" DROP CONSTRAINT IF EXISTS "MyWorkItem_outlookId_fkey";
-ALTER TABLE "MyWorkOutlook" DROP CONSTRAINT IF EXISTS "MyWorkOutlook_workMeId_fkey";
-ALTER TABLE "AdminWorkItem" DROP CONSTRAINT IF EXISTS "AdminWorkItem_workMeId_fkey";
-ALTER TABLE "WorkOutlookItem" DROP CONSTRAINT IF EXISTS "WorkOutlookItem_workMeId_fkey";
+-- DropForeignKey (only if tables exist)
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'MyWorkItem') THEN
+        ALTER TABLE "MyWorkItem" DROP CONSTRAINT IF EXISTS "MyWorkItem_outlookId_fkey";
+    END IF;
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'MyWorkOutlook') THEN
+        ALTER TABLE "MyWorkOutlook" DROP CONSTRAINT IF EXISTS "MyWorkOutlook_workMeId_fkey";
+    END IF;
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'AdminWorkItem') THEN
+        ALTER TABLE "AdminWorkItem" DROP CONSTRAINT IF EXISTS "AdminWorkItem_workMeId_fkey";
+    END IF;
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'WorkOutlookItem') THEN
+        ALTER TABLE "WorkOutlookItem" DROP CONSTRAINT IF EXISTS "WorkOutlookItem_workMeId_fkey";
+    END IF;
+END $$;
 
--- DropTable
+-- DropTable (only if tables exist)
 DROP TABLE IF EXISTS "MyWorkItem";
 DROP TABLE IF EXISTS "MyWorkOutlook";
 DROP TABLE IF EXISTS "AdminWorkItem";
@@ -25,7 +36,7 @@ DROP TABLE IF EXISTS "WorkOutlookItem";
 -- CreateTable
 CREATE TABLE "WorkOpsOutlook" (
     "id" TEXT NOT NULL,
-    "workMeId" TEXT NOT NULL,
+    "workMeId" UUID NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

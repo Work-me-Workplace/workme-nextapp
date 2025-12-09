@@ -158,38 +158,26 @@ export async function getHighlight(id: string) {
 }
 
 /**
- * List all highlights for a company unit
+ * List all highlights for a company (MVP1 Architecture)
  * 
- * ✅ CANONICAL ARCHITECTURE:
- * - Filter by employee's companyUnitId (inferred from employee)
- * - Employee → belongs to unit
- * - Highlight → belongs to employee
- * - Therefore Highlight → unit is inferred via employee
+ * Filters by companyId for organizational scoping.
+ * Optionally filters by companyUnit string label if provided.
  */
-export async function listHighlights(companyUnit: string | null) {
-  console.log('[listHighlights]', { companyUnit })
+export async function listHighlights(companyId: string | null, companyUnit?: string | null) {
+  console.log('[listHighlights]', { companyId, companyUnit })
 
-  if (!companyUnit) {
+  if (!companyId) {
     return []
   }
 
-  // First, find the CompanyUnit by name to get its ID
-  const companyUnitRecord = await prisma.companyUnit.findUnique({
-    where: { name: companyUnit },
-    select: { id: true },
-  })
-
-  if (!companyUnitRecord) {
-    return []
-  }
-
-  // ✅ Filter by employee's companyUnitId (inferred architecture)
+  // Filter by companyId (authoritative) and optional companyUnit string
   const highlights = await prisma.companyEmployeeHighlight.findMany({
     where: {
       employees: {
         some: {
           employee: {
-            companyUnitId: companyUnitRecord.id,
+            companyId,
+            ...(companyUnit ? { companyUnit } : {}),
           },
         },
       },

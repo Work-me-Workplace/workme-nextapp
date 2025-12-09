@@ -7,23 +7,24 @@ import { listHighlights } from '@/lib/server/company/highlights'
 export const dynamic = 'force-dynamic'
 
 /**
- * GET /api/company/highlights
- * List all highlights for the authenticated user's company unit
+ * GET /api/company/highlights (MVP1 Architecture)
+ * List all highlights for the authenticated user's company
  */
 export async function GET(request: NextRequest) {
   try {
     // 1. Auth - Verify Firebase token
     const { firebaseId } = await verifyAuth(request as Request)
     
-    // 2. Load WorkMe identity
+    // 2. Load WorkMe identity (MVP1 - returns companyId directly)
     const workMe = await loadWorkMe(firebaseId)
-    const { companyUnit } = workMe
+    const { companyId, companyUnit } = workMe
 
     console.log('[API GET /api/company/highlights]', {
+      companyId,
       companyUnit,
     })
 
-    const highlights = await listHighlights(companyUnit)
+    const highlights = await listHighlights(companyId, companyUnit)
 
     console.log('[API GET /api/company/highlights] SUCCESS', {
       count: highlights.length,

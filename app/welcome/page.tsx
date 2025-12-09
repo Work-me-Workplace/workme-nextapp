@@ -3,12 +3,11 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getAuth } from 'firebase/auth'
-import api from '@/lib/api'
+import { getWorkMe, refreshWorkMe, type WorkMe } from '@/lib/workme.client'
 
 export default function WelcomePage() {
   const router = useRouter()
-  const [workMeId, setWorkMeId] = useState<string | null>(null)
-  const [companyUnit, setCompanyUnit] = useState<string | null>(null)
+  const [workMe, setWorkMe] = useState<WorkMe | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Check Firebase auth - only redirect if not authenticated
@@ -20,43 +19,33 @@ export default function WelcomePage() {
     }
   }, [router])
 
+  // Hydrate WorkMe identity once on mount
   useEffect(() => {
-    // Check if user has companyUnit set
-    const checkCompanyUnit = async () => {
+    const hydrateWorkMe = async () => {
       if (typeof window === 'undefined') return
 
-      const id = localStorage.getItem('workMeId')
-      setWorkMeId(id)
-
-      // Check localStorage first
-      const storedCompanyUnit = localStorage.getItem('companyUnit')
-      if (storedCompanyUnit) {
-        setCompanyUnit(storedCompanyUnit)
+      // Check if we already have WorkMe in localStorage
+      const stored = getWorkMe()
+      if (stored) {
+        setWorkMe(stored)
         setLoading(false)
         return
       }
 
-      // If not in localStorage, check via API
+      // Fetch full WorkMe object from API
       try {
-        const response = await api.get('/api/workme/hydrate')
-        if (response.data.success && response.data.workMe) {
-          const unit = response.data.workMe.companyUnit
-          setCompanyUnit(unit)
-          if (unit) {
-            localStorage.setItem('companyUnit', unit)
-            if (response.data.workMe.companyDivision) {
-              localStorage.setItem('companyDivision', response.data.workMe.companyDivision)
-            }
-          }
+        const refreshed = await refreshWorkMe()
+        if (refreshed) {
+          setWorkMe(refreshed)
         }
       } catch (err) {
-        console.error('Failed to check company unit:', err)
+        console.error('Failed to hydrate WorkMe:', err)
       } finally {
         setLoading(false)
       }
     }
 
-    checkCompanyUnit()
+    hydrateWorkMe()
   }, [])
 
   // Don't auto-redirect - let user stay on welcome page and click continue
@@ -131,9 +120,9 @@ export default function WelcomePage() {
             </button>
           </div>
 
-        {workMeId && (
+        {workMe?.id && (
           <p className="text-white/60 text-sm">
-            Account ID: {workMeId.substring(0, 8)}...
+            Account ID: {workMe.id.substring(0, 8)}...
           </p>
         )}
       </div>
