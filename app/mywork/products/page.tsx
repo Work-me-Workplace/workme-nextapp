@@ -6,63 +6,15 @@ import { useEffect, useState } from 'react'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
-// Static output type cards configuration
-const outputTypes = [
-  {
-    value: 'workforce_comms_email',
-    name: 'Workforce Comms Email',
-    description: 'Internal workforce communications and email content',
-    icon: '📧',
-    route: '/mywork/products/email/new',
-  },
-  {
-    value: 'messaging_talking_points',
-    name: 'Messaging & Talking Points',
-    description: 'Key messages and talking points for communications',
-    icon: '💬',
-    route: '/mywork/products/talking-points/new', // Placeholder - create later
-  },
-  {
-    value: 'digital_product',
-    name: 'Digital Product',
-    description: 'Digital signage, web content, and online materials',
-    icon: '💻',
-    route: '/mywork/products/digital/new', // Placeholder - create later
-  },
-  {
-    value: 'print_product',
-    name: 'Print Product',
-    description: 'Print materials, flyers, posters, and physical deliverables',
-    icon: '🖨️',
-    route: '/mywork/products/print/new', // Placeholder - create later
-  },
-  {
-    value: 'sharepoint_update',
-    name: 'SharePoint Update',
-    description: 'SharePoint blocks and web publishing content',
-    icon: '🔗',
-    route: '/mywork/products/sharepoint/new', // Placeholder - create later
-  },
-  {
-    value: 'photo_video_support',
-    name: 'Photo & Video Support',
-    description: 'Photography and videography deliverables',
-    icon: '📸',
-    route: '/mywork/products/photo-video/new', // Placeholder - create later
-  },
-]
-
-export default function StandaloneOutputsListPage() {
+export default function ProductsPage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check for workMeId in localStorage (matching mywork page pattern)
     if (typeof window !== 'undefined') {
       const id = getWorkMeIdFromStorage()
       if (!id) {
-        // No workMeId, redirect to signin
         router.push('/signin')
       } else {
         setWorkMeId(id)
@@ -93,26 +45,13 @@ export default function StandaloneOutputsListPage() {
                 <span className="text-xl font-bold text-gray-900">Work.me</span>
               </Link>
             </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => {
-                  localStorage.clear()
-                  router.push('/signin')
-                }}
-                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Sign Out
-              </button>
-            </div>
           </div>
         </div>
       </nav>
 
       <div className="flex">
-        {/* Sidebar */}
         <SidebarNav />
 
-        {/* Main Content */}
         <main className="flex-1">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="mb-8">
@@ -122,27 +61,12 @@ export default function StandaloneOutputsListPage() {
               >
                 ← Back to MyWork
               </Link>
-              <h2 className="text-3xl font-bold text-gray-900">WorkOutputs</h2>
-              <p className="text-gray-600 mt-2">Choose the type of output you want to create</p>
+              <h2 className="text-3xl font-bold text-gray-900">Products</h2>
+              <p className="text-gray-600 mt-2">Product generation coming soon</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {outputTypes.map((outputType) => (
-                <Link
-                  key={outputType.value}
-                  href={outputType.route}
-                  className="bg-white rounded-lg shadow p-8 hover:shadow-lg transition border-2 border-transparent hover:border-blue-500"
-                >
-                  <div className="flex items-center mb-4">
-                    <div className="text-4xl mr-4">{outputType.icon}</div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900">{outputType.name}</h3>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 mb-4">{outputType.description}</p>
-                  <span className="text-blue-600 font-medium">Create →</span>
-                </Link>
-              ))}
+            <div className="bg-white rounded-lg shadow p-12 text-center">
+              <p className="text-gray-500">Product generation system is being rebuilt.</p>
             </div>
           </div>
         </main>

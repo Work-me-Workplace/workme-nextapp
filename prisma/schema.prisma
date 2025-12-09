@@ -54,17 +54,17 @@ model WorkMe {
   // Minimal reverse relations (required by Prisma, but NOT to be queried)
   // WorkMe is pure identity - work outputs reference WorkMe via createdByWorkMeId
   // These relations exist only for Prisma schema validation
-  originatedCommsOutputs       CommsOutput[]                      @relation("CommsOutputOriginator")
-  originatedObjectives         Objective[]                        @relation("ObjectiveOriginator")
-  originatedAchievements       Achievement[]                      @relation("AchievementOriginator")
-  createdWorkOutputStandalones WorkOutputStandalone[]             @relation("WorkOutputStandaloneCreator")
-  createdEmailDigestProducts   WorkForceEnduringProdEmailDigest[] @relation("EmailDigestProductCreator")
-  createdCompanyCampaigns      CompanyCampaign[]                  @relation("CompanyCampaignCreator")
-  createdCompanyImpactEvents   CompanyImpactEvent[]               @relation("CompanyImpactEventCreator")
-  createdCompanyTrainings      CompanyTraining[]                  @relation("CompanyTrainingCreator")
-  createdCompanyEvents         CompanyEvent[]                     @relation("CompanyEventCreator")
-  createdCompanyCommunities    CompanyCommunity[]                 @relation("CompanyCommunityCreator")
-  createdCompanyCareers        CompanyCareer[]                    @relation("CompanyCareerCreator")
+  originatedCommsOutputs     CommsOutput[]                      @relation("CommsOutputOriginator")
+  originatedObjectives       Objective[]                        @relation("ObjectiveOriginator")
+  originatedAchievements     Achievement[]                      @relation("AchievementOriginator")
+  createdEmailDigestProducts WorkForceEnduringProdEmailDigest[] @relation("EmailDigestProductCreator")
+  createdCompanyCampaigns    CompanyCampaign[]                  @relation("CompanyCampaignCreator")
+  createdCompanyImpactEvents CompanyImpactEvent[]               @relation("CompanyImpactEventCreator")
+  createdCompanyTrainings    CompanyTraining[]                  @relation("CompanyTrainingCreator")
+  createdCompanyEvents       CompanyEvent[]                     @relation("CompanyEventCreator")
+  createdCompanyCommunities  CompanyCommunity[]                 @relation("CompanyCommunityCreator")
+  createdCompanyCareers      CompanyCareer[]                    @relation("CompanyCareerCreator")
+  createdDigitalSignProducts ProductDigitalSign[]               @relation("ProductDigitalSignCreator")
 
   // Internal Productivity Relations
   myWorkOutlook  MyWorkOutlook?
@@ -140,6 +140,13 @@ enum CompanyUnitRole {
   MEMBER
   MANAGER
   ADMIN
+}
+
+enum DigitalSignType {
+  WORKFORCE
+  COMPANY_NEWS
+  WORKFORCE_ACHIEVEMENT
+  COMPANY_EVENT
 }
 
 // ============================================
@@ -831,45 +838,6 @@ model CompanyEmployeeCause {
 }
 
 // ============================================
-// WORKOUTPUT STANDALONE MODEL (Standalone Deliverables)
-// ============================================
-enum OutputCategory {
-  workforce_comms_email
-  messaging_talking_points
-  digital_product
-  print_product
-  sharepoint_update
-  photo_video_support
-}
-
-// ============================================
-// WORK OUTPUT STANDALONE (Legacy - preserved for backward compatibility)
-// ============================================
-model WorkOutputStandalone {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Output Category (Email, Talking Points, Digital, etc.)
-  outputType OutputCategory
-
-  title        String
-  description  String?
-  draftContent Json? // email body, notes, fields, etc.
-  metadata     Json? // any structured data needed later
-
-  companyUnit       String?
-  createdByWorkMeId String
-  createdBy         WorkMe  @relation("WorkOutputStandaloneCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-  originatorId      String? // NTK attribution
-
-  @@index([companyUnit])
-  @@index([createdByWorkMeId])
-  @@index([outputType])
-  @@index([updatedAt])
-}
-
-// ============================================
 // WORKFORCE ENDURING PRODUCTS (Clean Architecture)
 // ============================================
 
@@ -904,6 +872,94 @@ model EmailDigestEdition {
   @@index([emailDigestId])
   @@index([companyUnit])
   @@index([generatedAt])
+}
+
+// ============================================
+// DIGITAL SIGNAGE PRODUCT MODELS
+// ============================================
+
+// Master container model
+model ProductDigitalSign {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  signType DigitalSignType
+
+  companyUnit       String?
+  createdByWorkMeId String
+  createdBy         WorkMe  @relation("ProductDigitalSignCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
+  // 1:1 subtype relations
+  workforce            ProductDigitalSignWorkforce?
+  companyNews          ProductDigitalSignCompanyNews?
+  workforceAchievement ProductDigitalSignWorkforceAchievement?
+  companyEvent         ProductDigitalSignCompanyEvent?
+
+  @@index([companyUnit])
+  @@index([createdByWorkMeId])
+  @@index([signType])
+}
+
+// A. Workforce signage
+model ProductDigitalSignWorkforce {
+  id        String @id @default(cuid())
+  signageId String @unique
+
+  title      String
+  summary    String?
+  bullets    String[] @default([])
+  imageUrl   String?
+  icon       String?
+  background String?
+  footerNote String?
+
+  signage ProductDigitalSign @relation(fields: [signageId], references: [id], onDelete: Cascade)
+}
+
+// B. Company News signage
+model ProductDigitalSignCompanyNews {
+  id        String @id @default(cuid())
+  signageId String @unique
+
+  headline    String
+  subheadline String?
+  body        String?
+  link        String?
+  thumbnail   String?
+
+  signage ProductDigitalSign @relation(fields: [signageId], references: [id], onDelete: Cascade)
+}
+
+// C. Workforce Achievement signage
+model ProductDigitalSignWorkforceAchievement {
+  id        String @id @default(cuid())
+  signageId String @unique
+
+  personName  String
+  unit        String?
+  achievement String
+  details     String?
+  photoUrl    String?
+
+  signage ProductDigitalSign @relation(fields: [signageId], references: [id], onDelete: Cascade)
+}
+
+// D. Company Event signage
+model ProductDigitalSignCompanyEvent {
+  id        String @id @default(cuid())
+  signageId String @unique
+
+  eventName        String
+  eventDate        DateTime?
+  startTime        String?
+  endTime          String?
+  location         String?
+  description      String?
+  perks            String[]  @default([])
+  registrationLink String?
+
+  signage ProductDigitalSign @relation(fields: [signageId], references: [id], onDelete: Cascade)
 }
 
 // ============================================

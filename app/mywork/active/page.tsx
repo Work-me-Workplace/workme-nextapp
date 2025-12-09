@@ -97,10 +97,9 @@ export default function StuffImWorkingOnPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {activeOutputs.map(output => (
-                    <Link
+                    <div
                       key={output.id}
-                      href={`/mywork/products/${output.id}`}
-                      className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-blue-500"
+                      className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-gray-500 uppercase bg-blue-100 text-blue-800 px-2 py-1 rounded">
@@ -117,7 +116,7 @@ export default function StuffImWorkingOnPage() {
                           Due {new Date(output.deadline).toLocaleDateString()}
                         </div>
                       )}
-                    </Link>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -146,16 +145,15 @@ export default function StuffImWorkingOnPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {archivedOutputs.map(output => (
-                    <Link
+                    <div
                       key={output.id}
-                      href={`/mywork/products/${output.id}`}
-                      className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-gray-300 opacity-75"
+                      className="bg-white rounded-lg shadow p-6 border-l-4 border-gray-300 opacity-75"
                     >
                       <span className="text-xs font-medium text-gray-500 uppercase bg-gray-100 text-gray-800 px-2 py-1 rounded mb-2 inline-block">
                         {output.outputType}
                       </span>
                       <h3 className="text-lg font-semibold text-gray-900">{output.title}</h3>
-                    </Link>
+                    </div>
                   ))}
                 </div>
               </div>
