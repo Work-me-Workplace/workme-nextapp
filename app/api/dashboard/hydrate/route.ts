@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/dashboard/hydrate
  * 
