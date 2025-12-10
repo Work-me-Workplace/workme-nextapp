@@ -12,14 +12,16 @@ import { prisma } from '@/lib/prisma'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { companyId: string } }
+  { params }: { params: Promise<{ companyId: string }> }
 ) {
   try {
+    const { companyId: paramCompanyId } = await params
+    
     // 1. Get WorkMe context
     const { companyId, workMeCompanyId } = await getWorkMeContext(request)
 
     // 2. Validate companyId matches authenticated user's company
-    if (companyId !== params.companyId) {
+    if (companyId !== paramCompanyId) {
       return NextResponse.json(
         {
           success: false,

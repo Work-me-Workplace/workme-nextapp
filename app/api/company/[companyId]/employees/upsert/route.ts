@@ -13,14 +13,16 @@ import { prisma } from '@/lib/prisma'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { companyId: string } }
+  { params }: { params: Promise<{ companyId: string }> }
 ) {
   try {
+    const { companyId: paramCompanyId } = await params
+    
     // 1. Get WorkMe context (gives us workMeId, companyId, workMeCompanyId)
     const workme = await getWorkMeContext(request)
 
     // 2. Validate companyId matches authenticated user's company
-    if (workme.companyId !== params.companyId) {
+    if (workme.companyId !== paramCompanyId) {
       return NextResponse.json(
         {
           success: false,
