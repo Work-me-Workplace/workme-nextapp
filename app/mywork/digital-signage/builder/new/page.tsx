@@ -4,9 +4,11 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, Suspense } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
+import { getDashboard } from '@/lib/dashboard.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import api from '@/lib/api'
 import { DigitalSignType } from '@prisma/client'
+import { Award, CheckCircle2, FileText, Sparkles } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,6 +44,10 @@ function DigitalSignageBuilderContent() {
   const highlightId = searchParams?.get('highlightId')
   const source = searchParams?.get('source')
   const [highlight, setHighlight] = useState<Highlight | null>(null)
+  const [showHighlightSelector, setShowHighlightSelector] = useState(false)
+  const [showSourceSelection, setShowSourceSelection] = useState(false)
+  const [availableHighlights, setAvailableHighlights] = useState<any[]>([])
+  const [entryMode, setEntryMode] = useState<'highlight' | 'manual' | 'ai' | null>(null)
 
   // Form state - Workforce Achievement
   const [personName, setPersonName] = useState('')
@@ -85,12 +91,51 @@ function DigitalSignageBuilderContent() {
         router.push('/signin')
       } else {
         setWorkMeId(id)
+        
+        // If highlightId is provided, load it directly
         if (highlightId) {
           loadHighlight()
+          setEntryMode('highlight')
+        } 
+        // If source is specified, set that mode
+        else if (source === 'highlight') {
+          setShowHighlightSelector(true)
+          setEntryMode('highlight')
+          loadHighlightsFromStorage()
+        } else if (source === 'manual') {
+          setEntryMode('manual')
+        } else if (source === 'ai') {
+          setEntryMode('ai')
+        }
+        // If no source specified and no highlightId, show source selection inline
+        else if (signType && !source && !highlightId) {
+          setShowSourceSelection(true)
         }
       }
     }
-  }, [router, highlightId])
+  }, [router, highlightId, source, signType])
+
+  function loadHighlightsFromStorage() {
+    const dashboard = getDashboard()
+    if (dashboard && dashboard.highlights) {
+      setAvailableHighlights(dashboard.highlights)
+    }
+  }
+
+  function handleSelectHighlight(selectedHighlight: any) {
+    // Load full highlight details
+    setHighlight(selectedHighlight)
+    setShowHighlightSelector(false)
+    
+    // Auto-fill form if WORKFORCE_ACHIEVEMENT
+    if (signType === 'WORKFORCE_ACHIEVEMENT' && selectedHighlight.employees?.[0]?.employee) {
+      const employee = selectedHighlight.employees[0].employee
+      setPersonName(employee.fullName || '')
+      setUnit(selectedHighlight.units?.[0]?.companyUnit || '')
+      setAchievement(selectedHighlight.achievement || selectedHighlight.citationText || '')
+      setDetails(selectedHighlight.citationText || '')
+    }
+  }
 
   useEffect(() => {
     if (highlight && signType === 'WORKFORCE_ACHIEVEMENT') {
@@ -333,7 +378,164 @@ function DigitalSignageBuilderContent() {
               </div>
             )}
 
-            {source === 'ai' ? (
+            {/* Inline Source Selection - Show if no mode selected yet */}
+            {showSourceSelection && !entryMode && (
+              <div className="mb-6 bg-white rounded-lg shadow-md p-6 border-2 border-blue-200">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">How do you want to create this?</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <button
+                    onClick={() => {
+                      setShowSourceSelection(false)
+                      setShowHighlightSelector(true)
+                      setEntryMode('highlight')
+                      loadHighlightsFromStorage()
+                    }}
+                    className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition text-left"
+                  >
+                    <Award className="h-8 w-8 text-purple-600 mb-2" />
+                    <h3 className="font-semibold text-gray-900 mb-1">From Highlight</h3>
+                    <p className="text-sm text-gray-600">Use existing employee highlight</p>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowSourceSelection(false)
+                      setEntryMode('manual')
+                    }}
+                    className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition text-left"
+                  >
+                    <FileText className="h-8 w-8 text-blue-600 mb-2" />
+                    <h3 className="font-semibold text-gray-900 mb-1">Manual Entry</h3>
+                    <p className="text-sm text-gray-600">Enter information manually</p>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowSourceSelection(false)
+                      setEntryMode('ai')
+                    }}
+                    className="p-4 border-2 border-gray-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition text-left"
+                  >
+                    <Sparkles className="h-8 w-8 text-green-600 mb-2" />
+                    <h3 className="font-semibold text-gray-900 mb-1">AI Generation</h3>
+                    <p className="text-sm text-gray-600">Let AI create it</p>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Inline Highlight Selector */}
+            {showHighlightSelector && (
+              <div className="mb-6 bg-white rounded-lg shadow-md p-6 border-2 border-purple-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <Award className="h-6 w-6 text-purple-600 mr-2" />
+                    <h2 className="text-xl font-semibold text-gray-900">Select Employee Highlight</h2>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowHighlightSelector(false)
+                      router.push(`/mywork/digital-signage/builder/new?type=${signType}&source=manual`)
+                    }}
+                    className="text-sm text-gray-600 hover:text-gray-900"
+                  >
+                    Or enter manually →
+                  </button>
+                </div>
+                
+                {availableHighlights.length > 0 ? (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {availableHighlights.map((h: any) => {
+                      const employee = h.employees?.[0]?.employee
+                      const isSelected = highlight?.id === h.id
+                      
+                      return (
+                        <button
+                          key={h.id}
+                          onClick={() => handleSelectHighlight(h)}
+                          className={`w-full text-left p-4 rounded-lg border-2 transition ${
+                            isSelected
+                              ? 'border-purple-500 bg-purple-50'
+                              : 'border-gray-200 hover:border-purple-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center mb-2">
+                                {isSelected && <CheckCircle2 className="h-5 w-5 text-purple-600 mr-2" />}
+                                <h3 className="font-semibold text-gray-900">
+                                  {employee?.fullName || 'Unknown Employee'}
+                                </h3>
+                                {h.awardName && (
+                                  <span className="ml-3 text-sm text-gray-600">• {h.awardName}</span>
+                                )}
+                              </div>
+                              {h.achievement && (
+                                <p className="text-sm text-gray-700 mb-2">{h.achievement}</p>
+                              )}
+                              <p className="text-sm text-gray-600 line-clamp-2">
+                                {h.citationText?.substring(0, 150)}
+                                {h.citationText?.length > 150 ? '...' : ''}
+                              </p>
+                              {h.awardYear && (
+                                <span className="inline-block mt-2 px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                                  {h.awardYear}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Award className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600 mb-4">No highlights available</p>
+                    <button
+                      onClick={() => {
+                        setShowHighlightSelector(false)
+                        router.push(`/mywork/digital-signage/builder/new?type=${signType}&source=manual`)
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    >
+                      Enter Manually
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Show selected highlight info */}
+            {highlight && !showHighlightSelector && (
+              <div className="mb-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <CheckCircle2 className="h-5 w-5 text-purple-600 mr-2" />
+                    <span className="text-sm font-medium text-purple-900">
+                      Using highlight: {highlight.employees[0]?.employee?.fullName || 'Unknown'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setHighlight(null)
+                      setShowHighlightSelector(true)
+                      // Clear form fields
+                      setPersonName('')
+                      setUnit('')
+                      setAchievement('')
+                      setDetails('')
+                    }}
+                    className="text-sm text-purple-600 hover:text-purple-700"
+                  >
+                    Change
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Only show form if entry mode is selected or highlight is loaded */}
+            {(!showSourceSelection && (entryMode || highlight)) && (
+              <>
+            {entryMode === 'ai' ? (
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">AI Generation</h2>
                 <p className="text-gray-600 mb-4">Provide raw content and AI will create the digital signage for you.</p>
@@ -666,6 +868,7 @@ function DigitalSignageBuilderContent() {
                   </button>
                 </div>
               </div>
+              </>
             )}
           </div>
         </main>

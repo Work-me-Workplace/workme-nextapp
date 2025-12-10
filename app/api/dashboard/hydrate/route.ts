@@ -67,29 +67,21 @@ export async function GET(request: NextRequest) {
           })
         : [],
 
-      // CompanyEmployeeHighlight - scoped by companyId via employees
+      // CompanyEmployeeHighlight - scoped by companyId via employee relation
       companyId
         ? prisma.companyEmployeeHighlight.findMany({
             where: {
-              employees: {
-                some: {
-                  employee: {
-                    companyId,
-                  },
-                },
+              employee: {
+                companyId,
               },
             },
             include: {
-              employees: {
-                include: {
-                  employee: {
-                    select: {
-                      id: true,
-                      fullName: true,
-                      title: true,
-                      photoUrl: true,
-                    },
-                  },
+              employee: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  title: true,
+                  photoUrl: true,
                 },
               },
             },

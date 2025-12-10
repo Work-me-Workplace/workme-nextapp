@@ -62,7 +62,8 @@ function DigitalSignageSourceContent() {
     if (source === 'workstuff') {
       router.push(`/mycompany/workforcestuff?select=true&signType=${signType}`)
     } else if (source === 'highlight') {
-      router.push(`/mycompany/highlights?select=true&signType=${signType}`)
+      // Go directly to builder with inline selector
+      router.push(`/mywork/digital-signage/builder/new?type=${signType}&source=highlight`)
     } else if (source === 'ai') {
       router.push(`/mywork/digital-signage/builder/new?type=${signType}&source=ai`)
     } else {

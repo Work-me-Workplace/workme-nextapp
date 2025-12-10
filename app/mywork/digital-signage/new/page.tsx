@@ -54,11 +54,12 @@ function DigitalSignageNewContent() {
   }, [router])
 
   const handleTypeSelect = (type: string) => {
-    // If coming from a highlight, go directly to builder with pre-filled data
+    // Go directly to builder - source selection happens inline
     if (highlightId && type === 'WORKFORCE_ACHIEVEMENT') {
       router.push(`/mywork/digital-signage/builder/new?type=${type}&highlightId=${highlightId}`)
     } else {
-      router.push(`/mywork/digital-signage/new/source?type=${type}`)
+      // Go straight to builder - it will show inline source selection if needed
+      router.push(`/mywork/digital-signage/builder/new?type=${type}`)
     }
   }
 
