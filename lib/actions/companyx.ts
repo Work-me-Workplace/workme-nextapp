@@ -278,6 +278,7 @@ export async function createBenefits(data: {
         windowEnd: data.windowEnd || null,
         actionLink: data.fehbLink || data.fedvipLink || data.fsafedsLink || null,
         companyUnit,
+        createdByWorkMeId: workMeId,
       },
     })
 
@@ -369,6 +370,7 @@ export async function createEmployeeCause(data: {
           : undefined,
         sponsoringDepartment: data.sponsoringDepartment || null,
         companyUnit,
+        createdByWorkMeId: workMeId,
       },
     })
 
