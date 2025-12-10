@@ -1,11 +1,13 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { FileText, Sparkles, Send } from 'lucide-react'
 import api from '@/lib/api'
+
+export const dynamic = 'force-dynamic'
 
 interface Template {
   id: string
@@ -24,7 +26,7 @@ interface Highlight {
   }>
 }
 
-export default function ComposePage() {
+function ComposeContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
@@ -283,6 +285,18 @@ export default function ComposePage() {
         </main>
       </div>
     </div>
+  )
+}
+
+export default function ComposePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <ComposeContent />
+    </Suspense>
   )
 }
 
