@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getAuth } from 'firebase/auth'
 import api from '@/lib/api'
+import { refreshWorkMe } from '@/lib/workme.client'
 import { User, ArrowLeft } from 'lucide-react'
 
 export default function ProfilePage() {
@@ -89,6 +90,9 @@ export default function ProfilePage() {
         title: formData.title || null,
         linkedinUrl: formData.linkedinUrl || null,
       })
+
+      // Refresh WorkMe in localStorage after profile update
+      await refreshWorkMe()
 
       // Check if user has a company, if not redirect to company setup
       const profileResponse = await api.get('/api/workme/me')

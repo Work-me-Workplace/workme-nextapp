@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
+import { getWorkMe } from '@/lib/workme.client'
 import { CheckCircle2, Circle, User, Building2, Target, Code, X } from 'lucide-react'
 
 interface OnboardingStatus {
@@ -36,22 +37,34 @@ export default function PersonalUX() {
     try {
       setLoading(true)
 
-      // Run all checks in parallel for faster loading
-      const [profileRes, objectivesRes] = await Promise.allSettled([
-        api.get('/api/workme/profile'),
-        api.get('/api/objectives/list'),
-      ])
-
-      // Check profile (WorkMe with headline and handle)
+      // First, check localStorage for WorkMe data (fastest)
+      let workMe = getWorkMe()
       let hasProfile = false
       let hasCompanyAffiliation = false
-      if (profileRes.status === 'fulfilled') {
-        const workMe = profileRes.value.data.workMe
-        // Profile is complete if headline and handle are set
-        hasProfile = !!(workMe?.headline && workMe?.handle)
-        // Check company affiliation from CompanyAffiliation
-        const companyAffiliation = profileRes.value.data.companyAffiliation
-        hasCompanyAffiliation = !!(companyAffiliation?.companyUnit || companyAffiliation?.divisionUnit)
+
+      if (workMe) {
+        // Check profile (headline and handle are set)
+        hasProfile = !!(workMe.headline && workMe.handle)
+        // Check company affiliation (companyId is set)
+        hasCompanyAffiliation = !!workMe.companyId
+      }
+
+      // If not in localStorage or incomplete, check API
+      if (!workMe || !hasProfile || !hasCompanyAffiliation) {
+        // Run all checks in parallel for faster loading
+        const [profileRes, objectivesRes] = await Promise.allSettled([
+          api.get('/api/workme/me'),
+          api.get('/api/objectives/list'),
+        ])
+
+        // Check profile (WorkMe with headline and handle)
+        if (profileRes.status === 'fulfilled') {
+          const apiWorkMe = profileRes.value.data.workMe
+          // Profile is complete if headline and handle are set
+          hasProfile = !!(apiWorkMe?.headline && apiWorkMe?.handle)
+          // Check company affiliation (companyId is set)
+          hasCompanyAffiliation = !!apiWorkMe?.companyId
+        }
       }
 
       // Check goals (Objectives)

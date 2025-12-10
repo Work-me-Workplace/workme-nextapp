@@ -8,7 +8,7 @@ import { getDashboard, refreshDashboard, type DashboardData } from '@/lib/dashbo
 import SidebarNav from '@/components/mywork/SidebarNav'
 import TopNav from '@/components/layout/TopNav'
 import PersonalUX from '@/components/personal/PersonalUX'
-import { TrendingUp, Bell, Briefcase, CheckCircle2, Sparkles, X, ArrowRight } from 'lucide-react'
+import { TrendingUp, Bell, Briefcase, CheckCircle2, X } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,14 +20,12 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [companyAssigned, setCompanyAssigned] = useState<string | null>(null)
-  const [showGrowthPrompt, setShowGrowthPrompt] = useState(false)
 
   // Check for company assignment success message
   useEffect(() => {
     const companyName = searchParams.get('companyAssigned')
     if (companyName) {
       setCompanyAssigned(companyName)
-      setShowGrowthPrompt(true)
       // Remove query param from URL without reload
       const url = new URL(window.location.href)
       url.searchParams.delete('companyAssigned')
@@ -150,7 +148,7 @@ function DashboardContent() {
                       We've assigned you to {companyAssigned}
                     </p>
                     <p className="text-sm text-green-700 mt-1">
-                      You're all set! Start your WorkMe growth journey below.
+                      You're all set!
                     </p>
                   </div>
                 </div>
@@ -160,47 +158,6 @@ function DashboardContent() {
                 >
                   <X className="h-5 w-5" />
                 </button>
-              </div>
-            )}
-
-            {/* Growth Journey Prompt */}
-            {showGrowthPrompt && (
-              <div className="mb-6 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-6 text-white">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 bg-white/20 rounded-lg">
-                      <Sparkles className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold mb-2">Start Your WorkMe Growth Journey</h3>
-                      <p className="text-blue-100 mb-4">
-                        Begin tracking your career milestones, achievements, and professional growth. 
-                        Set goals, document your progress, and build your professional identity.
-                      </p>
-                      <div className="flex gap-3">
-                        <Link
-                          href="/career"
-                          className="bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition inline-flex items-center gap-2"
-                        >
-                          <span>Enter Growth Journey</span>
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
-                        <button
-                          onClick={() => setShowGrowthPrompt(false)}
-                          className="px-6 py-2 border-2 border-white/30 text-white rounded-lg font-semibold hover:bg-white/10 transition"
-                        >
-                          Maybe Later
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowGrowthPrompt(false)}
-                    className="text-white/80 hover:text-white"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
               </div>
             )}
 

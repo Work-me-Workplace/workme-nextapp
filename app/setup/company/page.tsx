@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getAuth } from 'firebase/auth'
 import api from '@/lib/api'
+import { refreshWorkMe } from '@/lib/workme.client'
 import { Building2, Search, Plus, ArrowRight, Loader2 } from 'lucide-react'
 
 interface Company {
@@ -20,6 +21,7 @@ export default function CompanySetupPage() {
   const [searching, setSearching] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<Company[]>([])
+  const [showNoResultsPrompt, setShowNoResultsPrompt] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [createFormData, setCreateFormData] = useState({
     name: '',
@@ -48,18 +50,29 @@ export default function CompanySetupPage() {
   const handleSearch = async (query: string) => {
     if (!query.trim() || query.length < 2) {
       setSearchResults([])
+      setShowNoResultsPrompt(false)
       return
     }
 
     setSearching(true)
+    setShowNoResultsPrompt(false)
     try {
       const response = await api.post('/api/company/search', { query })
       if (response.data?.success) {
-        setSearchResults(response.data.companies || [])
+        const companies = response.data.companies || []
+        setSearchResults(companies)
+        // Show prompt if no results found and query is substantial
+        if (companies.length === 0 && query.trim().length >= 3) {
+          setShowNoResultsPrompt(true)
+        }
       }
     } catch (error: any) {
       console.error('Search failed:', error)
       setSearchResults([])
+      // Show prompt on error if query is substantial
+      if (query.trim().length >= 3) {
+        setShowNoResultsPrompt(true)
+      }
     } finally {
       setSearching(false)
     }
@@ -75,6 +88,8 @@ export default function CompanySetupPage() {
     setLoading(true)
     try {
       await api.post('/api/company/select', { companyId: company.id })
+      // Refresh WorkMe in localStorage after company selection
+      await refreshWorkMe()
       router.push(`/dashboard?companyAssigned=${encodeURIComponent(company.name)}`)
     } catch (error: any) {
       console.error('Failed to select company:', error)
@@ -84,8 +99,10 @@ export default function CompanySetupPage() {
     }
   }
 
-  const handleCreateCompany = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleCreateCompany = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault()
+    }
     
     if (!createFormData.name.trim()) {
       alert('Company name is required')
@@ -104,11 +121,49 @@ export default function CompanySetupPage() {
       if (response.data?.success && response.data?.company) {
         // Automatically select the newly created company
         await api.post('/api/company/select', { companyId: response.data.company.id })
+        // Refresh WorkMe in localStorage after company creation and selection
+        await refreshWorkMe()
         router.push(`/dashboard?companyAssigned=${encodeURIComponent(response.data.company.name)}`)
       }
     } catch (error: any) {
       console.error('Failed to create company:', error)
       alert(`Failed to create company: ${error.message || 'Please try again.'}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleQuickCreate = async () => {
+    // Pre-fill the form with search query and show create form
+    setCreateFormData({
+      name: searchQuery.trim(),
+      city: '',
+      state: '',
+      industry: '',
+    })
+    setShowNoResultsPrompt(false)
+    setShowCreateForm(true)
+  }
+
+  const handleAutoCreate = async () => {
+    // Auto-create with just the name from search query
+    setLoading(true)
+    try {
+      const response = await api.post('/api/company/create', {
+        name: searchQuery.trim(),
+      })
+
+      if (response.data?.success && response.data?.company) {
+        // Automatically select the newly created company
+        await api.post('/api/company/select', { companyId: response.data.company.id })
+        // Refresh WorkMe in localStorage after company creation and selection
+        await refreshWorkMe()
+        router.push(`/dashboard?companyAssigned=${encodeURIComponent(response.data.company.name)}`)
+      }
+    } catch (error: any) {
+      console.error('Failed to auto-create company:', error)
+      // Fallback to showing create form if auto-create fails
+      handleQuickCreate()
     } finally {
       setLoading(false)
     }
@@ -169,6 +224,38 @@ export default function CompanySetupPage() {
                     </div>
                   </button>
                 ))}
+              </div>
+            )}
+
+            {/* No Results Prompt */}
+            {showNoResultsPrompt && !searching && searchQuery.trim().length >= 3 && (
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-gray-700 mb-3">
+                  No company found matching <span className="font-semibold">"{searchQuery}"</span>
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleAutoCreate}
+                    disabled={loading}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                        Creating...
+                      </>
+                    ) : (
+                      `Create "${searchQuery}"`
+                    )}
+                  </button>
+                  <button
+                    onClick={handleQuickCreate}
+                    disabled={loading}
+                    className="px-4 py-2 border border-blue-300 text-blue-700 rounded-lg font-medium hover:bg-blue-100 transition disabled:opacity-50"
+                  >
+                    Add Details
+                  </button>
+                </div>
               </div>
             )}
 
@@ -246,6 +333,7 @@ export default function CompanySetupPage() {
                   type="button"
                   onClick={() => {
                     setShowCreateForm(false)
+                    setShowNoResultsPrompt(false)
                     setCreateFormData({ name: '', city: '', state: '', industry: '' })
                   }}
                   className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition"

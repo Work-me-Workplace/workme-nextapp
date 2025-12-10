@@ -159,12 +159,12 @@ export default function EventsLandingPage() {
                 <div className="text-6xl mb-4">🎉</div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">No Events Yet</h2>
                 <p className="text-gray-600 mb-6">Create your first event to get started</p>
-                <Link
-                  href="/mywork/context/new/event"
-                  className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+                <button
+                  disabled
+                  className="inline-block px-6 py-3 bg-gray-400 text-white rounded-lg font-semibold cursor-not-allowed opacity-50"
                 >
                   + Create Your First Event
-                </Link>
+                </button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

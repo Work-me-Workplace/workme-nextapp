@@ -7,6 +7,7 @@ import SidebarNav from '@/components/mywork/SidebarNav'
 import TopNav from '@/components/layout/TopNav'
 import Link from 'next/link'
 import api from '@/lib/api'
+import { refreshWorkMe } from '@/lib/workme.client'
 import { Building2, Search, Plus, ArrowRight, Loader2, ArrowLeft, Edit } from 'lucide-react'
 
 interface Company {
@@ -98,6 +99,8 @@ export default function CompanySettingsPage() {
     setLoading(true)
     try {
       await api.post('/api/company/select', { companyId: company.id })
+      // Refresh WorkMe in localStorage after company selection
+      await refreshWorkMe()
       setCurrentCompany(company)
       setShowEditMode(false)
       setSearchQuery('')
@@ -132,6 +135,8 @@ export default function CompanySettingsPage() {
       if (response.data?.success && response.data?.company) {
         // Automatically select the newly created company
         await api.post('/api/company/select', { companyId: response.data.company.id })
+        // Refresh WorkMe in localStorage after company creation and selection
+        await refreshWorkMe()
         setCurrentCompany(response.data.company)
         setShowCreateForm(false)
         setShowEditMode(false)

@@ -53,12 +53,12 @@ export default function PromotionalProductForkPage() {
       </nav>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link 
-          href={`/mywork/context/${eventId}`} 
+        <button
+          onClick={() => window.history.back()}
           className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm"
         >
-          ← Back to Event
-        </Link>
+          ← Back
+        </button>
 
         <div className="bg-white rounded-lg shadow p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Create Promotional Product</h2>

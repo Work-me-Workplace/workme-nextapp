@@ -549,12 +549,13 @@ export default function EventManualForm({ initialData, initialEventItems, onBack
           >
             {loading ? 'Creating...' : 'Create Event'}
           </button>
-          <Link
-            href="/mywork/context/new"
+          <button
+            type="button"
+            onClick={() => window.history.back()}
             className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition"
           >
             Cancel
-          </Link>
+          </button>
         </div>
       </form>
     </div>

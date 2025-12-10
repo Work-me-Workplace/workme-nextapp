@@ -99,14 +99,6 @@ export default function CareerDashboardPage() {
                     Dashboard
                   </Link>
                 </li>
-                <li>
-                  <Link
-                    href="/mywork/context"
-                    className="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                  >
-                    WorkContext
-                  </Link>
-                </li>
               </ul>
             </div>
             <div>
