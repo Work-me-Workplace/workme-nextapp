@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
 import { Calendar, ArrowLeft, Loader2 } from 'lucide-react'
 
-export default function CreateMilestonePage() {
+function CreateMilestoneForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const platformUnitId = searchParams.get('platformUnitId')
@@ -16,10 +16,9 @@ export default function CreateMilestonePage() {
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    title: '',
     description: '',
     date: '',
-    milestoneType: 'PRODUCT',
+    milestoneType: 'DELIVERY' as 'CONTRACT_AWARDED' | 'KEEL_LAYING' | 'HULL_COMPLETION' | 'LAUNCH' | 'SEA_TRIALS' | 'DELIVERY' | 'COMMISSIONING',
     platformUnitId: platformUnitId || '',
   })
 
@@ -36,8 +35,13 @@ export default function CreateMilestonePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!formData.title) {
-      alert('Title is required')
+    if (!formData.platformUnitId) {
+      alert('Platform Unit ID is required')
+      return
+    }
+
+    if (!formData.milestoneType) {
+      alert('Milestone Type is required')
       return
     }
 
@@ -45,7 +49,6 @@ export default function CreateMilestonePage() {
       setLoading(true)
       const response = await api.post('/api/company/products/milestones/create', {
         ...formData,
-        platformUnitId: formData.platformUnitId || null,
         date: formData.date || null,
       })
 
@@ -111,18 +114,43 @@ export default function CreateMilestonePage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                Title *
+              <label htmlFor="milestoneType" className="block text-sm font-medium text-gray-700 mb-2">
+                Milestone Type *
+              </label>
+              <select
+                id="milestoneType"
+                required
+                value={formData.milestoneType}
+                onChange={(e) => setFormData({ ...formData, milestoneType: e.target.value as any })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="CONTRACT_AWARDED">Contract Awarded</option>
+                <option value="KEEL_LAYING">Keel Laying</option>
+                <option value="HULL_COMPLETION">Hull Completion</option>
+                <option value="LAUNCH">Launch</option>
+                <option value="SEA_TRIALS">Sea Trials</option>
+                <option value="DELIVERY">Delivery</option>
+                <option value="COMMISSIONING">Commissioning</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="platformUnitId" className="block text-sm font-medium text-gray-700 mb-2">
+                Platform Unit ID *
               </label>
               <input
                 type="text"
-                id="title"
+                id="platformUnitId"
                 required
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                value={formData.platformUnitId}
+                onChange={(e) => setFormData({ ...formData, platformUnitId: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., Keel Laying, Delivery, Commissioning"
+                placeholder="Unit ID"
+                disabled={!!platformUnitId}
               />
+              {platformUnitId && (
+                <p className="text-xs text-gray-500 mt-1">Linked to current unit</p>
+              )}
             </div>
 
             <div>
@@ -152,42 +180,6 @@ export default function CreateMilestonePage() {
               />
             </div>
 
-            <div>
-              <label htmlFor="milestoneType" className="block text-sm font-medium text-gray-700 mb-2">
-                Milestone Type
-              </label>
-              <select
-                id="milestoneType"
-                value={formData.milestoneType}
-                onChange={(e) => setFormData({ ...formData, milestoneType: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="PRODUCT">Product</option>
-                <option value="WORKFORCE">Workforce</option>
-                <option value="INNOVATION">Innovation</option>
-              </select>
-            </div>
-
-            {formData.milestoneType === 'PRODUCT' && (
-              <div>
-                <label htmlFor="platformUnitId" className="block text-sm font-medium text-gray-700 mb-2">
-                  Platform Unit (optional)
-                </label>
-                <input
-                  type="text"
-                  id="platformUnitId"
-                  value={formData.platformUnitId}
-                  onChange={(e) => setFormData({ ...formData, platformUnitId: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Unit ID (if linking to a specific unit)"
-                  disabled={!!platformUnitId}
-                />
-                {platformUnitId && (
-                  <p className="text-xs text-gray-500 mt-1">Linked to current unit</p>
-                )}
-              </div>
-            )}
-
             <div className="flex items-center justify-end space-x-4">
               <Link
                 href={platformUnitId ? `/company/products/platform/unit/${platformUnitId}` : '/company/products'}
@@ -214,5 +206,17 @@ export default function CreateMilestonePage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function CreateMilestonePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <CreateMilestoneForm />
+    </Suspense>
   )
 }

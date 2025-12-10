@@ -24,9 +24,10 @@ export interface PlatformParseResult {
     lifecycleStatus?: string | null
   }>
   milestones: Array<{
-    title: string
+    milestoneType: 'CONTRACT_AWARDED' | 'KEEL_LAYING' | 'HULL_COMPLETION' | 'LAUNCH' | 'SEA_TRIALS' | 'DELIVERY' | 'COMMISSIONING'
     description?: string | null
     date?: string | null
+    unitHullNumber?: string | null
   }>
 }
 
@@ -61,11 +62,12 @@ Return JSON with this exact structure:
       "lifecycleStatus": "Status if mentioned (e.g., 'under construction', 'in service') or null"
     }
   ],
-  "milestones": [
+      "milestones": [
     {
-      "title": "Milestone title (e.g., 'Keel Laying', 'Delivery')",
+      "milestoneType": "One of: CONTRACT_AWARDED, KEEL_LAYING, HULL_COMPLETION, LAUNCH, SEA_TRIALS, DELIVERY, COMMISSIONING",
       "description": "Description or null",
-      "date": "ISO date string (YYYY-MM-DD) if mentioned or null"
+      "date": "ISO date string (YYYY-MM-DD) if mentioned or null",
+      "unitHullNumber": "Hull number of the unit this milestone applies to (e.g., 'SSN 804') or null if it applies to the platform"
     }
   ]
 }
@@ -112,11 +114,18 @@ ${text.substring(0, 4000)}`
         name: u.name || null,
         lifecycleStatus: u.lifecycleStatus || null,
       })) : [],
-      milestones: Array.isArray(parsed.milestones) ? parsed.milestones.map((m: any) => ({
-        title: m.title || '',
-        description: m.description || null,
-        date: m.date || null,
-      })) : [],
+      milestones: Array.isArray(parsed.milestones) ? parsed.milestones
+        .filter((m: any) => {
+          // Only include milestones with valid milestoneType
+          const validTypes = ['CONTRACT_AWARDED', 'KEEL_LAYING', 'HULL_COMPLETION', 'LAUNCH', 'SEA_TRIALS', 'DELIVERY', 'COMMISSIONING']
+          return m.milestoneType && validTypes.includes(m.milestoneType)
+        })
+        .map((m: any) => ({
+          milestoneType: m.milestoneType,
+          description: m.description || null,
+          date: m.date || null,
+          unitHullNumber: m.unitHullNumber || null,
+        })) : [],
     }
 
     return NextResponse.json({

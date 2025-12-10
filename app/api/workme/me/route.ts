@@ -72,11 +72,6 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        companyProducts: {
-          orderBy: {
-            createdAt: 'desc',
-          },
-        },
         externalCompanyPressures: {
           orderBy: {
             createdAt: 'desc',

@@ -52,19 +52,26 @@ export async function POST(request: Request) {
       }
 
       await Promise.all(
-        milestones.map((milestone: any) =>
-          prisma.companyMilestone.create({
-            data: {
-              title: milestone.title,
-              description: milestone.description || null,
-              date: milestone.date ? new Date(milestone.date) : null,
-              milestoneType: 'PRODUCT',
-              platformUnitId: milestone.unitHullNumber && unitMap[milestone.unitHullNumber]
-                ? unitMap[milestone.unitHullNumber]
-                : null,
-            },
+        milestones
+          .filter((milestone: any) => {
+            // Only create milestones that have both a unit and a valid milestoneType
+            return (
+              milestone.unitHullNumber &&
+              unitMap[milestone.unitHullNumber] &&
+              milestone.milestoneType &&
+              ['CONTRACT_AWARDED', 'KEEL_LAYING', 'HULL_COMPLETION', 'LAUNCH', 'SEA_TRIALS', 'DELIVERY', 'COMMISSIONING'].includes(milestone.milestoneType)
+            )
           })
-        )
+          .map((milestone: any) =>
+            prisma.companyMilestone.create({
+              data: {
+                description: milestone.description || null,
+                date: milestone.date ? new Date(milestone.date) : null,
+                milestoneType: milestone.milestoneType,
+                platformUnitId: unitMap[milestone.unitHullNumber],
+              },
+            })
+          )
       )
     }
 

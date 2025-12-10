@@ -7,7 +7,7 @@ import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
 import { Ship, ArrowLeft, Wand2, FileText, Loader2 } from 'lucide-react'
 
-type Mode = 'manual' | 'ai'
+type Mode = 'manual' | 'ai' | 'review'
 
 interface PlatformData {
   name: string
@@ -24,9 +24,10 @@ interface UnitData {
 }
 
 interface MilestoneData {
-  title: string
-  description: string
-  date: string
+  milestoneType: 'CONTRACT_AWARDED' | 'KEEL_LAYING' | 'HULL_COMPLETION' | 'LAUNCH' | 'SEA_TRIALS' | 'DELIVERY' | 'COMMISSIONING'
+  description: string | null
+  date: string | null
+  unitHullNumber: string | null
 }
 
 interface AIParseResult {
@@ -468,17 +469,24 @@ export default function CreatePlatformPage() {
                       <div key={idx} className="border border-gray-200 rounded-lg p-4">
                         <div className="grid grid-cols-2 gap-4 mb-3">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                            <input
-                              type="text"
-                              value={milestone.title}
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Milestone Type</label>
+                            <select
+                              value={milestone.milestoneType}
                               onChange={(e) => {
                                 const newMilestones = [...reviewData.milestones]
-                                newMilestones[idx].title = e.target.value
+                                newMilestones[idx].milestoneType = e.target.value as any
                                 setReviewData({ ...reviewData, milestones: newMilestones })
                               }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                            />
+                            >
+                              <option value="CONTRACT_AWARDED">Contract Awarded</option>
+                              <option value="KEEL_LAYING">Keel Laying</option>
+                              <option value="HULL_COMPLETION">Hull Completion</option>
+                              <option value="LAUNCH">Launch</option>
+                              <option value="SEA_TRIALS">Sea Trials</option>
+                              <option value="DELIVERY">Delivery</option>
+                              <option value="COMMISSIONING">Commissioning</option>
+                            </select>
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
@@ -494,6 +502,20 @@ export default function CreatePlatformPage() {
                             />
                           </div>
                         </div>
+                        <div className="mb-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Unit Hull Number (optional)</label>
+                          <input
+                            type="text"
+                            value={milestone.unitHullNumber || ''}
+                            onChange={(e) => {
+                              const newMilestones = [...reviewData.milestones]
+                              newMilestones[idx].unitHullNumber = e.target.value || null
+                              setReviewData({ ...reviewData, milestones: newMilestones })
+                            }}
+                            placeholder="e.g., SSN 804"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          />
+                        </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                           <textarea
@@ -501,7 +523,7 @@ export default function CreatePlatformPage() {
                             value={milestone.description || ''}
                             onChange={(e) => {
                               const newMilestones = [...reviewData.milestones]
-                              newMilestones[idx].description = e.target.value
+                              newMilestones[idx].description = e.target.value || null
                               setReviewData({ ...reviewData, milestones: newMilestones })
                             }}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
