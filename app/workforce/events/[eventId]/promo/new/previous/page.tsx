@@ -51,7 +51,7 @@ export default function PromotionalProductPreviousPage() {
       eventTimeBlock: item.eventTimeBlock || '',
       rsvpLink: item.rsvpLink || '',
     })
-    router.push(`/attention/events/${eventId}/promo/new/scratch?${queryParams.toString()}`)
+    router.push(`/workforce/events/${eventId}/promo/new/scratch?${queryParams.toString()}`)
   }
 
   return (
@@ -73,7 +73,7 @@ export default function PromotionalProductPreviousPage() {
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link 
-          href={`/attention/events/${eventId}/promo/new`} 
+          href={`/workforce/events/${eventId}/promo/new`} 
           className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm"
         >
           ← Back to Creation Options
@@ -113,7 +113,7 @@ export default function PromotionalProductPreviousPage() {
 
           <div className="flex justify-end gap-4 pt-6 mt-6 border-t">
             <Link
-              href={`/attention/events/${eventId}/promo/new`}
+              href={`/workforce/events/${eventId}/promo/new`}
               className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition"
             >
               Back

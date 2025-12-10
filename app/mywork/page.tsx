@@ -268,7 +268,7 @@ export default function WorkplaceSandboxPage() {
                     {typeContexts.map((context) => {
                       // For events, link to the new view page
                       const viewUrl = context.type === 'event' 
-                        ? `/attention/events/${context.id}/view`
+                        ? `/workforce/events/${context.id}/view`
                         : `/mywork/context/${context.id}`
                       
                       return (

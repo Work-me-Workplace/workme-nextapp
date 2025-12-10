@@ -74,7 +74,7 @@ export default function PromotionalProductAIPage() {
       })
 
       if (result.success && result.promotionalWorkItem) {
-        router.push(`/attention/events/${eventId}/promo/${result.promotionalWorkItem.id}/success`)
+        router.push(`/workforce/events/${eventId}/promo/${result.promotionalWorkItem.id}/success`)
       } else {
         alert('Failed to save: ' + (result.error || 'Unknown error'))
         setSaving(false)
@@ -390,7 +390,7 @@ export default function PromotionalProductAIPage() {
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link 
-          href={`/attention/events/${eventId}/promo/new`} 
+          href={`/workforce/events/${eventId}/promo/new`} 
           className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm"
         >
           ← Back to Creation Options
@@ -449,7 +449,7 @@ export default function PromotionalProductAIPage() {
                 {parsing ? 'Parsing...' : 'Parse With AI'}
               </button>
               <Link
-                href={`/attention/events/${eventId}/promo/new`}
+                href={`/workforce/events/${eventId}/promo/new`}
                 className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition"
               >
                 Back

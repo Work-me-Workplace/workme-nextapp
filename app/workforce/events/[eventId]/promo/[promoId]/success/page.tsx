@@ -41,13 +41,13 @@ export default function PromotionalProductSuccessPage() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href={`/attention/events/${eventId}/promo/${promoId}`}
+              href={`/workforce/events/${eventId}/promo/${promoId}`}
               className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition"
             >
               View Product
             </Link>
             <button
-              onClick={() => router.push(`/attention/events/${eventId}/promo/new`)}
+              onClick={() => router.push(`/workforce/events/${eventId}/promo/new`)}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
             >
               Create Another Product

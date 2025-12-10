@@ -41,7 +41,7 @@ export default function EventReviewScreen({ ingestionData, onBack, onEdit }: Eve
         }
         
         // Navigate directly to view page
-        router.push(`/attention/events/${eventRouterId}/view`)
+        router.push(`/workforce/events/${eventRouterId}/view`)
       } else {
         setError(response.data.error || 'Failed to save event')
         setSaving(false)

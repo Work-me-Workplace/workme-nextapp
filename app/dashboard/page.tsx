@@ -16,6 +16,7 @@ export default function DashboardPage() {
   const [workMe, setWorkMe] = useState<WorkMe | null>(null)
   const [dashboard, setDashboard] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [companyAssigned, setCompanyAssigned] = useState<string | null>(null)
   const [showGrowthPrompt, setShowGrowthPrompt] = useState(false)
 
@@ -39,48 +40,58 @@ export default function DashboardPage() {
     const hydrateDashboard = async () => {
       if (typeof window === 'undefined') return
 
-      // Phase 1: Check WorkMe hydration
-      let storedWorkMe = getWorkMe()
-      
-      if (!storedWorkMe) {
-        // Not hydrated yet - fetch from API
-        console.log('[Dashboard] Phase 1: WorkMe not in localStorage, fetching...')
-        storedWorkMe = await refreshWorkMe()
-      }
-      
-      if (!storedWorkMe) {
-        // No WorkMe found - redirect to welcome
-        console.warn('[Dashboard] WorkMe not found, redirecting to welcome')
-        router.push('/welcome')
-        return
-      }
+      try {
+        setError(null)
 
-      setWorkMe(storedWorkMe)
-      console.log('[Dashboard] Phase 1 complete:', {
-        id: storedWorkMe.id,
-        companyId: storedWorkMe.companyId,
-        companyUnit: storedWorkMe.companyUnit,
-      })
+        // Phase 1: Check WorkMe hydration
+        let storedWorkMe = getWorkMe()
+        
+        if (!storedWorkMe) {
+          // Not hydrated yet - fetch from API
+          console.log('[Dashboard] Phase 1: WorkMe not in localStorage, fetching...')
+          storedWorkMe = await refreshWorkMe()
+        }
+        
+        if (!storedWorkMe) {
+          // No WorkMe found - redirect to welcome
+          console.warn('[Dashboard] WorkMe not found, redirecting to welcome')
+          router.push('/welcome')
+          return
+        }
 
-      // Phase 2: Hydrate dashboard models
-      let storedDashboard = getDashboard()
-      
-      if (!storedDashboard) {
-        // Not hydrated yet - fetch from API
-        console.log('[Dashboard] Phase 2: Hydrating dashboard models...')
-        storedDashboard = await refreshDashboard()
-      }
-      
-      if (storedDashboard) {
-        setDashboard(storedDashboard)
-        console.log('[Dashboard] Phase 2 complete:', {
-          employees: storedDashboard.employees.length,
-          highlights: storedDashboard.highlights.length,
-          campaigns: storedDashboard.campaigns.length,
+        setWorkMe(storedWorkMe)
+        console.log('[Dashboard] Phase 1 complete:', {
+          id: storedWorkMe.id,
+          companyId: storedWorkMe.companyId,
+          companyUnit: storedWorkMe.companyUnit,
         })
+
+        // Phase 2: Hydrate dashboard models
+        let storedDashboard = getDashboard()
+        
+        if (!storedDashboard) {
+          // Not hydrated yet - fetch from API
+          console.log('[Dashboard] Phase 2: Hydrating dashboard models...')
+          storedDashboard = await refreshDashboard()
+        }
+        
+        if (storedDashboard) {
+          setDashboard(storedDashboard)
+          console.log('[Dashboard] Phase 2 complete:', {
+            employees: storedDashboard.employees.length,
+            highlights: storedDashboard.highlights.length,
+            campaigns: storedDashboard.campaigns.length,
+          })
+        } else {
+          // Dashboard hydration failed but don't block the page
+          console.warn('[Dashboard] Phase 2: Failed to hydrate dashboard, continuing with empty data')
+        }
+      } catch (err: any) {
+        console.error('[Dashboard] Hydration error:', err)
+        setError(err.message || 'Failed to load dashboard data')
+      } finally {
+        setLoading(false)
       }
-      
-      setLoading(false)
     }
 
     hydrateDashboard()
@@ -90,6 +101,23 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-bold text-red-600 mb-2">Error Loading Dashboard</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     )
   }

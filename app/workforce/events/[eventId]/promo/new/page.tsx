@@ -21,17 +21,17 @@ export default function PromotionalProductForkPage() {
   }
 
   if (mode === 'scratch') {
-    router.push(`/attention/events/${eventId}/promo/new/scratch`)
+    router.push(`/workforce/events/${eventId}/promo/new/scratch`)
     return null
   }
 
   if (mode === 'ai') {
-    router.push(`/attention/events/${eventId}/promo/new/ai`)
+    router.push(`/workforce/events/${eventId}/promo/new/ai`)
     return null
   }
 
   if (mode === 'previous') {
-    router.push(`/attention/events/${eventId}/promo/new/previous`)
+    router.push(`/workforce/events/${eventId}/promo/new/previous`)
     return null
   }
 

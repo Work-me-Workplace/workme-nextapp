@@ -195,7 +195,7 @@ export default function EventsLandingPage() {
                         {new Date(event.createdAt).toLocaleDateString()}
                       </p>
                       <Link
-                        href={`/attention/events/${event.id}/view`}
+                        href={`/workforce/events/${event.id}/view`}
                         className="px-3 py-1 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition"
                       >
                         View →

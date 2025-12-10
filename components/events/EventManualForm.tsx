@@ -110,7 +110,7 @@ export default function EventManualForm({ initialData, initialEventItems, onBack
         }
         
         // Navigate directly to view page
-        router.push(`/attention/events/${eventId}/view`)
+        router.push(`/workforce/events/${eventId}/view`)
       } else {
         alert('Failed to create Event: ' + (result.error || 'Unknown error'))
         setLoading(false)
