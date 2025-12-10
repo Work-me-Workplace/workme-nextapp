@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
 import { Ship, Calendar, Plus, Package } from 'lucide-react'
@@ -30,7 +30,8 @@ interface Unit {
   milestones: Milestone[]
 }
 
-export default function UnitDetailPage({ params }: { params: { id: string } }) {
+export default function UnitDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [unit, setUnit] = useState<Unit | null>(null)
@@ -38,21 +39,21 @@ export default function UnitDetailPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const id = getWorkMeIdFromStorage()
-      if (!id) {
+      const workMeIdValue = getWorkMeIdFromStorage()
+      if (!workMeIdValue) {
         router.push('/signin')
         return
       }
       
-      setWorkMeId(id)
+      setWorkMeId(workMeIdValue)
       loadUnit()
     }
-  }, [params.id, router])
+  }, [id, router])
 
   async function loadUnit() {
     try {
       setLoading(true)
-      const response = await api.get(`/api/company/products/platform/unit/${params.id}`)
+      const response = await api.get(`/api/company/products/platform/unit/${id}`)
       
       if (response.data.success && response.data.unit) {
         setUnit(response.data.unit)

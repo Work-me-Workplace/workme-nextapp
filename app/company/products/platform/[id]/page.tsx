@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
 import { Ship, Plus, Calendar, Package, FileText, TrendingUp } from 'lucide-react'
@@ -61,7 +61,8 @@ interface PlatformProduct {
   updates: PlatformUpdate[]
 }
 
-export default function PlatformProductDetailPage({ params }: { params: { id: string } }) {
+export default function PlatformProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [product, setProduct] = useState<PlatformProduct | null>(null)
@@ -70,21 +71,21 @@ export default function PlatformProductDetailPage({ params }: { params: { id: st
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const id = getWorkMeIdFromStorage()
-      if (!id) {
+      const workMeIdValue = getWorkMeIdFromStorage()
+      if (!workMeIdValue) {
         router.push('/signin')
         return
       }
       
-      setWorkMeId(id)
+      setWorkMeId(workMeIdValue)
       loadProduct()
     }
-  }, [params.id, router, refreshKey])
+  }, [id, router, refreshKey])
 
   async function loadProduct() {
     try {
       setLoading(true)
-      const response = await api.get(`/api/company/products/platform/${params.id}`)
+      const response = await api.get(`/api/company/products/platform/${id}`)
       
       if (response.data.success && response.data.product) {
         setProduct(response.data.product)

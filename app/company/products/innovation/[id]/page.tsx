@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
 import { Sparkles, Target, Gauge, PlayCircle, Users, CheckCircle } from 'lucide-react'
@@ -18,7 +18,8 @@ interface InnovationProduct {
   benefits: string[]
 }
 
-export default function InnovationProductDetailPage({ params }: { params: { id: string } }) {
+export default function InnovationProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [product, setProduct] = useState<InnovationProduct | null>(null)
@@ -26,21 +27,21 @@ export default function InnovationProductDetailPage({ params }: { params: { id: 
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const id = getWorkMeIdFromStorage()
-      if (!id) {
+      const workMeIdValue = getWorkMeIdFromStorage()
+      if (!workMeIdValue) {
         router.push('/signin')
         return
       }
       
-      setWorkMeId(id)
+      setWorkMeId(workMeIdValue)
       loadProduct()
     }
-  }, [params.id, router])
+  }, [id, router])
 
   async function loadProduct() {
     try {
       setLoading(true)
-      const response = await api.get(`/api/company/products/innovation/${params.id}`)
+      const response = await api.get(`/api/company/products/innovation/${id}`)
       
       if (response.data.success && response.data.product) {
         setProduct(response.data.product)
