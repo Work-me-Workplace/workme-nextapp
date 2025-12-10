@@ -91,7 +91,7 @@ export default function EventManualForm({ initialData, initialEventItems, onBack
         pocPhone: formData.pocPhone || null,
         registrationRequired: formData.registrationRequired || null,
         registrationLink: formData.registrationLink || null,
-        speakers: formData.speakers.length > 0 ? formData.speakers : null,
+        speakers: formData.speakers.length > 0 ? formData.speakers : undefined,
         foodProvided: formData.foodProvided || null,
         foodTypes: formData.foodTypes || null,
       })
