@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
     console.log('[API POST /api/highlights/create] Success', {
       highlightId: highlight.id,
       employeeCount: employeeIds.length,
-      unitCount: validated.companyUnits.length,
+      unitCount: validated.companyUnits?.length || 0,
     })
 
     return NextResponse.json({
