@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getWorkMeContext } from '@/lib/server/getWorkMeContext'
 import { prisma } from '@/lib/prisma'
-import { createEmployee } from '@/lib/employee/service'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,16 +8,11 @@ export const dynamic = 'force-dynamic'
  * POST /api/company/highlights/save
  * 
  * Save highlight and link to employee
- * Creates employee if not found (based on fullName match)
+ * Employee must already exist (created in step 1)
  * 
  * Body: {
- *   highlightId?: string (if provided, update existing highlight)
- *   employee: {
- *     fullName: string (required)
- *     title?: string
- *     email?: string
- *     unitRaw?: string
- *   }
+ *   highlightId: string (required) - ID of the highlight to update
+ *   employeeId: string (required) - ID of the employee
  *   highlight: {
  *     citationText: string (required)
  *     achievement?: string
@@ -45,11 +39,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { highlightId, employee, highlight } = body
+    const { highlightId, employeeId, highlight } = body
 
-    if (!employee || !employee.fullName) {
+    if (!highlightId) {
       return NextResponse.json(
-        { success: false, error: 'employee.fullName is required' },
+        { success: false, error: 'highlightId is required' },
+        { status: 400 }
+      )
+    }
+
+    if (!employeeId) {
+      return NextResponse.json(
+        { success: false, error: 'employeeId is required' },
         { status: 400 }
       )
     }
@@ -61,76 +62,37 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 2. Find or create employee
-    let employeeRecord = await prisma.companyEmployee.findFirst({
+    // 2. Verify employee exists and belongs to company
+    const employeeRecord = await prisma.companyEmployee.findFirst({
       where: {
+        id: employeeId,
         companyId: context.companyId,
-        fullName: {
-          equals: employee.fullName.trim(),
-          mode: 'insensitive',
-        },
       },
     })
 
     if (!employeeRecord) {
-      // Create employee if not found
-      employeeRecord = await createEmployee({
-        fullName: employee.fullName.trim(),
-        title: employee.title || null,
-        email: employee.email || null,
-        companyUnit: employee.unitRaw || null,
-      })
-    } else {
-      // Update employee if new info provided
-      if (employee.title || employee.email || employee.unitRaw) {
-        employeeRecord = await prisma.companyEmployee.update({
-          where: { id: employeeRecord.id },
-          data: {
-            ...(employee.title && { title: employee.title }),
-            ...(employee.email && { email: employee.email }),
-            ...(employee.unitRaw && { companyUnit: employee.unitRaw }),
-          },
-        })
-      }
+      return NextResponse.json(
+        { success: false, error: 'Employee not found' },
+        { status: 404 }
+      )
     }
 
-    // 3. Create or update highlight
-    let highlightRecord
-    if (highlightId) {
-      // Update existing highlight
-      highlightRecord = await prisma.companyEmployeeHighlight.update({
-        where: { id: highlightId },
-        data: {
-          citationText: highlight.citationText,
-          achievement: highlight.achievement || null,
-          narrative: highlight.narrative || null,
-          classification: highlight.classification || null,
-          awardName: highlight.awardName || null,
-          awardingAgency: highlight.awardingAgency || null,
-          awardYear: highlight.awardYear || null,
-          supervisorQuote: highlight.supervisorQuote || null,
-          photoUrl: highlight.photoUrl || null,
-          companyUnitLabel: employee.unitRaw || null,
-        },
-      })
-    } else {
-      // Create new highlight
-      highlightRecord = await prisma.companyEmployeeHighlight.create({
-        data: {
-          citationText: highlight.citationText,
-          achievement: highlight.achievement || null,
-          narrative: highlight.narrative || null,
-          classification: highlight.classification || null,
-          awardName: highlight.awardName || null,
-          awardingAgency: highlight.awardingAgency || null,
-          awardYear: highlight.awardYear || null,
-          supervisorQuote: highlight.supervisorQuote || null,
-          photoUrl: highlight.photoUrl || null,
-          companyUnitLabel: employee.unitRaw || null,
-          createdByWorkMeId: context.workMeId,
-        },
-      })
-    }
+    // 3. Update highlight (it was created in ingest step)
+    const highlightRecord = await prisma.companyEmployeeHighlight.update({
+      where: { id: highlightId },
+      data: {
+        citationText: highlight.citationText,
+        achievement: highlight.achievement || null,
+        narrative: highlight.narrative || null,
+        classification: highlight.classification || null,
+        awardName: highlight.awardName || null,
+        awardingAgency: highlight.awardingAgency || null,
+        awardYear: highlight.awardYear || null,
+        supervisorQuote: highlight.supervisorQuote || null,
+        photoUrl: highlight.photoUrl || null,
+        companyUnitLabel: employeeRecord.companyUnit || null,
+      },
+    })
 
     // 4. Link highlight to employee (upsert - won't error if already linked)
     await prisma.companyEmployeeHighlightLink.upsert({

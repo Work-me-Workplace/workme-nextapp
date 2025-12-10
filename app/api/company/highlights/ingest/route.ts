@@ -8,11 +8,14 @@ export const dynamic = 'force-dynamic'
 /**
  * POST /api/company/highlights/ingest
  * 
- * Parse highlight text with AI and extract employee + highlight information
+ * Parse highlight text with AI and extract highlight information
+ * Employee info is provided separately (employeeId, unit)
  * Creates a draft highlight in the database (can be updated later)
  * 
  * Body: {
  *   text: string (required) - raw citation text
+ *   employeeId: string (required) - ID of the employee getting the highlight
+ *   unit?: string (optional) - employee's unit
  *   photoUrl?: string (optional)
  * }
  */
@@ -29,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { text, photoUrl } = body
+    const { text, employeeId, unit, photoUrl } = body
 
     if (!text || !text.trim()) {
       return NextResponse.json(
@@ -38,10 +41,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 2. Parse with AI
+    if (!employeeId) {
+      return NextResponse.json(
+        { success: false, error: 'employeeId is required' },
+        { status: 400 }
+      )
+    }
+
+    // 2. Verify employee exists and belongs to company
+    const employee = await prisma.companyEmployee.findFirst({
+      where: {
+        id: employeeId,
+        companyId: context.companyId,
+      },
+    })
+
+    if (!employee) {
+      return NextResponse.json(
+        { success: false, error: 'Employee not found' },
+        { status: 404 }
+      )
+    }
+
+    // 3. Parse with AI (still extracts everything, but we'll ignore employee fields)
     const parsed = await parseHighlight(text.trim())
 
-    // 3. Create draft highlight in database (so we have an ID for the frontend)
+    // 4. Create draft highlight in database (use provided unit, not parsed unit)
     const highlight = await prisma.companyEmployeeHighlight.create({
       data: {
         citationText: parsed.citationText,
@@ -53,20 +78,14 @@ export async function POST(request: NextRequest) {
         awardYear: parsed.awardYear || null,
         supervisorQuote: parsed.supervisorQuote || null,
         photoUrl: photoUrl || null,
-        companyUnitLabel: parsed.unit || null,
+        companyUnitLabel: unit || employee.companyUnit || null,
         createdByWorkMeId: context.workMeId,
       },
     })
 
-    // 4. Return parsed data with highlight ID
+    // 5. Return parsed highlight data (no employee info needed - already have it)
     return NextResponse.json({
       success: true,
-      employee: {
-        fullName: parsed.fullName,
-        title: parsed.title,
-        email: null, // Not extracted from citation
-        unitRaw: parsed.unit,
-      },
       highlight: {
         id: highlight.id,
         citationText: highlight.citationText,
