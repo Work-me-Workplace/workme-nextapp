@@ -8,6 +8,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { getWorkMeCompanyId } from '@/lib/config/workmeConfig'
 
 export interface CreateEmployeeData {
   fullName: string
@@ -92,6 +93,17 @@ export async function createEmployee(data: CreateEmployeeData) {
     throw new Error('fullName is required')
   }
 
+  // Ensure workMeCompanyId is set (get it if WorkMe doesn't have it)
+  const workMeCompanyId = workMe.workMeCompanyId || await getWorkMeCompanyId()
+  
+  // If WorkMe doesn't have workMeCompanyId, backfill it
+  if (!workMe.workMeCompanyId) {
+    await prisma.workMe.update({
+      where: { id: workMe.id },
+      data: { workMeCompanyId },
+    })
+  }
+
   const employee = await prisma.companyEmployee.create({
     data: {
       fullName,
@@ -100,7 +112,7 @@ export async function createEmployee(data: CreateEmployeeData) {
       phone: data.phone || null,
       photoUrl: data.photoUrl || null,
       companyId: workMe.companyId,
-      workMeCompanyId: workMe.workMeCompanyId || workMe.companyId || '',
+      workMeCompanyId, // Silent background tag for tenant partitioning
       createdByWorkMeId: workMe.id,
       companyUnit: data.companyUnit || null,
       division: data.division || null,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyAuth } from '@/lib/server/verifyAuth'
+import { getWorkMeCompanyId } from '@/lib/config/workmeConfig'
 
 /**
  * POST /api/workme/create
@@ -41,17 +42,30 @@ export async function POST(request: NextRequest) {
         })
         console.log('✅ Updated existing WorkMe with firebaseId:', workMe.id)
       } else {
+        // Get WorkMeCompany ID for silent tenant tagging
+        const workMeCompanyId = await getWorkMeCompanyId()
+        
         // Create new WorkMe (identity only - no profile fields)
         workMe = await prisma.workMe.create({
           data: {
             firebaseId,
             email: email?.toLowerCase().trim() || '',
+            workMeCompanyId, // Silent background tag for tenant partitioning
           },
         })
         isNewUser = true
-        console.log('✅ Created new WorkMe:', workMe.id)
+        console.log('✅ Created new WorkMe:', workMe.id, 'with workMeCompanyId:', workMeCompanyId)
       }
     } else {
+      // Ensure existing WorkMe has workMeCompanyId set (backfill if missing)
+      if (!workMe.workMeCompanyId) {
+        const workMeCompanyId = await getWorkMeCompanyId()
+        workMe = await prisma.workMe.update({
+          where: { id: workMe.id },
+          data: { workMeCompanyId },
+        })
+        console.log('✅ Backfilled workMeCompanyId for existing WorkMe:', workMe.id)
+      }
       console.log('✅ Found existing WorkMe:', workMe.id)
     }
 

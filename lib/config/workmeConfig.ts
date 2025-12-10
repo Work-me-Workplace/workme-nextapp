@@ -10,7 +10,9 @@ export const WORKME_CONTAINER_ID = process.env.WORKME_CONTAINER_ID || 'workme-co
 
 /**
  * Get or create the WorkMeCompany (container) record
- * This is the single tenant entity
+ * This is the single tenant entity - silently tags all WorkMe records for tenant partitioning
+ * 
+ * @returns WorkMeCompany record with id
  */
 export async function getWorkMeCompany() {
   const { prisma } = await import('@/lib/prisma')
@@ -30,5 +32,16 @@ export async function getWorkMeCompany() {
   }
   
   return workMeCompany
+}
+
+/**
+ * Get or create WorkMeCompany and return its ID
+ * Use this when you need to set workMeCompanyId on WorkMe or CompanyEmployee records
+ * 
+ * @returns WorkMeCompany ID string
+ */
+export async function getWorkMeCompanyId(): Promise<string> {
+  const workMeCompany = await getWorkMeCompany()
+  return workMeCompany.id
 }
 

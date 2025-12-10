@@ -22,7 +22,6 @@ export const dynamic = 'force-dynamic'
  *     awardingAgency?: string
  *     awardYear?: number
  *     supervisorQuote?: string
- *     photoUrl?: string
  *   }
  * }
  */
@@ -89,7 +88,6 @@ export async function POST(request: NextRequest) {
         awardingAgency: highlight.awardingAgency || null,
         awardYear: highlight.awardYear || null,
         supervisorQuote: highlight.supervisorQuote || null,
-        photoUrl: highlight.photoUrl || null,
         companyUnitLabel: employeeRecord.companyUnit || null,
       },
     })

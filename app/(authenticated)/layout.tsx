@@ -1,6 +1,7 @@
 'use client'
 
 import { ReactNode } from 'react'
+import TopNav from '@/components/layout/TopNav'
 
 /**
  * Authenticated Route Group Layout
@@ -10,6 +11,11 @@ import { ReactNode } from 'react'
  * from app/(authenticated)/worksupport/page.tsx
  */
 export default function AuthenticatedLayout({ children }: { children: ReactNode }) {
-  return <>{children}</>
+  return (
+    <>
+      <TopNav />
+      {children}
+    </>
+  )
 }
 

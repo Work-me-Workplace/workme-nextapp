@@ -5,8 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, Suspense } from 'react'
 import { getWorkMe, refreshWorkMe, type WorkMe } from '@/lib/workme.client'
 import { getDashboard, refreshDashboard, type DashboardData } from '@/lib/dashboard.client'
-import SidebarNav from '@/components/mywork/SidebarNav'
-import TopNav from '@/components/layout/TopNav'
 import PersonalUX from '@/components/personal/PersonalUX'
 import { TrendingUp, Bell, Briefcase, CheckCircle2, X } from 'lucide-react'
 
@@ -124,15 +122,9 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <TopNav />
-
-      <div className="flex">
-        {/* Sidebar */}
-        <SidebarNav />
-
-        {/* Main Content */}
-        <main className="flex-1">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="py-8">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
               <p className="text-gray-600 mt-2">Your work overview and quick access</p>
@@ -225,7 +217,6 @@ function DashboardContent() {
             </div>
           </div>
         </main>
-      </div>
     </div>
   )
 }

@@ -6,6 +6,7 @@
  */
 
 import { prisma } from '../lib/prisma'
+import { getWorkMeCompanyId } from '../lib/config/workmeConfig'
 
 async function upsertUser(email: string, firebaseId: string) {
   try {
@@ -28,11 +29,15 @@ async function upsertUser(email: string, firebaseId: string) {
       console.log(`   WorkMe ID: ${workMe.id}`)
       console.log(`   Current Firebase ID: ${workMe.firebaseId || '(none)'}`)
       
-      // Update with new Firebase ID
+      // Ensure workMeCompanyId is set, get it if missing
+      const workMeCompanyId = workMe.workMeCompanyId || await getWorkMeCompanyId()
+      
+      // Update with new Firebase ID and workMeCompanyId if missing
       workMe = await prisma.workMe.update({
         where: { id: workMe.id },
         data: {
           firebaseId,
+          ...(workMe.workMeCompanyId ? {} : { workMeCompanyId }), // Only set if missing
         },
         select: {
           id: true,
@@ -96,10 +101,12 @@ async function upsertUser(email: string, firebaseId: string) {
 
     // Create new user
     console.log('📝 Creating new user...')
+    const workMeCompanyId = await getWorkMeCompanyId()
     workMe = await prisma.workMe.create({
       data: {
         firebaseId,
         email: email.toLowerCase().trim(),
+        workMeCompanyId, // Silent background tag for tenant partitioning
       },
       select: {
         id: true,

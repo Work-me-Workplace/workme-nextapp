@@ -16,7 +16,6 @@ export const dynamic = 'force-dynamic'
  *   text: string (required) - raw citation text
  *   employeeId: string (required) - ID of the employee getting the highlight
  *   unit?: string (optional) - employee's unit
- *   photoUrl?: string (optional)
  * }
  */
 export async function POST(request: NextRequest) {
@@ -32,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { text, employeeId, unit, photoUrl } = body
+    const { text, employeeId, unit } = body
 
     if (!text || !text.trim()) {
       return NextResponse.json(
@@ -77,7 +76,6 @@ export async function POST(request: NextRequest) {
         awardingAgency: parsed.awardingAgency || null,
         awardYear: parsed.awardYear || null,
         supervisorQuote: parsed.supervisorQuote || null,
-        photoUrl: photoUrl || null,
         companyUnitLabel: unit || employee.companyUnit || null,
         createdByWorkMeId: context.workMeId,
       },
@@ -96,7 +94,6 @@ export async function POST(request: NextRequest) {
         awardingAgency: highlight.awardingAgency,
         awardYear: highlight.awardYear,
         supervisorQuote: highlight.supervisorQuote,
-        photoUrl: highlight.photoUrl,
       },
     })
   } catch (error: any) {

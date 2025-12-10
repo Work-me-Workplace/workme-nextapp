@@ -100,7 +100,8 @@ function DigitalSignageBuilderContent() {
         setUnit(highlight.units[0]?.companyUnit || '')
         setAchievement(highlight.achievement || highlight.citationText || '')
         setDetails(highlight.citationText || '')
-        setPhotoUrl(highlight.photoUrl || '')
+        // Photo URL removed - use Asset system via DigitalSignAsset instead
+        setPhotoUrl('')
       }
     }
   }, [highlight, signType])

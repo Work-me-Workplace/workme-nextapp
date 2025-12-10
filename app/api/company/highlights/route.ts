@@ -60,7 +60,6 @@ export async function GET(request: NextRequest) {
       awardName: h.awardName,
       awardingAgency: h.awardingAgency,
       awardYear: h.awardYear,
-      photoUrl: h.photoUrl,
       createdAt: h.createdAt.toISOString(),
       updatedAt: h.updatedAt.toISOString(),
       employees: h.employees.map(e => ({

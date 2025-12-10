@@ -47,22 +47,26 @@ model WorkMe {
   // Minimal reverse relations (required by Prisma, but NOT to be queried)
   // WorkMe is pure identity - work outputs reference WorkMe via createdByWorkMeId
   // These relations exist only for Prisma schema validation
-  originatedCommsOutputs     CommsOutput[]                      @relation("CommsOutputOriginator")
-  originatedObjectives       Objective[]                        @relation("ObjectiveOriginator")
-  originatedAchievements     Achievement[]                      @relation("AchievementOriginator")
-  createdEmailDigestProducts WorkForceEnduringProdEmailDigest[] @relation("EmailDigestProductCreator")
-  createdCompanyCampaigns    CompanyCampaign[]                  @relation("CompanyCampaignCreator")
-  createdCompanyImpactEvents CompanyImpactEvent[]               @relation("CompanyImpactEventCreator")
-  createdCompanyTrainings    CompanyTraining[]                  @relation("CompanyTrainingCreator")
-  createdCompanyEvents       CompanyEvent[]                     @relation("CompanyEventCreator")
-  createdCompanyCommunities  CompanyCommunity[]                 @relation("CompanyCommunityCreator")
-  createdCompanyCareers      CompanyCareer[]                    @relation("CompanyCareerCreator")
-  createdCompanyBenefits     CompanyBenefits[]                  @relation("CompanyBenefitsCreator")
-  createdCompanyEmployeeCauses CompanyEmployeeCause[]            @relation("CompanyEmployeeCauseCreator")
-  createdDigitalSignProducts ProductDigitalSign[]               @relation("ProductDigitalSignCreator")
-  createdEmployeeHighlights  CompanyEmployeeHighlight[]         @relation("CompanyEmployeeHighlightCreator")
-  createdCompanyEmployees    CompanyEmployee[]                   @relation("CompanyEmployeeCreator")
-  engageMessages             EngageMessage[]
+  originatedCommsOutputs       CommsOutput[]                      @relation("CommsOutputOriginator")
+  originatedObjectives         Objective[]                        @relation("ObjectiveOriginator")
+  originatedAchievements       Achievement[]                      @relation("AchievementOriginator")
+  createdEmailDigestProducts   WorkForceEnduringProdEmailDigest[] @relation("EmailDigestProductCreator")
+  createdCompanyCampaigns      CompanyCampaign[]                  @relation("CompanyCampaignCreator")
+  createdCompanyImpactEvents   CompanyImpactEvent[]               @relation("CompanyImpactEventCreator")
+  createdCompanyTrainings      CompanyTraining[]                  @relation("CompanyTrainingCreator")
+  createdCompanyEvents         CompanyEvent[]                     @relation("CompanyEventCreator")
+  createdCompanyCommunities    CompanyCommunity[]                 @relation("CompanyCommunityCreator")
+  createdCompanyCareers        CompanyCareer[]                    @relation("CompanyCareerCreator")
+  createdCompanyBenefits       CompanyBenefits[]                  @relation("CompanyBenefitsCreator")
+  createdCompanyEmployeeCauses CompanyEmployeeCause[]             @relation("CompanyEmployeeCauseCreator")
+  createdDigitalSignProducts   ProductDigitalSign[]               @relation("ProductDigitalSignCreator")
+  createdEmployeeHighlights    CompanyEmployeeHighlight[]         @relation("CompanyEmployeeHighlightCreator")
+  createdCompanyEmployees      CompanyEmployee[]                  @relation("CompanyEmployeeCreator")
+  engageMessages               EngageMessage[]
+
+  // Design Work Package Relations
+  createdDesignWorkPackages  DesignWorkPackage[] @relation("DesignWorkPackageCreator")
+  assignedDesignWorkPackages DesignWorkPackage[] @relation("DesignWorkPackageAssigned")
 
   // WorkOps Relations
   workOpsOutlook WorkOpsOutlook?
@@ -70,7 +74,7 @@ model WorkMe {
   // Company Products Relations
   companyProducts          CompanyProduct[]
   externalCompanyPressures ExternalCompanyPressure[]
-  Company                  Company? @relation(fields: [companyId], references: [id])
+  Company                  Company?                  @relation(fields: [companyId], references: [id])
 
   @@index([handle])
   @@index([companyId])
@@ -122,6 +126,14 @@ enum DigitalSignType {
   COMPANY_NEWS
   WORKFORCE_ACHIEVEMENT
   COMPANY_EVENT
+}
+
+enum DesignWorkPackageStatus {
+  PENDING
+  IN_PROGRESS
+  REVIEW
+  REVISION_REQUESTED
+  COMPLETE
 }
 
 // ============================================
@@ -186,9 +198,9 @@ model Company {
   country String?
 
   // Relations
-  members      WorkMe[]
-  workplaces   Workplace[]
-  employees    CompanyEmployee[]
+  members    WorkMe[]
+  workplaces Workplace[]
+  employees  CompanyEmployee[]
 
   @@index([name])
 }
@@ -648,8 +660,8 @@ model CompanyEmployee {
   photoUrl String?
 
   // Organizational context (employee-first architecture)
-  companyId       String  // Authoritative organizational FK (required)
-  workMeCompanyId String  // Silent background tag for tenant partitioning
+  companyId       String // Authoritative organizational FK (required)
+  workMeCompanyId String // Silent background tag for tenant partitioning
   companyUnit     String? // Optional string label ("SEA 05", "NAVSEA HQ")
   division        String? // Optional string label (ignored by app logic)
 
@@ -661,8 +673,8 @@ model CompanyEmployee {
 
   // Relations
   highlights CompanyEmployeeHighlightLink[]
-  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdBy  WorkMe  @relation("CompanyEmployeeCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  company    Company                        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy  WorkMe                         @relation("CompanyEmployeeCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([workMeCompanyId])
@@ -689,7 +701,6 @@ model CompanyEmployeeHighlight {
   awardYear      Int?
 
   supervisorQuote String?
-  photoUrl        String?
 
   companyUnitLabel String?
 
@@ -776,6 +787,12 @@ model ProductDigitalSign {
   workforceAchievement ProductDigitalSignWorkforceAchievement?
   companyEvent         ProductDigitalSignCompanyEvent?
 
+  // Asset attachments (Blob-backed system)
+  assetAttachments DigitalSignAsset[]
+
+  // Design work packages linked to this digital sign
+  designPackages DesignWorkPackage[]
+
   @@index([companyUnit])
   @@index([createdByWorkMeId])
   @@index([signType])
@@ -788,7 +805,6 @@ model ProductDigitalSignWorkforce {
   title      String
   summary    String?
   bullets    String[] @default([])
-  imageUrl   String?
   icon       String?
   background String?
   footerNote String?
@@ -804,7 +820,6 @@ model ProductDigitalSignCompanyNews {
   subheadline String?
   body        String?
   link        String?
-  thumbnail   String?
 
   signage ProductDigitalSign @relation(fields: [signageId], references: [id], onDelete: Cascade)
 }
@@ -817,7 +832,6 @@ model ProductDigitalSignWorkforceAchievement {
   unit        String?
   achievement String
   details     String?
-  photoUrl    String?
 
   signage ProductDigitalSign @relation(fields: [signageId], references: [id], onDelete: Cascade)
 }
@@ -848,23 +862,84 @@ model Holiday {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  assets Asset[]
-
   @@index([slug])
 }
 
+// ============================================
+// ASSET SYSTEM (Blob-backed)
+// ============================================
 model Asset {
   id          String   @id @default(cuid())
-  url         String
-  fileName    String
-  category    String
-  holidaySlug String?
   createdAt   DateTime @default(now())
+  url         String
+  filename    String?
+  size        Int?
+  contentType String?
+  type        String? // "image", "ppt", "pdf" etc.
+  tags        String[] @default([])
 
-  holiday Holiday? @relation(fields: [holidaySlug], references: [slug], onDelete: SetNull)
+  // metadata / future fields
+  title       String?
+  description String?
 
-  @@index([category])
-  @@index([holidaySlug])
+  // Relations
+  digitalSignAttachments DigitalSignAsset[]
+  workPackageAttachments DesignWorkPackageAsset[]
+}
+
+model DigitalSignAsset {
+  id        String @id @default(cuid())
+  assetId   String
+  signageId String
+
+  asset   Asset              @relation(fields: [assetId], references: [id])
+  signage ProductDigitalSign @relation(fields: [signageId], references: [id])
+
+  @@unique([assetId, signageId])
+}
+
+// ============================================
+// DESIGN WORK PACKAGE MODEL (MVP1 Creative Workflow)
+// ============================================
+model DesignWorkPackage {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdByWorkMeId  String                  @db.Uuid
+  assignedToWorkMeId String?                 @db.Uuid
+  status             DesignWorkPackageStatus @default(PENDING)
+
+  // Tie this work package to the originating digital sign product (optional)
+  signageId String?
+  signage   ProductDigitalSign? @relation(fields: [signageId], references: [id], onDelete: SetNull)
+
+  title       String?
+  description String?
+
+  // Asset attachments (Blob-backed system)
+  assetAttachments DesignWorkPackageAsset[]
+
+  // Relations
+  createdBy  WorkMe  @relation("DesignWorkPackageCreator", fields: [createdByWorkMeId], references: [id])
+  assignedTo WorkMe? @relation("DesignWorkPackageAssigned", fields: [assignedToWorkMeId], references: [id])
+
+  @@index([createdAt])
+  @@index([createdByWorkMeId])
+  @@index([assignedToWorkMeId])
+  @@index([status])
+  @@index([signageId])
+}
+
+model DesignWorkPackageAsset {
+  id        String @id @default(cuid())
+  assetId   String
+  packageId String
+
+  asset       Asset             @relation(fields: [assetId], references: [id])
+  workPackage DesignWorkPackage @relation(fields: [packageId], references: [id])
+
+  @@unique([assetId, packageId])
 }
 
 // ============================================
@@ -1139,7 +1214,7 @@ model EcosystemPerson {
   createdAt DateTime @default(now())
 
   workMeContacts MyEcosystemContact[]
-  company        EcosystemCompany? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  company        EcosystemCompany?    @relation(fields: [companyId], references: [id], onDelete: SetNull)
 
   @@index([xHandle])
   @@index([xUserId])
