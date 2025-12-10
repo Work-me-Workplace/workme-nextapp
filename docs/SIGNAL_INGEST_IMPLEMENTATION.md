@@ -135,11 +135,13 @@ app/api/signalingest/
 
 ---
 
-### 3. POST /api/signalingest/x/feed (STUB)
+### 3. POST /api/x/feed (STUB)
 
-**Status:** 501 Not Implemented
+**Status:** Stub - Returns user's ecosystem contacts with X handles
 
 **Future:** Pull feed → AI classify → Normalize
+
+**Note:** Route consolidated from `/api/signalingest/x/feed` to `/api/x/feed` for better organization.
 
 ---
 

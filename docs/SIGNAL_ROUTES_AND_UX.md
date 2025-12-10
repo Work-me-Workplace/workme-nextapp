@@ -159,9 +159,9 @@ Form-based page for broad keyword-based web/news searches.
 Intended for live Twitter/X feed signals (high frequency, public-facing).
 
 **Current State:**
-- API endpoint exists as stub: `POST /api/signalingest/x/feed`
-- Returns `501 Not Implemented`
-- No frontend page exists
+- API endpoint exists as stub: `POST /api/x/feed`
+- Returns structured response with user's ecosystem contacts
+- Frontend page exists at `/signal/x/feed`
 - Shows as "Coming Soon" on landing page
 
 **Planned Features (Future):**
@@ -276,8 +276,8 @@ Intended for parsing CHINFO / curated news clips.
 ### Stub Endpoints (501 Not Implemented)
 
 #### 3. X Feed
-- **Route:** `POST /api/signalingest/x/feed`
-- **File:** `app/api/signalingest/x/feed/route.ts`
+- **Route:** `POST /api/x/feed`
+- **File:** `app/api/x/feed/route.ts`
 - **Status:** ❌ Stub only
 
 #### 4. Senior Email
@@ -362,7 +362,7 @@ Intended for parsing CHINFO / curated news clips.
    - Follow pattern from `/signal/note` or `/signal/google`
 
 2. **Backend:**
-   - Implement `POST /api/signalingest/x/feed/route.ts`
+   - Implement `POST /api/x/feed/route.ts`
    - Connect to Twitter/X API
    - Add AI classification
    - Normalize results
