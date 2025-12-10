@@ -18,12 +18,6 @@ export async function GET(request: NextRequest) {
     const workMe = await prisma.workMe.findUnique({
       where: { firebaseId },
       include: {
-        workMeCompany: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
         workProfile: true,
         workSkills: true,
         workEntries: {
@@ -102,7 +96,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 3. Return full WorkMe object with Firebase photoUrl/displayName added
-    // companyId is the important field; companyUnit/division are optional strings
+    // companyId is a simple field (no relations included)
     const response = {
       ...workMe,
       photoUrl: photoUrl || null, // From Firebase

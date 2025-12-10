@@ -14,8 +14,7 @@ WorkMe has **two main ingestion patterns**:
    - Promotional AI ingestion
    - Pure parsing endpoints (no DB writes)
 
-2. **Workforce Stuff Ingestion** (`/api/workforce-stuff/ingest/*` and `/api/workstuff/ingest/*`)
-   - Supreme parser (one-shot ingest)
+2. **Workforce Stuff Ingestion** (`/api/workstuff/ingest/*`)
    - Type inference
    - Progressive parsing with Redis storage
    - Training/Career specific endpoints
@@ -155,54 +154,7 @@ Raw Text + Type → OpenAI GPT-4o-mini → CVI-Ready Promotional Product Brief
 
 ## Workforce Stuff Ingestion Endpoints
 
-### 1. Supreme Parser (One-Shot Ingest)
-
-**Endpoint:** `POST /api/workforce-stuff/ingest/supreme`  
-**File:** `app/api/workforce-stuff/ingest/supreme/route.ts`
-
-**Flow:**
-```
-Raw Blob → Store in Redis → Topic Classification → High-Level Extraction → Store Proposed CompanyX in Redis
-```
-
-**Request:**
-```typescript
-{
-  rawBlob: string,
-  sourceType: string
-}
-```
-
-**Response:**
-```typescript
-{
-  success: true,
-  proposed: {
-    type: string,           // event, training, campaign, impact_event, benefits, community, career, employee_cause
-    confidence: number,     // 0.0-1.0
-    reasoning: string,
-    extractedData: object,
-    metadata: {
-      extractedAt: string,
-      sourceLength: number,
-      sourceType: string
-    }
-  }
-}
-```
-
-**Key Features:**
-- **Layer 1** of ingestion pipeline
-- Stores raw blob in Redis with 24h TTL
-- Two-step AI process:
-  1. Topic classification (8 types)
-  2. High-level extraction (type-specific fields)
-- Stores proposed CompanyX in Redis for next layer
-- Uses `gpt-4o-mini` with `response_format: { type: 'json_object' }`
-
----
-
-### 2. Type Inference
+### 1. Type Inference
 
 **Endpoint:** `POST /api/workstuff/ingest/type-infer`  
 **File:** `app/api/workstuff/ingest/type-infer/route.ts`
@@ -393,8 +345,6 @@ workme-nextapp/
 │   │   │   └── save/route.ts        # Event save to DB
 │   │   └── promotional/
 │   │       └── ai/route.ts          # Promotional AI parsing
-│   ├── workforce-stuff/ingest/
-│   │   └── supreme/route.ts         # Supreme parser (Layer 1)
 │   └── workstuff/ingest/
 │       ├── type-infer/route.ts      # Type inference (Stage 1)
 │       ├── training-hydrate/route.ts
@@ -440,9 +390,7 @@ workme-nextapp/
 
 ## Notes
 
-- **Supreme Parser** is the older "Layer 1" system
-- **Type Inference** is the newer "Stage 1" system
-- Both systems coexist (may be in transition)
+- **Type Inference** is the "Stage 1" system for workforce stuff ingestion
 - Legacy Redis functions marked as `@deprecated REMOVED`
 - All endpoints force dynamic rendering (`export const dynamic = 'force-dynamic'`)
 

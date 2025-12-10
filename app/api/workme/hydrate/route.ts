@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
  * Called by AuthProvider on auth state change
  * 
  * Returns:
- * - workMe: Full WorkMe record with companyUnit and companyDivision
+ * - workMe: Full WorkMe record
  */
 export async function GET(request: Request) {
   try {
@@ -27,12 +27,6 @@ export async function GET(request: Request) {
     const workMe = await prisma.workMe.findUnique({
       where: { firebaseId },
       include: {
-        workMeCompany: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
         workProfile: true,
         workSkills: true,
         workEntries: {
@@ -105,7 +99,7 @@ export async function GET(request: Request) {
     }
 
     // Return full WorkMe object with Firebase photoUrl/displayName
-    // companyId is important; companyUnit/division are optional strings
+    // companyId is a simple field (no relations included)
     return NextResponse.json({
       success: true,
       workMe: {

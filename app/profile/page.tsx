@@ -130,15 +130,22 @@ export default function ProfilePage() {
     try {
       // Update WorkMe identity fields only (headline, handle, title, linkedinUrl)
       // photoUrl comes from Firebase automatically, not stored in WorkMe
-      await api.put('/api/workme/profile', {
+      const response = await api.put('/api/workme/profile', {
         headline: formData.headline || null,
         handle: formData.handle,
         title: formData.currentRole || null, // currentRole in UI maps to title in WorkMe
         linkedinUrl: formData.linkedinUrl || null,
       })
 
-      // Redirect to dashboard after save
-      router.push('/dashboard')
+      // Check if user has a company, if not redirect to company setup
+      const profileResponse = await api.get('/api/workme/profile')
+      const hasCompany = profileResponse.data?.workMe?.companyId
+
+      if (hasCompany) {
+        router.push('/dashboard')
+      } else {
+        router.push('/setup/company')
+      }
     } catch (error: any) {
       console.error('Profile update failed:', error)
       alert(`Failed to update profile: ${error.message || 'Please try again.'}`)

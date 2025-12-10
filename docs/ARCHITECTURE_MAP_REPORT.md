@@ -619,11 +619,10 @@ This report provides a comprehensive map of the Work.me application architecture
 
 - ⚠️ `/api/context/*` - Works with WorkContext* models
   - Risk: If WorkforceStuffItem is created, may need new API routes
-  - Recommendation: Create `/api/workforce-stuff/*` routes that aggregate WorkContext* data
+  - Note: `/api/workforcestuff` already exists and aggregates WorkContext* data
 
 **Missing API Routes:**
-- ❌ `/api/workforce-stuff` - List unified workforce stuff items
-- ❌ `/api/workforce-stuff/[id]` - Get workforce stuff item
+- ❌ `/api/workforcestuff/[id]` - Get individual workforce stuff item (currently only list route exists)
 - ❌ `/api/worksignal` - List work signals
 - ❌ `/api/worksignal/[id]` - Get work signal
 
@@ -697,7 +696,7 @@ This report provides a comprehensive map of the Work.me application architecture
    - `/events` → Clarify routing (company vs work level)
 
 3. **Missing API Routes:**
-   - `/api/workforce-stuff/*` - For unified workforce stuff
+   - `/api/workforcestuff/[id]` - Get individual workforce stuff item (list route exists at `/api/workforcestuff`)
    - `/api/worksignal/*` - For work signals
 
 ### 7.2 Architecture Strengths
@@ -732,7 +731,7 @@ This report provides a comprehensive map of the Work.me application architecture
 6. Clarify `/events` routing
 
 **Phase 3: API Route Creation**
-1. Create `/api/workforce-stuff/*` routes
+1. Create `/api/workforcestuff/[id]` route (list route already exists)
 2. Create `/api/worksignal/*` routes
 3. Update existing routes to use new models
 

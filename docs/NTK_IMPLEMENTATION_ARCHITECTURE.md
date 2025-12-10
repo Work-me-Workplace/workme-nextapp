@@ -736,7 +736,7 @@ NTK is separate from the WorkforceComms system but shares similar goals:
 
 #### WorkStuff Ingestion
 NTK content can be ingested into the WorkStuff system:
-- API route: `/api/workforce-stuff/ingest/supreme`
+- API routes: `/api/workstuff/ingest/*`
 - Supports `sourceType: 'ntk'`
 - Specialized classification for NTK content
 

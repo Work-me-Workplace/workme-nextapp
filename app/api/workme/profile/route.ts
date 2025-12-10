@@ -7,7 +7,10 @@ import { prisma } from '@/lib/prisma'
  * GET /api/workme/profile
  * 
  * Get current authenticated user's complete profile
- * Returns: WorkMe (identity), WorkProfile (professional), CompanyAffiliation, WorkSkills, WorkEntry list, WorkOutlook summary
+ * Returns: WorkMe (identity), WorkProfile (professional), WorkSkills, WorkEntry list, WorkOutlook summary
+ * 
+ * Note: Company association is handled via /api/company/select
+ * WorkMe includes companyId as a simple field
  * 
  * NEVER throws when child objects don't exist - returns null instead
  */
@@ -22,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     // 3. Load all modules in parallel - handle table not existing gracefully
     const [workMeRecord, workProfile, workSkills, workEntries, workOutlookItems] = await Promise.all([
-      // WorkMe (identity) with company relations - always exists
+      // WorkMe (identity) - always exists
       prisma.workMe.findUnique({
         where: { id: workMeId },
         select: {
@@ -35,9 +38,6 @@ export async function GET(request: NextRequest) {
           linkedinUrl: true,
           createdAt: true,
           companyId: true,
-          companyUnit: true, // String label
-          division: true, // String label
-          Company: { select: { id: true, name: true } },
         },
       }).catch((err: any) => {
         console.error('Failed to load WorkMe:', err)
@@ -104,12 +104,6 @@ export async function GET(request: NextRequest) {
         displayName: displayName || null,
       },
       workProfile: workProfile || null,
-      companyAffiliation: workMeRecord ? {
-        companyId: workMeRecord.companyId,
-        company: workMeRecord.Company || null, // Company (HQ)
-        companyUnit: workMeRecord.companyUnit || null, // String label
-        division: workMeRecord.division || null, // String label
-      } : null,
       skills: workSkills || null,
       workEntries: workEntries || [],
       outlook: workOutlookItems || [],
@@ -130,7 +124,7 @@ export async function GET(request: NextRequest) {
  * Update WorkProfile professional fields ONLY (jobRole, industry, salaryRange, responsibilitySummary, seniority)
  * 
  * Does NOT update:
- * - CompanyAffiliation (use /api/company-affiliation/save)
+ * - Company association (use /api/company/select)
  * - WorkSkills (use /api/workskills)
  * - WorkEntry (use /api/workhistory)
  */

@@ -1,20 +1,36 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMe, refreshWorkMe, type WorkMe } from '@/lib/workme.client'
 import { getDashboard, refreshDashboard, type DashboardData } from '@/lib/dashboard.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import TopNav from '@/components/layout/TopNav'
 import PersonalUX from '@/components/personal/PersonalUX'
-import { TrendingUp, Bell, Briefcase } from 'lucide-react'
+import { TrendingUp, Bell, Briefcase, CheckCircle2, Sparkles, X, ArrowRight } from 'lucide-react'
 
 export default function DashboardPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [workMe, setWorkMe] = useState<WorkMe | null>(null)
   const [dashboard, setDashboard] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [companyAssigned, setCompanyAssigned] = useState<string | null>(null)
+  const [showGrowthPrompt, setShowGrowthPrompt] = useState(false)
+
+  // Check for company assignment success message
+  useEffect(() => {
+    const companyName = searchParams.get('companyAssigned')
+    if (companyName) {
+      setCompanyAssigned(companyName)
+      setShowGrowthPrompt(true)
+      // Remove query param from URL without reload
+      const url = new URL(window.location.href)
+      url.searchParams.delete('companyAssigned')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [searchParams])
 
   // Two-Phase Hydration:
   // Phase 1: Ensure WorkMe is hydrated (should already be from welcome)
@@ -93,6 +109,70 @@ export default function DashboardPage() {
               <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
               <p className="text-gray-600 mt-2">Your work overview and quick access</p>
             </div>
+
+            {/* Company Assignment Success Message */}
+            {companyAssigned && (
+              <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-6 w-6 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-green-900">
+                      We've assigned you to {companyAssigned}
+                    </p>
+                    <p className="text-sm text-green-700 mt-1">
+                      You're all set! Start your WorkMe growth journey below.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setCompanyAssigned(null)}
+                  className="text-green-600 hover:text-green-800"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            )}
+
+            {/* Growth Journey Prompt */}
+            {showGrowthPrompt && (
+              <div className="mb-6 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-6 text-white">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-white/20 rounded-lg">
+                      <Sparkles className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold mb-2">Start Your WorkMe Growth Journey</h3>
+                      <p className="text-blue-100 mb-4">
+                        Begin tracking your career milestones, achievements, and professional growth. 
+                        Set goals, document your progress, and build your professional identity.
+                      </p>
+                      <div className="flex gap-3">
+                        <Link
+                          href="/career"
+                          className="bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition inline-flex items-center gap-2"
+                        >
+                          <span>Enter Growth Journey</span>
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
+                        <button
+                          onClick={() => setShowGrowthPrompt(false)}
+                          className="px-6 py-2 border-2 border-white/30 text-white rounded-lg font-semibold hover:bg-white/10 transition"
+                        >
+                          Maybe Later
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowGrowthPrompt(false)}
+                    className="text-white/80 hover:text-white"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Personal UX Component */}
             <PersonalUX />

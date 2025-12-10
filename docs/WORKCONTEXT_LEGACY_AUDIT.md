@@ -21,7 +21,6 @@ Files importing from `@/lib/auth/getWorkContext` which was just deleted:
 #### API Routes (30 files):
 - `app/api/workstuff/ingest/create-training/route.ts`
 - `app/api/workstuff/ingest/career-hydrate/route.ts`
-- `app/api/workforce-stuff/ingest/supreme/route.ts`
 - `app/api/workstuff/ingest/training-hydrate/route.ts`
 - `app/api/workstuff/ingest/training-save/route.ts`
 - `app/api/workstuff/ingest/type-infer/route.ts`
