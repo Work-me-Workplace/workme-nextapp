@@ -45,6 +45,7 @@ function DigitalSignageBuilderContent() {
   const [showSourceSelection, setShowSourceSelection] = useState(false)
   const [availableHighlights, setAvailableHighlights] = useState<any[]>([])
   const [loadingHighlights, setLoadingHighlights] = useState(false)
+  const [highlightsLoadError, setHighlightsLoadError] = useState(false)
   const [entryMode, setEntryMode] = useState<'highlight' | 'manual' | 'ai' | null>(null)
 
   // Form state - Workforce Achievement
@@ -119,6 +120,8 @@ function DigitalSignageBuilderContent() {
     const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
     try {
+      setHighlightsLoadError(false)
+      
       // Try localStorage first (instant load) unless forcing refresh
       if (!forceRefresh && typeof window !== 'undefined') {
         const cached = localStorage.getItem(cacheKey)
@@ -127,14 +130,24 @@ function DigitalSignageBuilderContent() {
         if (cached && cachedTimestamp) {
           const age = Date.now() - parseInt(cachedTimestamp, 10)
           if (age < CACHE_DURATION) {
-            setAvailableHighlights(JSON.parse(cached))
-            setLoadingHighlights(false)
-            // Refresh in background if stale
-            if (age > CACHE_DURATION / 2) {
-              refreshHighlightsFromAPI(cacheKey, cacheTimestampKey, false)
+            try {
+              const highlights = JSON.parse(cached)
+              setAvailableHighlights(highlights)
+              setLoadingHighlights(false)
+              // Refresh in background if stale
+              if (age > CACHE_DURATION / 2) {
+                refreshHighlightsFromAPI(cacheKey, cacheTimestampKey, false)
+              }
+              return
+            } catch (parseError) {
+              // localStorage data corrupted, fall through to API fetch
+              console.warn('Failed to parse cached highlights, fetching from API:', parseError)
+              setHighlightsLoadError(true)
             }
-            return
           }
+        } else {
+          // No cached data, mark as error so sync button shows
+          setHighlightsLoadError(true)
         }
       }
 
@@ -142,6 +155,7 @@ function DigitalSignageBuilderContent() {
       await refreshHighlightsFromAPI(cacheKey, cacheTimestampKey, true)
     } catch (error) {
       console.error('Failed to load highlights:', error)
+      setHighlightsLoadError(true)
       setAvailableHighlights([])
       setLoadingHighlights(false)
     }
@@ -158,6 +172,7 @@ function DigitalSignageBuilderContent() {
       if (response.data.success && response.data.highlights) {
         const highlights = response.data.highlights
         setAvailableHighlights(highlights)
+        setHighlightsLoadError(false)
         
         // Cache in localStorage
         if (typeof window !== 'undefined') {
@@ -166,9 +181,11 @@ function DigitalSignageBuilderContent() {
         }
       } else {
         setAvailableHighlights([])
+        setHighlightsLoadError(true)
       }
     } catch (error: any) {
       console.error('Failed to fetch highlights from API:', error)
+      setHighlightsLoadError(true)
       setAvailableHighlights([])
     } finally {
       setLoadingHighlights(false)
@@ -484,15 +501,17 @@ function DigitalSignageBuilderContent() {
                     <h2 className="text-xl font-semibold text-gray-900">Select Employee Highlight</h2>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => loadHighlights(true)}
-                      disabled={loadingHighlights}
-                      className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Refresh highlights from database"
-                    >
-                      <RefreshCw className={`h-4 w-4 ${loadingHighlights ? 'animate-spin' : ''}`} />
-                      {loadingHighlights ? 'Loading...' : 'Sync'}
-                    </button>
+                    {(highlightsLoadError || availableHighlights.length === 0) && (
+                      <button
+                        onClick={() => loadHighlights(true)}
+                        disabled={loadingHighlights}
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Refresh highlights from database"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${loadingHighlights ? 'animate-spin' : ''}`} />
+                        {loadingHighlights ? 'Loading...' : 'Sync'}
+                      </button>
+                    )}
                     <button
                       onClick={() => {
                         setShowHighlightSelector(false)
@@ -554,17 +573,19 @@ function DigitalSignageBuilderContent() {
                   <div className="text-center py-8">
                     <Award className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                     <p className="text-gray-600 mb-4">
-                      {loadingHighlights ? 'Loading highlights...' : 'No highlights available'}
+                      {loadingHighlights ? 'Loading highlights...' : highlightsLoadError ? 'Failed to load highlights from cache' : 'No highlights available'}
                     </p>
                     <div className="flex items-center justify-center gap-3">
-                      <button
-                        onClick={() => loadHighlights(true)}
-                        disabled={loadingHighlights}
-                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <RefreshCw className={`h-4 w-4 ${loadingHighlights ? 'animate-spin' : ''}`} />
-                        {loadingHighlights ? 'Loading...' : 'Sync Highlights'}
-                      </button>
+                      {highlightsLoadError && (
+                        <button
+                          onClick={() => loadHighlights(true)}
+                          disabled={loadingHighlights}
+                          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <RefreshCw className={`h-4 w-4 ${loadingHighlights ? 'animate-spin' : ''}`} />
+                          {loadingHighlights ? 'Loading...' : 'Sync Highlights'}
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           setShowHighlightSelector(false)

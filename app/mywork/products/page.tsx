@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
-import { getDashboard, type WorkProduct } from '@/lib/dashboard.client'
+import { getDashboard, refreshDashboard, type WorkProduct } from '@/lib/dashboard.client'
+import api from '@/lib/api'
 import { Mail, Image, Monitor, FileText, Plus } from 'lucide-react'
 
 const productTypeConfig = {
@@ -54,19 +55,57 @@ export default function ProductsPage() {
       }
       
       setWorkMeId(id)
+      loadProducts()
+    }
+  }, [router])
+
+  async function loadProducts() {
+    try {
+      setLoading(true)
       
-      // Read products from localStorage (hydrated at dashboard)
+      // Try localStorage first (instant load)
       const dashboard = getDashboard()
       if (dashboard && dashboard.products) {
         setProducts(dashboard.products)
         setLoading(false)
-      } else {
-        // If not hydrated yet, redirect to dashboard to hydrate first
-        console.warn('[Products] Dashboard not hydrated, redirecting to dashboard')
-        router.push('/dashboard')
+        // Refresh in background
+        refreshProductsFromAPI()
+        return
       }
+
+      // If not in localStorage, fetch from API
+      await refreshProductsFromAPI()
+    } catch (error) {
+      console.error('Failed to load products:', error)
+      setProducts([])
+      setLoading(false)
     }
-  }, [router])
+  }
+
+  async function refreshProductsFromAPI() {
+    try {
+      // Try to refresh dashboard which includes products
+      const dashboard = await refreshDashboard()
+      if (dashboard && dashboard.products) {
+        setProducts(dashboard.products)
+        setLoading(false)
+        return
+      }
+
+      // Fallback: try direct products API
+      const response = await api.get('/api/mywork/products/list')
+      if (response.data.success && response.data.products) {
+        setProducts(response.data.products)
+      } else {
+        setProducts([])
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch products from API:', error)
+      setProducts([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Group products by type
   const productsByType = products.reduce((acc, product) => {
