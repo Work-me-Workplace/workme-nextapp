@@ -713,14 +713,14 @@ model CompanyEmployeeHighlight {
   supervisorQuote String?
 
   companyUnitLabel String?
-  companyId        String? // Direct company reference for cleaner hydration (always set by route, but nullable for flexibility)
+  companyId        String? // Direct company reference for cleaner hydration (set by route context via upsert)
 
   createdByWorkMeId String @db.Uuid
   createdBy         WorkMe @relation("CompanyEmployeeHighlightCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
   company           Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  employeeId      String? // Direct employee reference (one employee per highlight, always set on create but nullable for flexibility)
-  employee        CompanyEmployee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId      String // Direct employee reference (required - user selects employee in step 1)
+  employee        CompanyEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   engageMessages EngageMessage[]
 

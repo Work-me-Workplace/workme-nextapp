@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
       careers,
       benefits,
       employeeCauses,
+      products,
     ] = await Promise.all([
       // CompanyEmployee - scoped by companyId
       companyId
@@ -159,6 +160,58 @@ export async function GET(request: NextRequest) {
             take: 50,
           })
         : [],
+
+      // Work Products - scoped by companyUnit and createdByWorkMeId
+      companyUnit && workMe.id
+        ? Promise.all([
+            // Email Digest Products
+            prisma.workForceEnduringProdEmailDigest.findMany({
+              where: {
+                companyUnit,
+                createdByWorkMeId: workMe.id,
+              },
+              include: {
+                _count: {
+                  select: {
+                    editions: true,
+                  },
+                },
+              },
+              orderBy: { createdAt: 'desc' },
+            }),
+            // Digital Signage Products
+            prisma.productDigitalSign.findMany({
+              where: {
+                companyUnit,
+                createdByWorkMeId: workMe.id,
+              },
+              orderBy: { createdAt: 'desc' },
+            }),
+          ]).then(([emailDigests, digitalSignage]) => [
+            ...emailDigests.map(p => ({
+              id: p.id,
+              type: 'email_digest',
+              title: p.title,
+              description: p.description,
+              createdAt: p.createdAt.toISOString(),
+              updatedAt: p.createdAt.toISOString(),
+              metadata: {
+                editionsCount: p._count.editions,
+              },
+            })),
+            ...digitalSignage.map(p => ({
+              id: p.id,
+              type: 'digital_signage',
+              title: `Digital Signage - ${p.signType}`,
+              description: null,
+              createdAt: p.createdAt.toISOString(),
+              updatedAt: p.updatedAt.toISOString(),
+              metadata: {
+                signType: p.signType,
+              },
+            })),
+          ])
+        : [],
     ])
 
     return NextResponse.json({
@@ -175,6 +228,7 @@ export async function GET(request: NextRequest) {
         careers,
         benefits,
         employeeCauses,
+        products,
       },
     })
   } catch (error: any) {

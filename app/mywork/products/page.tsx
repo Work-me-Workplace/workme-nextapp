@@ -5,18 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
-import api from '@/lib/api'
+import { getDashboard, type WorkProduct } from '@/lib/dashboard.client'
 import { Mail, Image, Monitor, FileText, Plus } from 'lucide-react'
-
-interface WorkProduct {
-  id: string
-  type: 'email_digest' | 'digital_signage' | 'flyer_poster' | 'senior_leader_email'
-  title: string
-  description: string | null
-  createdAt: string
-  updatedAt: string
-  metadata?: any
-}
 
 const productTypeConfig = {
   email_digest: {
@@ -60,31 +50,23 @@ export default function ProductsPage() {
       const id = getWorkMeIdFromStorage()
       if (!id) {
         router.push('/signin')
+        return
+      }
+      
+      setWorkMeId(id)
+      
+      // Read products from localStorage (hydrated at dashboard)
+      const dashboard = getDashboard()
+      if (dashboard && dashboard.products) {
+        setProducts(dashboard.products)
+        setLoading(false)
       } else {
-        setWorkMeId(id)
-        loadProducts()
+        // If not hydrated yet, redirect to dashboard to hydrate first
+        console.warn('[Products] Dashboard not hydrated, redirecting to dashboard')
+        router.push('/dashboard')
       }
     }
   }, [router])
-
-  async function loadProducts() {
-    try {
-      setLoading(true)
-      const response = await api.get('/api/mywork/products/list')
-      
-      if (response.data.success && response.data.products) {
-        setProducts(response.data.products)
-      } else {
-        console.error('Failed to load products:', response.data.error)
-        setProducts([])
-      }
-    } catch (error) {
-      console.error('Failed to load products:', error)
-      setProducts([])
-    } finally {
-      setLoading(false)
-    }
-  }
 
   // Group products by type
   const productsByType = products.reduce((acc, product) => {

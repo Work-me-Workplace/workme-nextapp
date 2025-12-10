@@ -9,6 +9,16 @@
 
 import api from '@/lib/api'
 
+export interface WorkProduct {
+  id: string
+  type: 'email_digest' | 'digital_signage' | 'flyer_poster' | 'senior_leader_email'
+  title: string
+  description: string | null
+  createdAt: string
+  updatedAt: string
+  metadata?: any
+}
+
 export interface DashboardData {
   companyId: string | null
   companyUnit: string | null
@@ -21,6 +31,7 @@ export interface DashboardData {
   careers: any[]
   benefits: any[]
   employeeCauses: any[]
+  products: WorkProduct[]
 }
 
 const STORAGE_KEY = 'dashboard'

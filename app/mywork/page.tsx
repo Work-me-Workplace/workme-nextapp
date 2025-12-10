@@ -32,36 +32,34 @@ export default function MyWorkHubPage() {
     )
   }
 
-  const hubSections = [
+  const workCards = [
     {
-      title: 'Build Products',
-      description: 'Create new work products and outputs',
-      icon: Plus,
+      title: 'Products',
+      description: 'View and manage all your work products',
+      icon: Package,
+      href: '/mywork/products',
       color: 'blue',
-      links: [
-        { name: 'Create Product', href: '/mywork/products', description: 'Start building a new product' },
-        { name: 'Email Digest', href: '/workforce/enduring/email-digest/new', description: 'Create email digest product' },
-        { name: 'Digital Signage', href: '/mywork/digital-signage/new', description: 'Create digital display content' },
-      ],
     },
     {
-      title: 'View Products',
-      description: 'See status and manage your built products',
-      icon: Eye,
+      title: 'Create Product',
+      description: 'Start building a new work product',
+      icon: Plus,
+      href: '/mywork/products',
       color: 'green',
-      links: [
-        { name: 'All Products', href: '/mywork/products', description: 'View all your work products' },
-        { name: 'Active Work', href: '/mywork/active', description: 'See what you\'re currently working on' },
-      ],
     },
     {
-      title: 'Plan & Organize',
-      description: 'Plan future products and organize your work',
-      icon: Calendar,
+      title: 'Active Work',
+      description: 'See what you\'re currently working on',
+      icon: CheckSquare,
+      href: '/mywork/active',
       color: 'purple',
-      links: [
-        { name: 'Stuff I\'m Working On', href: '/mywork/active', description: 'Track active work items' },
-      ],
+    },
+    {
+      title: 'Events',
+      description: 'View and manage events',
+      icon: Calendar,
+      href: '/mywork/events',
+      color: 'orange',
     },
   ]
 
@@ -93,80 +91,48 @@ export default function MyWorkHubPage() {
               <p className="text-gray-600 mt-2">Your hub for building, viewing, and planning work products</p>
             </div>
 
-            {/* Hub Sections */}
+            {/* Work Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {hubSections.map((section) => {
-                const Icon = section.icon
+              {workCards.map((card) => {
+                const Icon = card.icon
                 const colorClasses = {
-                  blue: 'bg-blue-50 border-blue-200 text-blue-700',
-                  green: 'bg-green-50 border-green-200 text-green-700',
-                  purple: 'bg-purple-50 border-purple-200 text-purple-700',
+                  blue: 'border-blue-500 hover:border-blue-600 bg-blue-50',
+                  green: 'border-green-500 hover:border-green-600 bg-green-50',
+                  purple: 'border-purple-500 hover:border-purple-600 bg-purple-50',
+                  orange: 'border-orange-500 hover:border-orange-600 bg-orange-50',
+                }
+                const iconColorClasses = {
+                  blue: 'text-blue-600',
+                  green: 'text-green-600',
+                  purple: 'text-purple-600',
+                  orange: 'text-orange-600',
                 }
 
                 return (
-                  <div
-                    key={section.title}
-                    className={`bg-white rounded-lg shadow border-2 ${colorClasses[section.color as keyof typeof colorClasses]} overflow-hidden`}
+                  <Link
+                    key={card.title}
+                    href={card.href}
+                    className={`group bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-200 border-l-4 ${colorClasses[card.color as keyof typeof colorClasses]} p-6 block`}
                   >
-                    <div className="p-6 border-b-2 border-gray-200">
-                      <div className="flex items-center mb-2">
-                        <Icon className={`h-6 w-6 mr-3 text-${section.color}-600`} />
-                        <h2 className="text-xl font-bold">{section.title}</h2>
+                    <div className="flex items-start">
+                      <div className={`p-3 rounded-lg bg-white ${iconColorClasses[card.color as keyof typeof iconColorClasses]} group-hover:scale-110 transition-transform`}>
+                        <Icon className="h-6 w-6" />
                       </div>
-                      <p className="text-sm text-gray-600">{section.description}</p>
+                      <div className="ml-4 flex-1">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-gray-700 transition">
+                          {card.title}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {card.description}
+                        </p>
+                      </div>
                     </div>
-                    <div className="p-6 space-y-3">
-                      {section.links.map((link) => (
-                        <Link
-                          key={link.name}
-                          href={link.href}
-                          className="block p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-500 hover:shadow-md transition"
-                        >
-                          <h3 className="font-semibold text-gray-900 mb-1">{link.name}</h3>
-                          <p className="text-sm text-gray-600">{link.description}</p>
-                        </Link>
-                      ))}
+                    <div className="mt-4 flex items-center text-sm font-medium text-gray-500 group-hover:text-gray-700 transition">
+                      <span>View →</span>
                     </div>
-                  </div>
+                  </Link>
                 )
               })}
-            </div>
-
-            {/* Quick Actions */}
-            <div className="mt-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick Actions</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Link
-                  href="/mywork/products"
-                  className="flex items-center p-6 bg-white rounded-lg shadow hover:shadow-lg transition border-l-4 border-blue-500"
-                >
-                  <Package className="h-8 w-8 text-blue-600 mr-4" />
-                  <div>
-                    <h3 className="font-semibold text-gray-900">View All Products</h3>
-                    <p className="text-sm text-gray-600">See all your work products</p>
-                  </div>
-                </Link>
-                <Link
-                  href="/mywork/create"
-                  className="flex items-center p-6 bg-white rounded-lg shadow hover:shadow-lg transition border-l-4 border-green-500"
-                >
-                  <Plus className="h-8 w-8 text-green-600 mr-4" />
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Create New Product</h3>
-                    <p className="text-sm text-gray-600">Start building something new</p>
-                  </div>
-                </Link>
-                <Link
-                  href="/mywork/active"
-                  className="flex items-center p-6 bg-white rounded-lg shadow hover:shadow-lg transition border-l-4 border-purple-500"
-                >
-                  <CheckSquare className="h-8 w-8 text-purple-600 mr-4" />
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Active Work</h3>
-                    <p className="text-sm text-gray-600">What you're working on</p>
-                  </div>
-                </Link>
-              </div>
             </div>
           </div>
         </main>
