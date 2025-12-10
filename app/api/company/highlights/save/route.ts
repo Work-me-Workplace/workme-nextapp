@@ -85,7 +85,22 @@ export async function POST(request: NextRequest) {
            : null))
       : null
 
-    // 4. Update highlight (it was created in ingest step)
+    // 4. Verify highlight exists and belongs to company
+    const existingHighlight = await prisma.companyEmployeeHighlight.findFirst({
+      where: {
+        id: highlightId,
+        companyId: context.companyId,
+      },
+    })
+
+    if (!existingHighlight) {
+      return NextResponse.json(
+        { success: false, error: 'Highlight not found' },
+        { status: 404 }
+      )
+    }
+
+    // 5. Update highlight (it was created in ingest step)
     const highlightRecord = await prisma.companyEmployeeHighlight.update({
       where: { id: highlightId },
       data: {
@@ -94,37 +109,21 @@ export async function POST(request: NextRequest) {
         narrative: highlight.narrative || null,
         classification: classification,
         awardName: highlight.awardName || null,
+        categoryOfAward: highlight.categoryOfAward || null,
         awardingAgency: highlight.awardingAgency || null,
         awardYear: highlight.awardYear || null,
         supervisorQuote: highlight.supervisorQuote || null,
         companyUnitLabel: employeeRecord.companyUnit || null,
+        companyId: context.companyId, // Ensure companyId is set
+        employeeId: employeeRecord.id, // Ensure employeeId is set
       },
     })
 
-    // 4. Link highlight to employee (upsert - won't error if already linked)
-    await prisma.companyEmployeeHighlightLink.upsert({
-      where: {
-        employeeId_highlightId: {
-          employeeId: employeeRecord.id,
-          highlightId: highlightRecord.id,
-        },
-      },
-      create: {
-        employeeId: employeeRecord.id,
-        highlightId: highlightRecord.id,
-      },
-      update: {}, // No-op update if exists
-    })
-
-    // 5. Return full highlight with employee
+    // 6. Return full highlight with employee
     const result = await prisma.companyEmployeeHighlight.findUnique({
       where: { id: highlightRecord.id },
       include: {
-        employees: {
-          include: {
-            employee: true,
-          },
-        },
+        employee: true,
       },
     })
 

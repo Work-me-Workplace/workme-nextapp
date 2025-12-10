@@ -22,6 +22,7 @@ export interface ParsedHighlight {
   title?: string | null
   unit?: string | null
   awardName?: string | null
+  categoryOfAward?: string | null
   awardingAgency?: string | null
   awardYear?: number | null
   achievement?: string | null
@@ -45,7 +46,8 @@ Return JSON with these exact fields:
   "fullName": "Full name of the person (REQUIRED)",
   "title": "Job title, role, or billet (e.g., 'Engineer', 'TWH', 'Analyst') or null",
   "unit": "Organizational unit (e.g., 'NAVSEA 05', 'SEA 08') or null",
-  "awardName": "Name of the award (e.g., 'Rosenblatt Young Naval Engineer Award') or null",
+  "awardName": "Name of the award (e.g., 'Rosenblatt Young Naval Engineer Award', 'NAVSEA Excellence Awards') or null",
+  "categoryOfAward": "Category or subcategory of the award if applicable (e.g., 'Technical Innovation Category', 'Leadership Excellence') or null",
   "awardingAgency": "Organization giving the award (e.g., 'American Society of Naval Engineers') or null",
   "awardYear": Year as number (e.g., 2024) or null,
   "achievement": "Single-sentence distilled summary of what they achieved or null",
@@ -96,6 +98,7 @@ ${raw.substring(0, 4000)}`
       title: parsed.title || null,
       unit: parsed.unit || null,
       awardName: parsed.awardName || null,
+      categoryOfAward: parsed.categoryOfAward || null,
       awardingAgency: parsed.awardingAgency || null,
       awardYear: parsed.awardYear ? parseInt(String(parsed.awardYear)) : null,
       achievement: parsed.achievement || null,

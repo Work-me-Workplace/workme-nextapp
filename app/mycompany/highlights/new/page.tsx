@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Sparkles, ArrowLeft, Search, UserPlus, Check } from 'lucide-react'
+import { Sparkles, ArrowLeft, Search, UserPlus, Check, CheckCircle2, ExternalLink } from 'lucide-react'
 import api from '@/lib/api'
 import { HighlightClassification, classificationConfig, mapStringToClassification } from '@/lib/config/highlightClassification'
 
@@ -23,13 +23,14 @@ interface ParsedHighlight {
   narrative?: string | null
   classification?: HighlightClassification | string | null
   awardName?: string | null
+  categoryOfAward?: string | null
   awardingAgency?: string | null
   awardYear?: number | null
   supervisorQuote?: string | null
   photoUrl?: string | null
 }
 
-type Step = 'employee' | 'ingest' | 'review'
+type Step = 'employee' | 'ingest' | 'review' | 'success'
 
 export default function NewHighlightPage() {
   const router = useRouter()
@@ -233,7 +234,12 @@ export default function NewHighlightPage() {
       })
 
       if (response.data.success) {
-        router.push(`/mycompany/highlights/${highlightId}`)
+        // Clear highlights cache so it refreshes on next load
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('company-highlights')
+          localStorage.removeItem('company-highlights-timestamp')
+        }
+        setStep('success')
       } else {
         setError(response.data.error || 'Failed to save highlight')
       }
@@ -614,7 +620,19 @@ export default function NewHighlightPage() {
                             value={parsedHighlight.awardName || ''}
                             onChange={(e) => setParsedHighlight({ ...parsedHighlight, awardName: e.target.value || null })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="e.g., NAVSEA Excellence Awards"
                           />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Category of Award (Optional)</label>
+                          <input
+                            type="text"
+                            value={parsedHighlight.categoryOfAward || ''}
+                            onChange={(e) => setParsedHighlight({ ...parsedHighlight, categoryOfAward: e.target.value || null })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="e.g., Technical Innovation Category"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">For awards with multiple categories</p>
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Awarding Agency</label>
@@ -711,6 +729,81 @@ export default function NewHighlightPage() {
                         'Save Highlight'
                       )}
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Success */}
+              {step === 'success' && (
+                <div className="space-y-6">
+                  <div className="text-center py-8">
+                    <div className="flex justify-center mb-4">
+                      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                        <CheckCircle2 className="h-10 w-10 text-green-600" />
+                      </div>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Highlight Saved Successfully!</h2>
+                    <p className="text-gray-600 mb-8">
+                      The employee highlight has been saved and is now available in your company highlights.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Link
+                      href={`/mycompany/highlights/${highlightId}`}
+                      className="flex items-center justify-between p-4 border-2 border-blue-200 rounded-lg hover:bg-blue-50 transition group"
+                    >
+                      <div className="flex items-center">
+                        <Sparkles className="h-5 w-5 text-blue-600 mr-3" />
+                        <div>
+                          <div className="font-semibold text-gray-900">View Highlight</div>
+                          <div className="text-sm text-gray-500">See the saved highlight</div>
+                        </div>
+                      </div>
+                      <ExternalLink className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
+                    </Link>
+
+                    <Link
+                      href="/mycompany/highlights"
+                      className="flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg hover:bg-gray-50 transition group"
+                    >
+                      <div className="flex items-center">
+                        <Sparkles className="h-5 w-5 text-gray-600 mr-3" />
+                        <div>
+                          <div className="font-semibold text-gray-900">All Highlights</div>
+                          <div className="text-sm text-gray-500">Browse all company highlights</div>
+                        </div>
+                      </div>
+                      <ExternalLink className="h-5 w-5 text-gray-400 group-hover:text-gray-600" />
+                    </Link>
+
+                    <Link
+                      href="/mywork/products"
+                      className="flex items-center justify-between p-4 border-2 border-purple-200 rounded-lg hover:bg-purple-50 transition group"
+                    >
+                      <div className="flex items-center">
+                        <Sparkles className="h-5 w-5 text-purple-600 mr-3" />
+                        <div>
+                          <div className="font-semibold text-gray-900">Build Creative Product</div>
+                          <div className="text-sm text-gray-500">Create a product from this highlight</div>
+                        </div>
+                      </div>
+                      <ExternalLink className="h-5 w-5 text-gray-400 group-hover:text-purple-600" />
+                    </Link>
+
+                    <Link
+                      href="/mycompany/highlights/new"
+                      className="flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg hover:bg-gray-50 transition group"
+                    >
+                      <div className="flex items-center">
+                        <Sparkles className="h-5 w-5 text-gray-600 mr-3" />
+                        <div>
+                          <div className="font-semibold text-gray-900">Add Another</div>
+                          <div className="text-sm text-gray-500">Create another highlight</div>
+                        </div>
+                      </div>
+                      <ExternalLink className="h-5 w-5 text-gray-400 group-hover:text-gray-600" />
+                    </Link>
                   </div>
                 </div>
               )}

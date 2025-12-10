@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Award, Plus } from 'lucide-react'
+import { Award, Plus, RefreshCw } from 'lucide-react'
 import api from '@/lib/api'
 import { getClassificationColor, classificationConfig, HighlightClassification } from '@/lib/config/highlightClassification'
 
@@ -47,13 +47,57 @@ export default function EmployeeHighlightsPage() {
     }
   }, [router])
 
-  async function loadHighlights() {
+  async function loadHighlights(forceRefresh = false) {
+    const cacheKey = 'company-highlights'
+    const cacheTimestampKey = 'company-highlights-timestamp'
+    const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
     try {
+      // Try localStorage first (instant load) unless forcing refresh
+      if (!forceRefresh && typeof window !== 'undefined') {
+        const cached = localStorage.getItem(cacheKey)
+        const cachedTimestamp = localStorage.getItem(cacheTimestampKey)
+        
+        if (cached && cachedTimestamp) {
+          const age = Date.now() - parseInt(cachedTimestamp, 10)
+          if (age < CACHE_DURATION) {
+            setHighlights(JSON.parse(cached))
+            setLoading(false)
+            // Refresh in background if stale
+            if (age > CACHE_DURATION / 2) {
+              refreshFromAPI(cacheKey, cacheTimestampKey, false)
+            }
+            return
+          }
+        }
+      }
+
+      // If not in localStorage or forcing refresh, fetch from API
+      await refreshFromAPI(cacheKey, cacheTimestampKey, true)
+    } catch (error) {
+      console.error('Failed to load highlights:', error)
+      setHighlights([])
+      setLoading(false)
+    }
+  }
+
+  async function refreshFromAPI(cacheKey: string, cacheTimestampKey: string, showLoading: boolean) {
+    if (showLoading) {
       setLoading(true)
+    }
+
+    try {
       const response = await api.get('/api/company/highlights')
       
       if (response.data.success && response.data.highlights) {
-        setHighlights(response.data.highlights)
+        const highlights = response.data.highlights
+        setHighlights(highlights)
+        
+        // Cache in localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(cacheKey, JSON.stringify(highlights))
+          localStorage.setItem(cacheTimestampKey, Date.now().toString())
+        }
       } else {
         console.error('Failed to load highlights:', response.data.error)
         setHighlights([])
@@ -62,7 +106,9 @@ export default function EmployeeHighlightsPage() {
       console.error('Failed to load highlights:', error)
       setHighlights([])
     } finally {
-      setLoading(false)
+      if (showLoading) {
+        setLoading(false)
+      }
     }
   }
 
@@ -125,13 +171,23 @@ export default function EmployeeHighlightsPage() {
                 <h1 className="text-3xl font-bold text-gray-900">Employee Highlights</h1>
                 <p className="text-gray-600 mt-2">Award citations, recognition, and employee achievements</p>
               </div>
-              <Link
-                href="/mycompany/highlights/new"
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Add Employee Highlight
-              </Link>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => loadHighlights(true)}
+                  disabled={loading}
+                  className="flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Refresh highlights"
+                >
+                  <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+                <Link
+                  href="/mycompany/highlights/new"
+                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Add Employee Highlight
+                </Link>
+              </div>
             </div>
 
             {highlights.length > 0 ? (

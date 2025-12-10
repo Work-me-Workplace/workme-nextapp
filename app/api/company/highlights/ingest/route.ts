@@ -82,15 +82,18 @@ export async function POST(request: NextRequest) {
         narrative: parsed.narrative || null,
         classification: classification,
         awardName: parsed.awardName || null,
+        categoryOfAward: parsed.categoryOfAward || null,
         awardingAgency: parsed.awardingAgency || null,
         awardYear: parsed.awardYear || null,
         supervisorQuote: parsed.supervisorQuote || null,
         companyUnitLabel: unit || employee.companyUnit || null,
+        companyId: context.companyId, // Direct company reference for cleaner hydration
+        employeeId: employee.id, // Direct employee reference
         createdByWorkMeId: context.workMeId,
       },
     })
 
-    // 5. Return parsed highlight data (no employee info needed - already have it)
+    // 6. Return parsed highlight data (no employee info needed - already have it)
     return NextResponse.json({
       success: true,
       highlight: {
@@ -100,6 +103,7 @@ export async function POST(request: NextRequest) {
         narrative: highlight.narrative,
         classification: highlight.classification,
         awardName: highlight.awardName,
+        categoryOfAward: highlight.categoryOfAward,
         awardingAgency: highlight.awardingAgency,
         awardYear: highlight.awardYear,
         supervisorQuote: highlight.supervisorQuote,

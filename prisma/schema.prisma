@@ -201,6 +201,7 @@ model Company {
   members    WorkMe[]
   workplaces Workplace[]
   employees  CompanyEmployee[]
+  highlights CompanyEmployeeHighlight[]
 
   @@index([name])
 }
@@ -672,7 +673,7 @@ model CompanyEmployee {
   updatedAt DateTime @updatedAt
 
   // Relations
-  highlights CompanyEmployeeHighlightLink[]
+  highlights CompanyEmployeeHighlight[]
   company    Company                        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdBy  WorkMe                         @relation("CompanyEmployeeCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
@@ -705,39 +706,28 @@ model CompanyEmployeeHighlight {
   classification HighlightClassification?
 
   awardName      String?
+  categoryOfAward String? // e.g., "NAVSEA Excellence Awards - Technical Innovation Category"
   awardingAgency String?
   awardYear      Int?
 
   supervisorQuote String?
 
   companyUnitLabel String?
+  companyId        String? // Direct company reference for cleaner hydration (always set by route, but nullable for flexibility)
 
   createdByWorkMeId String @db.Uuid
   createdBy         WorkMe @relation("CompanyEmployeeHighlightCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  company           Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  employees      CompanyEmployeeHighlightLink[]
+  employeeId      String? // Direct employee reference (one employee per highlight, always set on create but nullable for flexibility)
+  employee        CompanyEmployee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
   engageMessages EngageMessage[]
 
   @@index([createdByWorkMeId])
   @@index([companyUnitLabel])
-}
-
-// ====================================================
-// JUNCTION: highlight ↔ employee
-// ====================================================
-model CompanyEmployeeHighlightLink {
-  id          String @id @default(cuid())
-  employeeId  String
-  highlightId String
-
-  createdAt DateTime @default(now())
-
-  employee  CompanyEmployee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  highlight CompanyEmployeeHighlight @relation(fields: [highlightId], references: [id], onDelete: Cascade)
-
-  @@unique([employeeId, highlightId])
+  @@index([companyId])
   @@index([employeeId])
-  @@index([highlightId])
 }
 
 // ============================================

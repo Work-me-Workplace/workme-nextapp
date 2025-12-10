@@ -21,28 +21,27 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 2. Get all highlights for this company
+    // 2. Get all highlights for this company (using direct companyId, with fallback for legacy data)
     const highlights = await prisma.companyEmployeeHighlight.findMany({
       where: {
-        employees: {
-          some: {
+        OR: [
+          { companyId: context.companyId },
+          // Fallback: if companyId is null, check if employee belongs to company
+          {
+            companyId: null,
             employee: {
               companyId: context.companyId,
             },
           },
-        },
+        ],
       },
       include: {
-        employees: {
-          include: {
-            employee: {
-              select: {
-                id: true,
-                fullName: true,
-                title: true,
-                photoUrl: true,
-              },
-            },
+        employee: {
+          select: {
+            id: true,
+            fullName: true,
+            title: true,
+            photoUrl: true,
           },
         },
       },
@@ -58,16 +57,17 @@ export async function GET(request: NextRequest) {
       achievement: h.achievement,
       classification: h.classification,
       awardName: h.awardName,
+      categoryOfAward: h.categoryOfAward,
       awardingAgency: h.awardingAgency,
       awardYear: h.awardYear,
       createdAt: h.createdAt.toISOString(),
       updatedAt: h.updatedAt.toISOString(),
-      employees: h.employees.map(e => ({
-        id: e.employee.id,
-        fullName: e.employee.fullName,
-        title: e.employee.title,
-        photoUrl: e.employee.photoUrl,
-      })),
+      employees: [{
+        id: h.employee.id,
+        fullName: h.employee.fullName,
+        title: h.employee.title,
+        photoUrl: h.employee.photoUrl,
+      }],
       companyUnits: h.companyUnitLabel ? [h.companyUnitLabel] : [],
     }))
 

@@ -33,30 +33,20 @@ export async function GET(
       )
     }
 
-    // 2. Get highlight and verify it belongs to the company
+    // 2. Get highlight and verify it belongs to the company (using direct companyId)
     const highlight = await prisma.companyEmployeeHighlight.findFirst({
       where: {
         id: highlightId,
-        employees: {
-          some: {
-            employee: {
-              companyId: context.companyId,
-            },
-          },
-        },
+        companyId: context.companyId,
       },
       include: {
-        employees: {
-          include: {
-            employee: {
-              select: {
-                id: true,
-                fullName: true,
-                title: true,
-                email: true,
-                photoUrl: true,
-              },
-            },
+        employee: {
+          select: {
+            id: true,
+            fullName: true,
+            title: true,
+            email: true,
+            photoUrl: true,
           },
         },
         createdBy: {
@@ -83,14 +73,15 @@ export async function GET(
       narrative: highlight.narrative,
       classification: highlight.classification,
       awardName: highlight.awardName,
+      categoryOfAward: highlight.categoryOfAward,
       awardingAgency: highlight.awardingAgency,
       awardYear: highlight.awardYear,
       supervisorQuote: highlight.supervisorQuote,
       createdAt: highlight.createdAt.toISOString(),
       updatedAt: highlight.updatedAt.toISOString(),
-      employees: highlight.employees.map(e => ({
-        employee: e.employee,
-      })),
+      employees: [{
+        employee: highlight.employee,
+      }],
       units: highlight.companyUnitLabel ? [{
         companyUnit: highlight.companyUnitLabel,
       }] : [],
