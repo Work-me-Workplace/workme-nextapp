@@ -7,7 +7,7 @@ import { getAuth } from 'firebase/auth'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { getWorkMe } from '@/lib/workme.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Calendar, Filter, Archive, Clock, CheckCircle, Users, AlertCircle } from 'lucide-react'
+import { Calendar, Filter, Archive, Clock, CheckCircle, Users, AlertCircle, Building2 } from 'lucide-react'
 import api from '@/lib/api'
 
 // Unified WorkforceStuffItem type
@@ -82,9 +82,11 @@ export default function WorkforceStuffPage() {
             }
             setCompanyIdNotFound(false)
             setCompanyIdLoading(false)
+            // Don't set loading to false here - let loadItems() handle it
           } else {
             // If not in localStorage, try to get from WorkMe API
             setCompanyIdLoading(true)
+            setLoading(true)
             loadCompanyId(id)
           }
         } else {
@@ -173,11 +175,19 @@ export default function WorkforceStuffPage() {
       console.error('Failed to load workforce stuff:', error)
       setItems([])
       setLoading(false)
+    } finally {
+      // Ensure loading is always set to false
+      setLoading(false)
     }
   }
 
   async function refreshFromAPI(cacheKey: string, cacheTimestampKey: string, showLoading: boolean) {
-    if (!companyId) return
+    if (!companyId) {
+      if (showLoading) {
+        setLoading(false)
+      }
+      return
+    }
 
     try {
       if (showLoading) {
@@ -194,14 +204,18 @@ export default function WorkforceStuffPage() {
         localStorage.setItem(cacheKey, JSON.stringify(response.data.items))
         localStorage.setItem(cacheTimestampKey, Date.now().toString())
       } else {
-        console.error('Failed to load items:', response.data.error)
+        console.error('Failed to load items:', response.data?.error || 'Unknown error')
         setItems([])
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch workforce stuff from API:', error)
-      // Don't clear items if we have cached data
+      // Don't clear items if we have cached data and this was a background refresh
       if (showLoading) {
         setItems([])
+      }
+      // Log the error details for debugging
+      if (error.response) {
+        console.error('API Error Response:', error.response.data)
       }
     } finally {
       if (showLoading) {
@@ -284,7 +298,7 @@ export default function WorkforceStuffPage() {
   })
 
   // Show loading spinner while auth is initializing or companyId is being loaded
-  if (!authReady || !workMeId || companyIdLoading) {
+  if (!authReady || !workMeId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -292,7 +306,19 @@ export default function WorkforceStuffPage() {
     )
   }
 
-  // Show "add company info" button when companyId is not found
+  // Show loading spinner only while actively loading companyId from API
+  if (companyIdLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading company information...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show "add company info" button when companyId is not found (soft fallback)
   if (companyIdNotFound || !companyId) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -328,18 +354,30 @@ export default function WorkforceStuffPage() {
 
           <main className="flex-1">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-              <div className="bg-white rounded-lg shadow p-12 text-center">
-                <AlertCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Company Information Required</h3>
-                <p className="text-gray-600 mb-4">
-                  You need to set up your company before you can view workforce content. This helps us show you relevant events, training, and announcements.
+              <div className="bg-white rounded-lg shadow p-12 text-center max-w-2xl mx-auto">
+                <AlertCircle className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">Company Setup Required</h3>
+                <p className="text-gray-600 mb-2 text-lg">
+                  To view workforce content, we need to know which company you're with.
                 </p>
-                <Link
-                  href="/settings/company"
-                  className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-                >
-                  Add Company
-                </Link>
+                <p className="text-gray-500 mb-8">
+                  This helps us show you relevant events, training sessions, announcements, and other company activities.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link
+                    href="/settings/company"
+                    className="inline-flex items-center justify-center px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg hover:shadow-xl"
+                  >
+                    <Building2 className="h-5 w-5 mr-2" />
+                    Add Your Company
+                  </Link>
+                  <Link
+                    href="/dashboard"
+                    className="inline-flex items-center justify-center px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition"
+                  >
+                    Go to Dashboard
+                  </Link>
+                </div>
               </div>
             </div>
           </main>
@@ -387,15 +425,23 @@ export default function WorkforceStuffPage() {
                 <h1 className="text-3xl font-bold text-gray-900">Workforce Stuff</h1>
                 <p className="text-gray-600 mt-2">All internal happenings and company activities</p>
               </div>
-              <Link
-                href="/mycompany/workforcestuff/ingest"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition flex items-center gap-2"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Ingest Content
-              </Link>
+              <div className="flex gap-3">
+                <Link
+                  href="/mycompany/workforcestuff/add"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition flex items-center gap-2"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Item
+                </Link>
+                <Link
+                  href="/mycompany/workforcestuff/ingest"
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition flex items-center gap-2"
+                >
+                  Ingest Content
+                </Link>
+              </div>
             </div>
 
             {/* Filters */}
