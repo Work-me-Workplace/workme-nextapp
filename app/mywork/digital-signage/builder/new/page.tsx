@@ -8,7 +8,7 @@ import { getDashboard } from '@/lib/dashboard.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import api from '@/lib/api'
 import { DigitalSignType } from '@prisma/client'
-import { Award, CheckCircle2, FileText, Sparkles } from 'lucide-react'
+import { Award, CheckCircle2, FileText, Sparkles, RefreshCw } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,6 +47,7 @@ function DigitalSignageBuilderContent() {
   const [showHighlightSelector, setShowHighlightSelector] = useState(false)
   const [showSourceSelection, setShowSourceSelection] = useState(false)
   const [availableHighlights, setAvailableHighlights] = useState<any[]>([])
+  const [loadingHighlights, setLoadingHighlights] = useState(false)
   const [entryMode, setEntryMode] = useState<'highlight' | 'manual' | 'ai' | null>(null)
 
   // Form state - Workforce Achievement
@@ -101,7 +102,7 @@ function DigitalSignageBuilderContent() {
         else if (source === 'highlight') {
           setShowHighlightSelector(true)
           setEntryMode('highlight')
-          loadHighlightsFromStorage()
+          loadHighlights()
         } else if (source === 'manual') {
           setEntryMode('manual')
         } else if (source === 'ai') {
@@ -115,10 +116,65 @@ function DigitalSignageBuilderContent() {
     }
   }, [router, highlightId, source, signType])
 
-  function loadHighlightsFromStorage() {
-    const dashboard = getDashboard()
-    if (dashboard && dashboard.highlights) {
-      setAvailableHighlights(dashboard.highlights)
+  async function loadHighlights(forceRefresh = false) {
+    const cacheKey = 'company-highlights-digital-signage'
+    const cacheTimestampKey = 'company-highlights-digital-signage-timestamp'
+    const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
+    try {
+      // Try localStorage first (instant load) unless forcing refresh
+      if (!forceRefresh && typeof window !== 'undefined') {
+        const cached = localStorage.getItem(cacheKey)
+        const cachedTimestamp = localStorage.getItem(cacheTimestampKey)
+        
+        if (cached && cachedTimestamp) {
+          const age = Date.now() - parseInt(cachedTimestamp, 10)
+          if (age < CACHE_DURATION) {
+            setAvailableHighlights(JSON.parse(cached))
+            setLoadingHighlights(false)
+            // Refresh in background if stale
+            if (age > CACHE_DURATION / 2) {
+              refreshHighlightsFromAPI(cacheKey, cacheTimestampKey, false)
+            }
+            return
+          }
+        }
+      }
+
+      // If not in localStorage or forcing refresh, fetch from API
+      await refreshHighlightsFromAPI(cacheKey, cacheTimestampKey, true)
+    } catch (error) {
+      console.error('Failed to load highlights:', error)
+      setAvailableHighlights([])
+      setLoadingHighlights(false)
+    }
+  }
+
+  async function refreshHighlightsFromAPI(cacheKey: string, cacheTimestampKey: string, showLoading: boolean) {
+    if (showLoading) {
+      setLoadingHighlights(true)
+    }
+
+    try {
+      const response = await api.get('/api/company/highlights')
+      
+      if (response.data.success && response.data.highlights) {
+        const highlights = response.data.highlights
+        setAvailableHighlights(highlights)
+        
+        // Cache in localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(cacheKey, JSON.stringify(highlights))
+          localStorage.setItem(cacheTimestampKey, Date.now().toString())
+        }
+      } else {
+        setAvailableHighlights([])
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch highlights from API:', error)
+      setAvailableHighlights([])
+    } finally {
+      setLoadingHighlights(false)
     }
   }
 
@@ -128,10 +184,10 @@ function DigitalSignageBuilderContent() {
     setShowHighlightSelector(false)
     
     // Auto-fill form if WORKFORCE_ACHIEVEMENT
-    if (signType === 'WORKFORCE_ACHIEVEMENT' && selectedHighlight.employees?.[0]?.employee) {
-      const employee = selectedHighlight.employees[0].employee
+    if (signType === 'WORKFORCE_ACHIEVEMENT' && selectedHighlight.employees?.[0]) {
+      const employee = selectedHighlight.employees[0]
       setPersonName(employee.fullName || '')
-      setUnit(selectedHighlight.units?.[0]?.companyUnit || '')
+      setUnit(selectedHighlight.companyUnits?.[0] || '')
       setAchievement(selectedHighlight.achievement || selectedHighlight.citationText || '')
       setDetails(selectedHighlight.citationText || '')
     }
@@ -139,10 +195,10 @@ function DigitalSignageBuilderContent() {
 
   useEffect(() => {
     if (highlight && signType === 'WORKFORCE_ACHIEVEMENT') {
-      const employee = highlight.employees[0]?.employee
+      const employee = highlight.employees?.[0]
       if (employee) {
         setPersonName(employee.fullName || '')
-        setUnit(highlight.units[0]?.companyUnit || '')
+        setUnit(highlight.companyUnits?.[0] || '')
         setAchievement(highlight.achievement || highlight.citationText || '')
         setDetails(highlight.citationText || '')
         // Photo URL removed - use Asset system via DigitalSignAsset instead
@@ -388,7 +444,7 @@ function DigitalSignageBuilderContent() {
                       setShowSourceSelection(false)
                       setShowHighlightSelector(true)
                       setEntryMode('highlight')
-                      loadHighlightsFromStorage()
+                      loadHighlights()
                     }}
                     className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition text-left"
                   >
@@ -430,21 +486,32 @@ function DigitalSignageBuilderContent() {
                     <Award className="h-6 w-6 text-purple-600 mr-2" />
                     <h2 className="text-xl font-semibold text-gray-900">Select Employee Highlight</h2>
                   </div>
-                  <button
-                    onClick={() => {
-                      setShowHighlightSelector(false)
-                      router.push(`/mywork/digital-signage/builder/new?type=${signType}&source=manual`)
-                    }}
-                    className="text-sm text-gray-600 hover:text-gray-900"
-                  >
-                    Or enter manually →
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => loadHighlights(true)}
+                      disabled={loadingHighlights}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Refresh highlights from database"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${loadingHighlights ? 'animate-spin' : ''}`} />
+                      {loadingHighlights ? 'Loading...' : 'Sync'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowHighlightSelector(false)
+                        router.push(`/mywork/digital-signage/builder/new?type=${signType}&source=manual`)
+                      }}
+                      className="text-sm text-gray-600 hover:text-gray-900"
+                    >
+                      Or enter manually →
+                    </button>
+                  </div>
                 </div>
                 
                 {availableHighlights.length > 0 ? (
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {availableHighlights.map((h: any) => {
-                      const employee = h.employees?.[0]?.employee
+                      const employee = h.employees?.[0]
                       const isSelected = highlight?.id === h.id
                       
                       return (
@@ -489,16 +556,28 @@ function DigitalSignageBuilderContent() {
                 ) : (
                   <div className="text-center py-8">
                     <Award className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-600 mb-4">No highlights available</p>
-                    <button
-                      onClick={() => {
-                        setShowHighlightSelector(false)
-                        router.push(`/mywork/digital-signage/builder/new?type=${signType}&source=manual`)
-                      }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                    >
-                      Enter Manually
-                    </button>
+                    <p className="text-gray-600 mb-4">
+                      {loadingHighlights ? 'Loading highlights...' : 'No highlights available'}
+                    </p>
+                    <div className="flex items-center justify-center gap-3">
+                      <button
+                        onClick={() => loadHighlights(true)}
+                        disabled={loadingHighlights}
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${loadingHighlights ? 'animate-spin' : ''}`} />
+                        {loadingHighlights ? 'Loading...' : 'Sync Highlights'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowHighlightSelector(false)
+                          router.push(`/mywork/digital-signage/builder/new?type=${signType}&source=manual`)
+                        }}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                      >
+                        Enter Manually
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -511,7 +590,7 @@ function DigitalSignageBuilderContent() {
                   <div className="flex items-center">
                     <CheckCircle2 className="h-5 w-5 text-purple-600 mr-2" />
                     <span className="text-sm font-medium text-purple-900">
-                      Using highlight: {highlight.employees[0]?.employee?.fullName || 'Unknown'}
+                      Using highlight: {highlight.employees?.[0]?.fullName || 'Unknown'}
                     </span>
                   </div>
                   <button
