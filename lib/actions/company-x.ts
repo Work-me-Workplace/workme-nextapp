@@ -5,10 +5,10 @@ import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
 
 /**
- * Get all CompanyX models (contexts) for the authenticated user
- * Replaces getWorkContexts() from deleted work-context.ts
+ * Get all CompanyX models for the authenticated user
+ * Returns all CompanyX models (campaigns, trainings, events, etc.) scoped by companyUnit
  */
-export async function getCompanyXContexts() {
+export async function getCompanyXModels() {
   try {
     // 1. Auth
     const { firebaseId } = await verifyAuth()
@@ -21,7 +21,7 @@ export async function getCompanyXContexts() {
       return { 
         success: false as const, 
         error: 'User must set a companyUnit',
-        workContexts: []
+        companyXModels: []
       }
     }
 
@@ -61,8 +61,8 @@ export async function getCompanyXContexts() {
       }),
     ])
 
-    // Combine all contexts with their types
-    const allContexts = [
+    // Combine all CompanyX models with their types
+    const allModels = [
       ...campaigns.map(c => ({ ...c, type: 'campaign' as const })),
       ...impactEvents.map(e => ({ ...e, type: 'impact_event' as const })),
       ...trainings.map(t => ({ ...t, type: 'training' as const })),
@@ -74,38 +74,30 @@ export async function getCompanyXContexts() {
     ]
 
     // Sort by createdAt descending
-    allContexts.sort((a, b) => {
+    allModels.sort((a, b) => {
       const aDate = a.createdAt?.getTime() || 0
       const bDate = b.createdAt?.getTime() || 0
       return bDate - aDate
     })
 
-    // Enrich with typed data (already have it, just format)
-    const enrichedContexts = allContexts.map(ctx => ({
-      ...ctx,
-      typedData: ctx,
-      title: ctx.title || 'Unknown',
-    }))
-
     return { 
       success: true as const, 
-      workContexts: enrichedContexts 
+      companyXModels: allModels 
     }
   } catch (error: any) {
-    console.error('[getCompanyXContexts] Error:', error)
+    console.error('[getCompanyXModels] Error:', error)
     return { 
       success: false as const, 
-      error: error.message || 'Failed to fetch contexts',
-      workContexts: []
+      error: error.message || 'Failed to fetch CompanyX models',
+      companyXModels: []
     }
   }
 }
 
 /**
  * Get a single CompanyX model by ID and type
- * Replaces getWorkContext() from deleted work-context.ts
  */
-export async function getCompanyXContext(
+export async function getCompanyXModel(
   id: string,
   type: 'campaign' | 'impact_event' | 'training' | 'event' | 'community' | 'benefits' | 'career' | 'employee_cause',
   clientWorkMeId?: string | null
@@ -122,7 +114,7 @@ export async function getCompanyXContext(
       return { 
         success: false as const, 
         error: 'User must set a companyUnit',
-        workContext: null
+        companyXModel: null
       }
     }
 
@@ -142,8 +134,8 @@ export async function getCompanyXContext(
     if (!modelName) {
       return { 
         success: false as const, 
-        error: 'Invalid context type',
-        workContext: null
+        error: 'Invalid CompanyX type',
+        companyXModel: null
       }
     }
 
@@ -158,38 +150,32 @@ export async function getCompanyXContext(
     if (!companyX) {
       return { 
         success: false as const, 
-        error: 'Context not found',
-        workContext: null
+        error: 'CompanyX model not found',
+        companyXModel: null
       }
-    }
-
-    // Format as workContext
-    const workContext = {
-      ...companyX,
-      type,
-      typedData: companyX,
-      title: companyX.title || 'Unknown',
     }
 
     return { 
       success: true as const, 
-      workContext 
+      companyXModel: {
+        ...companyX,
+        type,
+      }
     }
   } catch (error: any) {
-    console.error('[getCompanyXContext] Error:', error)
+    console.error('[getCompanyXModel] Error:', error)
     return { 
       success: false as const, 
-      error: error.message || 'Failed to fetch context',
-      workContext: null
+      error: error.message || 'Failed to fetch CompanyX model',
+      companyXModel: null
     }
   }
 }
 
 /**
  * Delete a CompanyX model by ID and type
- * Replaces deleteWorkContext() from deleted work-context.ts
  */
-export async function deleteCompanyXContext(
+export async function deleteCompanyXModel(
   id: string,
   type: 'campaign' | 'impact_event' | 'training' | 'event' | 'community' | 'benefits' | 'career' | 'employee_cause'
 ) {
@@ -224,7 +210,7 @@ export async function deleteCompanyXContext(
     if (!modelName) {
       return { 
         success: false as const, 
-        error: 'Invalid context type'
+        error: 'Invalid CompanyX type'
       }
     }
 
@@ -239,7 +225,7 @@ export async function deleteCompanyXContext(
     if (!companyX) {
       return { 
         success: false as const, 
-        error: 'Context not found or unauthorized'
+        error: 'CompanyX model not found or unauthorized'
       }
     }
 
@@ -252,10 +238,10 @@ export async function deleteCompanyXContext(
       success: true as const
     }
   } catch (error: any) {
-    console.error('[deleteCompanyXContext] Error:', error)
+    console.error('[deleteCompanyXModel] Error:', error)
     return { 
       success: false as const, 
-      error: error.message || 'Failed to delete context'
+      error: error.message || 'Failed to delete CompanyX model'
     }
   }
 }

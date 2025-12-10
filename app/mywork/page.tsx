@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { getCompanyXContexts } from '@/lib/actions/company-x'
+import { getCompanyXModels } from '@/lib/actions/company-x'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { useEventHydration } from '@/lib/hooks/useEventHydration'
 import SidebarNav from '@/components/mywork/SidebarNav'
@@ -126,9 +126,9 @@ export default function WorkplaceSandboxPage() {
   async function loadContexts() {
     setLoading(true)
     try {
-      const result = await getCompanyXContexts()
+      const result = await getCompanyXModels()
       if (result.success) {
-        setAllContexts(result.workContexts || [])
+        setAllContexts(result.companyXModels || [])
       }
     } catch (error) {
       console.error('Failed to load contexts:', error)

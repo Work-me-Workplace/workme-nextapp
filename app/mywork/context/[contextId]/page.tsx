@@ -3,15 +3,15 @@
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { getCompanyXContext, deleteCompanyXContext } from '@/lib/actions/company-x'
+import { getCompanyXModel, deleteCompanyXModel } from '@/lib/actions/company-x'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
-export default function WorkContextDetailPage() {
+export default function CompanyXDetailPage() {
   const router = useRouter()
   const params = useParams()
   const contextId = params.contextId as string
   const [workMeId, setWorkMeId] = useState<string | null>(null)
-  const [workContext, setWorkContext] = useState<any>(null)
+  const [companyXModel, setCompanyXModel] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -49,43 +49,43 @@ export default function WorkContextDetailPage() {
 
       // Try each type until we find a match
       for (const type of types) {
-        const result = await getCompanyXContext(contextId, type, clientWorkMeId)
-        if (result.success && result.workContext) {
-          foundContext = result.workContext
+        const result = await getCompanyXModel(contextId, type, clientWorkMeId)
+        if (result.success && result.companyXModel) {
+          foundContext = result.companyXModel
           foundType = type
           break
         }
       }
 
       if (foundContext && foundType) {
-        setWorkContext(foundContext)
+        setCompanyXModel(foundContext)
       } else {
-        console.error('Failed to load context: not found in any CompanyX type')
-        alert('WorkContext not found')
+        console.error('Failed to load CompanyX model: not found in any type')
+        alert('CompanyX model not found')
         router.push('/mywork')
       }
     } catch (error) {
-      console.error('Failed to load context:', error)
-      alert('Failed to load context: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      console.error('Failed to load CompanyX model:', error)
+      alert('Failed to load CompanyX model: ' + (error instanceof Error ? error.message : 'Unknown error'))
       router.push('/mywork')
     }
     setLoading(false)
   }
 
   async function handleDelete() {
-    if (!workContext?.type) {
-      alert('Cannot delete: context type unknown')
+    if (!companyXModel?.type) {
+      alert('Cannot delete: CompanyX type unknown')
       return
     }
 
-    const contextType = workContext.type as 'campaign' | 'impact_event' | 'training' | 'event' | 'community' | 'benefits' | 'career' | 'employee_cause'
-    if (!contextType) {
-      alert('Cannot delete: invalid context type')
+    const modelType = companyXModel.type as 'campaign' | 'impact_event' | 'training' | 'event' | 'community' | 'benefits' | 'career' | 'employee_cause'
+    if (!modelType) {
+      alert('Cannot delete: invalid CompanyX type')
       return
     }
 
     if (confirm('Are you sure you want to delete this? This action cannot be undone.')) {
-      const result = await deleteCompanyXContext(contextId, contextType)
+      const result = await deleteCompanyXModel(contextId, modelType)
       if (result.success) {
         router.push('/mywork')
       } else {
@@ -102,7 +102,7 @@ export default function WorkContextDetailPage() {
     )
   }
 
-  if (!workContext) {
+  if (!companyXModel) {
     return null
   }
 
@@ -135,15 +135,15 @@ export default function WorkContextDetailPage() {
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <span className="inline-block px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded capitalize">
-                  {workContext.type?.replace('_', ' ') || 'Company Item'}
+                  {companyXModel.type?.replace('_', ' ') || 'Company Item'}
                 </span>
                 <span className="text-sm text-gray-500">
-                  Created {workContext.createdAt ? new Date(workContext.createdAt).toLocaleDateString() : 'Unknown'}
+                  Created {companyXModel.createdAt ? new Date(companyXModel.createdAt).toLocaleDateString() : 'Unknown'}
                 </span>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-3">{workContext.title || 'Untitled'}</h1>
-              {workContext.description && (
-                <p className="text-gray-600 mb-4">{workContext.description}</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-3">{companyXModel.title || 'Untitled'}</h1>
+              {companyXModel.description && (
+                <p className="text-gray-600 mb-4">{companyXModel.description}</p>
               )}
             </div>
             <button
@@ -156,72 +156,98 @@ export default function WorkContextDetailPage() {
 
           {/* Show CompanyX metadata based on type */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            {workContext.type === 'campaign' && workContext && (
+            {companyXModel.type === 'campaign' && companyXModel && (
               <>
-                {workContext.windowStart && (
+                {companyXModel.windowStart && (
                   <div>
                     <span className="font-medium text-gray-700">Window Start:</span>
-                    <span className="ml-2 text-gray-600">{new Date(workContext.windowStart).toLocaleString()}</span>
+                    <span className="ml-2 text-gray-600">{new Date(companyXModel.windowStart).toLocaleString()}</span>
                   </div>
                 )}
-                {workContext.windowEnd && (
+                {companyXModel.windowEnd && (
                   <div>
                     <span className="font-medium text-gray-700">Window End:</span>
-                    <span className="ml-2 text-gray-600">{new Date(workContext.windowEnd).toLocaleString()}</span>
+                    <span className="ml-2 text-gray-600">{new Date(companyXModel.windowEnd).toLocaleString()}</span>
                   </div>
                 )}
-                {workContext.sponsor && (
+                {companyXModel.sponsor && (
                   <div>
                     <span className="font-medium text-gray-700">Sponsor:</span>
-                    <span className="ml-2 text-gray-600">{workContext.sponsor}</span>
+                    <span className="ml-2 text-gray-600">{companyXModel.sponsor}</span>
                   </div>
                 )}
               </>
             )}
-            {workContext.type === 'impact_event' && workContext && (
+            {companyXModel.type === 'impact_event' && companyXModel && (
+              <>
+          {/* Show CompanyX metadata based on type */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            {companyXModel.type === 'campaign' && companyXModel && (
+              <>
+                {companyXModel.windowStart && (
+                  <div>
+                    <span className="font-medium text-gray-700">Window Start:</span>
+                    <span className="ml-2 text-gray-600">{new Date(companyXModel.windowStart).toLocaleString()}</span>
+                  </div>
+                )}
+                {companyXModel.windowEnd && (
+                  <div>
+                    <span className="font-medium text-gray-700">Window End:</span>
+                    <span className="ml-2 text-gray-600">{new Date(companyXModel.windowEnd).toLocaleString()}</span>
+                  </div>
+                )}
+                {companyXModel.sponsor && (
+                  <div>
+                    <span className="font-medium text-gray-700">Sponsor:</span>
+                    <span className="ml-2 text-gray-600">{companyXModel.sponsor}</span>
+                  </div>
+                )}
+              </>
+            )}
+            {companyXModel.type === 'impact_event' && companyXModel && (
               <>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Impact Details</h3>
-                {workContext.effectiveDate && (
+                {companyXModel.effectiveDate && (
                   <div>
                     <span className="font-medium text-gray-700">Effective Date:</span>
-                    <span className="ml-2 text-gray-600">{new Date(workContext.effectiveDate).toLocaleString()}</span>
+                    <span className="ml-2 text-gray-600">{new Date(companyXModel.effectiveDate).toLocaleString()}</span>
                   </div>
                 )}
-                {workContext.impactedPopulation && (
+                {companyXModel.impactedPopulation && (
                   <div>
                     <span className="font-medium text-gray-700">Impacted Population:</span>
-                    <span className="ml-2 text-gray-600">{workContext.impactedPopulation}</span>
+                    <span className="ml-2 text-gray-600">{companyXModel.impactedPopulation}</span>
                   </div>
                 )}
-                {workContext.urgency && (
+                {companyXModel.urgency && (
                   <div>
                     <span className="font-medium text-gray-700">Urgency:</span>
-                    <span className="ml-2 text-gray-600">{workContext.urgency}</span>
+                    <span className="ml-2 text-gray-600">{companyXModel.urgency}</span>
                   </div>
                 )}
               </>
             )}
-            {workContext.type === 'training' && workContext && (
+            {companyXModel.type === 'training' && companyXModel && (
               <>
-                {workContext.trainingDate && (
+                {companyXModel.trainingDate && (
                   <div>
                     <span className="font-medium text-gray-700">Training Date:</span>
-                    <span className="ml-2 text-gray-600">{new Date(workContext.trainingDate).toLocaleString()}</span>
+                    <span className="ml-2 text-gray-600">{new Date(companyXModel.trainingDate).toLocaleString()}</span>
                   </div>
                 )}
-                {workContext.deadline && (
+                {companyXModel.deadline && (
                   <div>
                     <span className="font-medium text-gray-700">Deadline:</span>
-                    <span className="ml-2 text-gray-600">{new Date(workContext.deadline).toLocaleString()}</span>
+                    <span className="ml-2 text-gray-600">{new Date(companyXModel.deadline).toLocaleString()}</span>
                   </div>
                 )}
-                {workContext.sponsoringOffice && (
+                {companyXModel.sponsoringOffice && (
                   <div>
                     <span className="font-medium text-gray-700">Sponsoring Office:</span>
-                    <span className="ml-2 text-gray-600">{workContext.sponsoringOffice}</span>
+                    <span className="ml-2 text-gray-600">{companyXModel.sponsoringOffice}</span>
                   </div>
                 )}
-                {workContext.mandatory && (
+                {companyXModel.mandatory && (
                   <div>
                     <span className="font-medium text-gray-700">Mandatory:</span>
                     <span className="ml-2 text-gray-600">Yes</span>
@@ -229,113 +255,113 @@ export default function WorkContextDetailPage() {
                 )}
               </>
             )}
-            {workContext.type === 'event' && workContext && (
+            {companyXModel.type === 'event' && companyXModel && (
               <>
-                {workContext.eventDate && (
+                {companyXModel.eventDate && (
                   <div>
                     <span className="font-medium text-gray-700">Event Date:</span>
-                    <span className="ml-2 text-gray-600">{new Date(workContext.eventDate).toLocaleString()}</span>
+                    <span className="ml-2 text-gray-600">{new Date(companyXModel.eventDate).toLocaleString()}</span>
                   </div>
                 )}
-                {workContext.startTime && (
+                {companyXModel.startTime && (
                   <div>
                     <span className="font-medium text-gray-700">Start Time:</span>
-                    <span className="ml-2 text-gray-600">{workContext.startTime}</span>
+                    <span className="ml-2 text-gray-600">{companyXModel.startTime}</span>
                   </div>
                 )}
-                {workContext.endTime && (
+                {companyXModel.endTime && (
                   <div>
                     <span className="font-medium text-gray-700">End Time:</span>
-                    <span className="ml-2 text-gray-600">{workContext.endTime}</span>
+                    <span className="ml-2 text-gray-600">{companyXModel.endTime}</span>
                   </div>
                 )}
-                {workContext.eventCategory && (
+                {companyXModel.eventCategory && (
                   <div>
                     <span className="font-medium text-gray-700">Category:</span>
-                    <span className="ml-2 text-gray-600">{workContext.eventCategory}</span>
+                    <span className="ml-2 text-gray-600">{companyXModel.eventCategory}</span>
                   </div>
                 )}
               </>
             )}
-            {workContext.type === 'community' && workContext && (
+            {companyXModel.type === 'community' && companyXModel && (
               <>
-                {workContext.date && (
+                {companyXModel.date && (
                   <div>
                     <span className="font-medium text-gray-700">Date:</span>
-                    <span className="ml-2 text-gray-600">{new Date(workContext.date).toLocaleString()}</span>
+                    <span className="ml-2 text-gray-600">{new Date(companyXModel.date).toLocaleString()}</span>
                   </div>
                 )}
-                {workContext.partnerOrg && (
+                {companyXModel.partnerOrg && (
                   <div>
                     <span className="font-medium text-gray-700">Partner Org:</span>
-                    <span className="ml-2 text-gray-600">{workContext.partnerOrg}</span>
+                    <span className="ml-2 text-gray-600">{companyXModel.partnerOrg}</span>
                   </div>
                 )}
-                {workContext.location && (
+                {companyXModel.location && (
                   <div>
                     <span className="font-medium text-gray-700">Location:</span>
-                    <span className="ml-2 text-gray-600">{workContext.location}</span>
+                    <span className="ml-2 text-gray-600">{companyXModel.location}</span>
                   </div>
                 )}
               </>
             )}
-            {workContext.type === 'benefits' && workContext && (
+            {companyXModel.type === 'benefits' && companyXModel && (
               <>
-                {workContext.windowStart && (
+                {companyXModel.windowStart && (
                   <div>
                     <span className="font-medium text-gray-700">Enrollment Start:</span>
-                    <span className="ml-2 text-gray-600">{new Date(workContext.windowStart).toLocaleString()}</span>
+                    <span className="ml-2 text-gray-600">{new Date(companyXModel.windowStart).toLocaleString()}</span>
                   </div>
                 )}
-                {workContext.windowEnd && (
+                {companyXModel.windowEnd && (
                   <div>
                     <span className="font-medium text-gray-700">Enrollment End:</span>
-                    <span className="ml-2 text-gray-600">{new Date(workContext.windowEnd).toLocaleString()}</span>
+                    <span className="ml-2 text-gray-600">{new Date(companyXModel.windowEnd).toLocaleString()}</span>
                   </div>
                 )}
-                {workContext.annualRecurrence && (
+                {companyXModel.annualRecurrence && (
                   <div>
                     <span className="font-medium text-gray-700">Annual Recurrence:</span>
                     <span className="ml-2 text-gray-600">Yes</span>
                   </div>
                 )}
-                {(workContext.fehbLink || workContext.fedvipLink || workContext.fsafedsLink) && (
+                {(companyXModel.fehbLink || companyXModel.fedvipLink || companyXModel.fsafedsLink) && (
                   <div className="col-span-2">
                     <span className="font-medium text-gray-700">Enrollment Links:</span>
                     <div className="mt-2 space-y-1">
-                      {workContext.fehbLink && (
-                        <div><a href={workContext.fehbLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">FEHB</a></div>
+                      {companyXModel.fehbLink && (
+                        <div><a href={companyXModel.fehbLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">FEHB</a></div>
                       )}
-                      {workContext.fedvipLink && (
-                        <div><a href={workContext.fedvipLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">FEDVIP</a></div>
+                      {companyXModel.fedvipLink && (
+                        <div><a href={companyXModel.fedvipLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">FEDVIP</a></div>
                       )}
-                      {workContext.fsafedsLink && (
-                        <div><a href={workContext.fsafedsLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">FSAFEDS</a></div>
+                      {companyXModel.fsafedsLink && (
+                        <div><a href={companyXModel.fsafedsLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">FSAFEDS</a></div>
                       )}
                     </div>
                   </div>
                 )}
-                {workContext.pocDepartment && (
+                {companyXModel.pocDepartment && (
                   <div>
                     <span className="font-medium text-gray-700">Department:</span>
-                    <span className="ml-2 text-gray-600">{workContext.pocDepartment}</span>
+                    <span className="ml-2 text-gray-600">{companyXModel.pocDepartment}</span>
                   </div>
                 )}
               </>
             )}
-            {workContext.type === 'career' && workContext && (
+            {companyXModel.type === 'career' && companyXModel && (
               <>
-                {workContext.supervisorName && (
+                {companyXModel.supervisorName && (
                   <div>
                     <span className="font-medium text-gray-700">Supervisor Name:</span>
-                    <span className="ml-2 text-gray-600">{workContext.supervisorName}</span>
+                    <span className="ml-2 text-gray-600">{companyXModel.supervisorName}</span>
                   </div>
                 )}
-                {workContext.deadlines && Array.isArray(workContext.deadlines) && workContext.deadlines.length > 0 && (
+                {companyXModel.deadlines && Array.isArray(companyXModel.deadlines) && companyXModel.deadlines.length > 0 && (
                   <div className="col-span-2">
                     <span className="font-medium text-gray-700">Deadlines:</span>
                     <div className="mt-2 space-y-2">
-                      {workContext.deadlines.map((deadline: any, idx: number) => (
+                      {companyXModel.deadlines.map((deadline: any, idx: number) => (
                         <div key={idx} className="pl-4 border-l-2 border-blue-200">
                           <span className="font-medium text-gray-700">{deadline.label}:</span>
                           <span className="ml-2 text-gray-600">
@@ -346,108 +372,108 @@ export default function WorkContextDetailPage() {
                     </div>
                   </div>
                 )}
-                {workContext.resourceLink && (
+                {companyXModel.resourceLink && (
                   <div className="col-span-2">
                     <span className="font-medium text-gray-700">Resource Link:</span>
-                    <span className="ml-2"><a href={workContext.resourceLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Resources</a></span>
+                    <span className="ml-2"><a href={companyXModel.resourceLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Resources</a></span>
                   </div>
                 )}
-                {workContext.pocDepartment && (
+                {companyXModel.pocDepartment && (
                   <div>
                     <span className="font-medium text-gray-700">Department:</span>
-                    <span className="ml-2 text-gray-600">{workContext.pocDepartment}</span>
+                    <span className="ml-2 text-gray-600">{companyXModel.pocDepartment}</span>
                   </div>
                 )}
               </>
             )}
-            {workContext.type === 'employee_cause' && workContext && (
+            {companyXModel.type === 'employee_cause' && companyXModel && (
               <>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 col-span-2">Employee Cause Details</h3>
-                {workContext.partnerOrg && (
+                {companyXModel.partnerOrg && (
                   <div>
                     <span className="font-medium text-gray-700">Partner Organization:</span>
-                    <span className="ml-2 text-gray-600">{workContext.partnerOrg}</span>
+                    <span className="ml-2 text-gray-600">{companyXModel.partnerOrg}</span>
                   </div>
                 )}
-                {workContext.windowStart && (
+                {companyXModel.windowStart && (
                   <div>
                     <span className="font-medium text-gray-700">Collection Start:</span>
-                    <span className="ml-2 text-gray-600">{new Date(workContext.windowStart).toLocaleDateString()}</span>
+                    <span className="ml-2 text-gray-600">{new Date(companyXModel.windowStart).toLocaleDateString()}</span>
                   </div>
                 )}
-                {workContext.windowEnd && (
+                {companyXModel.windowEnd && (
                   <div>
                     <span className="font-medium text-gray-700">Collection End:</span>
-                    <span className="ml-2 text-gray-600">{new Date(workContext.windowEnd).toLocaleDateString()}</span>
+                    <span className="ml-2 text-gray-600">{new Date(companyXModel.windowEnd).toLocaleDateString()}</span>
                   </div>
                 )}
-                {workContext.location && (
+                {companyXModel.location && (
                   <div className="col-span-2">
                     <span className="font-medium text-gray-700">Location:</span>
-                    <span className="ml-2 text-gray-600">{workContext.location}</span>
+                    <span className="ml-2 text-gray-600">{companyXModel.location}</span>
                   </div>
                 )}
-                {workContext.sponsoringDepartment && (
+                {companyXModel.sponsoringDepartment && (
                   <div>
                     <span className="font-medium text-gray-700">Sponsoring Department:</span>
-                    <span className="ml-2 text-gray-600">{workContext.sponsoringDepartment}</span>
+                    <span className="ml-2 text-gray-600">{companyXModel.sponsoringDepartment}</span>
                   </div>
                 )}
-                {workContext.neededItems && Array.isArray(workContext.neededItems) && workContext.neededItems.length > 0 && (
+                {companyXModel.neededItems && Array.isArray(companyXModel.neededItems) && companyXModel.neededItems.length > 0 && (
                   <div className="col-span-2">
                     <span className="font-medium text-gray-700">Needed Items:</span>
                     <div className="mt-2">
                       <ul className="list-disc list-inside space-y-1">
-                        {workContext.neededItems.map((item: string, idx: number) => (
+                        {companyXModel.neededItems.map((item: string, idx: number) => (
                           <li key={idx} className="text-gray-600">{item}</li>
                         ))}
                       </ul>
                     </div>
                   </div>
                 )}
-                {workContext.collectionPoints && Array.isArray(workContext.collectionPoints) && workContext.collectionPoints.length > 0 && (
+                {companyXModel.collectionPoints && Array.isArray(companyXModel.collectionPoints) && companyXModel.collectionPoints.length > 0 && (
                   <div className="col-span-2">
                     <span className="font-medium text-gray-700">Collection Points:</span>
                     <div className="mt-2">
                       <ul className="list-disc list-inside space-y-1">
-                        {workContext.collectionPoints.map((point: string, idx: number) => (
+                        {companyXModel.collectionPoints.map((point: string, idx: number) => (
                           <li key={idx} className="text-gray-600">{point}</li>
                         ))}
                       </ul>
                     </div>
                   </div>
                 )}
-                {workContext.signUpLink && (
+                {companyXModel.signUpLink && (
                   <div className="col-span-2">
                     <span className="font-medium text-gray-700">Sign Up Link:</span>
-                    <span className="ml-2"><a href={workContext.signUpLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Sign Up</a></span>
+                    <span className="ml-2"><a href={companyXModel.signUpLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Sign Up</a></span>
                   </div>
                 )}
               </>
             )}
             {/* POC Information - show for all types */}
-            {(workContext.pocFirstName || workContext.pocLastName || workContext.pocEmail || workContext.pocPhone) && (
+            {(companyXModel.pocFirstName || companyXModel.pocLastName || companyXModel.pocEmail || companyXModel.pocPhone) && (
               <div className="col-span-2 border-t pt-4 mt-4">
                 <h4 className="font-medium text-gray-700 mb-2">Point of Contact</h4>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  {(workContext.pocFirstName || workContext.pocLastName) && (
+                  {(companyXModel.pocFirstName || companyXModel.pocLastName) && (
                     <div>
                       <span className="text-gray-600">Name:</span>
                       <span className="ml-2 font-medium">
-                        {[workContext.pocFirstName, workContext.pocLastName].filter(Boolean).join(' ') || 'N/A'}
+                        {[companyXModel.pocFirstName, companyXModel.pocLastName].filter(Boolean).join(' ') || 'N/A'}
                       </span>
                     </div>
                   )}
-                  {workContext.pocEmail && (
+                  {companyXModel.pocEmail && (
                     <div>
                       <span className="text-gray-600">Email:</span>
-                      <span className="ml-2"><a href={`mailto:${workContext.pocEmail}`} className="text-blue-600 hover:underline">{workContext.pocEmail}</a></span>
+                      <span className="ml-2"><a href={`mailto:${companyXModel.pocEmail}`} className="text-blue-600 hover:underline">{companyXModel.pocEmail}</a></span>
                     </div>
                   )}
-                  {workContext.pocPhone && (
+                  {companyXModel.pocPhone && (
                     <div>
                       <span className="text-gray-600">Phone:</span>
-                      <span className="ml-2">{workContext.pocPhone}</span>
+                      <span className="ml-2">{companyXModel.pocPhone}</span>
                     </div>
                   )}
                 </div>
@@ -462,7 +488,7 @@ export default function WorkContextDetailPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Create Output */}
             <Link
-              href={`/mywork/products?companyXId=${contextId}&type=${workContext.type}`}
+              href={`/mywork/products?companyXId=${contextId}&type=${companyXModel.type}`}
               className="bg-white rounded-lg shadow p-8 hover:shadow-lg transition border-2 border-transparent hover:border-blue-500"
             >
               <div className="flex items-center mb-4">

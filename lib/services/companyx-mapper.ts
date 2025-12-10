@@ -1,7 +1,7 @@
 /**
  * CompanyX Mapper Service
  * 
- * Maps ContextType to Prisma model names and handles CompanyX creation
+ * Maps CompanyX types to Prisma model names and handles CompanyX creation
  * This is the canonical mapping between CompanyX types and database models.
  */
 
@@ -9,7 +9,7 @@ import type { ContextType } from '@/lib/types/context-type'
 import { PrismaClient } from '@prisma/client'
 
 /**
- * Map ContextType to Prisma model name
+ * Map CompanyX type to Prisma model name
  */
 export const CONTEXT_TYPE_TO_MODEL: Record<ContextType, string> = {
   campaign: 'companyCampaign',
@@ -23,7 +23,7 @@ export const CONTEXT_TYPE_TO_MODEL: Record<ContextType, string> = {
 }
 
 /**
- * Map ContextType to route path segment
+ * Map CompanyX type to route path segment
  */
 export const CONTEXT_TYPE_TO_ROUTE: Record<ContextType, string> = {
   campaign: 'campaign',
@@ -71,10 +71,10 @@ export const REQUIRED_FIELDS: Record<ContextType, Record<string, any>> = {
  * Create a CompanyX model with ingest snapshot
  * 
  * @param prisma - Prisma client instance
- * @param type - ContextType (CompanyX type)
+ * @param type - CompanyX type (campaign, training, event, etc.)
  * @param rawText - Raw ingestion text
  * @param workMeId - WorkMe ID (actor)
- * @param companyUnitId - Company Unit ID (scope)
+ * @param companyUnitId - Company unit string label (scope)
  * @returns Created CompanyX record
  */
 export async function createCompanyXWithIngest(
@@ -126,7 +126,7 @@ export async function createCompanyXWithIngest(
 }
 
 /**
- * Get redirect path for a CompanyX type
+ * Get redirect path for a CompanyX model
  */
 export function getCompanyXRedirectPath(type: ContextType, id: string): string {
   const routeSegment = CONTEXT_TYPE_TO_ROUTE[type]

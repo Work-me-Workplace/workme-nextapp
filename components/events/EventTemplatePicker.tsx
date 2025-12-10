@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import EventManualForm from './EventManualForm'
-import { getCompanyXContexts } from '@/lib/actions/company-x'
+import { getCompanyXModels } from '@/lib/actions/company-x'
 
 interface EventTemplatePickerProps {
   onBack: () => void
@@ -19,13 +19,13 @@ export default function EventTemplatePicker({ onBack }: EventTemplatePickerProps
 
   const loadEvents = async () => {
     try {
-      const result = await getCompanyXContexts()
-      if (result.success && result.workContexts) {
-        // Filter to only event type contexts
-        const eventContexts = result.workContexts.filter(
-          (ctx: any) => ctx.type === 'event' && ctx.typedData
+      const result = await getCompanyXModels()
+      if (result.success && result.companyXModels) {
+        // Filter to only event type models
+        const eventModels = result.companyXModels.filter(
+          (model: any) => model.type === 'event'
         )
-        setEvents(eventContexts)
+        setEvents(eventModels)
       }
     } catch (error) {
       console.error('Failed to load events:', error)
@@ -39,35 +39,35 @@ export default function EventTemplatePicker({ onBack }: EventTemplatePickerProps
   }
 
   // If event is selected, show form with pre-filled data
-  if (selectedEvent && selectedEvent.typedData) {
-    const typedData = selectedEvent.typedData
+  if (selectedEvent) {
+    const eventData = selectedEvent
     const formData = {
-      title: typedData.title || '',
-      description: typedData.description || '',
-      startDate: typedData.startDate ? new Date(typedData.startDate).toISOString().split('T')[0] : '',
-      startTime: typedData.startTime || '',
-      endDate: typedData.endDate ? new Date(typedData.endDate).toISOString().split('T')[0] : '',
-      endTime: typedData.endTime || '',
-      location: typedData.location || '',
-      eventCategory: typedData.eventCategory || '',
-      pocFirstName: typedData.pocFirstName || '',
-      pocLastName: typedData.pocLastName || '',
-      pocEmail: typedData.pocEmail || '',
-      pocPhone: typedData.pocPhone || '',
-      eventDate: typedData.eventDate ? new Date(typedData.eventDate).toISOString().split('T')[0] : '',
-      registrationRequired: typedData.registrationRequired || '',
-      registrationLink: typedData.registrationLink || '',
-      speakers: typedData.speakers || [],
-      foodProvided: typedData.foodProvided || '',
-      foodTypes: typedData.foodTypes || '',
-      promotionNeeds: typedData.promotionNeeds || [],
+      title: eventData.title || '',
+      description: eventData.description || '',
+      startDate: eventData.startDate ? new Date(eventData.startDate).toISOString().split('T')[0] : '',
+      startTime: eventData.startTime || '',
+      endDate: eventData.endDate ? new Date(eventData.endDate).toISOString().split('T')[0] : '',
+      endTime: eventData.endTime || '',
+      location: eventData.location || '',
+      eventCategory: eventData.eventCategory || '',
+      pocFirstName: eventData.pocFirstName || '',
+      pocLastName: eventData.pocLastName || '',
+      pocEmail: eventData.pocEmail || '',
+      pocPhone: eventData.pocPhone || '',
+      eventDate: eventData.eventDate ? new Date(eventData.eventDate).toISOString().split('T')[0] : '',
+      registrationRequired: eventData.registrationRequired || '',
+      registrationLink: eventData.registrationLink || '',
+      speakers: eventData.speakers || [],
+      foodProvided: eventData.foodProvided || '',
+      foodTypes: eventData.foodTypes || '',
+      promotionNeeds: eventData.promotionNeeds || [],
     }
 
     return (
       <div>
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            ✓ Using "{typedData.title}" as template. Edit the fields below to create a new event.
+            ✓ Using "{eventData.title}" as template. Edit the fields below to create a new event.
           </p>
         </div>
         <EventManualForm 
@@ -113,11 +113,10 @@ export default function EventTemplatePicker({ onBack }: EventTemplatePickerProps
           
           <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
             {events.map((event) => {
-              const typedData = event.typedData || {}
-              const eventDate = typedData.startDate 
-                ? new Date(typedData.startDate).toLocaleDateString()
-                : typedData.eventDate
-                  ? new Date(typedData.eventDate).toLocaleDateString()
+              const eventDate = event.startDate 
+                ? new Date(event.startDate).toLocaleDateString()
+                : event.eventDate
+                  ? new Date(event.eventDate).toLocaleDateString()
                   : 'No date'
               
               return (
@@ -129,15 +128,15 @@ export default function EventTemplatePicker({ onBack }: EventTemplatePickerProps
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900 mb-1">
-                        {typedData.title || 'Untitled Event'}
+                        {event.title || 'Untitled Event'}
                       </h3>
                       <p className="text-sm text-gray-600 mb-2">
-                        {typedData.description ? typedData.description.substring(0, 100) + '...' : 'No description'}
+                        {event.description ? event.description.substring(0, 100) + '...' : 'No description'}
                       </p>
                       <div className="flex items-center gap-4 text-xs text-gray-500">
                         <span>📅 {eventDate}</span>
-                        {typedData.location && <span>📍 {typedData.location}</span>}
-                        {typedData.eventCategory && <span>🏷️ {typedData.eventCategory}</span>}
+                        {event.location && <span>📍 {event.location}</span>}
+                        {event.eventCategory && <span>🏷️ {event.eventCategory}</span>}
                       </div>
                     </div>
                     <svg 

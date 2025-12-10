@@ -3,14 +3,14 @@
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { getCompanyXContext } from '@/lib/actions/company-x'
+import { getCompanyXModel } from '@/lib/actions/company-x'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
-export default function WorkContextSuccessPage() {
+export default function CompanyXSuccessPage() {
   const router = useRouter()
   const params = useParams()
   const contextId = params.contextId as string
-  const [workContext, setWorkContext] = useState<any>(null)
+  const [companyXModel, setCompanyXModel] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [isEvent, setIsEvent] = useState(false)
   const [promotionNeeds, setPromotionNeeds] = useState<string[]>([])
@@ -47,36 +47,35 @@ export default function WorkContextSuccessPage() {
 
       // Try each type until we find a match
       for (const type of types) {
-        const result = await getCompanyXContext(contextId, type, clientWorkMeId)
-        if (result.success && result.workContext) {
-          foundContext = result.workContext
+        const result = await getCompanyXModel(contextId, type, clientWorkMeId)
+        if (result.success && result.companyXModel) {
+          foundContext = result.companyXModel
           break
         }
       }
 
       if (foundContext) {
-        setWorkContext(foundContext)
+        setCompanyXModel(foundContext)
         
         // Check if this is an event and extract promotionNeeds
         if (foundContext.type === 'event') {
           setIsEvent(true)
-          // CompanyEvent doesn't have typedData wrapper, check directly
           if (foundContext.promotionNeeds && Array.isArray(foundContext.promotionNeeds) && foundContext.promotionNeeds.length > 0) {
             setPromotionNeeds(foundContext.promotionNeeds)
           }
         }
       } else {
-        // If context not found, redirect to detail page
+        // If CompanyX model not found, redirect to detail page
         router.push(`/mywork/context/${contextId}`)
       }
     } catch (error) {
-      console.error('Failed to load context:', error)
+      console.error('Failed to load CompanyX model:', error)
       router.push(`/mywork/context/${contextId}`)
     }
     setLoading(false)
   }
 
-  if (loading || !workContext) {
+  if (loading || !companyXModel) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -115,7 +114,7 @@ export default function WorkContextSuccessPage() {
               {isEvent ? '🎉 Event Created Successfully!' : 'Company Item Created!'}
             </h1>
             <p className="text-lg text-gray-600 mb-4">
-              <span className="font-semibold">{workContext.title || (isEvent ? 'Your Event' : 'Your Company Item')}</span> has been created successfully.
+              <span className="font-semibold">{companyXModel.title || (isEvent ? 'Your Event' : 'Your Company Item')}</span> has been created successfully.
               {isEvent && (
                 <span className="block mt-2 text-base">
                   Your event and agenda items have been saved.
@@ -151,7 +150,7 @@ export default function WorkContextSuccessPage() {
             ) : (
               /* Create Output */
             <Link
-              href={`/mywork/products?companyXId=${contextId}&type=${workContext.type}`}
+              href={`/mywork/products?companyXId=${contextId}&type=${companyXModel.type}`}
               className="block p-6 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition text-center"
             >
               <div className="mb-3">
@@ -176,7 +175,7 @@ export default function WorkContextSuccessPage() {
                 </svg>
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">View Details</h3>
-              <p className="text-sm text-gray-600">Review and edit this WorkContext</p>
+              <p className="text-sm text-gray-600">Review and edit this CompanyX model</p>
             </Link>
 
             {/* Create Another */}
@@ -190,22 +189,22 @@ export default function WorkContextSuccessPage() {
                 </svg>
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Create Another</h3>
-              <p className="text-sm text-gray-600">Start a new WorkContext</p>
+              <p className="text-sm text-gray-600">Start a new CompanyX model</p>
             </Link>
           </div>
 
-          {/* Context Preview */}
+          {/* CompanyX Preview */}
           <div className="border-t border-gray-200 pt-6 mt-6">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Context Preview</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">CompanyX Preview</h3>
             <div className="bg-gray-50 rounded-lg p-4">
               <p className="text-sm text-gray-600">
-                <span className="font-medium">Type:</span> {workContext.type 
-                  ? workContext.type.replace('_', ' ').replace(/\b\w/g, (match: string) => match.toUpperCase())
+                <span className="font-medium">Type:</span> {companyXModel.type 
+                  ? companyXModel.type.replace('_', ' ').replace(/\b\w/g, (match: string) => match.toUpperCase())
                   : 'Unknown'}
               </p>
-              {workContext.description && (
+              {companyXModel.description && (
                 <p className="text-sm text-gray-600 mt-2">
-                  <span className="font-medium">Description:</span> {workContext.description}
+                  <span className="font-medium">Description:</span> {companyXModel.description}
                 </p>
               )}
             </div>
@@ -222,10 +221,10 @@ export default function WorkContextSuccessPage() {
           </Link>
           <span className="text-gray-300">|</span>
           <Link
-            href="/mywork/context"
+            href="/mywork"
             className="text-sm text-gray-600 hover:text-gray-900"
           >
-            View All Contexts
+            View All CompanyX Models
           </Link>
         </div>
       </div>
