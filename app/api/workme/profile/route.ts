@@ -35,11 +35,9 @@ export async function GET(request: NextRequest) {
           linkedinUrl: true,
           createdAt: true,
           companyId: true,
-          companyUnitId: true,
-          divisionId: true,
+          companyUnit: true, // String label
+          division: true, // String label
           Company: { select: { id: true, name: true } },
-          companyUnit: { select: { id: true, name: true } },
-          division: { select: { id: true, name: true } },
         },
       }).catch((err: any) => {
         console.error('Failed to load WorkMe:', err)
@@ -108,11 +106,9 @@ export async function GET(request: NextRequest) {
       workProfile: workProfile || null,
       companyAffiliation: workMeRecord ? {
         companyId: workMeRecord.companyId,
-        companyUnitId: workMeRecord.companyUnitId,
-        divisionId: workMeRecord.divisionId,
-        company: workMeRecord.Company || null, // CompanyRegistry (HQ)
-        companyUnit: workMeRecord.companyUnit || null,
-        division: workMeRecord.division || null,
+        company: workMeRecord.Company || null, // Company (HQ)
+        companyUnit: workMeRecord.companyUnit || null, // String label
+        division: workMeRecord.division || null, // String label
       } : null,
       skills: workSkills || null,
       workEntries: workEntries || [],
