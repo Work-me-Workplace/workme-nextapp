@@ -122,26 +122,15 @@ export async function POST(request: NextRequest) {
         ...highlightData,
         photoUrl: photoUrl || null,
         createdByWorkMeId: workMeId,
+        employeeId: employee.id, // Direct relation - no link table needed
       },
     })
 
-    // 4. Link highlight to employee
-    await prisma.companyEmployeeHighlightLink.create({
-      data: {
-        employeeId: employee.id,
-        highlightId: highlight.id,
-      },
-    })
-
-    // 5. Return full object
+    // 4. Return full object
     const result = await prisma.companyEmployeeHighlight.findUnique({
       where: { id: highlight.id },
       include: {
-        employees: {
-          include: {
-            employee: true,
-          },
-        },
+        employee: true,
       },
     })
 

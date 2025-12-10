@@ -120,21 +120,13 @@ async function exportAllData() {
       })),
       safeQuery('EmployeeHighlights', () => prisma.companyEmployeeHighlight.findMany({
         include: {
-          employees: {
-            include: {
-              employee: true
-            }
-          },
+          employee: true,
           engageMessages: true
         }
       })),
       safeQuery('CompanyEmployees', () => prisma.companyEmployee.findMany({
         include: {
-          highlights: {
-            include: {
-              highlight: true
-            }
-          },
+          highlights: true,
           company: true
         }
       })),
@@ -216,11 +208,7 @@ async function exportAllData() {
         },
         employees: {
           include: {
-            highlights: {
-              include: {
-                highlight: true
-              }
-            },
+            highlights: true,
             createdBy: {
               select: {
                 id: true,

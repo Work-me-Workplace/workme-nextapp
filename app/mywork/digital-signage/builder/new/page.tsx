@@ -868,6 +868,7 @@ function DigitalSignageBuilderContent() {
                   </button>
                 </div>
               </div>
+            )}
               </>
             )}
           </div>

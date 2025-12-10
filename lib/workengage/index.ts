@@ -77,14 +77,10 @@ export async function createTemplate(data: EngageTemplateData) {
 export async function getHighlights() {
   return await prisma.companyEmployeeHighlight.findMany({
     include: {
-      employees: {
-        include: {
-          employee: {
-            select: {
-              id: true,
-              fullName: true,
-            },
-          },
+      employee: {
+        select: {
+          id: true,
+          fullName: true,
         },
       },
     },
@@ -100,14 +96,10 @@ export async function getHighlightForHydration(id: string) {
   const highlight = await prisma.companyEmployeeHighlight.findUnique({
     where: { id },
     include: {
-      employees: {
-        include: {
-          employee: {
-            select: {
-              id: true,
-              fullName: true,
-            },
-          },
+      employee: {
+        select: {
+          id: true,
+          fullName: true,
         },
       },
     },
@@ -132,11 +124,9 @@ export async function getHighlightForHydration(id: string) {
 export function hydrateTemplate(
   templateBody: string,
   highlight?: {
-    employees?: Array<{
-      employee: {
-        fullName: string
-      }
-    }>
+    employee?: {
+      fullName: string
+    }
     achievement?: string | null
     citationText?: string
     narrative?: string | null
@@ -149,7 +139,7 @@ export function hydrateTemplate(
 
   let hydrated = templateBody
 
-  const employeeName = highlight.employees?.[0]?.employee?.fullName || 'the employee'
+  const employeeName = highlight.employee?.fullName || 'the employee'
   const highlightTitle = highlight.achievement || highlight.citationText || 'their achievement'
   const highlightDescription = highlight.narrative || highlight.citationText || 'their work'
   const date = highlight.createdAt
@@ -182,14 +172,10 @@ export async function getHistory(ownerId: string) {
       template: true,
       highlight: {
         include: {
-          employees: {
-            include: {
-              employee: {
-                select: {
-                  id: true,
-                  fullName: true,
-                },
-              },
+          employee: {
+            select: {
+              id: true,
+              fullName: true,
             },
           },
         },
