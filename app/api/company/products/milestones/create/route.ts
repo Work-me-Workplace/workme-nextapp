@@ -3,22 +3,28 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(request: Request) {
   try {
-    const { title, description, date, milestoneType, platformUnitId } = await request.json()
+    const { description, date, milestoneType, platformUnitId } = await request.json()
 
-    if (!title) {
+    if (!platformUnitId) {
       return NextResponse.json(
-        { success: false, error: 'Title is required' },
+        { success: false, error: 'Platform unit ID is required' },
+        { status: 400 }
+      )
+    }
+
+    if (!milestoneType) {
+      return NextResponse.json(
+        { success: false, error: 'Milestone type is required' },
         { status: 400 }
       )
     }
 
     const milestone = await prisma.companyMilestone.create({
       data: {
-        title,
         description: description || null,
         date: date ? new Date(date) : null,
-        milestoneType: milestoneType || null,
-        platformUnitId: platformUnitId || null,
+        milestoneType,
+        platformUnitId,
       },
     })
 
