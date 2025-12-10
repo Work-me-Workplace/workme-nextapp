@@ -1,10 +1,21 @@
+/**
+ * WorkStuff Events AI Parse
+ * 
+ * POST /api/workstuff/events/ai
+ * AI ingestion endpoint for parsing unstructured event text into structured data
+ * 
+ * Body: { rawText: string, userContext?: {...} }
+ * Returns: { success: true, data: { event, items } } or { success: false, error: "..." }
+ * 
+ * Does NOT save to database - this is a pure parsing endpoint
+ */
+
 import { NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
 import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import OpenAI from 'openai'
 import type { EventIngestionRequest, EventIngestionAPIResponse, EventIngestionAPIError } from '@/lib/types/event-ingestion'
 
-// Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
 // Initialize OpenAI client
@@ -22,25 +33,13 @@ function getOpenAIClient(): OpenAI {
   return openaiInstance
 }
 
-/**
- * POST /api/ingest/event/ai
- * AI ingestion endpoint for parsing unstructured event text into structured WorkEvent + EventItem data
- * 
- * Body: { rawText: string, userContext?: {...} }
- * Returns: { success: true, data: { event, items } } or { success: false, error: "..." }
- * 
- * Does NOT save to database - this is a pure parsing endpoint
- */
 export async function POST(request: Request) {
   try {
-    // 1. Auth - Verify Firebase token
     const { firebaseId } = await verifyAuth(request)
-    
-    // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId, companyUnit } = workMe
 
-    console.log('[API POST /api/ingest/event/ai]', {
+    console.log('[API POST /api/workstuff/events/ai]', {
       workMeId,
       companyUnit,
     })
@@ -55,7 +54,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // Build system prompt with enum values
     const systemPrompt = `You convert messy government or corporate event announcements into structured
 event JSON. Return ONLY JSON with the exact structure below.
 
@@ -115,18 +113,16 @@ Return only:
   ]
 }`
 
-    // Build user prompt
     let userPrompt = `Parse this event announcement:\n\n${rawText}`
     
     if (userContext && userContext.trim()) {
       userPrompt += `\n\nAdditional context/instructions from user:\n${userContext.trim()}\n\nUse this context to guide your interpretation and infer missing information where appropriate.`
     }
 
-    // Call OpenAI
     const openai = getOpenAIClient()
     const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
-    console.log('[API POST /api/ingest/event/ai] Calling OpenAI', {
+    console.log('[API POST /api/workstuff/events/ai] Calling OpenAI', {
       model,
       rawTextLength: rawText.length,
       hasUserContext: !!userContext,
@@ -134,8 +130,8 @@ Return only:
 
     const completion = await openai.chat.completions.create({
       model,
-      temperature: 0, // Deterministic parsing
-      response_format: { type: 'json_object' }, // JSON-only output
+      temperature: 0,
+      response_format: { type: 'json_object' },
       messages: [
         {
           role: 'system',
@@ -153,13 +149,11 @@ Return only:
       throw new Error('No GPT output received')
     }
 
-    // Parse JSON response
     let parsedData: any
     try {
       parsedData = JSON.parse(content)
     } catch (parseError) {
-      console.error('[API POST /api/ingest/event/ai] JSON parse error:', parseError)
-      // Try to extract JSON from markdown code blocks
+      console.error('[API POST /api/workstuff/events/ai] JSON parse error:', parseError)
       const jsonMatch = content.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         parsedData = JSON.parse(jsonMatch[0])
@@ -168,18 +162,15 @@ Return only:
       }
     }
 
-    // Validate response structure
     if (!parsedData.event || !parsedData.items) {
-      console.error('[API POST /api/ingest/event/ai] Invalid response structure:', parsedData)
+      console.error('[API POST /api/workstuff/events/ai] Invalid response structure:', parsedData)
       throw new Error('OpenAI response missing required fields: event and items')
     }
 
-    // Ensure items is an array
     if (!Array.isArray(parsedData.items)) {
       parsedData.items = []
     }
 
-    // Normalize the response to match our types (exact structure from spec)
     const response: EventIngestionAPIResponse = {
       success: true,
       data: {
@@ -209,7 +200,7 @@ Return only:
       },
     }
 
-    console.log('[API POST /api/ingest/event/ai] SUCCESS', {
+    console.log('[API POST /api/workstuff/events/ai] SUCCESS', {
       workMeId,
       companyUnit,
       eventTitle: response.data.event.title,
@@ -218,9 +209,8 @@ Return only:
 
     return NextResponse.json<EventIngestionAPIResponse>(response)
   } catch (error: any) {
-    console.error('❌ POST /api/ingest/event/ai error:', error)
+    console.error('❌ POST /api/workstuff/events/ai error:', error)
     
-    // Handle OpenAI-specific errors
     if (error.message?.includes('OPENAI_API_KEY')) {
       return NextResponse.json<EventIngestionAPIError>(
         { success: false, error: 'OpenAI API key is not configured' },
@@ -251,4 +241,3 @@ Return only:
     )
   }
 }
-

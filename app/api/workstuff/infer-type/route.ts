@@ -17,7 +17,6 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    // AUTH: WorkMe-only
     await requireWorkMeAuth(request)
 
     const { blob } = await request.json()
@@ -29,10 +28,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Infer type using hybrid inference service
     const inference = await inferCompanyXType(blob)
 
-    // Return ContextType directly (matches CompanyX model types)
     return NextResponse.json({
       success: true,
       suggestedType: inference.type,
