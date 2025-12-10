@@ -144,10 +144,10 @@ export default function HighlightsPage() {
 
                         <Link
                           href={`/engage/compose?highlightId=${highlight.id}`}
-                          className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium"
+                          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                         >
-                          Use this highlight → Compose
-                          <ArrowRight className="ml-1 h-4 w-4" />
+                          Congratulate Employee
+                          <ArrowRight className="ml-2 h-4 w-4" />
                         </Link>
                       </div>
                     </div>
