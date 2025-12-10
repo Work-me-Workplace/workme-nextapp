@@ -20,11 +20,11 @@ export async function GET(
     // 1. Auth
     const { firebaseId } = await verifyAuth(request as Request)
     const workMe = await loadWorkMe(firebaseId)
-    const { companyUnit } = workMe
+    const { companyId } = workMe
 
-    if (!companyUnit) {
+    if (!companyId) {
       return NextResponse.json(
-        { success: false, error: 'User must set a companyUnit' },
+        { success: false, error: 'User must be associated with a company' },
         { status: 400 }
       )
     }
@@ -32,35 +32,15 @@ export async function GET(
     // 2. Get highlight ID from params
     const { id } = await params
 
-    console.log('[API GET /api/highlights/[id]]', { highlightId: id, companyUnit })
+    console.log('[API GET /api/highlights/[id]]', { highlightId: id, companyId })
 
-    // 3. Verify access - check if highlight is linked to user's companyUnit
-    const unitLink = await prisma.companyEmployeeHighlightUnit.findFirst({
-      where: {
-        highlightId: id,
-        companyUnit,
-      },
-    })
-
-    if (!unitLink) {
-      return NextResponse.json(
-        { success: false, error: 'Highlight not found or access denied' },
-        { status: 404 }
-      )
-    }
-
-    // 4. Fetch full highlight with all relations
+    // 3. Fetch full highlight with all relations
     const highlight = await prisma.companyEmployeeHighlight.findUnique({
       where: { id },
       include: {
         employees: {
           include: {
             employee: true,
-          },
-        },
-        units: {
-          select: {
-            companyUnit: true,
           },
         },
         createdBy: {
@@ -81,6 +61,18 @@ export async function GET(
       )
     }
 
+    // 4. Verify access - check if any linked employee belongs to user's companyId
+    const hasAccess = highlight.employees.some(
+      link => link.employee.companyId === companyId
+    )
+
+    if (!hasAccess) {
+      return NextResponse.json(
+        { success: false, error: 'Highlight not found or access denied' },
+        { status: 404 }
+      )
+    }
+
     // 5. Transform for frontend
     const transformed = {
       id: highlight.id,
@@ -95,6 +87,7 @@ export async function GET(
       photoUrl: highlight.photoUrl,
       createdAt: highlight.createdAt,
       updatedAt: highlight.updatedAt,
+      companyUnitLabel: highlight.companyUnitLabel,
       employees: highlight.employees.map(e => ({
         id: e.employee.id,
         fullName: e.employee.fullName,
@@ -103,10 +96,9 @@ export async function GET(
         phone: e.employee.phone,
         photoUrl: e.employee.photoUrl,
         companyId: e.employee.companyId,
-        companyUnitId: e.employee.companyUnitId,
-        divisionId: e.employee.divisionId,
+        companyUnit: e.employee.companyUnit,
+        division: e.employee.division,
       })),
-      companyUnits: highlight.units.map(u => u.companyUnit),
       createdBy: highlight.createdBy,
     }
 

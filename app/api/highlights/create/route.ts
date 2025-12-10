@@ -23,11 +23,10 @@ const createHighlightSchema = z.object({
     email: z.string().optional().nullable(),
     phone: z.string().optional().nullable(),
     photoUrl: z.string().optional().nullable(),
-    companyId: z.string().optional().nullable(),
-    companyUnitId: z.string().optional().nullable(),
-    divisionId: z.string().optional().nullable(),
+    companyUnit: z.string().optional().nullable(), // String label
+    division: z.string().optional().nullable(), // String label
   })).min(1),
-  companyUnits: z.array(z.string()).min(1), // Array of company unit strings
+  companyUnits: z.array(z.string()).optional().nullable(), // Optional array of company unit strings (for labeling)
 })
 
 /**
@@ -41,11 +40,11 @@ export async function POST(request: NextRequest) {
     // 1. Auth
     const { firebaseId } = await verifyAuth(request as Request)
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
+    const { id: workMeId, companyId, companyUnit } = workMe
 
-    if (!companyUnit) {
+    if (!companyId) {
       return NextResponse.json(
-        { success: false, error: 'User must set a companyUnit' },
+        { success: false, error: 'User must be associated with a company' },
         { status: 400 }
       )
     }
@@ -56,6 +55,7 @@ export async function POST(request: NextRequest) {
 
     console.log('[API POST /api/highlights/create]', {
       workMeId,
+      companyId,
       companyUnit,
       employeeCount: validated.employees.length,
       unitCount: validated.companyUnits.length,
@@ -71,16 +71,16 @@ export async function POST(request: NextRequest) {
       if (empData.email) {
         employee = await prisma.companyEmployee.findFirst({
           where: {
-            email: empData.email,
-            fullName: empData.fullName,
+            email: empData.email.toLowerCase(),
+            companyId,
           },
         })
       } else {
-        // If no email, try to find by name and companyUnit
+        // If no email, try to find by name and companyId
         employee = await prisma.companyEmployee.findFirst({
           where: {
             fullName: empData.fullName,
-            companyUnitId: empData.companyUnitId || undefined,
+            companyId,
           },
         })
       }
@@ -91,42 +91,37 @@ export async function POST(request: NextRequest) {
           where: { id: employee.id },
           data: {
             title: empData.title || employee.title,
-            email: empData.email || employee.email,
+            email: empData.email?.toLowerCase() || employee.email,
             phone: empData.phone || employee.phone,
             photoUrl: empData.photoUrl || employee.photoUrl,
-            companyId: empData.companyId || employee.companyId,
-            companyUnitId: empData.companyUnitId || employee.companyUnitId,
-            divisionId: empData.divisionId || employee.divisionId,
+            companyUnit: empData.companyUnit || employee.companyUnit,
+            division: empData.division || employee.division,
           },
         })
         employeeIds.push(employee.id)
       } else {
-        // Create new employee
-        // Need at least a companyId - use the first employee's companyId or create a default
-        if (!empData.companyId) {
-          return NextResponse.json(
-            { success: false, error: 'companyId is required for new employees' },
-            { status: 400 }
-          )
-        }
-
+        // Create new employee - use workMe's companyId and companyUnit
         const newEmployee = await prisma.companyEmployee.create({
           data: {
             fullName: empData.fullName,
             title: empData.title || null,
-            email: empData.email || null,
+            email: empData.email?.toLowerCase() || null,
             phone: empData.phone || null,
             photoUrl: empData.photoUrl || null,
-            companyId: empData.companyId,
-            companyUnitId: empData.companyUnitId || null,
-            divisionId: empData.divisionId || null,
+            companyId, // Use workMe's companyId
+            workMeCompanyId: workMe.workMeCompanyId || companyId,
+            createdByWorkMeId: workMeId,
+            companyUnit: empData.companyUnit || companyUnit || null,
+            division: empData.division || null,
           },
         })
         employeeIds.push(newEmployee.id)
       }
     }
 
-    // 4. Create highlight
+    // 4. Create highlight with companyUnitLabel (use first unit or workMe's companyUnit)
+    const companyUnitLabel = validated.companyUnits[0] || companyUnit || null
+    
     const highlight = await prisma.companyEmployeeHighlight.create({
       data: {
         citationText: validated.citationText,
@@ -138,6 +133,7 @@ export async function POST(request: NextRequest) {
         supervisorQuote: validated.supervisorQuote || null,
         photoUrl: validated.photoUrl || null,
         narrative: validated.narrative || null,
+        companyUnitLabel, // Store as string label
         createdByWorkMeId: workMeId,
       },
     })
@@ -152,17 +148,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // 6. Create company unit links (tenantization)
-    for (const unit of validated.companyUnits) {
-      await prisma.companyEmployeeHighlightUnit.create({
-        data: {
-          highlightId: highlight.id,
-          companyUnit: unit,
-        },
-      })
-    }
-
-    // 7. Fetch hydrated highlight with relations
+    // 6. Fetch hydrated highlight with relations
     const hydrated = await prisma.companyEmployeeHighlight.findUnique({
       where: { id: highlight.id },
       include: {
@@ -171,7 +157,6 @@ export async function POST(request: NextRequest) {
             employee: true,
           },
         },
-        units: true,
         createdBy: {
           select: {
             id: true,
