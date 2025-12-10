@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       companyId,
       companyUnit,
       employeeCount: validated.employees.length,
-      unitCount: validated.companyUnits.length,
+      unitCount: validated.companyUnits?.length || 0,
     })
 
     // 3. Upsert employees (create or find existing)
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Create highlight with companyUnitLabel (use first unit or workMe's companyUnit)
-    const companyUnitLabel = validated.companyUnits[0] || companyUnit || null
+    const companyUnitLabel = validated.companyUnits?.[0] || companyUnit || null
     
     const highlight = await prisma.companyEmployeeHighlight.create({
       data: {
