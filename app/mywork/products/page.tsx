@@ -5,10 +5,24 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
+import api from '@/lib/api'
+import { FileText, Calendar } from 'lucide-react'
+
+interface CommsOutput {
+  id: string
+  type: string
+  title: string
+  description: string | null
+  wordCount: number | null
+  dateSent: string | null
+  createdAt: string
+  updatedAt: string
+}
 
 export default function ProductsPage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
+  const [outputs, setOutputs] = useState<CommsOutput[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -18,10 +32,29 @@ export default function ProductsPage() {
         router.push('/signin')
       } else {
         setWorkMeId(id)
-        setLoading(false)
+        loadOutputs()
       }
     }
   }, [router])
+
+  async function loadOutputs() {
+    try {
+      setLoading(true)
+      const response = await api.get('/api/comms-outputs/list')
+      
+      if (response.data.success && response.data.outputs) {
+        setOutputs(response.data.outputs)
+      } else {
+        console.error('Failed to load outputs:', response.data.error)
+        setOutputs([])
+      }
+    } catch (error) {
+      console.error('Failed to load outputs:', error)
+      setOutputs([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   if (!workMeId || loading) {
     return (
@@ -61,13 +94,57 @@ export default function ProductsPage() {
               >
                 ← Back to MyWork
               </Link>
-              <h2 className="text-3xl font-bold text-gray-900">Products</h2>
-              <p className="text-gray-600 mt-2">Product generation coming soon</p>
+              <h2 className="text-3xl font-bold text-gray-900">Work Products</h2>
+              <p className="text-gray-600 mt-2">Your work outputs and communication products</p>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-12 text-center">
-              <p className="text-gray-500">Product generation system is being rebuilt.</p>
-            </div>
+            {outputs.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {outputs.map(output => (
+                  <div
+                    key={output.id}
+                    className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center">
+                        <FileText className="h-5 w-5 text-blue-600 mr-2" />
+                        <span className="text-xs font-medium text-gray-500 uppercase">
+                          {output.type}
+                        </span>
+                      </div>
+                      {output.dateSent && (
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {new Date(output.dateSent).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{output.title}</h3>
+                    {output.description && (
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{output.description}</p>
+                    )}
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>Created {new Date(output.createdAt).toLocaleDateString()}</span>
+                      {output.wordCount && (
+                        <span>{output.wordCount} words</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow p-12 text-center">
+                <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Work Products</h3>
+                <p className="text-gray-600 mb-4">You haven't created any work products yet.</p>
+                <Link
+                  href="/mywork/create"
+                  className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+                >
+                  Create Work Product
+                </Link>
+              </div>
+            )}
           </div>
         </main>
       </div>

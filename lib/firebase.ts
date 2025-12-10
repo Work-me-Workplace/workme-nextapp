@@ -23,25 +23,27 @@ import { firebaseClientApp } from './firebaseClient'
 
 // Only initialize auth in browser
 let auth: Auth | null = null
-let googleProvider: GoogleAuthProvider | null = null
 
 if (typeof window !== 'undefined' && firebaseClientApp) {
   auth = getAuth(firebaseClientApp)
   setPersistence(auth, browserLocalPersistence).catch((error) => {
     console.error('Failed to set auth persistence:', error)
   })
-  googleProvider = new GoogleAuthProvider()
-  // Always show account picker so users can choose which Google account to use
-  googleProvider.setCustomParameters({
-    prompt: 'select_account'
-  })
 }
 
 export async function signInWithGoogle() {
-  if (!auth || !googleProvider) {
+  if (!auth) {
     throw new Error('Firebase not initialized')
   }
-  const result = await signInWithPopup(auth, googleProvider)
+  
+  // Sign out first to ensure Google shows account picker
+  await auth.signOut()
+  
+  // Create fresh provider with account selection prompt
+  const provider = new GoogleAuthProvider()
+  provider.setCustomParameters({ prompt: 'select_account' })
+  
+  const result = await signInWithPopup(auth, provider)
   const user = result.user
 
   return {

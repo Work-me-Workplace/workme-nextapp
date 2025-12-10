@@ -70,7 +70,7 @@ export default function SidebarNav() {
     {
       name: 'Mywork',
       items: [
-        { name: 'MyWork Products', path: '/mywork/products', icon: Package },
+        { name: 'Work Products', path: '/mywork/products', icon: Package },
         { name: "Stuff I'm Working On", path: '/mywork/active', icon: CheckSquare },
       ],
     },
