@@ -21,15 +21,12 @@ interface Highlight {
   awardYear?: number | null
   photoUrl?: string | null
   employees: Array<{
-    employee: {
-      id: string
-      fullName: string
-      title?: string | null
-    }
+    id: string
+    fullName: string
+    title?: string | null
+    photoUrl?: string | null
   }>
-  units: Array<{
-    companyUnit: string
-  }>
+  companyUnits: string[]
 }
 
 function DigitalSignageBuilderContent() {
