@@ -31,6 +31,10 @@ if (typeof window !== 'undefined' && firebaseClientApp) {
     console.error('Failed to set auth persistence:', error)
   })
   googleProvider = new GoogleAuthProvider()
+  // Always show account picker so users can choose which Google account to use
+  googleProvider.setCustomParameters({
+    prompt: 'select_account'
+  })
 }
 
 export async function signInWithGoogle() {

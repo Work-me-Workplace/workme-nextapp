@@ -37,7 +37,12 @@ export default function CreateOutputPage() {
 
   const handleTypeSelect = (type: string) => {
     setSelectedType(type)
-    setStep('source')
+    // Route digital signage to dedicated flow
+    if (type === 'digital_signage') {
+      router.push('/mywork/digital-signage/new')
+    } else {
+      setStep('source')
+    }
   }
 
   const handleSourceSelect = (sourceId: string) => {

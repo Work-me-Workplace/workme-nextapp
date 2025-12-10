@@ -262,10 +262,13 @@ export default function HighlightDetailPage() {
 
                 {/* Actions */}
                 <div className="border-t pt-6 flex items-center space-x-4">
-                  <button className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                  <Link
+                    href={`/mywork/digital-signage/new?highlightId=${highlightId}`}
+                    className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                  >
                     <Monitor className="h-4 w-4 mr-2" />
                     Generate Digital Signage
-                  </button>
+                  </Link>
                   <button className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
                     <Share2 className="h-4 w-4 mr-2" />
                     Share with Team
