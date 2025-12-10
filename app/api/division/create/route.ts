@@ -1,3 +1,14 @@
+/**
+ * ⚠️ DEPRECATED - COMMENTED OUT
+ * 
+ * This route referenced the deleted DivisionUnit model.
+ * Will be reworked as part of the company create UX redesign.
+ * 
+ * MVP1 Architecture: division is now a string label on WorkMe,
+ * not a separate model. Use /api/company-affiliation/save instead.
+ */
+
+/*
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
@@ -89,5 +100,14 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     )
   }
+}
+*/
+
+// Stub to prevent 404
+export async function POST() {
+  return NextResponse.json(
+    { success: false, error: 'This route has been deprecated. Use /api/company-affiliation/save instead.' },
+    { status: 410 }, // 410 Gone
+  )
 }
 

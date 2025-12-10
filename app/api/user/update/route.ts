@@ -3,6 +3,14 @@ import { verifyAuth } from '@/lib/server/verifyAuth'
 import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
 
+/**
+ * ⚠️ DEPRECATED - COMMENTED OUT
+ * 
+ * This route referenced the deleted CompanyUnit model.
+ * Will be reworked as part of the company create UX redesign.
+ */
+
+/*
 export const dynamic = 'force-dynamic'
 
 /**
@@ -119,5 +127,14 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+*/
+
+// Stub to prevent 404
+export async function POST() {
+  return NextResponse.json(
+    { success: false, error: 'This route has been deprecated.' },
+    { status: 410 }, // 410 Gone
+  )
 }
 
