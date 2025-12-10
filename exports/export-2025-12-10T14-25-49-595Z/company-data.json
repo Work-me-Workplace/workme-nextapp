@@ -1,0 +1,43 @@
+[
+  {
+    "id": "52cf8ba3-3b7b-4c08-8723-46daa2636e3f",
+    "name": "Naval Sea Systems Command",
+    "industry": "Defense",
+    "website": null,
+    "city": null,
+    "state": "District of Columbia",
+    "description": null,
+    "headcount": null,
+    "companyType": null,
+    "revenueRange": null,
+    "createdAt": "2025-12-10T05:02:44.567Z",
+    "missionStatement": null,
+    "vision": null,
+    "values": null,
+    "brandTagline": null,
+    "brandLogoUrl": null,
+    "brandColorPrimary": null,
+    "brandColorSecondary": null,
+    "ceoName": null,
+    "ceoTitle": null,
+    "deputyName": null,
+    "deputyTitle": null,
+    "chiefOfStaff": null,
+    "directorates": [],
+    "linkedinUrl": null,
+    "twitterUrl": null,
+    "facebookUrl": null,
+    "phone": null,
+    "country": null,
+    "members": [
+      {
+        "id": "688b4010-e4d0-48c0-a8cb-2313eadf5efb",
+        "email": "adam.cole.novadude@gmail.com",
+        "firebaseId": "hRkLr8zFkjRJuFLjYOmZ3jrKvBE3",
+        "createdAt": "2025-12-10T05:00:28.541Z"
+      }
+    ],
+    "workplaces": [],
+    "employees": []
+  }
+]
