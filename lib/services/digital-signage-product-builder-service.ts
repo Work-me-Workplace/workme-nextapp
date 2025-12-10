@@ -21,10 +21,13 @@ export interface BuildDigitalSignageProductInput {
   
   // Pre-parsed data (if not using rawText)
   workforceAchievement?: {
-    personName: string
-    unit?: string | null
-    achievement: string
-    details?: string | null
+    headline: string
+    subhead?: string | null
+    detailBlock?: string | null
+    runtimeGuidance?: string | null
+    imageAssetId?: string | null
+    employeeId?: string | null
+    highlightId?: string | null
   }
   companyNews?: {
     headline: string
@@ -91,16 +94,15 @@ export async function buildDigitalSignageProduct(
   }
 
   // Step 2: Determine the data to use (parsed or provided)
+  // Note: For WORKFORCE_ACHIEVEMENT, we should use the DigitalSignEmployeeHighlightBuilderService
+  // instead of the generic parser, so parsedData is not used for this type
   let workforceAchievement = input.workforceAchievement
   let companyNews = input.companyNews
   let workforce = input.workforce
   let companyEvent = input.companyEvent
 
-  if (parsedData) {
+  if (parsedData && parsedData.type !== 'WORKFORCE_ACHIEVEMENT') {
     switch (parsedData.type) {
-      case 'WORKFORCE_ACHIEVEMENT':
-        workforceAchievement = parsedData.data
-        break
       case 'COMPANY_NEWS':
         companyNews = parsedData.data
         break
@@ -133,16 +135,19 @@ export async function buildDigitalSignageProduct(
       signType,
       companyUnit: companyUnit || null,
       createdByWorkMeId,
-      ...(signType === DigitalSignType.WORKFORCE_ACHIEVEMENT && workforceAchievement && {
-        workforceAchievement: {
-          create: {
-            personName: workforceAchievement.personName,
-            unit: workforceAchievement.unit || null,
-            achievement: workforceAchievement.achievement,
-            details: workforceAchievement.details || null,
+        ...(signType === DigitalSignType.WORKFORCE_ACHIEVEMENT && workforceAchievement && {
+          workforceAchievement: {
+            create: {
+              headline: workforceAchievement.headline,
+              subhead: workforceAchievement.subhead || null,
+              detailBlock: workforceAchievement.detailBlock || null,
+              runtimeGuidance: workforceAchievement.runtimeGuidance || '1 week',
+              imageAssetId: workforceAchievement.imageAssetId || null,
+              employeeId: workforceAchievement.employeeId || null,
+              highlightId: workforceAchievement.highlightId || null,
+            }
           }
-        }
-      }),
+        }),
       ...(signType === DigitalSignType.COMPANY_NEWS && companyNews && {
         companyNews: {
           create: {
