@@ -135,6 +135,16 @@ enum DesignWorkPackageStatus {
   COMPLETE
 }
 
+enum PlatformMilestoneType {
+  CONTRACT_AWARDED
+  KEEL_LAYING
+  HULL_COMPLETION
+  LAUNCH
+  SEA_TRIALS
+  DELIVERY
+  COMMISSIONING
+}
+
 // ============================================
 // WORKME COMPANY MODEL (Silent Background Tag)
 // ============================================
@@ -1286,45 +1296,231 @@ model ExternalCompanyPressure {
 // COMPANY PLATFORM PRODUCT MODELS
 // ============================================
 model CompanyPlatformProduct {
-  id        String   @id @default(uuid())
+  id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  name        String // "Virginia-class"
-  category    String? // "Submarine", "Surface Ship"
-  programCode String? // "SSN", "SSBN", etc.
+  name        String          // "Virginia-class"
+  alternativeNames String[] @default([]) // "SSN", "Attack Submarine", "VCS"
+  category    String?         // "Submarine", "Surface Combatant"
   description String?
-  whySpecial  String?
 
+  programCode String?         // "SSN", "SSBN", etc.
+  whySpecial  String?         // High-level: stealth, payload, mission role
+  payloadNotes String?        // e.g., VPM adds 28 missiles
+
+  intendedTotalUnits Int?     // e.g., 12 Columbia-class subs
+  productionNotes   String?   // yard performance, challenges, etc.
+
+  // Optional "other ships in this class" strings (not unit models)
+  knownShipsInClass String[] @default([])
+
+  // AI or reporting derived signals
+  currentProgressEstimate Int?   // 0–100 for overall program maturity
+  programStatus String?          // "On Track", "Delayed", "Rebaseline Expected"
+
+  // Legacy fields (keeping for backward compatibility)
   nextDeliveryExpected DateTime?
   lastDeliveryDate     DateTime?
 
   units CompanyPlatformUnit[]
+  statements CompanyPlatformStatement[]
+  updates    CompanyPlatformUpdate[]
 
   @@index([name])
-  @@index([category])
   @@index([programCode])
+  @@index([category])
 }
 
 model CompanyPlatformUnit {
-  id                String @id @default(uuid())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   platformProductId String
+  platformProduct   CompanyPlatformProduct @relation(fields: [platformProductId], references: [id], onDelete: Cascade)
 
-  hullNumber      String // "SSN 804"
-  name            String?
-  shipyard        String?
-  lifecycleStatus String?
-  description     String?
+  hullNumber  String        // "SSN 804"
+  name        String?       // "Barb"
+  block       String?       // "Block V", "Block IV"
+  shipyard    String?       // HII Newport News, Electric Boat
+  status      String?       // "Under Construction", "Keel Laid", "Sea Trials", etc.
+  description String?
 
-  nextMilestoneExpected DateTime?
+  percentComplete Int?
+  deliveryExpected DateTime?
+  commissioningDate DateTime?
 
-  // reverse relation
+  // Raw signals & updates
+  statements CompanyPlatformUnitStatement[]
+  updates    CompanyPlatformUnitUpdate[]
   milestones CompanyMilestone[]
-
-  platformProduct CompanyPlatformProduct @relation(fields: [platformProductId], references: [id], onDelete: Cascade)
 
   @@index([platformProductId])
   @@index([hullNumber])
+  @@index([name])
+}
+
+// ============================================
+// COMPANY PLATFORM STATEMENT MODEL
+// ============================================
+model CompanyPlatformStatement {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  platformProductId String
+  platformProduct   CompanyPlatformProduct @relation(fields: [platformProductId], references: [id], onDelete: Cascade)
+
+  sourceName String?     // "USNI News", "DoD Release", "GD CEO Earnings Call"
+  sourceUrl  String?
+  headline   String?
+  rawText    String      // Full pasted article/content
+
+  aiSummary  String?     // GPT-generated summary
+  aiTags     String[] @default([]) // e.g. ["schedule", "industrial base", "cost"]
+
+  // Linking to updates we derive from this statement
+  updates CompanyPlatformUpdate[]
+
+  @@index([platformProductId])
+  @@index([sourceName])
+}
+
+// ============================================
+// COMPANY PLATFORM UPDATE MODEL
+// ============================================
+model CompanyPlatformUpdate {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  platformProductId String
+  platformProduct   CompanyPlatformProduct @relation(fields: [platformProductId], references: [id], onDelete: Cascade)
+
+  statementId String?
+  statement   CompanyPlatformStatement? @relation(fields: [statementId], references: [id], onDelete: SetNull)
+
+  // What changed or was reported
+  scheduleStatus     String? // "Behind", "Ahead", "Critical Path Issue"
+  costStatus         String? // "Cost Growth", "Stable", "Rebaseline"
+  industrialBaseNote String? // "Labor shortage", "supplier delays"
+  leadershipQuote    String? // Parsed relevant quote
+  percentCompleteEstimate Int? // If article says "60% complete" (program level)
+
+  // Overwriteable fields for the platform record
+  override_intendedTotalUnits   Int?
+  override_programStatus        String?
+  override_currentProgressEstimate Int?
+
+  narrativeSummary String?       // AI structured meaning
+  tags            String[] @default([])
+
+  @@index([platformProductId])
+  @@index([statementId])
+  @@index([scheduleStatus])
+}
+
+// ============================================
+// COMPANY PLATFORM UNIT STATEMENT MODEL
+// ============================================
+model CompanyPlatformUnitStatement {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  platformUnitId String
+  platformUnit   CompanyPlatformUnit @relation(fields: [platformUnitId], references: [id], onDelete: Cascade)
+
+  sourceName String?      // "USNI News", "HII Release"
+  sourceUrl  String?
+  headline   String?
+  rawText    String       // full text of the release or article
+
+  aiSummary String?
+  aiTags    String[] @default([])
+
+  updates CompanyPlatformUnitUpdate[]
+
+  @@index([platformUnitId])
+}
+
+// ============================================
+// COMPANY PLATFORM UNIT UPDATE MODEL
+// ============================================
+model CompanyPlatformUnitUpdate {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  platformUnitId String
+  platformUnit   CompanyPlatformUnit @relation(fields: [platformUnitId], references: [id], onDelete: Cascade)
+
+  statementId String?
+  statement   CompanyPlatformUnitStatement? @relation(fields: [statementId], references: [id], onDelete: SetNull)
+
+  // Extracted signals
+  percentComplete Int?
+  statusUpdate    String?   // "Keel Laid", "Construction 60% complete"
+  scheduleNote    String?
+  industrialBaseNote String?
+  leadershipQuote String?
+
+  // Dates that may be provided in an update
+  keelLaidDate       DateTime?
+  seaTrialsStartDate DateTime?
+  deliveryDate       DateTime?
+  commissioningDate  DateTime?
+
+  // AI narrative summary
+  narrativeSummary String?
+  tags            String[] @default([])
+
+  // Reverse relation to milestone (if this update triggered one)
+  milestones CompanyMilestone[]
+
+  @@index([platformUnitId])
+  @@index([statementId])
+  @@index([statusUpdate])
+}
+
+// ============================================
+// COMPANY PRODUCT CAPACITY MODEL
+// ============================================
+model CompanyProductCapacity {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  name        String               // "Newport News Shipbuilding"
+  location    String?              // "Newport News, VA"
+  contractorType String?           // "shipyard", "module supplier", etc.
+  capabilities String[] @default([]) // e.g. ["pressure hull modules", "final assembly"]
+  constraints  String[] @default([]) // bottlenecks, known issues
+  productionRate String?           // free-text for now
+  notes        String?
+
+  @@index([name])
+  @@index([contractorType])
+}
+
+// ============================================
+// COMPANY PRODUCT INNOVATION MODEL
+// ============================================
+model CompanyProductInnovation {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  name          String
+  description   String?
+  impactArea    String?            // "operations", "training", "maintenance", etc.
+  maturityLevel String?            // TRL or internal readiness scale
+  demoStatus    String?
+  partners      String[] @default([])
+  benefits      String[] @default([])
+
+  @@index([name])
+  @@index([impactArea])
+  @@index([maturityLevel])
 }
 
 // ============================================
@@ -1335,26 +1531,20 @@ model CompanyMilestone {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  title       String
-  description String?
-  date        DateTime?
+  platformUnitId String
+  platformUnit   CompanyPlatformUnit @relation(fields: [platformUnitId], references: [id], onDelete: Cascade)
 
-  sourceUrl String?
+  milestoneType PlatformMilestoneType
+  date         DateTime?
+  description  String?
+  sourceUrl    String?
 
-  // Milestone type support: PRODUCT, WORKFORCE, INNOVATION
-  milestoneType String? // "PRODUCT", "WORKFORCE", "INNOVATION"
+  // Reverse link back to unit update that triggered this
+  updateId String? @unique
+  update   CompanyPlatformUnitUpdate? @relation(fields: [updateId], references: [id], onDelete: SetNull)
 
-  // Optional link to platform unit (for PRODUCT milestones)
-  platformUnitId String?
-  platformUnit   CompanyPlatformUnit? @relation(fields: [platformUnitId], references: [id], onDelete: SetNull)
-
-  companyUnit       String?
-  createdByWorkMeId String? @db.Uuid
-
-  @@index([companyUnit])
-  @@index([createdByWorkMeId])
-  @@index([milestoneType])
   @@index([platformUnitId])
+  @@index([milestoneType])
   @@index([date])
 }
 
