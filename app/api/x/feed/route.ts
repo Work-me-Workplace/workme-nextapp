@@ -1,5 +1,5 @@
 /**
- * POST /api/signalingest/x/feed
+ * POST /api/x/feed
  * 
  * X Feed Signal - Live X feed signals from user's ecosystem contacts
  * 
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       })
     }
 
-    console.log('[API POST /api/signalingest/x/feed]', {
+    console.log('[API POST /api/x/feed]', {
       workMeId: workMe.id,
       handlesCount: handles.length,
       handles,
@@ -71,11 +71,10 @@ export async function POST(request: Request) {
       note: 'Once X API is integrated, this will return actual tweets from the people in your ecosystem.',
     })
   } catch (error: any) {
-    console.error('❌ POST /api/signalingest/x/feed error:', error)
+    console.error('❌ POST /api/x/feed error:', error)
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to process X feed' },
       { status: 500 }
     )
   }
 }
-

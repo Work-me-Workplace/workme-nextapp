@@ -38,7 +38,7 @@ export default function XFeedViewPage() {
     setResults(null)
 
     try {
-      const response = await api.post<XFeedResponse>('/api/signalingest/x/feed', {})
+      const response = await api.post<XFeedResponse>('/api/x/feed', {})
 
       if (response.data.success) {
         setResults(response.data)

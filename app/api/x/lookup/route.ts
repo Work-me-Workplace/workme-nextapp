@@ -1,5 +1,5 @@
 /**
- * POST /api/xfeed/lookup
+ * POST /api/x/lookup
  * 
  * Lookup Twitter/X handle for a given name or handle
  * Body: { query: string, type: 'organization' | 'person' | 'hashtag' }
@@ -67,11 +67,10 @@ export async function POST(request: NextRequest) {
       note: 'Handle normalization complete. Twitter API verification coming soon.',
     })
   } catch (error: any) {
-    console.error('❌ POST /api/xfeed/lookup error:', error)
+    console.error('❌ POST /api/x/lookup error:', error)
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to lookup handle' },
       { status: 500 }
     )
   }
 }
-
