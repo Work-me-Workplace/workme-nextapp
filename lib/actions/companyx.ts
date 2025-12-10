@@ -3,6 +3,7 @@
 import { verifyAuth } from '@/lib/server/verifyAuth'
 import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 /**
  * Server actions for creating CompanyX models
@@ -311,8 +312,8 @@ export async function createCareer(data: {
       data: {
         title: data.title,
         description: data.description || null,
-        eligibility: data.deadlines ? { deadlines: data.deadlines } : null,
-        application: data.resourceLink ? { link: data.resourceLink } : null,
+        ...(data.deadlines ? { eligibility: { deadlines: data.deadlines } } : {}),
+        ...(data.resourceLink ? { application: { link: data.resourceLink } } : {}),
         companyUnit,
         createdByWorkMeId: workMeId,
       },
@@ -365,7 +366,7 @@ export async function createEmployeeCause(data: {
               email: data.pocEmail || null,
               phone: data.pocPhone || null,
             }]
-          : null,
+          : undefined,
         sponsoringDepartment: data.sponsoringDepartment || null,
         companyUnit,
       },
