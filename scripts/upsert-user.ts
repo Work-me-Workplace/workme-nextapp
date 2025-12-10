@@ -21,6 +21,7 @@ async function upsertUser(email: string, firebaseId: string) {
         id: true,
         firebaseId: true,
         email: true,
+        workMeCompanyId: true,
       },
     })
 
@@ -37,12 +38,13 @@ async function upsertUser(email: string, firebaseId: string) {
         where: { id: workMe.id },
         data: {
           firebaseId,
-          ...(workMe.workMeCompanyId ? {} : { workMeCompanyId }), // Only set if missing
+          ...(!workMe.workMeCompanyId ? { workMeCompanyId } : {}), // Only set if missing
         },
         select: {
           id: true,
           firebaseId: true,
           email: true,
+          workMeCompanyId: true,
         },
       })
       
@@ -72,6 +74,7 @@ async function upsertUser(email: string, firebaseId: string) {
         id: true,
         firebaseId: true,
         email: true,
+        workMeCompanyId: true,
       },
     })
 
@@ -91,6 +94,7 @@ async function upsertUser(email: string, firebaseId: string) {
             id: true,
             firebaseId: true,
             email: true,
+            workMeCompanyId: true,
           },
         })
         console.log(`\n✅ Updated email to: ${workMe.email}`)
@@ -112,6 +116,7 @@ async function upsertUser(email: string, firebaseId: string) {
         id: true,
         firebaseId: true,
         email: true,
+        workMeCompanyId: true,
       },
     })
 

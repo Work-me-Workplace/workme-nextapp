@@ -39,6 +39,8 @@ export default function NewHighlightPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<Employee[]>([])
   const [searching, setSearching] = useState(false)
+  const [hasSearched, setHasSearched] = useState(false)
+  const [showCreateForm, setShowCreateForm] = useState(false)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
   const [creatingEmployee, setCreatingEmployee] = useState(false)
   const [newEmployee, setNewEmployee] = useState({
@@ -73,18 +75,31 @@ export default function NewHighlightPage() {
   async function handleSearch() {
     if (!searchQuery.trim()) {
       setSearchResults([])
+      setHasSearched(false)
+      setShowCreateForm(false)
       return
     }
 
     setSearching(true)
+    setHasSearched(false)
     try {
       const response = await api.get(`/api/employee/search?q=${encodeURIComponent(searchQuery.trim())}`)
       if (response.data.success) {
-        setSearchResults(response.data.employees || [])
+        const employees = response.data.employees || []
+        setSearchResults(employees)
+        setHasSearched(true)
+        // If no results, show prompt to create
+        if (employees.length === 0) {
+          setShowCreateForm(true)
+        } else {
+          setShowCreateForm(false)
+        }
       }
     } catch (err: any) {
       console.error('Failed to search employees:', err)
       setSearchResults([])
+      setHasSearched(true)
+      setShowCreateForm(true)
     } finally {
       setSearching(false)
     }
@@ -96,6 +111,8 @@ export default function NewHighlightPage() {
         handleSearch()
       } else {
         setSearchResults([])
+        setHasSearched(false)
+        setShowCreateForm(false)
       }
     }, 300)
 
@@ -130,6 +147,9 @@ export default function NewHighlightPage() {
           companyUnit: employee.companyUnit,
         })
         setNewEmployee({ fullName: '', title: '', email: '', companyUnit: '' })
+        setShowCreateForm(false)
+        setHasSearched(false)
+        setSearchQuery('')
       } else {
         setError(response.data.error || 'Failed to create employee')
       }
@@ -318,6 +338,40 @@ export default function NewHighlightPage() {
                       <div className="mt-2 text-sm text-gray-500">Searching...</div>
                     )}
 
+                    {hasSearched && searchResults.length === 0 && !searching && (
+                      <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="flex items-start">
+                          <UserPlus className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-blue-900 mb-1">
+                              No employees found for "{searchQuery}"
+                            </p>
+                            <p className="text-sm text-blue-700 mb-3">
+                              Would you like to create a new employee profile?
+                            </p>
+                            <button
+                              onClick={() => {
+                                setShowCreateForm(true)
+                                // Pre-fill the name from search query
+                                setNewEmployee({ ...newEmployee, fullName: searchQuery })
+                                // Scroll to create form
+                                setTimeout(() => {
+                                  const createForm = document.getElementById('create-employee-form')
+                                  createForm?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                                  const nameInput = document.getElementById('new-employee-name')
+                                  nameInput?.focus()
+                                }, 100)
+                              }}
+                              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition"
+                            >
+                              <UserPlus className="h-4 w-4 mr-2" />
+                              Create New Employee
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {searchResults.length > 0 && (
                       <div className="mt-2 border border-gray-200 rounded-lg max-h-60 overflow-y-auto">
                         {searchResults.map((employee) => (
@@ -327,6 +381,8 @@ export default function NewHighlightPage() {
                               setSelectedEmployee(employee)
                               setSearchQuery('')
                               setSearchResults([])
+                              setHasSearched(false)
+                              setShowCreateForm(false)
                             }}
                             className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
                               selectedEmployee?.id === employee.id ? 'bg-blue-50 border-blue-200' : ''
@@ -345,23 +401,26 @@ export default function NewHighlightPage() {
                     )}
                   </div>
 
-                  {/* Divider */}
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-300"></div>
+                  {/* Divider - only show if not showing create form prompt */}
+                  {(!hasSearched || searchResults.length > 0) && (
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300"></div>
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-white text-gray-500">OR</span>
+                      </div>
                     </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-2 bg-white text-gray-500">OR</span>
-                    </div>
-                  </div>
+                  )}
 
                   {/* Create new employee */}
-                  <div>
+                  <div id="create-employee-form" className={showCreateForm ? 'ring-2 ring-blue-500 rounded-lg p-4 bg-blue-50/30' : ''}>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Create New Employee
                     </label>
                     <div className="space-y-3">
                       <input
+                        id="new-employee-name"
                         type="text"
                         value={newEmployee.fullName}
                         onChange={(e) => setNewEmployee({ ...newEmployee, fullName: e.target.value })}

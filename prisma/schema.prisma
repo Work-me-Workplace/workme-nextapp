@@ -1339,6 +1339,82 @@ model ExternalCompanyPressure {
 }
 
 // ============================================
+// COMPANY PLATFORM PRODUCT MODELS
+// ============================================
+model CompanyPlatformProduct {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name        String // "Virginia-class"
+  category    String? // "Submarine", "Surface Ship"
+  programCode String? // "SSN", "SSBN", etc.
+  description String?
+  whySpecial  String?
+
+  nextDeliveryExpected DateTime?
+  lastDeliveryDate     DateTime?
+
+  units CompanyPlatformUnit[]
+
+  @@index([name])
+  @@index([category])
+  @@index([programCode])
+}
+
+model CompanyPlatformUnit {
+  id                String @id @default(uuid())
+  platformProductId String
+
+  hullNumber      String // "SSN 804"
+  name            String?
+  shipyard        String?
+  lifecycleStatus String?
+  description     String?
+
+  nextMilestoneExpected DateTime?
+
+  // reverse relation
+  milestones CompanyMilestone[]
+
+  platformProduct CompanyPlatformProduct @relation(fields: [platformProductId], references: [id], onDelete: Cascade)
+
+  @@index([platformProductId])
+  @@index([hullNumber])
+}
+
+// ============================================
+// COMPANY MILESTONE MODEL
+// ============================================
+model CompanyMilestone {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  title       String
+  description String?
+  date        DateTime?
+
+  sourceUrl String?
+
+  // Milestone type support: PRODUCT, WORKFORCE, INNOVATION
+  milestoneType String? // "PRODUCT", "WORKFORCE", "INNOVATION"
+
+  // Optional link to platform unit (for PRODUCT milestones)
+  platformUnitId String?
+  platformUnit   CompanyPlatformUnit? @relation(fields: [platformUnitId], references: [id], onDelete: SetNull)
+
+  companyUnit       String?
+  createdByWorkMeId String? @db.Uuid
+
+  @@index([companyUnit])
+  @@index([createdByWorkMeId])
+  @@index([milestoneType])
+  @@index([platformUnitId])
+  @@index([date])
+}
+
+// ============================================
 // WORKENGAGE MODELS
 // ============================================
 

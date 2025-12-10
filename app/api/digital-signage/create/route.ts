@@ -14,14 +14,12 @@ interface CreateDigitalSignageRequest {
     unit?: string
     achievement: string
     details?: string
-    photoUrl?: string
   }
   // Workforce
   workforce?: {
     title: string
     summary?: string
     bullets?: string[]
-    imageUrl?: string
     icon?: string
     background?: string
     footerNote?: string
@@ -32,7 +30,6 @@ interface CreateDigitalSignageRequest {
     subheadline?: string
     body?: string
     link?: string
-    thumbnail?: string
   }
   // Company Event
   companyEvent?: {
@@ -108,7 +105,6 @@ export async function POST(request: NextRequest) {
               unit: workforceAchievement.unit || null,
               achievement: workforceAchievement.achievement,
               details: workforceAchievement.details || null,
-              photoUrl: workforceAchievement.photoUrl || null,
             }
           }
         }),
@@ -118,7 +114,6 @@ export async function POST(request: NextRequest) {
               title: workforce.title,
               summary: workforce.summary || null,
               bullets: workforce.bullets || [],
-              imageUrl: workforce.imageUrl || null,
               icon: workforce.icon || null,
               background: workforce.background || null,
               footerNote: workforce.footerNote || null,
@@ -132,7 +127,6 @@ export async function POST(request: NextRequest) {
               subheadline: companyNews.subheadline || null,
               body: companyNews.body || null,
               link: companyNews.link || null,
-              thumbnail: companyNews.thumbnail || null,
             }
           }
         }),
