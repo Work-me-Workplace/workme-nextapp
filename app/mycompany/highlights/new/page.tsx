@@ -7,6 +7,7 @@ import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { Sparkles, ArrowLeft, Search, UserPlus, Check } from 'lucide-react'
 import api from '@/lib/api'
+import { HighlightClassification, classificationConfig, mapStringToClassification } from '@/lib/config/highlightClassification'
 
 interface Employee {
   id: string
@@ -20,7 +21,7 @@ interface ParsedHighlight {
   citationText: string
   achievement?: string | null
   narrative?: string | null
-  classification?: string | null
+  classification?: HighlightClassification | string | null
   awardName?: string | null
   awardingAgency?: string | null
   awardYear?: number | null
@@ -52,7 +53,6 @@ export default function NewHighlightPage() {
   
   // Step 2: Citation ingestion
   const [rawText, setRawText] = useState('')
-  const [photoUrl, setPhotoUrl] = useState('')
   const [parsedHighlight, setParsedHighlight] = useState<ParsedHighlight | null>(null)
   const [highlightId, setHighlightId] = useState<string | null>(null)
   
@@ -194,14 +194,18 @@ export default function NewHighlightPage() {
     try {
       const response = await api.post('/api/company/highlights/ingest', {
         text: rawText.trim(),
-        photoUrl: photoUrl.trim() || undefined,
         employeeId: selectedEmployee.id,
         unit: selectedEmployee.companyUnit || undefined,
       })
 
       if (response.data.success) {
-        setParsedHighlight(response.data.highlight)
-        setHighlightId(response.data.highlight.id)
+        const highlight = response.data.highlight
+        // Map string classification to enum if needed
+        const mappedClassification = highlight.classification 
+          ? (mapStringToClassification(highlight.classification) || highlight.classification)
+          : null
+        setParsedHighlight({ ...highlight, classification: mappedClassification })
+        setHighlightId(highlight.id)
         setStep('review')
       } else {
         setError(response.data.error || 'Failed to extract highlight')
@@ -480,6 +484,9 @@ export default function NewHighlightPage() {
                       <div>
                         <label className="block text-sm font-medium text-blue-900 mb-1">
                           Unit <span className="text-red-500">*</span>
+                          {selectedEmployee.companyUnit && (
+                            <span className="ml-2 text-xs text-blue-600 font-normal">(locked from employee profile)</span>
+                          )}
                         </label>
                         <input
                           type="text"
@@ -488,8 +495,18 @@ export default function NewHighlightPage() {
                             setSelectedEmployee({ ...selectedEmployee, companyUnit: e.target.value })
                           }}
                           placeholder="SEA 05, SEA08D1, etc."
-                          className="w-full px-3 py-2 border border-blue-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          disabled={!!selectedEmployee.companyUnit}
+                          className={`w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            selectedEmployee.companyUnit 
+                              ? 'bg-gray-100 text-gray-700 cursor-not-allowed' 
+                              : 'bg-white'
+                          }`}
                         />
+                        {selectedEmployee.companyUnit && (
+                          <p className="mt-1 text-xs text-blue-600">
+                            This employee's unit is set. Click "Change" above to select a different employee.
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}
@@ -546,20 +563,9 @@ export default function NewHighlightPage() {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Paste the full award citation, recognition text, or highlight writeup here..."
                     />
-                  </div>
-
-                  <div>
-                    <label htmlFor="photoUrl" className="block text-sm font-medium text-gray-700 mb-2">
-                      Photo URL (Optional)
-                    </label>
-                    <input
-                      id="photoUrl"
-                      type="url"
-                      value={photoUrl}
-                      onChange={(e) => setPhotoUrl(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="https://..."
-                    />
+                    <p className="mt-2 text-sm text-gray-500">
+                      Note: Photos can be attached after saving. The design team will handle photo integration.
+                    </p>
                   </div>
 
                   <div className="flex items-center justify-end space-x-4 pt-4 border-t">
@@ -630,12 +636,35 @@ export default function NewHighlightPage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Classification</label>
-                          <input
-                            type="text"
-                            value={parsedHighlight.classification || ''}
-                            onChange={(e) => setParsedHighlight({ ...parsedHighlight, classification: e.target.value || null })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          />
+                          <select
+                            value={
+                              parsedHighlight.classification && 
+                              Object.values(HighlightClassification).includes(parsedHighlight.classification as HighlightClassification)
+                                ? parsedHighlight.classification 
+                                : ''
+                            }
+                            onChange={(e) => {
+                              const value = e.target.value as HighlightClassification | ''
+                              setParsedHighlight({ ...parsedHighlight, classification: value || null })
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          >
+                            <option value="">Select classification...</option>
+                            {Object.values(HighlightClassification).map((classification) => {
+                              const config = classificationConfig[classification]
+                              return (
+                                <option key={classification} value={classification}>
+                                  {config.label} - {config.description}
+                                </option>
+                              )
+                            })}
+                          </select>
+                          {parsedHighlight.classification && 
+                           Object.values(HighlightClassification).includes(parsedHighlight.classification as HighlightClassification) && (
+                            <p className="mt-1 text-xs text-gray-500">
+                              {classificationConfig[parsedHighlight.classification as HighlightClassification]?.description}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>

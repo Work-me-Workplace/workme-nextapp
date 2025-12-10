@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getWorkMeContext } from '@/lib/server/getWorkMeContext'
 import { parseHighlight } from '@/lib/ai/highlightParser'
 import { prisma } from '@/lib/prisma'
+import { mapStringToClassification, HighlightClassification } from '@/lib/config/highlightClassification'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,13 +66,21 @@ export async function POST(request: NextRequest) {
     // 3. Parse with AI (still extracts everything, but we'll ignore employee fields)
     const parsed = await parseHighlight(text.trim())
 
-    // 4. Create draft highlight in database (use provided unit, not parsed unit)
+    // 4. Map classification to enum if needed
+    const classification = parsed.classification
+      ? (mapStringToClassification(parsed.classification) || 
+         (Object.values(HighlightClassification).includes(parsed.classification as HighlightClassification) 
+           ? parsed.classification as HighlightClassification 
+           : null))
+      : null
+
+    // 5. Create draft highlight in database (use provided unit, not parsed unit)
     const highlight = await prisma.companyEmployeeHighlight.create({
       data: {
         citationText: parsed.citationText,
         achievement: parsed.achievement || null,
         narrative: parsed.narrative || null,
-        classification: parsed.classification || null,
+        classification: classification,
         awardName: parsed.awardName || null,
         awardingAgency: parsed.awardingAgency || null,
         awardYear: parsed.awardYear || null,

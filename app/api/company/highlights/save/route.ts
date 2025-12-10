@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getWorkMeContext } from '@/lib/server/getWorkMeContext'
 import { prisma } from '@/lib/prisma'
+import { mapStringToClassification, HighlightClassification } from '@/lib/config/highlightClassification'
 
 export const dynamic = 'force-dynamic'
 
@@ -76,14 +77,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 3. Update highlight (it was created in ingest step)
+    // 3. Map classification to enum if needed
+    const classification = highlight.classification
+      ? (mapStringToClassification(highlight.classification) || 
+         (Object.values(HighlightClassification).includes(highlight.classification as HighlightClassification) 
+           ? highlight.classification as HighlightClassification 
+           : null))
+      : null
+
+    // 4. Update highlight (it was created in ingest step)
     const highlightRecord = await prisma.companyEmployeeHighlight.update({
       where: { id: highlightId },
       data: {
         citationText: highlight.citationText,
         achievement: highlight.achievement || null,
         narrative: highlight.narrative || null,
-        classification: highlight.classification || null,
+        classification: classification,
         awardName: highlight.awardName || null,
         awardingAgency: highlight.awardingAgency || null,
         awardYear: highlight.awardYear || null,

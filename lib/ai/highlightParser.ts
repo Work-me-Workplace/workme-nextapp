@@ -6,6 +6,7 @@
  */
 
 import OpenAI from 'openai'
+import { mapStringToClassification, HighlightClassification } from '@/lib/config/highlightClassification'
 
 function getOpenAI() {
   if (!process.env.OPENAI_API_KEY) {
@@ -25,7 +26,7 @@ export interface ParsedHighlight {
   awardYear?: number | null
   achievement?: string | null
   narrative?: string | null
-  classification?: string | null
+  classification?: HighlightClassification | string | null
   supervisorQuote?: string | null
   citationText: string // MUST return full verbatim text
 }
@@ -49,7 +50,7 @@ Return JSON with these exact fields:
   "awardYear": Year as number (e.g., 2024) or null,
   "achievement": "Single-sentence distilled summary of what they achieved or null",
   "narrative": "Optional AI-synthesized story or narrative or null",
-  "classification": "Category like 'Leadership', 'Innovation', 'Excellence', etc. or null",
+  "classification": "Category: 'EXCELLENCE' (for Achievement/Award), 'LEADERSHIP' (for Promotion/new leadership role), 'INNOVATION' (for Patent/technical breakthrough), 'SERVICE' (for Volunteer recognition), 'IMPACT' (for Mission impact/high-visibility accomplishment), or null",
   "supervisorQuote": "Quote from supervisor or leadership about the employee or null",
   "citationText": "FULL VERBATIM citation text - preserve EXACTLY as provided (REQUIRED)"
 }
@@ -84,6 +85,12 @@ ${raw.substring(0, 4000)}`
     const parsed = JSON.parse(response.choices[0].message.content || '{}')
 
     // Validate and normalize - ensure citationText is preserved
+    // Map classification string to enum if provided
+    const rawClassification = parsed.classification || null
+    const mappedClassification = rawClassification 
+      ? (mapStringToClassification(rawClassification) || (Object.values(HighlightClassification).includes(rawClassification as HighlightClassification) ? rawClassification : null))
+      : null
+
     return {
       fullName: parsed.fullName || '',
       title: parsed.title || null,
@@ -93,7 +100,7 @@ ${raw.substring(0, 4000)}`
       awardYear: parsed.awardYear ? parseInt(String(parsed.awardYear)) : null,
       achievement: parsed.achievement || null,
       narrative: parsed.narrative || null,
-      classification: parsed.classification || null,
+      classification: mappedClassification,
       supervisorQuote: parsed.supervisorQuote || null,
       citationText: parsed.citationText || raw, // Fallback to original if not extracted
     }

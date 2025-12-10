@@ -7,12 +7,13 @@ import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { Award, Plus } from 'lucide-react'
 import api from '@/lib/api'
+import { getClassificationColor, classificationConfig, HighlightClassification } from '@/lib/config/highlightClassification'
 
 interface Highlight {
   id: string
   citationText: string
   achievement?: string | null
-  classification?: string | null
+  classification?: HighlightClassification | string | null
   awardName?: string | null
   awardingAgency?: string | null
   awardYear?: number | null
@@ -65,13 +66,12 @@ export default function EmployeeHighlightsPage() {
     }
   }
 
-  function getClassificationColor(classification?: string | null): string {
-    if (!classification) return 'bg-gray-100 text-gray-800'
-    const lower = classification.toLowerCase()
-    if (lower.includes('leadership')) return 'bg-blue-100 text-blue-800'
-    if (lower.includes('innovation')) return 'bg-purple-100 text-purple-800'
-    if (lower.includes('excellence')) return 'bg-green-100 text-green-800'
-    return 'bg-gray-100 text-gray-800'
+  function getClassificationLabel(classification?: HighlightClassification | string | null): string {
+    if (!classification) return ''
+    if (Object.values(HighlightClassification).includes(classification as HighlightClassification)) {
+      return classificationConfig[classification as HighlightClassification]?.label || String(classification)
+    }
+    return String(classification)
   }
 
   function getCitationExcerpt(text: string, maxLength: number = 150): string {
@@ -168,7 +168,7 @@ export default function EmployeeHighlightsPage() {
                     <div className="flex flex-wrap gap-2">
                       {highlight.classification && (
                         <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${getClassificationColor(highlight.classification)}`}>
-                          {highlight.classification}
+                          {getClassificationLabel(highlight.classification)}
                         </span>
                       )}
                       {highlight.awardYear && (

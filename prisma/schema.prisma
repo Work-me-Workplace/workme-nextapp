@@ -686,6 +686,14 @@ model CompanyEmployee {
 // ====================================================
 // COMPANY EMPLOYEE HIGHLIGHT
 // ====================================================
+enum HighlightClassification {
+  EXCELLENCE
+  LEADERSHIP
+  INNOVATION
+  SERVICE
+  IMPACT
+}
+
 model CompanyEmployeeHighlight {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
@@ -694,7 +702,7 @@ model CompanyEmployeeHighlight {
   citationText   String
   achievement    String?
   narrative      String?
-  classification String?
+  classification HighlightClassification?
 
   awardName      String?
   awardingAgency String?

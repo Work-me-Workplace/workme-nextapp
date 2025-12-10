@@ -7,6 +7,7 @@ import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { Award, ArrowLeft, Share2, Monitor, Calendar } from 'lucide-react'
 import api from '@/lib/api'
+import { getClassificationColor, classificationConfig, HighlightClassification } from '@/lib/config/highlightClassification'
 
 interface Employee {
   id: string
@@ -20,7 +21,7 @@ interface Highlight {
   citationText: string
   achievement?: string | null
   narrative?: string | null
-  classification?: string | null
+  classification?: HighlightClassification | string | null
   awardName?: string | null
   awardingAgency?: string | null
   awardYear?: number | null
@@ -82,13 +83,12 @@ export default function HighlightDetailPage() {
     }
   }
 
-  function getClassificationColor(classification?: string | null): string {
-    if (!classification) return 'bg-gray-100 text-gray-800'
-    const lower = classification.toLowerCase()
-    if (lower.includes('leadership')) return 'bg-blue-100 text-blue-800'
-    if (lower.includes('innovation')) return 'bg-purple-100 text-purple-800'
-    if (lower.includes('excellence')) return 'bg-green-100 text-green-800'
-    return 'bg-gray-100 text-gray-800'
+  function getClassificationLabel(classification?: HighlightClassification | string | null): string {
+    if (!classification) return ''
+    if (Object.values(HighlightClassification).includes(classification as HighlightClassification)) {
+      return classificationConfig[classification as HighlightClassification]?.label || String(classification)
+    }
+    return String(classification)
   }
 
   if (!workMeId || loading) {
@@ -204,9 +204,16 @@ export default function HighlightDetailPage() {
                       {highlight.classification && (
                         <div>
                           <p className="text-sm text-gray-500">Classification</p>
-                          <span className={`inline-block px-3 py-1 text-sm font-medium rounded ${getClassificationColor(highlight.classification)}`}>
-                            {highlight.classification}
-                          </span>
+                          <div className="space-y-1">
+                            <span className={`inline-block px-3 py-1 text-sm font-medium rounded ${getClassificationColor(highlight.classification)}`}>
+                              {getClassificationLabel(highlight.classification)}
+                            </span>
+                            {Object.values(HighlightClassification).includes(highlight.classification as HighlightClassification) && (
+                              <p className="text-xs text-gray-500">
+                                {classificationConfig[highlight.classification as HighlightClassification]?.description}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
