@@ -180,32 +180,6 @@ export default function CompanyXDetailPage() {
             )}
             {companyXModel.type === 'impact_event' && companyXModel && (
               <>
-          {/* Show CompanyX metadata based on type */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            {companyXModel.type === 'campaign' && companyXModel && (
-              <>
-                {companyXModel.windowStart && (
-                  <div>
-                    <span className="font-medium text-gray-700">Window Start:</span>
-                    <span className="ml-2 text-gray-600">{new Date(companyXModel.windowStart).toLocaleString()}</span>
-                  </div>
-                )}
-                {companyXModel.windowEnd && (
-                  <div>
-                    <span className="font-medium text-gray-700">Window End:</span>
-                    <span className="ml-2 text-gray-600">{new Date(companyXModel.windowEnd).toLocaleString()}</span>
-                  </div>
-                )}
-                {companyXModel.sponsor && (
-                  <div>
-                    <span className="font-medium text-gray-700">Sponsor:</span>
-                    <span className="ml-2 text-gray-600">{companyXModel.sponsor}</span>
-                  </div>
-                )}
-              </>
-            )}
-            {companyXModel.type === 'impact_event' && companyXModel && (
-              <>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Impact Details</h3>
                 {companyXModel.effectiveDate && (
                   <div>
