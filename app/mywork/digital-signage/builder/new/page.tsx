@@ -53,7 +53,7 @@ function DigitalSignageBuilderContent() {
   const [unit, setUnit] = useState('')
   const [achievement, setAchievement] = useState('')
   const [details, setDetails] = useState('')
-  const [photoUrl, setPhotoUrl] = useState('')
+  // Photo URL removed - use Asset system via DigitalSignAsset on final step instead
 
   // Form state - Workforce
   const [workforceTitle, setWorkforceTitle] = useState('')
@@ -215,8 +215,7 @@ function DigitalSignageBuilderContent() {
         setUnit(highlight.companyUnits?.[0] || '')
         setAchievement(highlight.achievement || highlight.citationText || '')
         setDetails(highlight.citationText || '')
-        // Photo URL removed - use Asset system via DigitalSignAsset instead
-        setPhotoUrl('')
+        // Photo URL removed - use Asset system via DigitalSignAsset on final step instead
       }
     }
   }, [highlight, signType])
@@ -305,7 +304,7 @@ function DigitalSignageBuilderContent() {
           unit: unit || null,
           achievement,
           details: details || null,
-          photoUrl: photoUrl || null,
+          // Photo URL removed - use Asset system via DigitalSignAsset on final step instead
         }
       } else if (signType === 'WORKFORCE') {
         payload.workforce = {
@@ -704,16 +703,7 @@ function DigitalSignageBuilderContent() {
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Photo URL</label>
-                      <input
-                        type="url"
-                        value={photoUrl}
-                        onChange={(e) => setPhotoUrl(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="https://..."
-                      />
-                    </div>
+                    {/* Photo URL removed - use Asset system via DigitalSignAsset on final step instead */}
                   </div>
                 )}
 
