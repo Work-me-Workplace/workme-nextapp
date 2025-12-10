@@ -9,23 +9,14 @@ export const dynamic = 'force-dynamic'
  * GET /api/workengage/highlight
  * 
  * Get highlights (read-only, pulls from CompanyEmployeeHighlight)
- * Optionally filters by companyUnit query param
  */
 export async function GET(request: NextRequest) {
   try {
     // 1. Auth - Verify Firebase token
-    const { firebaseId } = await verifyAuth(request as Request)
-    
-    // 2. Load WorkMe identity (for companyUnit if needed)
-    const workMe = await loadWorkMe(firebaseId)
-    const { companyUnit } = workMe
+    await verifyAuth(request as Request)
 
-    // 3. Get query params
-    const { searchParams } = new URL(request.url)
-    const filterCompanyUnit = searchParams.get('companyUnit') || companyUnit
-
-    // 4. Get highlights
-    const highlights = await workEngage.getHighlights(filterCompanyUnit || null)
+    // 2. Get highlights
+    const highlights = await workEngage.getHighlights()
 
     return NextResponse.json({
       success: true,
