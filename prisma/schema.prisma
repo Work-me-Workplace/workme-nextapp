@@ -826,12 +826,21 @@ model ProductDigitalSignWorkforceAchievement {
   id        String @id @default(cuid())
   signageId String @unique
 
-  personName  String
-  unit        String?
-  achievement String
-  details     String?
+  headline        String
+  subhead         String?
+  detailBlock     String?
+  runtimeGuidance String?
+
+  imageAssetId String?
+  imageAsset   Asset? @relation("ProductDigitalSignWorkforceAchievementImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
+
+  employeeId  String?
+  highlightId String?
 
   signage ProductDigitalSign @relation(fields: [signageId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([highlightId])
 }
 
 model ProductDigitalSignCompanyEvent {
@@ -883,6 +892,7 @@ model Asset {
   // Relations
   digitalSignAttachments DigitalSignAsset[]
   workPackageAttachments DesignWorkPackageAsset[]
+  productDigitalSignWorkforceAchievementImages ProductDigitalSignWorkforceAchievement[] @relation("ProductDigitalSignWorkforceAchievementImage")
 }
 
 model DigitalSignAsset {

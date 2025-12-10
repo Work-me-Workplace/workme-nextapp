@@ -2,18 +2,34 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireWorkMeAuth } from '@/lib/server/requireWorkMeAuth'
 import { prisma } from '@/lib/prisma'
 import { DigitalSignType } from '@prisma/client'
+import { buildDigitalSignFromHighlight } from '@/lib/services/digital-sign-employee-highlight-builder-service'
 
 export const dynamic = 'force-dynamic'
 
 interface CreateDigitalSignageRequest {
   signType: DigitalSignType
   companyUnit?: string
-  // Workforce Achievement
+  // Workforce Achievement (new structure)
   workforceAchievement?: {
-    personName: string
-    unit?: string
-    achievement: string
-    details?: string
+    // Option 1: Provide highlightId to build from existing highlight
+    highlightId?: string
+    // Option 2: Provide raw data to build from scratch
+    employeeId?: string
+    employeeFullName?: string
+    employeeTitle?: string
+    employeeUnit?: string
+    awardName?: string
+    awardingAgency?: string
+    awardYear?: number
+    achievement?: string
+    citationText?: string
+    classification?: string
+    // Final slide data (if already built)
+    headline?: string
+    subhead?: string
+    detailBlock?: string
+    runtimeGuidance?: string
+    imageAssetId?: string
   }
   // Workforce
   workforce?: {
@@ -71,6 +87,97 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // For WORKFORCE_ACHIEVEMENT, build the final slide if highlightId provided
+    let builtSignageData: {
+      headline: string
+      subhead: string | null
+      detailBlock: string | null
+      runtimeGuidance: string
+      imageAssetId?: string
+      employeeId?: string
+      highlightId?: string
+    } | null = null
+
+    if (signType === DigitalSignType.WORKFORCE_ACHIEVEMENT && workforceAchievement) {
+      // If highlightId provided, fetch highlight and build
+      if (workforceAchievement.highlightId) {
+        const highlight = await prisma.companyEmployeeHighlight.findUnique({
+          where: { id: workforceAchievement.highlightId },
+          include: {
+            employee: {
+              select: {
+                id: true,
+                fullName: true,
+                title: true,
+                companyUnit: true,
+              }
+            }
+          }
+        })
+
+        if (!highlight || !highlight.employee) {
+          return NextResponse.json(
+            { success: false, error: 'Highlight not found or has no employee' },
+            { status: 404 }
+          )
+        }
+
+        // Build using the builder service
+        const built = await buildDigitalSignFromHighlight({
+          employeeFullName: highlight.employee.fullName,
+          employeeTitle: highlight.employee.title,
+          employeeUnit: highlight.companyUnitLabel || highlight.employee.companyUnit,
+          awardName: highlight.awardName,
+          awardingAgency: highlight.awardingAgency,
+          awardYear: highlight.awardYear,
+          achievement: highlight.achievement,
+          citationText: highlight.citationText,
+          classification: highlight.classification,
+        })
+
+        builtSignageData = {
+          ...built,
+          imageAssetId: workforceAchievement.imageAssetId,
+          employeeId: highlight.employeeId,
+          highlightId: highlight.id,
+        }
+      } else if (workforceAchievement.headline) {
+        // Already built, use provided data
+        builtSignageData = {
+          headline: workforceAchievement.headline,
+          subhead: workforceAchievement.subhead || null,
+          detailBlock: workforceAchievement.detailBlock || null,
+          runtimeGuidance: workforceAchievement.runtimeGuidance || '1 week',
+          imageAssetId: workforceAchievement.imageAssetId,
+          employeeId: workforceAchievement.employeeId,
+        }
+      } else if (workforceAchievement.citationText) {
+        // Build from raw data
+        const built = await buildDigitalSignFromHighlight({
+          employeeFullName: workforceAchievement.employeeFullName || '',
+          employeeTitle: workforceAchievement.employeeTitle,
+          employeeUnit: workforceAchievement.employeeUnit,
+          awardName: workforceAchievement.awardName,
+          awardingAgency: workforceAchievement.awardingAgency,
+          awardYear: workforceAchievement.awardYear,
+          achievement: workforceAchievement.achievement,
+          citationText: workforceAchievement.citationText,
+          classification: workforceAchievement.classification,
+        })
+
+        builtSignageData = {
+          ...built,
+          imageAssetId: workforceAchievement.imageAssetId,
+          employeeId: workforceAchievement.employeeId,
+        }
+      } else {
+        return NextResponse.json(
+          { success: false, error: 'workforceAchievement must provide highlightId, headline, or citationText' },
+          { status: 400 }
+        )
+      }
+    }
+
     if (signType === DigitalSignType.WORKFORCE && !workforce) {
       return NextResponse.json(
         { success: false, error: 'workforce data is required for WORKFORCE sign type' },
@@ -92,19 +199,34 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get companyUnit from highlight if not provided and highlightId exists
+    let finalCompanyUnit = companyUnit || null
+    if (signType === DigitalSignType.WORKFORCE_ACHIEVEMENT && workforceAchievement?.highlightId && !finalCompanyUnit) {
+      const highlight = await prisma.companyEmployeeHighlight.findUnique({
+        where: { id: workforceAchievement.highlightId },
+        select: { companyUnitLabel: true }
+      })
+      if (highlight?.companyUnitLabel) {
+        finalCompanyUnit = highlight.companyUnitLabel
+      }
+    }
+
     // Create the digital signage product
     const signage = await prisma.productDigitalSign.create({
       data: {
         signType,
-        companyUnit: companyUnit || null,
+        companyUnit: finalCompanyUnit,
         createdByWorkMeId: auth.id,
-        ...(signType === DigitalSignType.WORKFORCE_ACHIEVEMENT && workforceAchievement && {
+        ...(signType === DigitalSignType.WORKFORCE_ACHIEVEMENT && builtSignageData && {
           workforceAchievement: {
             create: {
-              personName: workforceAchievement.personName,
-              unit: workforceAchievement.unit || null,
-              achievement: workforceAchievement.achievement,
-              details: workforceAchievement.details || null,
+              headline: builtSignageData.headline,
+              subhead: builtSignageData.subhead || null,
+              detailBlock: builtSignageData.detailBlock || null,
+              runtimeGuidance: builtSignageData.runtimeGuidance,
+              imageAssetId: builtSignageData.imageAssetId || null,
+              employeeId: builtSignageData.employeeId || null,
+              highlightId: builtSignageData.highlightId || null,
             }
           }
         }),
