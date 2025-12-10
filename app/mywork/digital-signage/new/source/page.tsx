@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { Database, Award, FileText, Sparkles } from 'lucide-react'
@@ -36,7 +36,7 @@ const sourceTypes = [
   },
 ]
 
-export default function DigitalSignageSourcePage() {
+function DigitalSignageSourceContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
@@ -132,5 +132,17 @@ export default function DigitalSignageSourcePage() {
         </main>
       </div>
     </div>
+  )
+}
+
+export default function DigitalSignageSourcePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <DigitalSignageSourceContent />
+    </Suspense>
   )
 }

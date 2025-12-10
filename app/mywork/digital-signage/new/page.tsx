@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { Users, Newspaper, Award, Calendar } from 'lucide-react'
@@ -36,7 +36,7 @@ const signTypes = [
   },
 ]
 
-export default function DigitalSignageNewPage() {
+function DigitalSignageNewContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
@@ -123,5 +123,17 @@ export default function DigitalSignageNewPage() {
         </main>
       </div>
     </div>
+  )
+}
+
+export default function DigitalSignageNewPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <DigitalSignageNewContent />
+    </Suspense>
   )
 }

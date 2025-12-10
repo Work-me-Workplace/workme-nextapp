@@ -11,11 +11,11 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireWorkMeAuth(request)
-    const { id } = params
+    const { id } = await params
 
     const signage = await prisma.productDigitalSign.findUnique({
       where: { id },
