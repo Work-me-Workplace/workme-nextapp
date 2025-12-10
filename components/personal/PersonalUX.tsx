@@ -49,15 +49,22 @@ export default function PersonalUX() {
         hasCompanyAffiliation = !!workMe.companyId
       }
 
-      // If not in localStorage or incomplete, check API
+      // Run all checks in parallel for faster loading
+      const promises: Promise<any>[] = []
+      
+      // Only check profile API if we need to
       if (!workMe || !hasProfile || !hasCompanyAffiliation) {
-        // Run all checks in parallel for faster loading
-        const [profileRes, objectivesRes] = await Promise.allSettled([
-          api.get('/api/workme/me'),
-          api.get('/api/objectives/list'),
-        ])
-
-        // Check profile (WorkMe with headline and handle)
+        promises.push(api.get('/api/workme/me'))
+      }
+      
+      // Always check objectives
+      promises.push(api.get('/api/objectives/list'))
+      
+      const results = await Promise.allSettled(promises)
+      
+      // Process profile result if we made that call
+      if (!workMe || !hasProfile || !hasCompanyAffiliation) {
+        const profileRes = results[0]
         if (profileRes.status === 'fulfilled') {
           const apiWorkMe = profileRes.value.data.workMe
           // Profile is complete if headline and handle are set
@@ -67,8 +74,9 @@ export default function PersonalUX() {
         }
       }
 
-      // Check goals (Objectives)
+      // Check goals (Objectives) - always the last result
       let hasGoals = false
+      const objectivesRes = results[results.length - 1]
       if (objectivesRes.status === 'fulfilled') {
         const objectives = objectivesRes.value.data.objectives || []
         hasGoals = objectives.length > 0

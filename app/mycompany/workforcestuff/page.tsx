@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getAuth } from 'firebase/auth'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
+import { getWorkMe } from '@/lib/workme.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { Calendar, Filter, Archive, Clock, CheckCircle, Users, AlertCircle } from 'lucide-react'
 import api from '@/lib/api'
@@ -40,12 +41,12 @@ interface WorkforceStuffItem {
 export default function WorkforceStuffPage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
-  const [companyUnitId, setCompanyUnitId] = useState<string | null>(null)
+  const [companyId, setCompanyId] = useState<string | null>(null)
   const [items, setItems] = useState<WorkforceStuffItem[]>([])
   const [loading, setLoading] = useState(true)
   const [authReady, setAuthReady] = useState(false)
-  const [companyUnitIdLoading, setCompanyUnitIdLoading] = useState(false)
-  const [companyUnitIdNotFound, setCompanyUnitIdNotFound] = useState(false)
+  const [companyIdLoading, setCompanyIdLoading] = useState(false)
+  const [companyIdNotFound, setCompanyIdNotFound] = useState(false)
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<'active' | 'archived' | 'all'>('active')
 
@@ -61,16 +62,30 @@ export default function WorkforceStuffPage() {
         const id = getWorkMeIdFromStorage()
         if (id) {
           setWorkMeId(id)
-          // Get companyUnitId from localStorage (set by welcome/dashboard)
-          const storedCompanyUnitId = localStorage.getItem('companyUnit')
-          if (storedCompanyUnitId) {
-            setCompanyUnitId(storedCompanyUnitId)
-            setCompanyUnitIdNotFound(false)
-            setCompanyUnitIdLoading(false)
+          // Try multiple sources for companyId:
+          // 1. Direct localStorage key (set by refreshWorkMe)
+          // 2. From stored WorkMe object in localStorage
+          // 3. Legacy companyUnit key (backward compat)
+          // 4. API call if none found
+          const directCompanyId = localStorage.getItem('companyId')
+          const storedWorkMe = getWorkMe()
+          const workMeCompanyId = storedWorkMe?.companyId
+          const legacyCompanyUnit = localStorage.getItem('companyUnit')
+          
+          const companyIdValue = directCompanyId || workMeCompanyId || legacyCompanyUnit
+          
+          if (companyIdValue) {
+            setCompanyId(companyIdValue)
+            // Ensure it's saved to localStorage for future use
+            if (!directCompanyId && companyIdValue) {
+              localStorage.setItem('companyId', companyIdValue)
+            }
+            setCompanyIdNotFound(false)
+            setCompanyIdLoading(false)
           } else {
-            // If not in localStorage, try to get from WorkMe profile
-            setCompanyUnitIdLoading(true)
-            loadCompanyUnitId(id)
+            // If not in localStorage, try to get from WorkMe API
+            setCompanyIdLoading(true)
+            loadCompanyId(id)
           }
         } else {
           router.push('/signin')
@@ -83,44 +98,46 @@ export default function WorkforceStuffPage() {
     return () => unsubscribe()
   }, [router])
 
-  // Load companyUnitId from WorkMe profile if not in localStorage
-  async function loadCompanyUnitId(workMeId: string) {
+  // Load companyId from WorkMe profile if not in localStorage
+  async function loadCompanyId(workMeId: string) {
     try {
       const response = await api.get('/api/workme/me')
-      if (response.data.success && response.data.workMe?.companyUnit) {
-        const unitId = response.data.workMe.companyUnit
-        setCompanyUnitId(unitId)
-        localStorage.setItem('companyUnit', unitId)
-        setCompanyUnitIdNotFound(false)
+      if (response.data.success && response.data.workMe?.companyId) {
+        const id = response.data.workMe.companyId
+        setCompanyId(id)
+        localStorage.setItem('companyId', id)
+        // Also set for backward compat if needed
+        localStorage.setItem('companyUnit', id)
+        setCompanyIdNotFound(false)
       } else {
-        // No companyUnit found
-        setCompanyUnitIdNotFound(true)
+        // No companyId found - user needs to add company
+        setCompanyIdNotFound(true)
       }
     } catch (error) {
-      console.error('Failed to load companyUnit:', error)
-      setCompanyUnitIdNotFound(true)
+      console.error('Failed to load companyId:', error)
+      setCompanyIdNotFound(true)
     } finally {
-      setCompanyUnitIdLoading(false)
+      setCompanyIdLoading(false)
       setLoading(false)
     }
   }
 
-  // Load items only when auth is ready and companyUnitId is available
+  // Load items only when auth is ready and companyId is available
   useEffect(() => {
-    if (authReady && workMeId && companyUnitId) {
+    if (authReady && workMeId && companyId) {
       loadItems()
     }
-  }, [authReady, workMeId, companyUnitId])
+  }, [authReady, workMeId, companyId])
 
   async function loadItems(forceRefresh = false) {
-    if (!companyUnitId) {
-      console.warn('Cannot load items: companyUnitId not set')
+    if (!companyId) {
+      console.warn('Cannot load items: companyId not set')
       setLoading(false)
       return
     }
 
-    const cacheKey = `workforcestuff_${companyUnitId}`
-    const cacheTimestampKey = `workforcestuff_${companyUnitId}_timestamp`
+    const cacheKey = `workforcestuff_${companyId}`
+    const cacheTimestampKey = `workforcestuff_${companyId}_timestamp`
 
     try {
       // Try localStorage first (instant load) unless forcing refresh
@@ -160,15 +177,15 @@ export default function WorkforceStuffPage() {
   }
 
   async function refreshFromAPI(cacheKey: string, cacheTimestampKey: string, showLoading: boolean) {
-    if (!companyUnitId) return
+    if (!companyId) return
 
     try {
       if (showLoading) {
         setLoading(true)
       }
       
-      // Pass companyUnitId as query parameter
-      const response = await api.get(`/api/workforcestuff?companyUnitId=${encodeURIComponent(companyUnitId)}`)
+      // Pass companyId as companyUnitId query parameter (API expects companyUnitId param name)
+      const response = await api.get(`/api/workforcestuff?companyUnitId=${encodeURIComponent(companyId)}`)
       
       if (response.data.success && response.data.items) {
         setItems(response.data.items)
@@ -266,8 +283,8 @@ export default function WorkforceStuffPage() {
     return false
   })
 
-  // Show loading spinner while auth is initializing or companyUnitId is being loaded
-  if (!authReady || !workMeId || companyUnitIdLoading) {
+  // Show loading spinner while auth is initializing or companyId is being loaded
+  if (!authReady || !workMeId || companyIdLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -275,8 +292,8 @@ export default function WorkforceStuffPage() {
     )
   }
 
-  // Show "add company info" button when companyUnitId is not found
-  if (companyUnitIdNotFound || !companyUnitId) {
+  // Show "add company info" button when companyId is not found
+  if (companyIdNotFound || !companyId) {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Top Nav */}
@@ -315,13 +332,13 @@ export default function WorkforceStuffPage() {
                 <AlertCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Company Information Required</h3>
                 <p className="text-gray-600 mb-4">
-                  You need to set up your company information before you can view workforce content.
+                  You need to set up your company before you can view workforce content. This helps us show you relevant events, training, and announcements.
                 </p>
                 <Link
-                  href="/mycompany/profile"
+                  href="/settings/company"
                   className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
                 >
-                  Add Company Info
+                  Add Company
                 </Link>
               </div>
             </div>
