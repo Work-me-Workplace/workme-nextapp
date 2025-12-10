@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
             phone: empData.phone || null,
             photoUrl: empData.photoUrl || null,
             companyId, // Use workMe's companyId
-            workMeCompanyId: workMe.workMeCompanyId || companyId,
+            workMeCompanyId: companyId, // Use companyId as workMeCompanyId
             createdByWorkMeId: workMeId,
             companyUnit: empData.companyUnit || companyUnit || null,
             division: empData.division || null,
