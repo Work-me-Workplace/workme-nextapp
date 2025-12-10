@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAuth } from '@/lib/server/verifyAuth'
 import { getWorkMeContext } from '@/lib/server/getWorkMeContext'
 import { parseHighlight } from '@/lib/ai/highlightParser'
+import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
  * POST /api/company/highlights/ingest
  * 
  * Parse highlight text with AI and extract employee + highlight information
- * Does NOT save to database - just parsing
+ * Creates a draft highlight in the database (can be updated later)
  * 
  * Body: {
  *   text: string (required) - raw citation text
@@ -18,9 +18,8 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(request: NextRequest) {
   try {
-    // 1. Auth
-    const { firebaseId } = await verifyAuth(request as Request)
-    const context = await getWorkMeContext(firebaseId)
+    // 1. Auth and get context
+    const context = await getWorkMeContext(request)
 
     if (!context.companyId) {
       return NextResponse.json(
@@ -42,7 +41,24 @@ export async function POST(request: NextRequest) {
     // 2. Parse with AI
     const parsed = await parseHighlight(text.trim())
 
-    // 3. Return parsed data (no DB writes yet)
+    // 3. Create draft highlight in database (so we have an ID for the frontend)
+    const highlight = await prisma.companyEmployeeHighlight.create({
+      data: {
+        citationText: parsed.citationText,
+        achievement: parsed.achievement || null,
+        narrative: parsed.narrative || null,
+        classification: parsed.classification || null,
+        awardName: parsed.awardName || null,
+        awardingAgency: parsed.awardingAgency || null,
+        awardYear: parsed.awardYear || null,
+        supervisorQuote: parsed.supervisorQuote || null,
+        photoUrl: photoUrl || null,
+        companyUnitLabel: parsed.unit || null,
+        createdByWorkMeId: context.workMeId,
+      },
+    })
+
+    // 4. Return parsed data with highlight ID
     return NextResponse.json({
       success: true,
       employee: {
@@ -52,15 +68,16 @@ export async function POST(request: NextRequest) {
         unitRaw: parsed.unit,
       },
       highlight: {
-        citationText: parsed.citationText,
-        achievement: parsed.achievement,
-        narrative: parsed.narrative,
-        classification: parsed.classification,
-        awardName: parsed.awardName,
-        awardingAgency: parsed.awardingAgency,
-        awardYear: parsed.awardYear,
-        supervisorQuote: parsed.supervisorQuote,
-        photoUrl: photoUrl || null,
+        id: highlight.id,
+        citationText: highlight.citationText,
+        achievement: highlight.achievement,
+        narrative: highlight.narrative,
+        classification: highlight.classification,
+        awardName: highlight.awardName,
+        awardingAgency: highlight.awardingAgency,
+        awardYear: highlight.awardYear,
+        supervisorQuote: highlight.supervisorQuote,
+        photoUrl: highlight.photoUrl,
       },
     })
   } catch (error: any) {

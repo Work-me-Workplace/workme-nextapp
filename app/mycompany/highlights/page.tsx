@@ -49,7 +49,7 @@ export default function EmployeeHighlightsPage() {
   async function loadHighlights() {
     try {
       setLoading(true)
-      const response = await api.get('/api/highlights')
+      const response = await api.get('/api/company/highlights')
       
       if (response.data.success && response.data.highlights) {
         setHighlights(response.data.highlights)
