@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { getWorkMe, refreshWorkMe, type WorkMe } from '@/lib/workme.client'
 import { getDashboard, refreshDashboard, type DashboardData } from '@/lib/dashboard.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
@@ -10,7 +10,9 @@ import TopNav from '@/components/layout/TopNav'
 import PersonalUX from '@/components/personal/PersonalUX'
 import { TrendingUp, Bell, Briefcase, CheckCircle2, Sparkles, X, ArrowRight } from 'lucide-react'
 
-export default function DashboardPage() {
+export const dynamic = 'force-dynamic'
+
+function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [workMe, setWorkMe] = useState<WorkMe | null>(null)
@@ -268,5 +270,17 @@ export default function DashboardPage() {
         </main>
       </div>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   )
 }
