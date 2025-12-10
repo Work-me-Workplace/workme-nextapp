@@ -12,7 +12,6 @@ export const dynamic = 'force-dynamic'
  * 
  * Body: {
  *   message: string,
- *   templateId?: string,
  *   highlightId?: string,
  * }
  */
@@ -26,7 +25,7 @@ export async function POST(request: NextRequest) {
     const { id: workMeId } = workMe
 
     const body = await request.json()
-    const { message, templateId, highlightId } = body
+    const { message, highlightId } = body
 
     if (!message || message.trim().length === 0) {
       return NextResponse.json(
@@ -42,7 +41,6 @@ export async function POST(request: NextRequest) {
     const engageMessage = await workEngage.createMessage(
       {
         message,
-        templateId: templateId || null,
         highlightId: highlightId || null,
       },
       workMeId
