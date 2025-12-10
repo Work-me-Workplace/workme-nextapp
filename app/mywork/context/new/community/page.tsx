@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { createCommunityOpportunity } from '@/lib/actions/companyx-actions'
+import { createCommunityOpportunity } from '@/lib/actions/companyx'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
 export default function NewCommunityPage() {

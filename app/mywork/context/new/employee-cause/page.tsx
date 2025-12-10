@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { createEmployeeCause } from '@/lib/actions/companyx-actions'
+import { createEmployeeCause } from '@/lib/actions/companyx'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
 export default function NewEmployeeCausePage() {

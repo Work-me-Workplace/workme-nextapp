@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { createTraining } from '@/lib/actions/companyx-actions'
+import { createTraining } from '@/lib/actions/companyx'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 
 export default function NewTrainingPage() {

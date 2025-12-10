@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { createEvent } from '@/lib/actions/companyx-actions'
+import { createEvent } from '@/lib/actions/companyx'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import type { ParsedEventItem } from '@/lib/types/event-ingestion'
 import { EVENT_AUDIENCE_OPTIONS } from '@/config/event-audience'
