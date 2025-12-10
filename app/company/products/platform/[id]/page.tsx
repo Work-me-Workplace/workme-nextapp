@@ -329,7 +329,6 @@ export default function PlatformProductDetailPage({ params }: { params: { id: st
             </div>
           </div>
         )}
-        </div>
 
         {/* Units Section */}
         <div className="bg-white rounded-lg shadow-sm p-8">
