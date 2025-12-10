@@ -126,3 +126,79 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+
+/**
+ * PUT /api/workme/me
+ * 
+ * Update WorkMe identity fields (headline, handle, title, linkedinUrl)
+ */
+export async function PUT(request: NextRequest) {
+  try {
+    const { firebaseId } = await verifyAuth(request as Request)
+    
+    const body = await request.json()
+    const { headline, handle, title, linkedinUrl } = body
+
+    // Get current WorkMe to check handle uniqueness
+    const currentWorkMe = await prisma.workMe.findUnique({
+      where: { firebaseId },
+    })
+
+    if (!currentWorkMe) {
+      return NextResponse.json(
+        { success: false, error: 'WorkMe not found' },
+        { status: 404 },
+      )
+    }
+
+    // Validate handle if provided
+    if (handle !== undefined && handle !== null && handle.trim()) {
+      // Check if handle is unique (if different from current)
+      if (handle.trim() !== currentWorkMe.handle) {
+        const existing = await prisma.workMe.findFirst({
+          where: {
+            handle: handle.trim(),
+            id: { not: currentWorkMe.id },
+          },
+        })
+        
+        if (existing) {
+          return NextResponse.json(
+            { success: false, error: 'Handle already taken. Please choose a different username.' },
+            { status: 400 },
+          )
+        }
+      }
+    }
+
+    // Update WorkMe identity fields
+    const updatedWorkMe = await prisma.workMe.update({
+      where: { id: currentWorkMe.id },
+      data: {
+        headline: headline !== undefined ? (headline || null) : undefined,
+        handle: handle !== undefined ? (handle?.trim() || null) : undefined,
+        title: title !== undefined ? (title || null) : undefined,
+        linkedinUrl: linkedinUrl !== undefined ? (linkedinUrl || null) : undefined,
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      workMe: updatedWorkMe,
+    })
+  } catch (error: any) {
+    console.error('[API PUT /api/workme/me] Error:', {
+      error: error.message,
+      stack: error.stack,
+    })
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || 'Failed to update profile',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      },
+      { status: 500 },
+    )
+  }
+}
