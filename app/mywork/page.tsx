@@ -1,167 +1,28 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { getCompanyXModels } from '@/lib/actions/company-x'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
-import { useEventHydration } from '@/lib/hooks/useEventHydration'
 import SidebarNav from '@/components/mywork/SidebarNav'
+import { Package, Eye, Calendar, Plus, CheckSquare } from 'lucide-react'
 
-const contextTypes = [
-  {
-    type: 'event',
-    name: 'Event',
-    description: 'Company event or gathering',
-    icon: '🎉',
-    formPath: '/mywork/context/new/event',
-    landingPath: '/mywork/events', // Landing page that hydrates first
-    color: 'blue',
-  },
-  {
-    type: 'campaign',
-    name: 'Campaign',
-    description: 'Company campaign or initiative',
-    icon: '📢',
-    formPath: '/mywork/context/new/campaign',
-    color: 'purple',
-  },
-  {
-    type: 'training',
-    name: 'Training',
-    description: 'Company training or learning program',
-    icon: '📚',
-    formPath: '/mywork/context/new/training',
-    color: 'green',
-  },
-  {
-    type: 'impact_event',
-    name: 'Impact',
-    description: 'Things that impact you - disruptions affecting workforce',
-    icon: '⚠️',
-    formPath: '/mywork/context/new/impact-event',
-    color: 'red',
-  },
-  {
-    type: 'community',
-    name: 'Community',
-    description: 'Community engagement opportunity',
-    icon: '🤝',
-    formPath: '/mywork/context/new/community',
-    color: 'orange',
-  },
-  {
-    type: 'benefits',
-    name: 'Benefits',
-    description: 'Benefits enrollment window (e.g., Open Season)',
-    icon: '🎁',
-    formPath: '/mywork/context/new/benefits',
-    color: 'pink',
-  },
-  {
-    type: 'career',
-    name: 'Career',
-    description: 'Performance reviews, assessments, career development',
-    icon: '📈',
-    formPath: '/mywork/context/new/career',
-    color: 'indigo',
-  },
-  {
-    type: 'employee_cause',
-    name: 'Cause',
-    description: 'Employee-driven causes, drives, or donation campaigns',
-    icon: '❤️',
-    formPath: '/mywork/context/new/employee-cause',
-    color: 'rose',
-  },
-]
-
-export default function WorkplaceSandboxPage() {
-  const pathname = usePathname()
+export default function MyWorkHubPage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
-  const [companyUnit, setCompanyUnit] = useState<string | null>(null)
-  const [allContexts, setAllContexts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-
-  // Use event hydration hook for instant event loading
-  const { events, eventRouters, hydrated: eventsHydrated, refresh: refreshEvents } = useEventHydration(companyUnit)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const id = getWorkMeIdFromStorage()
-      const storedCompanyUnit = localStorage.getItem('companyUnit')
       if (!id) {
         router.push('/signin')
       } else {
         setWorkMeId(id)
-        if (storedCompanyUnit) {
-          setCompanyUnit(storedCompanyUnit)
-        }
-        loadContexts()
+        setLoading(false)
       }
     }
   }, [router])
-
-  // Hydrate events when companyUnit is available
-  useEffect(() => {
-    if (companyUnit && !eventsHydrated) {
-      refreshEvents()
-    }
-  }, [companyUnit, eventsHydrated, refreshEvents])
-
-  // Listen for refresh events (when new event is created)
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const handleRefresh = () => {
-      if (companyUnit) {
-        refreshEvents()
-        loadContexts() // Also refresh other contexts
-      }
-    }
-    window.addEventListener('refreshEvents', handleRefresh)
-    return () => window.removeEventListener('refreshEvents', handleRefresh)
-  }, [companyUnit, refreshEvents])
-
-  async function loadContexts() {
-    setLoading(true)
-    try {
-      const result = await getCompanyXModels()
-      if (result.success) {
-        setAllContexts(result.companyXModels || [])
-      }
-    } catch (error) {
-      console.error('Failed to load contexts:', error)
-    }
-    setLoading(false)
-  }
-
-  // Merge hydrated events with other contexts
-  const hydratedEvents = eventRouters.map((router) => {
-    const event = events.find((e) => e.id === router.eventRefId)
-    return {
-      id: router.id,
-      type: 'event',
-      title: router.title || event?.title || 'Untitled Event',
-      createdAt: router.createdAt,
-      typedData: event,
-      router,
-    }
-  })
-
-  // Combine hydrated events with other contexts (excluding events)
-  const nonEventContexts = allContexts.filter(ctx => ctx.type !== 'event')
-  const allContextsWithHydratedEvents = [...hydratedEvents, ...nonEventContexts]
-
-  // Group contexts by type
-  const contextsByType = contextTypes.reduce((acc, typeDef) => {
-    if (typeDef.type === 'event') {
-      acc[typeDef.type] = hydratedEvents // Use hydrated events
-    } else {
-      acc[typeDef.type] = allContextsWithHydratedEvents.filter(ctx => ctx.type === typeDef.type)
-    }
-    return acc
-  }, {} as Record<string, any[]>)
 
   if (!workMeId || loading) {
     return (
@@ -170,6 +31,39 @@ export default function WorkplaceSandboxPage() {
       </div>
     )
   }
+
+  const hubSections = [
+    {
+      title: 'Build Products',
+      description: 'Create new work products and outputs',
+      icon: Plus,
+      color: 'blue',
+      links: [
+        { name: 'Create Product', href: '/mywork/products', description: 'Start building a new product' },
+        { name: 'Email Digest', href: '/workforce/enduring/email-digest/new', description: 'Create email digest product' },
+        { name: 'Digital Signage', href: '/mywork/digital-signage/new', description: 'Create digital display content' },
+      ],
+    },
+    {
+      title: 'View Products',
+      description: 'See status and manage your built products',
+      icon: Eye,
+      color: 'green',
+      links: [
+        { name: 'All Products', href: '/mywork/products', description: 'View all your work products' },
+        { name: 'Active Work', href: '/mywork/active', description: 'See what you\'re currently working on' },
+      ],
+    },
+    {
+      title: 'Plan & Organize',
+      description: 'Plan future products and organize your work',
+      icon: Calendar,
+      color: 'purple',
+      links: [
+        { name: 'Stuff I\'m Working On', href: '/mywork/active', description: 'Track active work items' },
+      ],
+    },
+  ]
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -185,140 +79,95 @@ export default function WorkplaceSandboxPage() {
                 <span className="text-xl font-bold text-gray-900">Work.me</span>
               </Link>
             </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => {
-                  localStorage.clear()
-                  router.push('/signin')
-                }}
-                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Sign Out
-              </button>
-            </div>
           </div>
         </div>
       </nav>
 
       <div className="flex">
-        {/* Sidebar */}
         <SidebarNav />
 
-        {/* Main Content - Sandbox Hub */}
         <main className="flex-1">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">WorkplaceSandbox</h1>
-              <p className="text-gray-600 mt-2">Build and manage company-level happenings</p>
+              <h1 className="text-3xl font-bold text-gray-900">My Work</h1>
+              <p className="text-gray-600 mt-2">Your hub for building, viewing, and planning work products</p>
             </div>
 
-            {/* Context Type Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-              {contextTypes.map((typeDef) => {
-                const typeContexts = contextsByType[typeDef.type] || []
-                const count = typeContexts.length
+            {/* Hub Sections */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {hubSections.map((section) => {
+                const Icon = section.icon
+                const colorClasses = {
+                  blue: 'bg-blue-50 border-blue-200 text-blue-700',
+                  green: 'bg-green-50 border-green-200 text-green-700',
+                  purple: 'bg-purple-50 border-purple-200 text-purple-700',
+                }
 
                 return (
-                  <div key={typeDef.type} className="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center">
-                        <span className="text-3xl mr-3">{typeDef.icon}</span>
-                        <div>
-                          <h3 className="text-lg font-bold text-gray-900">{typeDef.name}</h3>
-                          {count > 0 && (
-                            <p className="text-sm text-gray-500">{count} {count === 1 ? 'item' : 'items'}</p>
-                          )}
-                        </div>
+                  <div
+                    key={section.title}
+                    className={`bg-white rounded-lg shadow border-2 ${colorClasses[section.color as keyof typeof colorClasses]} overflow-hidden`}
+                  >
+                    <div className="p-6 border-b-2 border-gray-200">
+                      <div className="flex items-center mb-2">
+                        <Icon className={`h-6 w-6 mr-3 text-${section.color}-600`} />
+                        <h2 className="text-xl font-bold">{section.title}</h2>
                       </div>
+                      <p className="text-sm text-gray-600">{section.description}</p>
                     </div>
-                    <p className="text-sm text-gray-600 mb-4">{typeDef.description}</p>
-                    
-                    <Link
-                      href={typeDef.landingPath || `/mywork/${typeDef.type}`}
-                      className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-                    >
-                      Dive in
-                    </Link>
+                    <div className="p-6 space-y-3">
+                      {section.links.map((link) => (
+                        <Link
+                          key={link.name}
+                          href={link.href}
+                          className="block p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-500 hover:shadow-md transition"
+                        >
+                          <h3 className="font-semibold text-gray-900 mb-1">{link.name}</h3>
+                          <p className="text-sm text-gray-600">{link.description}</p>
+                        </Link>
+                      ))}
+                    </div>
                   </div>
                 )
               })}
             </div>
 
-            {/* Existing Contexts by Type */}
-            {contextTypes.map((typeDef) => {
-              const typeContexts = contextsByType[typeDef.type] || []
-              
-              if (typeContexts.length === 0) return null
-
-              return (
-                <div key={typeDef.type} id={`${typeDef.type}-section`} className="mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                      <span className="text-2xl mr-2">{typeDef.icon}</span>
-                      {typeDef.name} ({typeContexts.length})
-                    </h2>
-                    <Link
-                      href={typeDef.formPath}
-                      className="text-blue-600 hover:text-blue-700 font-medium text-sm"
-                    >
-                      + Add More
-                    </Link>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {typeContexts.map((context) => {
-                      // For events, link to the new view page
-                      const viewUrl = context.type === 'event' 
-                        ? `/workforce/events/${context.id}/view`
-                        : `/mywork/context/${context.id}`
-                      
-                      return (
-                        <div
-                          key={context.id}
-                          className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-blue-500"
-                        >
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">{context.title || 'Untitled'}</h3>
-                          {context.typedData?.description && (
-                            <p className="text-sm text-gray-600 mb-3 line-clamp-2">{context.typedData.description}</p>
-                          )}
-                          {context.type === 'event' && context.typedData?.theme && (
-                            <p className="text-sm text-gray-500 italic mb-3">"{context.typedData.theme}"</p>
-                          )}
-                          {context.type === 'event' && context.typedData?.eventDate && (
-                            <p className="text-xs text-gray-500 mb-2">
-                              📅 {new Date(context.typedData.eventDate).toLocaleDateString()}
-                            </p>
-                          )}
-                          <div className="flex items-center justify-between mt-4">
-                            <p className="text-xs text-gray-400">
-                              Created {new Date(context.createdAt).toLocaleDateString()}
-                            </p>
-                            <Link
-                              href={viewUrl}
-                              className="px-3 py-1 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition"
-                            >
-                              View →
-                            </Link>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })}
-
-            {/* Empty State */}
-            {allContextsWithHydratedEvents.length === 0 && (
-              <div className="bg-white rounded-lg shadow p-12 text-center">
-                <p className="text-gray-500 mb-4">No happenings yet. Create your first one!</p>
+            {/* Quick Actions */}
+            <div className="mt-12">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick Actions</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Link
-                  href="/mywork/context/new/event"
-                  className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+                  href="/mywork/products"
+                  className="flex items-center p-6 bg-white rounded-lg shadow hover:shadow-lg transition border-l-4 border-blue-500"
                 >
-                  Create Your First Event
+                  <Package className="h-8 w-8 text-blue-600 mr-4" />
+                  <div>
+                    <h3 className="font-semibold text-gray-900">View All Products</h3>
+                    <p className="text-sm text-gray-600">See all your work products</p>
+                  </div>
+                </Link>
+                <Link
+                  href="/mywork/create"
+                  className="flex items-center p-6 bg-white rounded-lg shadow hover:shadow-lg transition border-l-4 border-green-500"
+                >
+                  <Plus className="h-8 w-8 text-green-600 mr-4" />
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Create New Product</h3>
+                    <p className="text-sm text-gray-600">Start building something new</p>
+                  </div>
+                </Link>
+                <Link
+                  href="/mywork/active"
+                  className="flex items-center p-6 bg-white rounded-lg shadow hover:shadow-lg transition border-l-4 border-purple-500"
+                >
+                  <CheckSquare className="h-8 w-8 text-purple-600 mr-4" />
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Active Work</h3>
+                    <p className="text-sm text-gray-600">What you're working on</p>
+                  </div>
                 </Link>
               </div>
-            )}
+            </div>
           </div>
         </main>
       </div>

@@ -6,23 +6,53 @@ import { useEffect, useState } from 'react'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
-import { FileText, Calendar } from 'lucide-react'
+import { Mail, Image, Monitor, FileText, Plus } from 'lucide-react'
 
-interface CommsOutput {
+interface WorkProduct {
   id: string
-  type: string
+  type: 'email_digest' | 'digital_signage' | 'flyer_poster' | 'senior_leader_email'
   title: string
   description: string | null
-  wordCount: number | null
-  dateSent: string | null
   createdAt: string
   updatedAt: string
+  metadata?: any
+}
+
+const productTypeConfig = {
+  email_digest: {
+    name: 'Email Digest',
+    icon: Mail,
+    color: 'blue',
+    createPath: '/workforce/enduring/email-digest/new',
+    viewPath: (id: string) => `/workforce/enduring/email-digest/${id}`,
+  },
+  digital_signage: {
+    name: 'Digital Signage',
+    icon: Monitor,
+    color: 'purple',
+    createPath: '/mywork/digital-signage/new',
+    viewPath: (id: string) => `/mywork/digital-signage/${id}`,
+  },
+  flyer_poster: {
+    name: 'Flyer / Poster',
+    icon: Image,
+    color: 'green',
+    createPath: '/mywork/products/builder/new?type=flyer_poster',
+    viewPath: (id: string) => `/mywork/products/${id}`,
+  },
+  senior_leader_email: {
+    name: 'Senior Leader Email',
+    icon: FileText,
+    color: 'orange',
+    createPath: '/mywork/products/builder/new?type=executive_email',
+    viewPath: (id: string) => `/mywork/products/${id}`,
+  },
 }
 
 export default function ProductsPage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
-  const [outputs, setOutputs] = useState<CommsOutput[]>([])
+  const [products, setProducts] = useState<WorkProduct[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -32,29 +62,38 @@ export default function ProductsPage() {
         router.push('/signin')
       } else {
         setWorkMeId(id)
-        loadOutputs()
+        loadProducts()
       }
     }
   }, [router])
 
-  async function loadOutputs() {
+  async function loadProducts() {
     try {
       setLoading(true)
-      const response = await api.get('/api/comms-outputs/list')
+      const response = await api.get('/api/mywork/products/list')
       
-      if (response.data.success && response.data.outputs) {
-        setOutputs(response.data.outputs)
+      if (response.data.success && response.data.products) {
+        setProducts(response.data.products)
       } else {
-        console.error('Failed to load outputs:', response.data.error)
-        setOutputs([])
+        console.error('Failed to load products:', response.data.error)
+        setProducts([])
       }
     } catch (error) {
-      console.error('Failed to load outputs:', error)
-      setOutputs([])
+      console.error('Failed to load products:', error)
+      setProducts([])
     } finally {
       setLoading(false)
     }
   }
+
+  // Group products by type
+  const productsByType = products.reduce((acc, product) => {
+    if (!acc[product.type]) {
+      acc[product.type] = []
+    }
+    acc[product.type].push(product)
+    return acc
+  }, {} as Record<string, WorkProduct[]>)
 
   if (!workMeId || loading) {
     return (
@@ -94,57 +133,82 @@ export default function ProductsPage() {
               >
                 ← Back to MyWork
               </Link>
-              <h2 className="text-3xl font-bold text-gray-900">Work Products</h2>
-              <p className="text-gray-600 mt-2">Your work outputs and communication products</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900">Work Products</h2>
+                  <p className="text-gray-600 mt-2">Your work outputs and communication products</p>
+                </div>
+                {/* Create button removed - use individual product type create buttons below */}
+              </div>
             </div>
 
-            {outputs.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {outputs.map(output => (
-                  <div
-                    key={output.id}
-                    className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center">
-                        <FileText className="h-5 w-5 text-blue-600 mr-2" />
-                        <span className="text-xs font-medium text-gray-500 uppercase">
-                          {output.type}
-                        </span>
-                      </div>
-                      {output.dateSent && (
-                        <div className="flex items-center text-xs text-gray-500">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {new Date(output.dateSent).toLocaleDateString()}
-                        </div>
+            {/* Product Type Sections */}
+            {Object.entries(productTypeConfig).map(([type, config]) => {
+              const typeProducts = productsByType[type] || []
+              const Icon = config.icon
+
+              return (
+                <div key={type} className="mb-12">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <Icon className={`h-6 w-6 text-${config.color}-600 mr-2`} />
+                      <h3 className="text-xl font-bold text-gray-900">{config.name}</h3>
+                      {typeProducts.length > 0 && (
+                        <span className="ml-3 text-sm text-gray-500">({typeProducts.length})</span>
                       )}
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{output.title}</h3>
-                    {output.description && (
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{output.description}</p>
-                    )}
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>Created {new Date(output.createdAt).toLocaleDateString()}</span>
-                      {output.wordCount && (
-                        <span>{output.wordCount} words</span>
-                      )}
-                    </div>
+                    <Link
+                      href={config.createPath}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      + Create New
+                    </Link>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow p-12 text-center">
-                <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Work Products</h3>
-                <p className="text-gray-600 mb-4">You haven't created any work products yet.</p>
-                <Link
-                  href="/mywork/create"
-                  className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-                >
-                  Create Work Product
-                </Link>
-              </div>
-            )}
+
+                  {typeProducts.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {typeProducts.map(product => (
+                        <Link
+                          key={product.id}
+                          href={config.viewPath(product.id)}
+                          className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-transparent hover:border-blue-500"
+                        >
+                          <div className="flex items-center mb-3">
+                            <Icon className={`h-5 w-5 text-${config.color}-600 mr-2`} />
+                            <span className="text-xs font-medium text-gray-500 uppercase">
+                              {config.name}
+                            </span>
+                          </div>
+                          <h4 className="text-lg font-semibold text-gray-900 mb-2">{product.title}</h4>
+                          {product.description && (
+                            <p className="text-sm text-gray-600 mb-3 line-clamp-2">{product.description}</p>
+                          )}
+                          {product.metadata?.editionsCount !== undefined && (
+                            <p className="text-xs text-gray-500 mb-2">
+                              {product.metadata.editionsCount} {product.metadata.editionsCount === 1 ? 'edition' : 'editions'}
+                            </p>
+                          )}
+                          <div className="text-xs text-gray-400 mt-4">
+                            Created {new Date(product.createdAt).toLocaleDateString()}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-lg shadow p-8 text-center border-2 border-dashed border-gray-200">
+                      <Icon className={`h-12 w-12 text-gray-400 mx-auto mb-3`} />
+                      <p className="text-gray-600 mb-4">No {config.name.toLowerCase()} products yet</p>
+                      <Link
+                        href={config.createPath}
+                        className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
+                      >
+                        Create {config.name}
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </main>
       </div>

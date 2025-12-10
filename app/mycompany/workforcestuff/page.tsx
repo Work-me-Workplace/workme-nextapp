@@ -44,6 +44,8 @@ export default function WorkforceStuffPage() {
   const [items, setItems] = useState<WorkforceStuffItem[]>([])
   const [loading, setLoading] = useState(true)
   const [authReady, setAuthReady] = useState(false)
+  const [companyUnitIdLoading, setCompanyUnitIdLoading] = useState(false)
+  const [companyUnitIdNotFound, setCompanyUnitIdNotFound] = useState(false)
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<'active' | 'archived' | 'all'>('active')
 
@@ -63,8 +65,11 @@ export default function WorkforceStuffPage() {
           const storedCompanyUnitId = localStorage.getItem('companyUnit')
           if (storedCompanyUnitId) {
             setCompanyUnitId(storedCompanyUnitId)
+            setCompanyUnitIdNotFound(false)
+            setCompanyUnitIdLoading(false)
           } else {
             // If not in localStorage, try to get from WorkMe profile
+            setCompanyUnitIdLoading(true)
             loadCompanyUnitId(id)
           }
         } else {
@@ -81,14 +86,22 @@ export default function WorkforceStuffPage() {
   // Load companyUnitId from WorkMe profile if not in localStorage
   async function loadCompanyUnitId(workMeId: string) {
     try {
-      const response = await api.get('/api/workme/profile')
-      if (response.data.success && response.data.workMe?.companyUnitId) {
-        const unitId = response.data.workMe.companyUnitId
+      const response = await api.get('/api/workme/me')
+      if (response.data.success && response.data.workMe?.companyUnit) {
+        const unitId = response.data.workMe.companyUnit
         setCompanyUnitId(unitId)
         localStorage.setItem('companyUnit', unitId)
+        setCompanyUnitIdNotFound(false)
+      } else {
+        // No companyUnit found
+        setCompanyUnitIdNotFound(true)
       }
     } catch (error) {
-      console.error('Failed to load companyUnitId:', error)
+      console.error('Failed to load companyUnit:', error)
+      setCompanyUnitIdNotFound(true)
+    } finally {
+      setCompanyUnitIdLoading(false)
+      setLoading(false)
     }
   }
 
@@ -253,11 +266,67 @@ export default function WorkforceStuffPage() {
     return false
   })
 
-  // Show cached data immediately if available, even while loading
-  if (!authReady || !workMeId || !companyUnitId) {
+  // Show loading spinner while auth is initializing or companyUnitId is being loaded
+  if (!authReady || !workMeId || companyUnitIdLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  // Show "add company info" button when companyUnitId is not found
+  if (companyUnitIdNotFound || !companyUnitId) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Top Nav */}
+        <nav className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-16">
+              <div className="flex items-center">
+                <Link href="/dashboard" className="flex items-center space-x-2">
+                  <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <span className="text-xl font-bold text-gray-900">Work.me</span>
+                </Link>
+              </div>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => {
+                    localStorage.clear()
+                    router.push('/signin')
+                  }}
+                  className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <div className="flex">
+          <SidebarNav />
+
+          <main className="flex-1">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <div className="bg-white rounded-lg shadow p-12 text-center">
+                <AlertCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Company Information Required</h3>
+                <p className="text-gray-600 mb-4">
+                  You need to set up your company information before you can view workforce content.
+                </p>
+                <Link
+                  href="/mycompany/profile"
+                  className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+                >
+                  Add Company Info
+                </Link>
+              </div>
+            </div>
+          </main>
+        </div>
       </div>
     )
   }
@@ -470,8 +539,8 @@ export default function WorkforceStuffPage() {
               </div>
             )}
 
-            {/* Empty State */}
-            {filteredItems.length === 0 && (
+            {/* Empty State - only show when not loading and truly no items */}
+            {!loading && filteredItems.length === 0 && items.length === 0 && (
               <div className="bg-white rounded-lg shadow p-12 text-center">
                 <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No Workforce Stuff</h3>
@@ -482,6 +551,14 @@ export default function WorkforceStuffPage() {
                 >
                   Create Workforce Item
                 </Link>
+              </div>
+            )}
+
+            {/* Loading State */}
+            {loading && items.length === 0 && (
+              <div className="bg-white rounded-lg shadow p-12 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading workforce items...</p>
               </div>
             )}
           </div>
