@@ -15,7 +15,7 @@ import { inferCompanyXType } from '@/lib/services/companyx-topic-inference'
 import { parseCompanyXContent } from '@/lib/services/companyx-unified-mapper'
 import { CONTEXT_TYPE_TO_MODEL } from '@/lib/services/companyx-mapper'
 import type { ContextType } from '@/lib/types/context-type'
-import { EventCategory, EventAudience } from '@prisma/client'
+import { EventCategory, EventAudience, Prisma } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -234,9 +234,9 @@ export async function POST(request: NextRequest) {
             windowStart: data.windowStart ? new Date(data.windowStart) : null,
             windowEnd: data.windowEnd ? new Date(data.windowEnd) : null,
             actionLink: data.actionLink,
-            ...(data.deadlines ? { deadlines: data.deadlines } : {}),
-            ...(data.resources ? { resources: data.resources } : {}),
-            ...(data.pocList ? { pocList: data.pocList } : {}),
+            ...(data.deadlines != null ? { deadlines: data.deadlines } : {}),
+            ...(data.resources != null ? { resources: data.resources } : {}),
+            ...(data.pocList != null ? { pocList: data.pocList } : {}),
             ingestRawText: rawText,
             summary: data.description || data.employeeBenefitSummary || data.title || null,
             companyUnit,
@@ -258,10 +258,10 @@ export async function POST(request: NextRequest) {
             windowEnd: data.windowEnd ? new Date(data.windowEnd) : null,
             locations: data.locations || [],
             link: data.link,
-            ...(data.deadlines ? { deadlines: data.deadlines } : {}),
+            ...(data.deadlines != null ? { deadlines: data.deadlines } : {}),
             sponsoringDepartment: data.sponsoringDepartment,
-            ...(data.pocList ? { pocList: data.pocList } : {}),
-            ...(data.extraInstructions ? { extraInstructions: data.extraInstructions } : {}),
+            ...(data.pocList != null ? { pocList: data.pocList } : {}),
+            ...(data.extraInstructions != null ? { extraInstructions: data.extraInstructions } : {}),
             ingestRawText: rawText,
             summary: data.description || data.impactSummary || data.title || null,
             companyUnit,
