@@ -98,7 +98,7 @@ async function exportAllData() {
     // Export all related records separately to avoid schema issues
     console.log('   Exporting related records...')
     
-    const [commsOutputs, objectives, achievements, emailDigests, campaigns, impactEvents, trainings, events, communities, careers, employeeCauses, digitalSigns, highlights, employees, products, pressures, engageMessages, companyBenefits] = await Promise.all([
+    const [commsOutputs, objectives, achievements, emailDigests, campaigns, impactEvents, trainings, events, communities, careers, employeeCauses, digitalSigns, highlights, employees, pressures, engageMessages, companyBenefits] = await Promise.all([
       safeQuery('CommsOutputs', () => prisma.commsOutput.findMany({ include: { achievements: true } })),
       safeQuery('Objectives', () => prisma.objective.findMany({ include: { achievements: true } })),
       safeQuery('Achievements', () => prisma.achievement.findMany()),
@@ -128,13 +128,6 @@ async function exportAllData() {
         include: {
           highlights: true,
           company: true
-        }
-      })),
-      safeQuery('CompanyProducts', () => prisma.companyProduct.findMany({
-        include: {
-          highlights: true,
-          pressures: true,
-          updates: true
         }
       })),
       safeQuery('ExternalPressures', () => prisma.externalCompanyPressure.findMany()),
@@ -168,7 +161,6 @@ async function exportAllData() {
         digitalSigns: digitalSigns || [],
         highlights: highlights || [],
         employees: employees || [],
-        products: products || [],
         pressures: pressures || [],
         engageMessages: engageMessages || [],
         companyBenefits: companyBenefits || []
@@ -282,7 +274,6 @@ async function exportAllData() {
         companyCareers: careers?.length || 0,
         companyBenefits: companyBenefits?.length || 0,
         companyEmployeeCauses: employeeCauses?.length || 0,
-        companyProducts: products?.length || 0,
         externalPressures: pressures?.length || 0,
         engageMessages: engageMessages?.length || 0,
       }

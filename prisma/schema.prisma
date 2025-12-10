@@ -72,7 +72,6 @@ model WorkMe {
   workOpsOutlook WorkOpsOutlook?
 
   // Company Products Relations
-  companyProducts          CompanyProduct[]
   externalCompanyPressures ExternalCompanyPressure[]
   Company                  Company?                  @relation(fields: [companyId], references: [id])
 
@@ -1263,69 +1262,6 @@ model MyEcosystemContact {
   @@unique([workMeId, personId])
   @@index([workMeId])
   @@index([personId])
-}
-
-// ============================================
-// COMPANY PRODUCTS MODELS
-// ============================================
-
-model CompanyProduct {
-  id        String   @id @default(cuid())
-  workMeId  String   @db.Uuid
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  name        String
-  category    String?
-  description String?
-
-  missionRole      String?
-  keyCapabilities  String[] @default([])
-  limitations      String[] @default([])
-  publicSources    Json?
-  productionStatus String?
-
-  leadershipFraming String?
-  talkingPoints     Json?
-
-  highlights ProductHighlight[]
-  pressures  ProductPressure[]
-  updates    ProductUpdate[]
-
-  workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-
-  @@index([name])
-  @@index([category])
-}
-
-model ProductPressure {
-  id        String   @id @default(cuid())
-  productId String
-  source    String
-  summary   String
-  riskLevel String?
-  createdAt DateTime @default(now())
-
-  product CompanyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
-}
-
-model ProductHighlight {
-  id          String   @id @default(cuid())
-  productId   String
-  title       String
-  description String?
-  createdAt   DateTime @default(now())
-
-  product CompanyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
-}
-
-model ProductUpdate {
-  id         String   @id @default(cuid())
-  productId  String
-  updateText String
-  createdAt  DateTime @default(now())
-
-  product CompanyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 // ============================================

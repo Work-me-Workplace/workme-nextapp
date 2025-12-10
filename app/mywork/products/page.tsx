@@ -163,73 +163,59 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Product Type Sections */}
-            {Object.entries(productTypeConfig).map(([type, config]) => {
-              const typeProducts = productsByType[type] || []
-              const Icon = config.icon
-
-              return (
-                <div key={type} className="mb-12">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center">
-                      <Icon className={`h-6 w-6 text-${config.color}-600 mr-2`} />
-                      <h3 className="text-xl font-bold text-gray-900">{config.name}</h3>
-                      {typeProducts.length > 0 && (
-                        <span className="ml-3 text-sm text-gray-500">({typeProducts.length})</span>
-                      )}
-                    </div>
+            {/* Simple Grid of Square Cards */}
+            {products.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                {products.map(product => {
+                  const config = productTypeConfig[product.type as keyof typeof productTypeConfig]
+                  const Icon = config?.icon || FileText
+                  const color = config?.color || 'gray'
+                  
+                  return (
                     <Link
-                      href={config.createPath}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      key={product.id}
+                      href={config?.viewPath(product.id) || '#'}
+                      className="group aspect-square bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-200 hover:border-blue-300 flex flex-col items-center justify-center p-4 text-center"
                     >
-                      + Create New
+                      <Icon className={`h-8 w-8 mb-2 text-${color}-600 group-hover:scale-110 transition-transform`} />
+                      <h4 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">{product.title}</h4>
+                      <span className="text-xs text-gray-500">{config?.name || product.type}</span>
                     </Link>
-                  </div>
-
-                  {typeProducts.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {typeProducts.map(product => (
-                        <Link
-                          key={product.id}
-                          href={config.viewPath(product.id)}
-                          className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-transparent hover:border-blue-500"
-                        >
-                          <div className="flex items-center mb-3">
-                            <Icon className={`h-5 w-5 text-${config.color}-600 mr-2`} />
-                            <span className="text-xs font-medium text-gray-500 uppercase">
-                              {config.name}
-                            </span>
-                          </div>
-                          <h4 className="text-lg font-semibold text-gray-900 mb-2">{product.title}</h4>
-                          {product.description && (
-                            <p className="text-sm text-gray-600 mb-3 line-clamp-2">{product.description}</p>
-                          )}
-                          {product.metadata?.editionsCount !== undefined && (
-                            <p className="text-xs text-gray-500 mb-2">
-                              {product.metadata.editionsCount} {product.metadata.editionsCount === 1 ? 'edition' : 'editions'}
-                            </p>
-                          )}
-                          <div className="text-xs text-gray-400 mt-4">
-                            Created {new Date(product.createdAt).toLocaleDateString()}
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="bg-white rounded-lg shadow p-8 text-center border-2 border-dashed border-gray-200">
-                      <Icon className={`h-12 w-12 text-gray-400 mx-auto mb-3`} />
-                      <p className="text-gray-600 mb-4">No {config.name.toLowerCase()} products yet</p>
-                      <Link
-                        href={config.createPath}
-                        className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
-                      >
-                        Create {config.name}
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+                  )
+                })}
+                
+                {/* Create New Card */}
+                {Object.entries(productTypeConfig).map(([type, config]) => {
+                  const Icon = config.icon
+                  return (
+                    <Link
+                      key={`create-${type}`}
+                      href={config.createPath}
+                      className="group aspect-square bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all flex flex-col items-center justify-center p-4 text-center"
+                    >
+                      <Icon className="h-8 w-8 mb-2 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                      <span className="text-xs font-medium text-gray-600 group-hover:text-blue-600">New {config.name}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                {Object.entries(productTypeConfig).map(([type, config]) => {
+                  const Icon = config.icon
+                  return (
+                    <Link
+                      key={`create-${type}`}
+                      href={config.createPath}
+                      className="group aspect-square bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all flex flex-col items-center justify-center p-4 text-center"
+                    >
+                      <Icon className="h-8 w-8 mb-2 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                      <span className="text-xs font-medium text-gray-600 group-hover:text-blue-600">New {config.name}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </main>
       </div>
