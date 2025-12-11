@@ -56,13 +56,14 @@ function DigitalSignageBuilderContent() {
   const [details, setDetails] = useState('')
   // Photo URL removed - use Asset system via DigitalSignAsset on final step instead
   
-  // GPT parsed output state (editable after GPT parsing)
+  // GPT parsed output state (editable after GPT parsing) - v6.0 structure
   const [gptOutput, setGptOutput] = useState<{
     headline: string
     subhead: string | null
-    detailBlock: string | null
+    factualStatement: string | null
+    quote: string | null
+    quoteAttribution: string | null
     runtimeGuidance: string | null
-    suggestedImageDescription: string | null
   } | null>(null)
   
   // Photo upload state
@@ -285,13 +286,14 @@ function DigitalSignageBuilderContent() {
       })
 
       if (response.data.success) {
-        // Set GPT output from response
+        // Set GPT output from response - v6.0 structure
         setGptOutput({
           headline: response.data.headline,
           subhead: response.data.subhead || null,
-          detailBlock: response.data.detailBlock || null,
-          runtimeGuidance: response.data.runtimeGuidance || '1 week',
-          suggestedImageDescription: response.data.suggestedImageDescription || null,
+          factualStatement: response.data.factualStatement || null,
+          quote: response.data.quote || null,
+          quoteAttribution: response.data.quoteAttribution || null,
+          runtimeGuidance: response.data.runtimeGuidance || '2 weeks',
         })
       } else {
         setError(response.data.error || 'Failed to build with AI')
@@ -384,8 +386,10 @@ function DigitalSignageBuilderContent() {
         payload.workforceAchievement = {
           headline: gptOutput.headline,
           subhead: gptOutput.subhead || null,
-          detailBlock: gptOutput.detailBlock || null,
-          runtimeGuidance: gptOutput.runtimeGuidance || '1 week',
+          factualStatement: gptOutput.factualStatement || null,
+          quote: gptOutput.quote || null,
+          quoteAttribution: gptOutput.quoteAttribution || null,
+          runtimeGuidance: gptOutput.runtimeGuidance || '2 weeks',
           imageAssetId: imageAssetId || null,
           employeeId: highlight?.employees?.[0]?.id || null,
           highlightId: highlightId || null,
@@ -900,8 +904,10 @@ function DigitalSignageBuilderContent() {
                         value={gptOutput.headline}
                         onChange={(e) => setGptOutput({ ...gptOutput, headline: e.target.value })}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        placeholder="e.g., Peter F. McCauley — Award Recipient: Rosenblatt 'Young Naval Engineer' Award"
                         required
                       />
+                      <p className="text-xs text-gray-500 mt-1">Formal format: &quot;{'{'}FullName{'}'} — Award Recipient: {'{'}AwardName{'}'}&quot; (no congratulations)</p>
                     </div>
 
                     <div>
@@ -911,17 +917,42 @@ function DigitalSignageBuilderContent() {
                         onChange={(e) => setGptOutput({ ...gptOutput, subhead: e.target.value || null })}
                         rows={2}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        placeholder="Objective, informational explanation of who recognized the employee and for what contribution"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Neutral, institutional tone. Do not congratulate or use second person.</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Factual Statement</label>
+                      <input
+                        type="text"
+                        value={gptOutput.factualStatement || ''}
+                        onChange={(e) => setGptOutput({ ...gptOutput, factualStatement: e.target.value || null })}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        placeholder="e.g., Recognized for advancing model-based systems engineering techniques in future ship design."
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Crisp, standalone factual summary of why the employee is notable.</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Quote (Optional)</label>
+                      <textarea
+                        value={gptOutput.quote || ''}
+                        onChange={(e) => setGptOutput({ ...gptOutput, quote: e.target.value || null })}
+                        rows={2}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        placeholder="Strong quote from citation, if available"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Detail Block</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Quote Attribution (Optional)</label>
                       <input
                         type="text"
-                        value={gptOutput.detailBlock || ''}
-                        onChange={(e) => setGptOutput({ ...gptOutput, detailBlock: e.target.value || null })}
+                        value={gptOutput.quoteAttribution || ''}
+                        onChange={(e) => setGptOutput({ ...gptOutput, quoteAttribution: e.target.value || null })}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                        placeholder="e.g., NAVSEA Excellence Award · 2025"
+                        placeholder="e.g., American Society of Naval Engineers"
                       />
                     </div>
 
@@ -929,18 +960,12 @@ function DigitalSignageBuilderContent() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">Runtime Guidance</label>
                       <input
                         type="text"
-                        value={gptOutput.runtimeGuidance || '1 week'}
+                        value={gptOutput.runtimeGuidance || '2 weeks'}
                         onChange={(e) => setGptOutput({ ...gptOutput, runtimeGuidance: e.target.value || null })}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       />
+                      <p className="text-xs text-gray-500 mt-1">Standard display lifetime for Employee Recognition signage (default: 2 weeks)</p>
                     </div>
-
-                    {gptOutput.suggestedImageDescription && (
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-                        <p className="text-xs font-medium text-blue-900 mb-1">GPT Suggestion:</p>
-                        <p className="text-xs text-blue-700">{gptOutput.suggestedImageDescription}</p>
-                      </div>
-                    )}
                   </div>
                 )}
 

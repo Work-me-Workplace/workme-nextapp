@@ -24,10 +24,12 @@ interface CreateDigitalSignageRequest {
     achievement?: string
     citationText?: string
     classification?: string
-    // Final slide data (if already built)
+    // Final slide data (if already built) - v6.0 structure
     headline?: string
     subhead?: string
-    detailBlock?: string
+    factualStatement?: string
+    quote?: string
+    quoteAttribution?: string
     runtimeGuidance?: string
     imageAssetId?: string
   }
@@ -91,7 +93,9 @@ export async function POST(request: NextRequest) {
     let builtSignageData: {
       headline: string
       subhead: string | null
-      detailBlock: string | null
+      factualStatement: string | null
+      quote: string | null
+      quoteAttribution: string | null
       runtimeGuidance: string
       imageAssetId?: string
       employeeId?: string
@@ -138,19 +142,23 @@ export async function POST(request: NextRequest) {
         builtSignageData = {
           headline: built.headline,
           subhead: built.subhead,
-          detailBlock: built.factualStatement || null,
+          factualStatement: built.factualStatement || null,
+          quote: built.quote || null,
+          quoteAttribution: built.quoteAttribution || null,
           runtimeGuidance: built.runtimeGuidance,
           imageAssetId: workforceAchievement.imageAssetId,
           employeeId: highlight.employeeId,
           highlightId: highlight.id,
         }
       } else if (workforceAchievement.headline) {
-        // Already built, use provided data
+        // Already built, use provided data - v6.0 structure
         builtSignageData = {
           headline: workforceAchievement.headline,
           subhead: workforceAchievement.subhead || null,
-          detailBlock: workforceAchievement.detailBlock || null,
-          runtimeGuidance: workforceAchievement.runtimeGuidance || '1 week',
+          factualStatement: workforceAchievement.factualStatement || null,
+          quote: workforceAchievement.quote || null,
+          quoteAttribution: workforceAchievement.quoteAttribution || null,
+          runtimeGuidance: workforceAchievement.runtimeGuidance || '2 weeks',
           imageAssetId: workforceAchievement.imageAssetId,
           employeeId: workforceAchievement.employeeId,
         }
@@ -171,7 +179,9 @@ export async function POST(request: NextRequest) {
         builtSignageData = {
           headline: built.headline,
           subhead: built.subhead,
-          detailBlock: built.factualStatement || null,
+          factualStatement: built.factualStatement || null,
+          quote: built.quote || null,
+          quoteAttribution: built.quoteAttribution || null,
           runtimeGuidance: built.runtimeGuidance,
           imageAssetId: workforceAchievement.imageAssetId,
           employeeId: workforceAchievement.employeeId,
@@ -228,7 +238,9 @@ export async function POST(request: NextRequest) {
             create: {
               headline: builtSignageData.headline,
               subhead: builtSignageData.subhead || null,
-              detailBlock: builtSignageData.detailBlock || null,
+              factualStatement: builtSignageData.factualStatement || null,
+              quote: builtSignageData.quote || null,
+              quoteAttribution: builtSignageData.quoteAttribution || null,
               runtimeGuidance: builtSignageData.runtimeGuidance,
               imageAssetId: builtSignageData.imageAssetId || null,
               employeeId: builtSignageData.employeeId || null,

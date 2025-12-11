@@ -8,11 +8,13 @@ export const dynamic = 'force-dynamic'
 interface CreateDigitalSignageRequest {
   signType: DigitalSignType
   companyUnit?: string
-  // Workforce Achievement (structured output from GPT)
+  // Workforce Achievement (structured output from GPT) - v6.0 structure
   workforceAchievement?: {
     headline: string
     subhead?: string | null
-    detailBlock?: string | null
+    factualStatement?: string | null
+    quote?: string | null
+    quoteAttribution?: string | null
     runtimeGuidance?: string | null
     imageAssetId?: string | null
     employeeId?: string | null
@@ -116,8 +118,10 @@ export async function POST(request: NextRequest) {
             create: {
               headline: workforceAchievement.headline,
               subhead: workforceAchievement.subhead || null,
-              detailBlock: workforceAchievement.detailBlock || null,
-              runtimeGuidance: workforceAchievement.runtimeGuidance || '1 week',
+              factualStatement: workforceAchievement.factualStatement || null,
+              quote: workforceAchievement.quote || null,
+              quoteAttribution: workforceAchievement.quoteAttribution || null,
+              runtimeGuidance: workforceAchievement.runtimeGuidance || '2 weeks',
               imageAssetId: workforceAchievement.imageAssetId || null,
               employeeId: workforceAchievement.employeeId || null,
               highlightId: workforceAchievement.highlightId || null,

@@ -840,8 +840,13 @@ model ProductDigitalSignWorkforceAchievement {
 
   headline        String
   subhead         String?
-  detailBlock     String?
+  factualStatement String?
+  quote           String?
+  quoteAttribution String?
   runtimeGuidance String?
+
+  // Legacy field - kept for backward compatibility during migration
+  detailBlock     String?
 
   imageAssetId String?
   imageAsset   Asset?  @relation("ProductDigitalSignWorkforceAchievementImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
