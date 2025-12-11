@@ -1088,7 +1088,7 @@ model MyTeamContainer {
   workMeId String @unique @db.Uuid
   workMe   WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
 
-  supervisors  SupervisorProfile[]
+  directors    DirectorProfile[]
   deputies     DeputyProfile[]
   peers        PeerProfile[]
   subordinates SubordinateProfile[]
@@ -1098,7 +1098,7 @@ model MyTeamContainer {
   @@index([workMeId])
 }
 
-model SupervisorProfile {
+model DirectorProfile {
   id          String          @id @default(cuid())
   containerId String
   container   MyTeamContainer @relation(fields: [containerId], references: [id], onDelete: Cascade)
@@ -1125,6 +1125,7 @@ model SupervisorProfile {
   decisivenessScale   Int? // 1–10
 
   // Relationship With User
+  isSupervisor        String? // Yes | No | Unknown - is this person actually your supervisor?
   hiredMe             String? // Yes | No | Unknown
   favoritismPerceived Int? // 1–10
   frictionPerceived   Int? // 1–10

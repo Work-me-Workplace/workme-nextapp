@@ -136,7 +136,10 @@ export async function POST(request: NextRequest) {
         })
 
         builtSignageData = {
-          ...built,
+          headline: built.headline,
+          subhead: built.subhead,
+          detailBlock: built.factualStatement || null,
+          runtimeGuidance: built.runtimeGuidance,
           imageAssetId: workforceAchievement.imageAssetId,
           employeeId: highlight.employeeId,
           highlightId: highlight.id,
@@ -166,7 +169,10 @@ export async function POST(request: NextRequest) {
         })
 
         builtSignageData = {
-          ...built,
+          headline: built.headline,
+          subhead: built.subhead,
+          detailBlock: built.factualStatement || null,
+          runtimeGuidance: built.runtimeGuidance,
           imageAssetId: workforceAchievement.imageAssetId,
           employeeId: workforceAchievement.employeeId,
         }
