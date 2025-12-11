@@ -268,7 +268,10 @@ function DigitalSignageBuilderContent() {
   }
 
   async function handleBuildWithAI() {
-    if (!highlightId || !highlight) {
+    // Use highlight.id if available, otherwise fall back to highlightId from URL
+    const idToUse = highlight?.id || highlightId
+    
+    if (!idToUse || !highlight) {
       setError('Highlight must be loaded first')
       return
     }
@@ -278,7 +281,7 @@ function DigitalSignageBuilderContent() {
       setError(null)
 
       const response = await api.post('/api/mywork/digital-signage/build/employee-highlight', {
-        highlightId,
+        highlightId: idToUse,
       })
 
       if (response.data.success) {
@@ -749,7 +752,7 @@ function DigitalSignageBuilderContent() {
                 {!gptOutput && (
                   <button
                     onClick={handleBuildWithAI}
-                    disabled={buildingWithAI || !highlightId}
+                    disabled={buildingWithAI || !highlight?.id}
                     className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                   >
                     {buildingWithAI ? (
@@ -799,6 +802,7 @@ function DigitalSignageBuilderContent() {
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-md p-6">
+                {/* For WORKFORCE_ACHIEVEMENT, manual entry is only shown when NO highlight is loaded */}
                 {signType === 'WORKFORCE_ACHIEVEMENT' && !highlight && (
                   <div className="space-y-6">
                     <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -859,6 +863,15 @@ function DigitalSignageBuilderContent() {
                         This raw text will be sent to GPT to extract structured data
                       </p>
                     </div>
+                  </div>
+                )}
+                
+                {/* When highlight is loaded for WORKFORCE_ACHIEVEMENT, show message to use "Build Digital Slide with AI" button above */}
+                {signType === 'WORKFORCE_ACHIEVEMENT' && highlight && !gptOutput && (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600 mb-2">
+                      Highlight loaded. Use the <strong>"Build Digital Slide with AI"</strong> button above to generate signage content.
+                    </p>
                   </div>
                 )}
 
