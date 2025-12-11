@@ -14,6 +14,13 @@ interface PlatformData {
   platformSeries?: string | null
   description?: string | null
   whySpecial?: string | null
+  payloadNotes?: string | null
+  intendedTotalUnits?: number | null
+  knownShipsInClass?: string[]
+  currentProgressEstimate?: number | null
+  programStatus?: string | null
+  nextDeliveryExpected?: string | null
+  lastDeliveryDate?: string | null
   totalLength?: string | null
   totalBeam?: string | null
   totalDisplacementSubmerged?: string | null
@@ -272,6 +279,100 @@ export default function CreatePlatformPage() {
                         />
                       </div>
                       <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Payload Notes</label>
+                        <textarea
+                          rows={2}
+                          value={reviewData.platform.payloadNotes || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, payloadNotes: e.target.value || null }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          placeholder="e.g., VPM adds 28 Tomahawk missiles, 12 VLS cells"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Intended Total Units</label>
+                        <input
+                          type="number"
+                          value={reviewData.platform.intendedTotalUnits || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, intendedTotalUnits: e.target.value ? parseInt(e.target.value) : null }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          placeholder="e.g., 66"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Known Ships in Class</label>
+                        <input
+                          type="text"
+                          value={reviewData.platform.knownShipsInClass?.join(', ') || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { 
+                              ...reviewData.platform, 
+                              knownShipsInClass: e.target.value ? e.target.value.split(',').map(s => s.trim()).filter(Boolean) : []
+                            }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          placeholder="Comma-separated: USS Virginia, SSN 774, SSN 775"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Current Progress Estimate (%)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={reviewData.platform.currentProgressEstimate || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, currentProgressEstimate: e.target.value ? parseInt(e.target.value) : null }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          placeholder="0-100"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Program Status</label>
+                        <input
+                          type="text"
+                          value={reviewData.platform.programStatus || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, programStatus: e.target.value || null }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          placeholder="e.g., On Track, Delayed, Production"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Next Delivery Expected</label>
+                        <input
+                          type="date"
+                          value={reviewData.platform.nextDeliveryExpected || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, nextDeliveryExpected: e.target.value || null }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Last Delivery Date</label>
+                        <input
+                          type="date"
+                          value={reviewData.platform.lastDeliveryDate || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, lastDeliveryDate: e.target.value || null }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Class Start Date (Lead Ship Keel Laid Down)</label>
                         <input
                           type="date"
@@ -281,6 +382,148 @@ export default function CreatePlatformPage() {
                             platform: { ...reviewData.platform, classStartDate: e.target.value || null }
                           })}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div className="border-t pt-4">
+                        <h3 className="text-md font-semibold text-gray-900 mb-3">Physical Attributes</h3>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Total Length</label>
+                        <input
+                          type="text"
+                          value={reviewData.platform.totalLength || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, totalLength: e.target.value || null }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          placeholder="e.g., 377 ft (115 m)"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Total Beam</label>
+                        <input
+                          type="text"
+                          value={reviewData.platform.totalBeam || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, totalBeam: e.target.value || null }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          placeholder="e.g., 34 ft"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Total Displacement (Submerged)</label>
+                        <input
+                          type="text"
+                          value={reviewData.platform.totalDisplacementSubmerged || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, totalDisplacementSubmerged: e.target.value || null }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          placeholder="e.g., 8,700 tons"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Total Manpower Needs</label>
+                        <input
+                          type="text"
+                          value={reviewData.platform.totalManpowerNeeds || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, totalManpowerNeeds: e.target.value || null }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          placeholder="e.g., 132 crew"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Total Time to Build</label>
+                        <input
+                          type="text"
+                          value={reviewData.platform.totalTimeToBuild || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, totalTimeToBuild: e.target.value || null }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          placeholder="e.g., 66–84 months"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Total Estimated Cost Per Unit</label>
+                        <input
+                          type="text"
+                          value={reviewData.platform.totalEstimatedCostPerUnit || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, totalEstimatedCostPerUnit: e.target.value || null }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          placeholder="e.g., $3.2–3.8 billion"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Sensors</label>
+                        <input
+                          type="text"
+                          value={reviewData.platform.sensors?.join(', ') || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { 
+                              ...reviewData.platform, 
+                              sensors: e.target.value ? e.target.value.split(',').map(s => s.trim()).filter(Boolean) : []
+                            }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          placeholder="Comma-separated: AN/BQQ-10 sonar, AN/BVS-1 photonics mast"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Defense Builders</label>
+                        <input
+                          type="text"
+                          value={reviewData.platform.defenseBuilders?.join(', ') || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { 
+                              ...reviewData.platform, 
+                              defenseBuilders: e.target.value ? e.target.value.split(',').map(s => s.trim()).filter(Boolean) : []
+                            }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          placeholder="Comma-separated: HII Newport News, Electric Boat"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Units in Series</label>
+                        <input
+                          type="text"
+                          value={reviewData.platform.unitsInSeries?.join(', ') || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { 
+                              ...reviewData.platform, 
+                              unitsInSeries: e.target.value ? e.target.value.split(',').map(s => s.trim()).filter(Boolean) : []
+                            }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          placeholder="Comma-separated: SSN 774, SSN 775, SSN 776"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Years Since Last In Class</label>
+                        <input
+                          type="number"
+                          value={reviewData.platform.yearsSinceLastInClass || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, yearsSinceLastInClass: e.target.value ? parseInt(e.target.value) : null }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          placeholder="e.g., 5"
                         />
                       </div>
                     </div>
