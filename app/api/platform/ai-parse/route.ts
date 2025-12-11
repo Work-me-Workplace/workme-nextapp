@@ -14,9 +14,19 @@ export interface PlatformParseResult {
   platform: {
     name: string
     category: string
-    programCode?: string | null
+    platformSeries?: string | null
     description?: string | null
     whySpecial?: string | null
+    totalLength?: string | null
+    totalBeam?: string | null
+    totalDisplacementSubmerged?: string | null
+    totalManpowerNeeds?: string | null
+    totalTimeToBuild?: string | null
+    totalEstimatedCostPerUnit?: string | null
+    sensors?: string[]
+    defenseBuilders?: string[]
+    unitsInSeries?: string[]
+    yearsSinceLastInClass?: number | null
   }
   units: Array<{
     hullNumber: string
@@ -51,9 +61,19 @@ Return JSON with this exact structure:
   "platform": {
     "name": "Platform name (e.g., 'Virginia-class', 'DDG-1000')",
     "category": "Category (e.g., 'Submarine', 'Surface Ship', 'Aircraft')",
-    "programCode": "Program code if mentioned (e.g., 'SSN', 'SSBN', 'DDG') or null",
+    "platformSeries": "Platform series if mentioned (e.g., 'SSN', 'SSBN', 'DDG') or null",
     "description": "Description of the platform or null",
-    "whySpecial": "What makes this platform special or null"
+    "whySpecial": "What makes this platform special or null",
+    "totalLength": "Total length if mentioned (e.g., '377 ft (115 m)') or null",
+    "totalBeam": "Total beam if mentioned or null",
+    "totalDisplacementSubmerged": "Displacement if mentioned (e.g., '8,700 tons') or null",
+    "totalManpowerNeeds": "Crew size if mentioned (e.g., '132 crew') or null",
+    "totalTimeToBuild": "Build time if mentioned (e.g., '66–84 months') or null",
+    "totalEstimatedCostPerUnit": "Cost per unit if mentioned (e.g., '$3.2–3.8 billion') or null",
+    "sensors": ["Array of sensor systems mentioned"] or [],
+    "defenseBuilders": ["Array of shipyard/builder names mentioned"] or [],
+    "unitsInSeries": ["Array of unit names/hull numbers in the series"] or [],
+    "yearsSinceLastInClass": "Years since last unit in class was delivered (integer) or null"
   },
   "units": [
     {
@@ -62,7 +82,7 @@ Return JSON with this exact structure:
       "lifecycleStatus": "Status if mentioned (e.g., 'under construction', 'in service') or null"
     }
   ],
-      "milestones": [
+  "milestones": [
     {
       "milestoneType": "One of: CONTRACT_AWARDED, KEEL_LAYING, HULL_COMPLETION, LAUNCH, SEA_TRIALS, DELIVERY, COMMISSIONING",
       "description": "Description or null",
@@ -80,7 +100,7 @@ ${text.substring(0, 4000)}`
       messages: [
         {
           role: 'system',
-          content: 'You are an expert at extracting structured platform product information from defense and naval documentation. Return only valid JSON.',
+          content: 'You are an expert at extracting structured platform product information from defense and naval documentation. Return only valid JSON. Extract all physical attributes, sensors, builders, and unit information when available.',
         },
         {
           role: 'user',
@@ -105,9 +125,19 @@ ${text.substring(0, 4000)}`
       platform: {
         name: parsed.platform.name || '',
         category: parsed.platform.category || '',
-        programCode: parsed.platform.programCode || null,
+        platformSeries: parsed.platform.platformSeries || null,
         description: parsed.platform.description || null,
         whySpecial: parsed.platform.whySpecial || null,
+        totalLength: parsed.platform.totalLength || null,
+        totalBeam: parsed.platform.totalBeam || null,
+        totalDisplacementSubmerged: parsed.platform.totalDisplacementSubmerged || null,
+        totalManpowerNeeds: parsed.platform.totalManpowerNeeds || null,
+        totalTimeToBuild: parsed.platform.totalTimeToBuild || null,
+        totalEstimatedCostPerUnit: parsed.platform.totalEstimatedCostPerUnit || null,
+        sensors: Array.isArray(parsed.platform.sensors) ? parsed.platform.sensors : [],
+        defenseBuilders: Array.isArray(parsed.platform.defenseBuilders) ? parsed.platform.defenseBuilders : [],
+        unitsInSeries: Array.isArray(parsed.platform.unitsInSeries) ? parsed.platform.unitsInSeries : [],
+        yearsSinceLastInClass: parsed.platform.yearsSinceLastInClass ? parseInt(parsed.platform.yearsSinceLastInClass) : null,
       },
       units: Array.isArray(parsed.units) ? parsed.units.map((u: any) => ({
         hullNumber: u.hullNumber || '',

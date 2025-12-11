@@ -12,7 +12,7 @@ interface Platform {
   id: string
   name: string
   category: string | null
-  programCode: string | null
+  platformSeries: string | null
   programStatus: string | null
   currentProgressEstimate: number | null
   intendedTotalUnits: number | null
@@ -116,8 +116,8 @@ export default function PlatformsPage() {
                     {platform.category && (
                       <p className="text-sm text-gray-600 mb-1">Category: {platform.category}</p>
                     )}
-                    {platform.programCode && (
-                      <p className="text-sm text-gray-600 mb-1">Program: {platform.programCode}</p>
+                    {platform.platformSeries && (
+                      <p className="text-sm text-gray-600 mb-1">Series: {platform.platformSeries}</p>
                     )}
                     {platform.programStatus && (
                       <p className="text-sm font-medium text-gray-900 mt-2">

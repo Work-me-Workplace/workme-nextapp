@@ -48,7 +48,7 @@ interface PlatformProduct {
   id: string
   name: string
   category: string | null
-  programCode: string | null
+  platformSeries: string | null
   description: string | null
   whySpecial: string | null
   nextDeliveryExpected: string | null
@@ -154,8 +154,8 @@ export default function PlatformProductDetailPage({ params }: { params: Promise<
               {product.category && (
                 <p className="text-gray-600 mt-1">Category: {product.category}</p>
               )}
-              {product.programCode && (
-                <p className="text-gray-600">Program Code: {product.programCode}</p>
+              {product.platformSeries && (
+                <p className="text-gray-600">Platform Series: {product.platformSeries}</p>
               )}
             </div>
           </div>

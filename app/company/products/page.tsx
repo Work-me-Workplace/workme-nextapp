@@ -11,7 +11,7 @@ interface PlatformProduct {
   id: string
   name: string
   category: string | null
-  programCode: string | null
+  platformSeries: string | null
 }
 
 interface CapacityProduct {
@@ -136,8 +136,8 @@ export default function ProductsPage() {
                   {product.category && (
                     <p className="text-sm text-gray-600 mb-1">Category: {product.category}</p>
                   )}
-                  {product.programCode && (
-                    <p className="text-sm text-gray-600">Program: {product.programCode}</p>
+                  {product.platformSeries && (
+                    <p className="text-sm text-gray-600">Series: {product.platformSeries}</p>
                   )}
                 </Link>
               ))}

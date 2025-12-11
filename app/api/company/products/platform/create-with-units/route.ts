@@ -17,9 +17,19 @@ export async function POST(request: Request) {
       data: {
         name: platform.name,
         category: platform.category,
-        programCode: platform.programCode || null,
+        platformSeries: platform.platformSeries || null,
         description: platform.description || null,
         whySpecial: platform.whySpecial || null,
+        totalLength: platform.totalLength || null,
+        totalBeam: platform.totalBeam || null,
+        totalDisplacementSubmerged: platform.totalDisplacementSubmerged || null,
+        totalManpowerNeeds: platform.totalManpowerNeeds || null,
+        totalTimeToBuild: platform.totalTimeToBuild || null,
+        totalEstimatedCostPerUnit: platform.totalEstimatedCostPerUnit || null,
+        sensors: Array.isArray(platform.sensors) ? platform.sensors : [],
+        defenseBuilders: Array.isArray(platform.defenseBuilders) ? platform.defenseBuilders : [],
+        unitsInSeries: Array.isArray(platform.unitsInSeries) ? platform.unitsInSeries : [],
+        yearsSinceLastInClass: platform.yearsSinceLastInClass || null,
       },
     })
 
@@ -30,7 +40,7 @@ export async function POST(request: Request) {
           platformProductId: product.id,
           hullNumber: unit.hullNumber,
           name: unit.name || null,
-          lifecycleStatus: unit.lifecycleStatus || null,
+          status: unit.lifecycleStatus || null,
         })),
       })
     }

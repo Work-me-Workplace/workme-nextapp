@@ -5,29 +5,37 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
-import { Ship, ArrowLeft, Wand2, FileText, Loader2 } from 'lucide-react'
-
-type Mode = 'manual' | 'ai' | 'review'
+import { Ship, ArrowLeft, Wand2, Loader2 } from 'lucide-react'
 
 interface PlatformData {
   name: string
   category: string
-  programCode: string
-  description: string
-  whySpecial: string
+  platformSeries?: string | null
+  description?: string | null
+  whySpecial?: string | null
+  totalLength?: string | null
+  totalBeam?: string | null
+  totalDisplacementSubmerged?: string | null
+  totalManpowerNeeds?: string | null
+  totalTimeToBuild?: string | null
+  totalEstimatedCostPerUnit?: string | null
+  sensors?: string[]
+  defenseBuilders?: string[]
+  unitsInSeries?: string[]
+  yearsSinceLastInClass?: number | null
 }
 
 interface UnitData {
   hullNumber: string
-  name: string
-  lifecycleStatus: string
+  name?: string | null
+  lifecycleStatus?: string | null
 }
 
 interface MilestoneData {
   milestoneType: 'CONTRACT_AWARDED' | 'KEEL_LAYING' | 'HULL_COMPLETION' | 'LAUNCH' | 'SEA_TRIALS' | 'DELIVERY' | 'COMMISSIONING'
-  description: string | null
-  date: string | null
-  unitHullNumber: string | null
+  description?: string | null
+  date?: string | null
+  unitHullNumber?: string | null
 }
 
 interface AIParseResult {
@@ -39,21 +47,9 @@ interface AIParseResult {
 export default function CreatePlatformPage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
-  const [mode, setMode] = useState<Mode>('manual')
   const [loading, setLoading] = useState(false)
   const [parsing, setParsing] = useState(false)
   const [reviewData, setReviewData] = useState<AIParseResult | null>(null)
-
-  // Manual form state
-  const [formData, setFormData] = useState<PlatformData>({
-    name: '',
-    category: '',
-    programCode: '',
-    description: '',
-    whySpecial: '',
-  })
-
-  // AI mode state
   const [aiText, setAiText] = useState('')
 
   useEffect(() => {
@@ -79,7 +75,6 @@ export default function CreatePlatformPage() {
 
       if (response.data.success && response.data.data) {
         setReviewData(response.data.data)
-        setMode('review')
       } else {
         alert('Failed to parse: ' + (response.data.error || 'Unknown error'))
       }
@@ -88,30 +83,6 @@ export default function CreatePlatformPage() {
       alert('Failed to parse: ' + (error.response?.data?.error || error.message))
     } finally {
       setParsing(false)
-    }
-  }
-
-  async function handleManualSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!formData.name || !formData.category) {
-      alert('Name and category are required')
-      return
-    }
-
-    try {
-      setLoading(true)
-      const response = await api.post('/api/company/products/platform/create', formData)
-
-      if (response.data.success) {
-        router.push(`/company/products/platform/${response.data.product.id}`)
-      } else {
-        alert('Failed to create platform: ' + response.data.error)
-      }
-    } catch (error: any) {
-      console.error('Failed to create platform:', error)
-      alert('Failed to create platform: ' + (error.response?.data?.error || error.message))
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -176,131 +147,7 @@ export default function CreatePlatformPage() {
             <h1 className="text-3xl font-bold text-gray-900">Create Platform Product</h1>
           </div>
 
-          {/* Mode Selection */}
-          {!reviewData && (
-            <div className="mb-6">
-              <div className="flex space-x-4 border-b border-gray-200">
-                <button
-                  onClick={() => setMode('manual')}
-                  className={`px-4 py-2 font-medium text-sm border-b-2 transition ${
-                    mode === 'manual'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <FileText className="h-4 w-4 inline mr-2" />
-                  Manual
-                </button>
-                <button
-                  onClick={() => setMode('ai')}
-                  className={`px-4 py-2 font-medium text-sm border-b-2 transition ${
-                    mode === 'ai'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <Wand2 className="h-4 w-4 inline mr-2" />
-                  AI-Assisted
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Manual Mode */}
-          {mode === 'manual' && !reviewData && (
-            <form onSubmit={handleManualSubmit} className="space-y-6">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  Name *
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., Virginia-class"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-                  Category *
-                </label>
-                <input
-                  type="text"
-                  id="category"
-                  required
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., Submarine, Surface Ship"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="programCode" className="block text-sm font-medium text-gray-700 mb-2">
-                  Program Code
-                </label>
-                <input
-                  type="text"
-                  id="programCode"
-                  value={formData.programCode}
-                  onChange={(e) => setFormData({ ...formData, programCode: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., SSN, SSBN, DDG"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  rows={4}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Platform description..."
-                />
-              </div>
-
-              <div>
-                <label htmlFor="whySpecial" className="block text-sm font-medium text-gray-700 mb-2">
-                  Why Special
-                </label>
-                <textarea
-                  id="whySpecial"
-                  rows={3}
-                  value={formData.whySpecial}
-                  onChange={(e) => setFormData({ ...formData, whySpecial: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="What makes this platform special..."
-                />
-              </div>
-
-              <div className="flex items-center justify-end space-x-4">
-                <Link
-                  href="/company/products"
-                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </Link>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Creating...' : 'Create Platform'}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* AI Mode */}
-          {mode === 'ai' && !reviewData && (
+          {!reviewData ? (
             <div className="space-y-6">
               <div>
                 <label htmlFor="aiText" className="block text-sm font-medium text-gray-700 mb-2">
@@ -314,6 +161,9 @@ export default function CreatePlatformPage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
                   placeholder="Paste text here..."
                 />
+                <p className="text-sm text-gray-500 mt-2">
+                  AI will extract platform details, units, and milestones from your text.
+                </p>
               </div>
 
               <div className="flex items-center justify-end space-x-4">
@@ -342,10 +192,7 @@ export default function CreatePlatformPage() {
                 </button>
               </div>
             </div>
-          )}
-
-          {/* Review Mode (after AI parse) */}
-          {reviewData && (
+          ) : (
             <div className="space-y-6">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-800">
@@ -383,13 +230,13 @@ export default function CreatePlatformPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Program Code</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Platform Series</label>
                     <input
                       type="text"
-                      value={reviewData.platform.programCode || ''}
+                      value={reviewData.platform.platformSeries || ''}
                       onChange={(e) => setReviewData({
                         ...reviewData,
-                        platform: { ...reviewData.platform, programCode: e.target.value }
+                        platform: { ...reviewData.platform, platformSeries: e.target.value }
                       })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                     />
@@ -539,11 +386,11 @@ export default function CreatePlatformPage() {
                 <button
                   onClick={() => {
                     setReviewData(null)
-                    setMode('ai')
+                    setAiText('')
                   }}
                   className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                 >
-                  Back to Edit
+                  Start Over
                 </button>
                 <button
                   onClick={handleReviewSubmit}

@@ -49,7 +49,7 @@ interface Platform {
   id: string
   name: string
   category: string | null
-  programCode: string | null
+  platformSeries: string | null
   description: string | null
   whySpecial: string | null
   payloadNotes: string | null
@@ -163,8 +163,8 @@ export default function PlatformDetailPage({ params }: { params: Promise<{ id: s
                       {platform.category && (
                         <p className="text-gray-600 text-sm">Category: {platform.category}</p>
                       )}
-                      {platform.programCode && (
-                        <p className="text-gray-600 text-sm">Program: {platform.programCode}</p>
+                      {platform.platformSeries && (
+                        <p className="text-gray-600 text-sm">Series: {platform.platformSeries}</p>
                       )}
                     </div>
                   </div>

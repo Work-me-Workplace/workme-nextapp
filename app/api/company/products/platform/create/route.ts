@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     const {
       name,
       category,
-      programCode,
+      platformSeries,
       description,
       whySpecial,
       payloadNotes,
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       data: {
         name,
         category,
-        programCode: programCode || null,
+        platformSeries: platformSeries || null,
         description: description || null,
         whySpecial: whySpecial || null,
         payloadNotes: payloadNotes || null,

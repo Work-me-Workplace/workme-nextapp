@@ -6,55 +6,52 @@ import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Ship, ArrowLeft, Wand2, FileText, Loader2, CheckCircle } from 'lucide-react'
+import { Ship, ArrowLeft, Wand2, Loader2 } from 'lucide-react'
 
-type Tab = 'manual' | 'ai'
-
-interface PlatformFormData {
+interface PlatformData {
   name: string
   category: string
-  programCode: string
-  description: string
-  whySpecial: string
-  payloadNotes: string
-  intendedTotalUnits: string
-  knownShipsInClass: string
+  platformSeries?: string | null
+  description?: string | null
+  whySpecial?: string | null
+  totalLength?: string | null
+  totalBeam?: string | null
+  totalDisplacementSubmerged?: string | null
+  totalManpowerNeeds?: string | null
+  totalTimeToBuild?: string | null
+  totalEstimatedCostPerUnit?: string | null
+  sensors?: string[]
+  defenseBuilders?: string[]
+  unitsInSeries?: string[]
+  yearsSinceLastInClass?: number | null
 }
 
-interface AISummary {
-  overview: string
-  keyCapabilities: string[]
-  knownBoats: string[]
-  challenges: string[]
-  suggestedFields: {
-    name?: string
-    category?: string
-    programCode?: string
-    description?: string
-    whySpecial?: string
-    payloadNotes?: string
-    intendedTotalUnits?: string
-    knownShipsInClass?: string
-  }
+interface UnitData {
+  hullNumber: string
+  name?: string | null
+  lifecycleStatus?: string | null
+}
+
+interface MilestoneData {
+  milestoneType: 'CONTRACT_AWARDED' | 'KEEL_LAYING' | 'HULL_COMPLETION' | 'LAUNCH' | 'SEA_TRIALS' | 'DELIVERY' | 'COMMISSIONING'
+  description?: string | null
+  date?: string | null
+  unitHullNumber?: string | null
+}
+
+interface AIParseResult {
+  platform: PlatformData
+  units: UnitData[]
+  milestones: MilestoneData[]
 }
 
 export default function CreatePlatformPage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<Tab>('manual')
   const [loading, setLoading] = useState(false)
   const [parsing, setParsing] = useState(false)
-  const [aiSummary, setAiSummary] = useState<AISummary | null>(null)
-  const [formData, setFormData] = useState<PlatformFormData>({
-    name: '',
-    category: '',
-    programCode: '',
-    description: '',
-    whySpecial: '',
-    payloadNotes: '',
-    intendedTotalUnits: '',
-    knownShipsInClass: '',
-  })
+  const [reviewData, setReviewData] = useState<AIParseResult | null>(null)
+  const [aiText, setAiText] = useState('')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -67,34 +64,18 @@ export default function CreatePlatformPage() {
     }
   }, [router])
 
-  async function handleAIParse(text: string) {
-    if (!text.trim()) {
+  async function handleAIParse() {
+    if (!aiText.trim()) {
       alert('Please paste some text to parse')
       return
     }
 
     try {
       setParsing(true)
-      const response = await api.post('/api/platform/ai-parse', { text })
+      const response = await api.post('/api/platform/ai-parse', { text: aiText })
 
       if (response.data.success && response.data.data) {
-        const data = response.data.data
-        // Generate AI summary from parsed data
-        const summary: AISummary = {
-          overview: data.platform.description || 'Platform information extracted from text.',
-          keyCapabilities: data.platform.whySpecial ? [data.platform.whySpecial] : [],
-          knownBoats: data.units.map((u: any) => u.hullNumber || u.name).filter(Boolean),
-          challenges: [],
-          suggestedFields: {
-            name: data.platform.name,
-            category: data.platform.category,
-            programCode: data.platform.programCode,
-            description: data.platform.description,
-            whySpecial: data.platform.whySpecial,
-            knownShipsInClass: data.units.map((u: any) => u.hullNumber).filter(Boolean).join(', '),
-          },
-        }
-        setAiSummary(summary)
+        setReviewData(response.data.data)
       } else {
         alert('Failed to parse: ' + (response.data.error || 'Unknown error'))
       }
@@ -106,39 +87,12 @@ export default function CreatePlatformPage() {
     }
   }
 
-  function applyAISummary() {
-    if (!aiSummary) return
-    setFormData({
-      ...formData,
-      ...aiSummary.suggestedFields,
-      knownShipsInClass: aiSummary.knownBoats.join(', '),
-    })
-    setActiveTab('manual')
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!formData.name || !formData.category) {
-      alert('Name and category are required')
-      return
-    }
+  async function handleReviewSubmit() {
+    if (!reviewData) return
 
     try {
       setLoading(true)
-      const payload = {
-        name: formData.name,
-        category: formData.category,
-        programCode: formData.programCode || null,
-        description: formData.description || null,
-        whySpecial: formData.whySpecial || null,
-        payloadNotes: formData.payloadNotes || null,
-        intendedTotalUnits: formData.intendedTotalUnits ? parseInt(formData.intendedTotalUnits) : null,
-        knownShipsInClass: formData.knownShipsInClass
-          ? formData.knownShipsInClass.split(',').map(s => s.trim()).filter(Boolean)
-          : [],
-      }
-
-      const response = await api.post('/api/company/products/platform/create', payload)
+      const response = await api.post('/api/company/products/platform/create-with-units', reviewData)
 
       if (response.data.success) {
         router.push(`/mycompany/platforms/${response.data.product.id}`)
@@ -198,154 +152,23 @@ export default function CreatePlatformPage() {
                 <h1 className="text-3xl font-bold text-gray-900">Create Platform</h1>
               </div>
 
-              {/* Tabs */}
-              <div className="border-b border-gray-200 mb-6">
-                <nav className="-mb-px flex space-x-8">
-                  <button
-                    onClick={() => setActiveTab('manual')}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'manual'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    <FileText className="h-4 w-4 inline mr-2" />
-                    Manual Entry
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('ai')}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'ai'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    <Wand2 className="h-4 w-4 inline mr-2" />
-                    AI Ingest
-                  </button>
-                </nav>
-              </div>
-
-              {/* Tab A — Manual Entry */}
-              {activeTab === 'manual' && (
-                <form onSubmit={handleSubmit} className="space-y-6">
+              {!reviewData ? (
+                <div className="space-y-6">
                   <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                      Platform Name *
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      required
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., Columbia-class"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-                      Category *
-                    </label>
-                    <select
-                      id="category"
-                      required
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Select category</option>
-                      <option value="Submarine">Submarine</option>
-                      <option value="Surface Ship">Surface Ship</option>
-                      <option value="Aviation">Aviation</option>
-                      <option value="Digital">Digital</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="programCode" className="block text-sm font-medium text-gray-700 mb-2">
-                      Program Code
-                    </label>
-                    <input
-                      type="text"
-                      id="programCode"
-                      value={formData.programCode}
-                      onChange={(e) => setFormData({ ...formData, programCode: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., SSBN, SSN, DDG"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                      Description
+                    <label htmlFor="aiText" className="block text-sm font-medium text-gray-700 mb-2">
+                      Paste Article or Text
                     </label>
                     <textarea
-                      id="description"
-                      rows={4}
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Platform description..."
+                      id="aiText"
+                      rows={12}
+                      value={aiText}
+                      onChange={(e) => setAiText(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                      placeholder="Paste any article, fact file, or Wikipedia entry about this platform..."
                     />
-                  </div>
-
-                  <div>
-                    <label htmlFor="whySpecial" className="block text-sm font-medium text-gray-700 mb-2">
-                      Why Special
-                    </label>
-                    <textarea
-                      id="whySpecial"
-                      rows={3}
-                      value={formData.whySpecial}
-                      onChange={(e) => setFormData({ ...formData, whySpecial: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="What makes this platform special..."
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="payloadNotes" className="block text-sm font-medium text-gray-700 mb-2">
-                      Payload Notes
-                    </label>
-                    <textarea
-                      id="payloadNotes"
-                      rows={3}
-                      value={formData.payloadNotes}
-                      onChange={(e) => setFormData({ ...formData, payloadNotes: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., VPM adds 28 missiles"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="intendedTotalUnits" className="block text-sm font-medium text-gray-700 mb-2">
-                      Intended Total Units
-                    </label>
-                    <input
-                      type="number"
-                      id="intendedTotalUnits"
-                      value={formData.intendedTotalUnits}
-                      onChange={(e) => setFormData({ ...formData, intendedTotalUnits: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., 12"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="knownShipsInClass" className="block text-sm font-medium text-gray-700 mb-2">
-                      Known Ships in Class
-                    </label>
-                    <input
-                      type="text"
-                      id="knownShipsInClass"
-                      value={formData.knownShipsInClass}
-                      onChange={(e) => setFormData({ ...formData, knownShipsInClass: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Comma-separated, e.g., SSN 804, SSN 805, SSN 806"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Separate multiple ships with commas</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      AI will extract platform details, units, and milestones from your text.
+                    </p>
                   </div>
 
                   <div className="flex items-center justify-end space-x-4">
@@ -356,55 +179,8 @@ export default function CreatePlatformPage() {
                       Cancel
                     </Link>
                     <button
-                      type="submit"
-                      disabled={loading}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        'Create Platform'
-                      )}
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {/* Tab B — AI Ingest */}
-              {activeTab === 'ai' && (
-                <div className="space-y-6">
-                  <div>
-                    <label htmlFor="aiText" className="block text-sm font-medium text-gray-700 mb-2">
-                      Paste Article or Text
-                    </label>
-                    <textarea
-                      id="aiText"
-                      rows={12}
-                      onChange={(e) => {
-                        // Store text for parsing
-                        const text = e.target.value
-                        if (text.length > 100) {
-                          // Auto-parse when text is substantial
-                          // Or user can click button
-                        }
-                      }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
-                      placeholder="Paste any article, fact file, or Wikipedia entry about this platform..."
-                    />
-                  </div>
-
-                  <div className="flex items-center space-x-4">
-                    <button
-                      onClick={() => {
-                        const textarea = document.getElementById('aiText') as HTMLTextAreaElement
-                        if (textarea) {
-                          handleAIParse(textarea.value)
-                        }
-                      }}
-                      disabled={parsing}
+                      onClick={handleAIParse}
+                      disabled={parsing || !aiText.trim()}
                       className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {parsing ? (
@@ -415,63 +191,220 @@ export default function CreatePlatformPage() {
                       ) : (
                         <>
                           <Wand2 className="h-4 w-4 mr-2" />
-                          Generate Summary
+                          Parse with AI
                         </>
                       )}
                     </button>
                   </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800">
+                      Review the parsed data below. You can edit fields before creating the platform.
+                    </p>
+                  </div>
 
-                  {aiSummary && (
-                    <div className="border border-blue-200 rounded-lg p-6 bg-blue-50">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Summary</h3>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <h4 className="font-medium text-gray-900 mb-2">Overview</h4>
-                          <p className="text-sm text-gray-700">{aiSummary.overview}</p>
-                        </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Platform</h2>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                        <input
+                          type="text"
+                          value={reviewData.platform.name}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, name: e.target.value }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                        <input
+                          type="text"
+                          value={reviewData.platform.category}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, category: e.target.value }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Platform Series</label>
+                        <input
+                          type="text"
+                          value={reviewData.platform.platformSeries || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, platformSeries: e.target.value }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <textarea
+                          rows={3}
+                          value={reviewData.platform.description || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, description: e.target.value }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Why Special</label>
+                        <textarea
+                          rows={2}
+                          value={reviewData.platform.whySpecial || ''}
+                          onChange={(e) => setReviewData({
+                            ...reviewData,
+                            platform: { ...reviewData.platform, whySpecial: e.target.value }
+                          })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-                        {aiSummary.keyCapabilities.length > 0 && (
-                          <div>
-                            <h4 className="font-medium text-gray-900 mb-2">Key Capabilities</h4>
-                            <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                              {aiSummary.keyCapabilities.map((cap, idx) => (
-                                <li key={idx}>{cap}</li>
-                              ))}
-                            </ul>
+                  {reviewData.units.length > 0 && (
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900 mb-4">Units ({reviewData.units.length})</h2>
+                      <div className="space-y-3">
+                        {reviewData.units.map((unit, idx) => (
+                          <div key={idx} className="border border-gray-200 rounded-lg p-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Hull Number</label>
+                                <input
+                                  type="text"
+                                  value={unit.hullNumber}
+                                  onChange={(e) => {
+                                    const newUnits = [...reviewData.units]
+                                    newUnits[idx].hullNumber = e.target.value
+                                    setReviewData({ ...reviewData, units: newUnits })
+                                  }}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                <input
+                                  type="text"
+                                  value={unit.name || ''}
+                                  onChange={(e) => {
+                                    const newUnits = [...reviewData.units]
+                                    newUnits[idx].name = e.target.value
+                                    setReviewData({ ...reviewData, units: newUnits })
+                                  }}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                />
+                              </div>
+                            </div>
                           </div>
-                        )}
-
-                        {aiSummary.knownBoats.length > 0 && (
-                          <div>
-                            <h4 className="font-medium text-gray-900 mb-2">Known Boats</h4>
-                            <p className="text-sm text-gray-700">{aiSummary.knownBoats.join(', ')}</p>
-                          </div>
-                        )}
-
-                        {aiSummary.challenges.length > 0 && (
-                          <div>
-                            <h4 className="font-medium text-gray-900 mb-2">Challenges / Industrial Base</h4>
-                            <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                              {aiSummary.challenges.map((challenge, idx) => (
-                                <li key={idx}>{challenge}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        <div className="pt-4 border-t border-blue-200">
-                          <button
-                            onClick={applyAISummary}
-                            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
-                          >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Apply Summary to Form
-                          </button>
-                        </div>
+                        ))}
                       </div>
                     </div>
                   )}
+
+                  {reviewData.milestones.length > 0 && (
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900 mb-4">Milestones ({reviewData.milestones.length})</h2>
+                      <div className="space-y-3">
+                        {reviewData.milestones.map((milestone, idx) => (
+                          <div key={idx} className="border border-gray-200 rounded-lg p-4">
+                            <div className="grid grid-cols-2 gap-4 mb-3">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Milestone Type</label>
+                                <select
+                                  value={milestone.milestoneType}
+                                  onChange={(e) => {
+                                    const newMilestones = [...reviewData.milestones]
+                                    newMilestones[idx].milestoneType = e.target.value as any
+                                    setReviewData({ ...reviewData, milestones: newMilestones })
+                                  }}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                >
+                                  <option value="CONTRACT_AWARDED">Contract Awarded</option>
+                                  <option value="KEEL_LAYING">Keel Laying</option>
+                                  <option value="HULL_COMPLETION">Hull Completion</option>
+                                  <option value="LAUNCH">Launch</option>
+                                  <option value="SEA_TRIALS">Sea Trials</option>
+                                  <option value="DELIVERY">Delivery</option>
+                                  <option value="COMMISSIONING">Commissioning</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                                <input
+                                  type="date"
+                                  value={milestone.date || ''}
+                                  onChange={(e) => {
+                                    const newMilestones = [...reviewData.milestones]
+                                    newMilestones[idx].date = e.target.value
+                                    setReviewData({ ...reviewData, milestones: newMilestones })
+                                  }}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                />
+                              </div>
+                            </div>
+                            <div className="mb-3">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Unit Hull Number (optional)</label>
+                              <input
+                                type="text"
+                                value={milestone.unitHullNumber || ''}
+                                onChange={(e) => {
+                                  const newMilestones = [...reviewData.milestones]
+                                  newMilestones[idx].unitHullNumber = e.target.value || null
+                                  setReviewData({ ...reviewData, milestones: newMilestones })
+                                }}
+                                placeholder="e.g., SSN 804"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                              <textarea
+                                rows={2}
+                                value={milestone.description || ''}
+                                onChange={(e) => {
+                                  const newMilestones = [...reviewData.milestones]
+                                  newMilestones[idx].description = e.target.value || null
+                                  setReviewData({ ...reviewData, milestones: newMilestones })
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end space-x-4">
+                    <button
+                      onClick={() => {
+                        setReviewData(null)
+                        setAiText('')
+                      }}
+                      className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    >
+                      Start Over
+                    </button>
+                    <button
+                      onClick={handleReviewSubmit}
+                      disabled={loading}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? 'Creating...' : 'Create Platform'}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
