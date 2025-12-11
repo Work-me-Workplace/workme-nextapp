@@ -14,6 +14,23 @@ export async function GET(
         milestones: {
           orderBy: { date: 'asc' },
         },
+        statements: {
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
+        updates: {
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+          include: {
+            statement: {
+              select: {
+                id: true,
+                headline: true,
+                sourceName: true,
+              },
+            },
+          },
+        },
       },
     })
 

@@ -3,7 +3,16 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(request: Request) {
   try {
-    const { name, category, programCode, description, whySpecial } = await request.json()
+    const {
+      name,
+      category,
+      programCode,
+      description,
+      whySpecial,
+      payloadNotes,
+      intendedTotalUnits,
+      knownShipsInClass,
+    } = await request.json()
 
     if (!name || !category) {
       return NextResponse.json(
@@ -19,6 +28,9 @@ export async function POST(request: Request) {
         programCode: programCode || null,
         description: description || null,
         whySpecial: whySpecial || null,
+        payloadNotes: payloadNotes || null,
+        intendedTotalUnits: intendedTotalUnits || null,
+        knownShipsInClass: Array.isArray(knownShipsInClass) ? knownShipsInClass : [],
       },
     })
 
