@@ -68,18 +68,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate that the appropriate data is provided for the sign type
-    if (signType === DigitalSignType.WORKFORCE_ACHIEVEMENT && !workforceAchievement) {
-      return NextResponse.json(
-        { success: false, error: 'workforceAchievement data is required for WORKFORCE_ACHIEVEMENT sign type' },
-        { status: 400 }
-      )
-    }
-
-    if (signType === DigitalSignType.WORKFORCE_ACHIEVEMENT && !workforceAchievement.headline) {
-      return NextResponse.json(
-        { success: false, error: 'headline is required for WORKFORCE_ACHIEVEMENT sign type' },
-        { status: 400 }
-      )
+    if (signType === DigitalSignType.WORKFORCE_ACHIEVEMENT) {
+      if (!workforceAchievement) {
+        return NextResponse.json(
+          { success: false, error: 'workforceAchievement data is required for WORKFORCE_ACHIEVEMENT sign type' },
+          { status: 400 }
+        )
+      }
+      
+      if (!workforceAchievement.headline) {
+        return NextResponse.json(
+          { success: false, error: 'headline is required for WORKFORCE_ACHIEVEMENT sign type' },
+          { status: 400 }
+        )
+      }
     }
 
     if (signType === DigitalSignType.WORKFORCE && !workforce) {
