@@ -77,45 +77,43 @@ Follow these rules strictly:
 
 🔹 1. HEADLINE (Critical Rule)
 
-Use this format:
+Use this format with "Congratulations":
 
-"{FullName} — Award Recipient: {AwardName}"
+"Congratulations, {FullName} — {AwardName}"
 
 Examples:
 
-"Peter McCauley — Award Recipient: Rosenblatt 'Young Naval Engineer' Award"
+"Congratulations, Peter McCauley — Rosenblatt 'Young Naval Engineer' Award"
 
-"Sarah Johnson — Award Recipient: NAVSEA Collaboration Award"
+"Congratulations, Sarah Johnson — NAVSEA Collaboration Award"
 
 If awardName is not available:
 
-"{FullName} — Recognition Recipient"
+"Congratulations, {FullName} — Recognition Recipient"
 
 If classification is present but no award name:
 
-"{FullName} — Recognition Recipient: {Classification}"
+"Congratulations, {FullName} — Recognition Recipient: {Classification}"
 
-Do NOT congratulate in the headline.
-Do NOT write full sentences.
-This must read like official signage, not a narrative.
+Keep it concise and celebratory but professional.
 
-🔹 2. SUBHEAD (Informational Tone)
+🔹 2. SUBHEAD (Explanatory Tone)
 
-Provide 1–2 sentences describing who honored the employee and why.
+Provide 1–2 sentences explaining what they won the award for.
 
-Rules:
-
-No congratulations
-No "you," "your," or second-person language
-No narrative fluff
+Focus on:
+- What achievement or contribution earned the recognition
+- The specific impact or excellence demonstrated
 
 Examples:
 
-"The American Society of Naval Engineers honored him for his distinguished achievements in naval engineering and leadership."
+"Recognized for exceptional technical leadership and innovation in shaping the Navy's future force design."
 
-"NAVSEA recognized her innovative contributions to future ship design."
+"Awarded for distinguished achievements in naval engineering and forward-thinking vision."
 
-Tone must be neutral, professional, and suitable for NAVSEA lobby screens.
+"Honored for outstanding contributions to ship design and systems integration."
+
+Tone should be professional and celebratory, suitable for NAVSEA lobby screens.
 
 🔹 3. DETAIL BLOCK (Optional)
 
@@ -194,8 +192,8 @@ Generate the signage output following the rules exactly. Return ONLY the JSON ob
 
     // Validate and return - all fields are required strings
     // GPT extracted everything from raw text, so use its output
-    const headline = parsed.headline || 'Employee — Recognition Recipient'
-    const subhead = parsed.subhead || 'Recognized for outstanding achievement.'
+    const headline = parsed.headline || 'Congratulations, Employee — Recognition Recipient'
+    const subhead = parsed.subhead || 'Recognized for outstanding achievement and contributions.'
     const detailBlock = parsed.detailBlock || ''
     const runtimeGuidance = parsed.runtimeGuidance || '1 week'
     const suggestedImageDescription = parsed.suggestedImageDescription || 'Use award presentation photo if available.'
@@ -211,8 +209,8 @@ Generate the signage output following the rules exactly. Return ONLY the JSON ob
     console.error('DigitalSignEmployeeHighlightBuilderService error:', error)
     // Return safe defaults on error
     return {
-      headline: 'Employee — Recognition Recipient',
-      subhead: 'Recognized for outstanding achievement.',
+      headline: 'Congratulations, Employee — Recognition Recipient',
+      subhead: 'Recognized for outstanding achievement and contributions.',
       detailBlock: '',
       runtimeGuidance: '1 week',
       suggestedImageDescription: 'Use award presentation photo if available.',
