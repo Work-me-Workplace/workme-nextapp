@@ -103,17 +103,10 @@ export default function CompanyProductsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {productTypes.map((productType) => {
                 const Icon = productType.icon
-                const CardWrapper = productType.available ? Link : 'div'
-                const cardProps = productType.available
-                  ? { href: productType.path }
-                  : { className: 'cursor-not-allowed opacity-60' }
+                const cardClassName = `bg-white rounded-lg shadow-sm p-8 hover:shadow-md transition-all border-2 border-transparent ${productType.borderColor} ${!productType.available ? 'opacity-60 cursor-not-allowed' : ''}`
 
-                return (
-                  <CardWrapper
-                    key={productType.id}
-                    {...cardProps}
-                    className={`bg-white rounded-lg shadow-sm p-8 hover:shadow-md transition-all border-2 border-transparent ${productType.borderColor} ${!productType.available ? 'opacity-60 cursor-not-allowed' : ''}`}
-                  >
+                const cardContent = (
+                  <>
                     <div className="flex items-center justify-between mb-4">
                       <div className={`p-4 ${productType.bgColor} rounded-lg`}>
                         <Icon className={`h-8 w-8 ${productType.iconColor}`} />
@@ -135,7 +128,28 @@ export default function CompanyProductsPage() {
                         Coming Soon
                       </span>
                     )}
-                  </CardWrapper>
+                  </>
+                )
+
+                if (productType.available) {
+                  return (
+                    <Link
+                      key={productType.id}
+                      href={productType.path}
+                      className={cardClassName}
+                    >
+                      {cardContent}
+                    </Link>
+                  )
+                }
+
+                return (
+                  <div
+                    key={productType.id}
+                    className={cardClassName}
+                  >
+                    {cardContent}
+                  </div>
                 )
               })}
             </div>
