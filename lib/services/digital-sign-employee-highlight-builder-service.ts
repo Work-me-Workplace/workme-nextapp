@@ -34,9 +34,10 @@ export interface EmployeeHighlightInput {
 export interface DigitalSignOutput {
   headline: string
   subhead: string
-  detailBlock: string
+  factualStatement: string
+  quote: string
+  quoteAttribution: string
   runtimeGuidance: string
-  suggestedImageDescription: string
 }
 
 /**
@@ -55,113 +56,106 @@ export async function buildDigitalSignFromHighlight(
 
   const systemPrompt = `You are the WorkMe Digital Signage Builder for Employee Recognition slides.
 
-Your role is to generate clean, professional, NAVSEA-standard signage output based on:
+Your role is to transform highlight data into clean, structured signage content suitable for NAVSEA-standard internal communications.
 
-- employee information
-- award information
-- unit information
-- achievement summaries
-- citation text (optional context)
-
-You must output a JSON object in this exact format:
+Return ONLY this JSON object:
 
 {
   "headline": "",
   "subhead": "",
-  "detailBlock": "",
-  "runtimeGuidance": "",
-  "suggestedImageDescription": ""
+  "factualStatement": "",
+  "quote": "",
+  "quoteAttribution": "",
+  "runtimeGuidance": ""
 }
 
 Follow these rules strictly:
 
-🔹 1. HEADLINE (Critical Rule)
+🔹 1. HEADLINE (Formal Award Tone)
 
-Use this format with "Congratulations":
+Format:
 
-"Congratulations, {FullName} — {AwardName}"
-
-Examples:
-
-"Congratulations, Peter McCauley — Rosenblatt 'Young Naval Engineer' Award"
-
-"Congratulations, Sarah Johnson — NAVSEA Collaboration Award"
-
-If awardName is not available:
-
-"Congratulations, {FullName} — Recognition Recipient"
-
-If classification is present but no award name:
-
-"Congratulations, {FullName} — Recognition Recipient: {Classification}"
-
-Keep it concise and celebratory but professional.
-
-🔹 2. SUBHEAD (Explanatory Tone)
-
-Provide 1–2 sentences explaining what they won the award for.
-
-Focus on:
-- What achievement or contribution earned the recognition
-- The specific impact or excellence demonstrated
+"{FullName} — Award Recipient: {AwardName}"
 
 Examples:
 
-"Recognized for exceptional technical leadership and innovation in shaping the Navy's future force design."
+"Peter F. McCauley — Award Recipient: Rosenblatt 'Young Naval Engineer' Award"
 
-"Awarded for distinguished achievements in naval engineering and forward-thinking vision."
+"Sarah Johnson — Award Recipient: NAVSEA Collaboration Award"
 
-"Honored for outstanding contributions to ship design and systems integration."
+If awardName is missing:
 
-Tone should be professional and celebratory, suitable for NAVSEA lobby screens.
+"{FullName} — Recognition Recipient"
 
-🔹 3. DETAIL BLOCK (Optional)
+If classification exists but no award:
 
-Include only if meaningful, non-duplicative context exists:
+"{FullName} — Recognition Recipient: {Classification}"
 
-- award organization
-- award year
-- a brief citation phrase
-- a supervisor quote
+No congratulations.
 
-Do not repeat the headline.
+No narrative text.
 
-If nothing useful:
+Short. Formal. Professional.
 
-""
+🔹 2. SUBHEAD (Objective, Informational)
 
-Examples:
+Provide 1–2 sentences explaining who recognized the employee and for what contribution.
 
-"American Society of Naval Engineers · 2024"
+Rules:
 
-""A rising leader in naval innovation.""
+Do NOT congratulate here.
 
-🔹 4. RUNTIME GUIDANCE
+Do NOT speak in second person.
 
-Always return:
+Keep tone neutral, institutional, concise.
 
-"1 week"
+Example:
 
-This is the standard display lifetime for recognition signage.
+"The American Society of Naval Engineers honored him for his exceptional technical leadership and innovative contributions to naval engineering."
 
-🔹 5. SUGGESTED IMAGE DESCRIPTION
+🔹 3. FACTUAL STATEMENT
 
-Give a short instruction to designers on which photo to use.
+A crisp, standalone factual summary of why the employee is notable.
 
 Examples:
 
-"Use smiling portrait with certificate."
+"Recognized for advancing model-based systems engineering techniques in future ship design."
 
-"Use award presentation photo if available."
+"Honored for leadership in energy modeling and engineering innovation."
 
-🔹 6. OUTPUT REQUIREMENTS
+🔹 4. QUOTE + ATTRIBUTION (Optional)
 
-Output JSON only
-No commentary
+If the citation includes a strong line, include it as the quote.
+
+If available, identify the speaker or organization in quoteAttribution.
+
+Examples:
+
+"quote": "\"McCauley exemplifies the qualities the Rosenblatt Award celebrates.\""
+
+"quoteAttribution": "American Society of Naval Engineers"
+
+If no quote is meaningful, return empty strings.
+
+🔹 5. RUNTIME GUIDANCE
+
+For all Employee Recognition signage:
+
+"runtimeGuidance": "2 weeks"
+
+This value is NOT inferred from text — always 2 weeks.
+
+🔹 6. OUTPUT RULES
+
+Return JSON only
+
+No explanatory text
+
 No markdown
+
 No extra fields
 
-This JSON is consumed directly by the WorkMe signage builder.`
+END OF SYSTEM PROMPT`
 
   const userPrompt = `Raw Citation Text (extract ALL information from this):
 
@@ -169,7 +163,7 @@ ${input.citationText.substring(0, 4000)}
 
 Extract the employee name, award information, classification, and all other details from the raw text above.
 
-Generate the signage output following the rules exactly. Return ONLY the JSON object with headline, subhead, detailBlock, runtimeGuidance, and suggestedImageDescription.`
+Generate the signage output following the rules exactly. Return ONLY the JSON object with headline, subhead, factualStatement, quote, quoteAttribution, and runtimeGuidance.`
 
   try {
     const response = await openai.chat.completions.create({
@@ -192,28 +186,31 @@ Generate the signage output following the rules exactly. Return ONLY the JSON ob
 
     // Validate and return - all fields are required strings
     // GPT extracted everything from raw text, so use its output
-    const headline = parsed.headline || 'Congratulations, Employee — Recognition Recipient'
+    const headline = parsed.headline || 'Employee — Recognition Recipient'
     const subhead = parsed.subhead || 'Recognized for outstanding achievement and contributions.'
-    const detailBlock = parsed.detailBlock || ''
-    const runtimeGuidance = parsed.runtimeGuidance || '1 week'
-    const suggestedImageDescription = parsed.suggestedImageDescription || 'Use award presentation photo if available.'
+    const factualStatement = parsed.factualStatement || ''
+    const quote = parsed.quote || ''
+    const quoteAttribution = parsed.quoteAttribution || ''
+    const runtimeGuidance = parsed.runtimeGuidance || '2 weeks'
 
     return {
       headline,
       subhead,
-      detailBlock,
+      factualStatement,
+      quote,
+      quoteAttribution,
       runtimeGuidance,
-      suggestedImageDescription,
     }
   } catch (error) {
     console.error('DigitalSignEmployeeHighlightBuilderService error:', error)
     // Return safe defaults on error
     return {
-      headline: 'Congratulations, Employee — Recognition Recipient',
+      headline: 'Employee — Recognition Recipient',
       subhead: 'Recognized for outstanding achievement and contributions.',
-      detailBlock: '',
-      runtimeGuidance: '1 week',
-      suggestedImageDescription: 'Use award presentation photo if available.',
+      factualStatement: '',
+      quote: '',
+      quoteAttribution: '',
+      runtimeGuidance: '2 weeks',
     }
   }
 }

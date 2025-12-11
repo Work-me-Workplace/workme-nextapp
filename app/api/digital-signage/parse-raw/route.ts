@@ -41,14 +41,24 @@ export async function POST(request: NextRequest) {
       classification: null, // GPT will extract from raw text
     })
 
+    // Map new structure to response format
+    // Combine factualStatement, quote, and quoteAttribution into detailBlock for compatibility
+    const detailBlock = [
+      built.factualStatement,
+      built.quote ? `"${built.quote}"` : '',
+      built.quoteAttribution ? `— ${built.quoteAttribution}` : ''
+    ].filter(Boolean).join(' ').trim() || null
+
     return NextResponse.json({
       success: true,
       data: {
         headline: built.headline,
         subhead: built.subhead,
-        detailBlock: built.detailBlock,
+        factualStatement: built.factualStatement,
+        quote: built.quote,
+        quoteAttribution: built.quoteAttribution,
+        detailBlock: detailBlock, // For backward compatibility
         runtimeGuidance: built.runtimeGuidance,
-        suggestedImageDescription: built.suggestedImageDescription,
       },
     })
   } catch (error: any) {

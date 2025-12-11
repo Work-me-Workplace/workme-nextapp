@@ -109,3 +109,4 @@ The migration includes:
 - `scripts/migrate-digital-signage-workforce-achievement.sql` - Migration script
 - `lib/services/digital-sign-employee-highlight-builder-service.ts` - New builder service
 - `app/api/digital-signage/create/route.ts` - Updated API route
+

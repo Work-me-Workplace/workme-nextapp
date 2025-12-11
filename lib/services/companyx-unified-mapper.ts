@@ -57,3 +57,4 @@ export async function parseCompanyXContent(
       throw new Error(`Unknown CompanyX type: ${type}`)
   }
 }
+

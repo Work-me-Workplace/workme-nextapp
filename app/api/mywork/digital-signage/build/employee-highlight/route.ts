@@ -62,14 +62,24 @@ export async function POST(request: NextRequest) {
       classification: highlight.classification,
     })
 
-    // Return GPT JSON exactly as specified
+    // Map new structure to response format
+    // Combine factualStatement, quote, and quoteAttribution into detailBlock for compatibility
+    const detailBlock = [
+      built.factualStatement,
+      built.quote ? `"${built.quote}"` : '',
+      built.quoteAttribution ? `— ${built.quoteAttribution}` : ''
+    ].filter(Boolean).join(' ').trim() || null
+
+    // Return GPT JSON with new structure
     return NextResponse.json({
       success: true,
       headline: built.headline,
       subhead: built.subhead,
-      detailBlock: built.detailBlock,
+      factualStatement: built.factualStatement,
+      quote: built.quote,
+      quoteAttribution: built.quoteAttribution,
+      detailBlock: detailBlock, // For backward compatibility
       runtimeGuidance: built.runtimeGuidance,
-      suggestedImageDescription: built.suggestedImageDescription,
     })
   } catch (error: any) {
     console.error('❌ POST /api/mywork/digital-signage/build/employee-highlight error:', error)

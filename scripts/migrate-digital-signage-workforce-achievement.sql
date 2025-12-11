@@ -101,3 +101,4 @@ ALTER TABLE "ProductDigitalSignWorkforceAchievement"
 -- 3. Once confirmed, uncomment Step 7 to drop old columns
 -- 4. Run: npx prisma generate (to update Prisma Client types)
 -- ============================================
+

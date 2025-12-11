@@ -71,6 +71,9 @@ model WorkMe {
   // WorkOps Relations
   workOpsOutlook WorkOpsOutlook?
 
+  // MyTeam Relations (Personal Intelligence)
+  myTeamContainer MyTeamContainer?
+
   // Company Products Relations
   externalCompanyPressures ExternalCompanyPressure[]
   Company                  Company?                  @relation(fields: [companyId], references: [id])
@@ -683,8 +686,8 @@ model CompanyEmployee {
 
   // Relations
   highlights CompanyEmployeeHighlight[]
-  company    Company                        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdBy  WorkMe                         @relation("CompanyEmployeeCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  company    Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy  WorkMe                     @relation("CompanyEmployeeCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([workMeCompanyId])
@@ -714,22 +717,22 @@ model CompanyEmployeeHighlight {
   narrative      String?
   classification HighlightClassification?
 
-  awardName      String?
+  awardName       String?
   categoryOfAward String? // e.g., "NAVSEA Excellence Awards - Technical Innovation Category"
-  awardingAgency String?
-  awardYear      Int?
+  awardingAgency  String?
+  awardYear       Int?
 
   supervisorQuote String?
 
   companyUnitLabel String?
   companyId        String? // Direct company reference for cleaner hydration (set by route context via upsert)
 
-  createdByWorkMeId String @db.Uuid
-  createdBy         WorkMe @relation("CompanyEmployeeHighlightCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  createdByWorkMeId String   @db.Uuid
+  createdBy         WorkMe   @relation("CompanyEmployeeHighlightCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
   company           Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  employeeId      String // Direct employee reference (required - user selects employee in step 1)
-  employee        CompanyEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId String // Direct employee reference (required - user selects employee in step 1)
+  employee   CompanyEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   engageMessages EngageMessage[]
 
@@ -841,7 +844,7 @@ model ProductDigitalSignWorkforceAchievement {
   runtimeGuidance String?
 
   imageAssetId String?
-  imageAsset   Asset? @relation("ProductDigitalSignWorkforceAchievementImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
+  imageAsset   Asset?  @relation("ProductDigitalSignWorkforceAchievementImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
 
   employeeId  String?
   highlightId String?
@@ -899,8 +902,8 @@ model Asset {
   description String?
 
   // Relations
-  digitalSignAttachments DigitalSignAsset[]
-  workPackageAttachments DesignWorkPackageAsset[]
+  digitalSignAttachments                       DigitalSignAsset[]
+  workPackageAttachments                       DesignWorkPackageAsset[]
   productDigitalSignWorkforceAchievementImages ProductDigitalSignWorkforceAchievement[] @relation("ProductDigitalSignWorkforceAchievementImage")
 }
 
@@ -1072,6 +1075,153 @@ model WorkGoal {
 
   @@index([workMeId])
   @@index([targetDate])
+}
+
+// ============================================
+// MYTEAM MODELS (Personal Workplace Relationship Graph)
+// ============================================
+// Personal intelligence captured by the user - NOT company data
+// Every WorkMe identity gets exactly ONE MyTeamContainer
+
+model MyTeamContainer {
+  id       String @id @default(cuid())
+  workMeId String @unique @db.Uuid
+  workMe   WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+
+  supervisors  SupervisorProfile[]
+  deputies     DeputyProfile[]
+  peers        PeerProfile[]
+  subordinates SubordinateProfile[]
+
+  createdAt DateTime @default(now())
+
+  @@index([workMeId])
+}
+
+model SupervisorProfile {
+  id          String          @id @default(cuid())
+  containerId String
+  container   MyTeamContainer @relation(fields: [containerId], references: [id], onDelete: Cascade)
+
+  // Identity
+  firstName   String
+  lastName    String
+  ageEstimate Int?
+  gender      String?
+
+  // Personal Context
+  attractiveness Int? // 1–10
+  partnerStatus  String? // None | Partner | Married | Unknown
+  numberOfKids   Int?
+
+  // Work Context
+  yearsInRole         Int?
+  internalRank        String?
+  teamSizeManaged     Int?
+  spanOfControl       String? // Small | Medium | Large | Unknown
+  friendlinessScale   Int? // 1–10
+  strictnessScale     Int? // 1–10
+  responsivenessScale Int? // 1–10
+  decisivenessScale   Int? // 1–10
+
+  // Relationship With User
+  hiredMe             String? // Yes | No | Unknown
+  favoritismPerceived Int? // 1–10
+  frictionPerceived   Int? // 1–10
+  trustLevel          Int? // 1–10
+
+  // Notes bucket – general raw text only
+  miscNotes String?
+
+  @@index([containerId])
+}
+
+model DeputyProfile {
+  id          String          @id @default(cuid())
+  containerId String
+  container   MyTeamContainer @relation(fields: [containerId], references: [id], onDelete: Cascade)
+
+  firstName   String
+  lastName    String
+  ageEstimate Int?
+  gender      String?
+
+  attractiveness Int?
+  partnerStatus  String?
+  numberOfKids   Int?
+
+  yearsInRole  Int?
+  internalRank String?
+
+  // Deputy-specific context
+  supportsBossScale      Int? // 1–10 how strongly they align with the supervisor
+  decisionAuthorityScale Int? // 1–10 real influence in calls
+  managesOthersScale     Int? // 1–10 actual people management weight
+  advocacyScale          Int? // 1–10 how much they advocate for YOU
+  communicationToneScale Int? // 1–10 warmth / openness
+  executionReliability   Int? // 1–10 follow-through strength
+
+  miscNotes String?
+
+  @@index([containerId])
+}
+
+model PeerProfile {
+  id          String          @id @default(cuid())
+  containerId String
+  container   MyTeamContainer @relation(fields: [containerId], references: [id], onDelete: Cascade)
+
+  firstName   String
+  lastName    String
+  ageEstimate Int?
+  gender      String?
+
+  attractiveness Int?
+  partnerStatus  String?
+  numberOfKids   Int?
+
+  // Peer dynamics
+  collaborationScale     Int? // 1–10
+  competitivenessScale   Int? // 1–10
+  triesToTakeCreditScale Int? // 1–10
+  triesToTakeYourJob     Int? // 1–10 gut check
+  eagernessScale         Int? // 1–10
+  yesPersonScale         Int? // 1–10
+
+  frictionScale Int? // 1–10
+  trustLevel    Int? // 1–10
+
+  miscNotes String?
+
+  @@index([containerId])
+}
+
+model SubordinateProfile {
+  id          String          @id @default(cuid())
+  containerId String
+  container   MyTeamContainer @relation(fields: [containerId], references: [id], onDelete: Cascade)
+
+  firstName   String
+  lastName    String
+  ageEstimate Int?
+  gender      String?
+
+  attractiveness Int?
+  partnerStatus  String?
+  numberOfKids   Int?
+
+  // Subordinate dynamics
+  autonomyScale          Int? // 1–10
+  eagernessScale         Int? // 1–10
+  learningPaceScale      Int? // 1–10
+  reliabilityScale       Int? // 1–10
+  communicationScale     Int? // 1–10
+  ambitionScale          Int? // 1–10
+  stressSensitivityScale Int? // 1–10
+
+  miscNotes String?
+
+  @@index([containerId])
 }
 
 // ============================================
@@ -1300,35 +1450,55 @@ model CompanyPlatformProduct {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  name        String          // "Virginia-class"
+  name             String // "Virginia-class"
   alternativeNames String[] @default([]) // "SSN", "Attack Submarine", "VCS"
-  category    String?         // "Submarine", "Surface Combatant"
-  description String?
+  category         String? // "Submarine", "Surface Combatant"
+  description      String?
 
-  programCode String?         // "SSN", "SSBN", etc.
-  whySpecial  String?         // High-level: stealth, payload, mission role
-  payloadNotes String?        // e.g., VPM adds 28 missiles
+  platformSeries String? // SSN, SSBN, CVN, DDG
+  whySpecial      String? // High-level: stealth, payload, mission role
+  payloadNotes    String? // e.g., VPM adds 28 missiles
 
-  intendedTotalUnits Int?     // e.g., 12 Columbia-class subs
-  productionNotes   String?   // yard performance, challenges, etc.
+  intendedTotalUnits Int? // e.g., 12 Columbia-class subs
+  productionNotes    String? // yard performance, challenges, etc.
 
   // Optional "other ships in this class" strings (not unit models)
   knownShipsInClass String[] @default([])
 
   // AI or reporting derived signals
-  currentProgressEstimate Int?   // 0–100 for overall program maturity
-  programStatus String?          // "On Track", "Delayed", "Rebaseline Expected"
+  currentProgressEstimate Int? // 0–100 for overall program maturity
+  programStatus           String? // "On Track", "Delayed", "Rebaseline Expected"
 
   // Legacy fields (keeping for backward compatibility)
   nextDeliveryExpected DateTime?
   lastDeliveryDate     DateTime?
 
-  units CompanyPlatformUnit[]
+  // Expanded physical and program attributes
+  totalLength               String? // e.g., "377 ft (115 m)"
+  totalBeam                 String? // optional beam
+  totalDisplacementSubmerged String? // e.g., "8,700 tons"
+  totalManpowerNeeds        String? // e.g., "132 crew"
+  totalTimeToBuild          String? // e.g., "66–84 months"
+  totalEstimatedCostPerUnit String? // e.g., "$3.2–3.8 billion"
+
+  // Sensors and technology arrays
+  sensors String[] @default([])
+
+  // Industrial base / builders
+  defenseBuilders String[] @default([])
+
+  // All units (names only — not the CompanyPlatformUnit models)
+  unitsInSeries String[] @default([])
+
+  // Derived metric for class maturity
+  yearsSinceLastInClass Int?
+
+  units      CompanyPlatformUnit[]
   statements CompanyPlatformStatement[]
   updates    CompanyPlatformUpdate[]
 
   @@index([name])
-  @@index([programCode])
+  @@index([platformSeries])
   @@index([category])
 }
 
@@ -1340,15 +1510,15 @@ model CompanyPlatformUnit {
   platformProductId String
   platformProduct   CompanyPlatformProduct @relation(fields: [platformProductId], references: [id], onDelete: Cascade)
 
-  hullNumber  String        // "SSN 804"
-  name        String?       // "Barb"
-  block       String?       // "Block V", "Block IV"
-  shipyard    String?       // HII Newport News, Electric Boat
-  status      String?       // "Under Construction", "Keel Laid", "Sea Trials", etc.
+  hullNumber  String // "SSN 804"
+  name        String? // "Barb"
+  block       String? // "Block V", "Block IV"
+  shipyard    String? // HII Newport News, Electric Boat
+  status      String? // "Under Construction", "Keel Laid", "Sea Trials", etc.
   description String?
 
-  percentComplete Int?
-  deliveryExpected DateTime?
+  percentComplete   Int?
+  deliveryExpected  DateTime?
   commissioningDate DateTime?
 
   // Raw signals & updates
@@ -1371,13 +1541,13 @@ model CompanyPlatformStatement {
   platformProductId String
   platformProduct   CompanyPlatformProduct @relation(fields: [platformProductId], references: [id], onDelete: Cascade)
 
-  sourceName String?     // "USNI News", "DoD Release", "GD CEO Earnings Call"
+  sourceName String? // "USNI News", "DoD Release", "GD CEO Earnings Call"
   sourceUrl  String?
   headline   String?
-  rawText    String      // Full pasted article/content
+  rawText    String // Full pasted article/content
 
-  aiSummary  String?     // GPT-generated summary
-  aiTags     String[] @default([]) // e.g. ["schedule", "industrial base", "cost"]
+  aiSummary String? // GPT-generated summary
+  aiTags    String[] @default([]) // e.g. ["schedule", "industrial base", "cost"]
 
   // Linking to updates we derive from this statement
   updates CompanyPlatformUpdate[]
@@ -1401,19 +1571,19 @@ model CompanyPlatformUpdate {
   statement   CompanyPlatformStatement? @relation(fields: [statementId], references: [id], onDelete: SetNull)
 
   // What changed or was reported
-  scheduleStatus     String? // "Behind", "Ahead", "Critical Path Issue"
-  costStatus         String? // "Cost Growth", "Stable", "Rebaseline"
-  industrialBaseNote String? // "Labor shortage", "supplier delays"
-  leadershipQuote    String? // Parsed relevant quote
+  scheduleStatus          String? // "Behind", "Ahead", "Critical Path Issue"
+  costStatus              String? // "Cost Growth", "Stable", "Rebaseline"
+  industrialBaseNote      String? // "Labor shortage", "supplier delays"
+  leadershipQuote         String? // Parsed relevant quote
   percentCompleteEstimate Int? // If article says "60% complete" (program level)
 
   // Overwriteable fields for the platform record
-  override_intendedTotalUnits   Int?
-  override_programStatus        String?
+  override_intendedTotalUnits      Int?
+  override_programStatus           String?
   override_currentProgressEstimate Int?
 
-  narrativeSummary String?       // AI structured meaning
-  tags            String[] @default([])
+  narrativeSummary String? // AI structured meaning
+  tags             String[] @default([])
 
   @@index([platformProductId])
   @@index([statementId])
@@ -1430,10 +1600,10 @@ model CompanyPlatformUnitStatement {
   platformUnitId String
   platformUnit   CompanyPlatformUnit @relation(fields: [platformUnitId], references: [id], onDelete: Cascade)
 
-  sourceName String?      // "USNI News", "HII Release"
+  sourceName String? // "USNI News", "HII Release"
   sourceUrl  String?
   headline   String?
-  rawText    String       // full text of the release or article
+  rawText    String // full text of the release or article
 
   aiSummary String?
   aiTags    String[] @default([])
@@ -1458,11 +1628,11 @@ model CompanyPlatformUnitUpdate {
   statement   CompanyPlatformUnitStatement? @relation(fields: [statementId], references: [id], onDelete: SetNull)
 
   // Extracted signals
-  percentComplete Int?
-  statusUpdate    String?   // "Keel Laid", "Construction 60% complete"
-  scheduleNote    String?
+  percentComplete    Int?
+  statusUpdate       String? // "Keel Laid", "Construction 60% complete"
+  scheduleNote       String?
   industrialBaseNote String?
-  leadershipQuote String?
+  leadershipQuote    String?
 
   // Dates that may be provided in an update
   keelLaidDate       DateTime?
@@ -1472,7 +1642,7 @@ model CompanyPlatformUnitUpdate {
 
   // AI narrative summary
   narrativeSummary String?
-  tags            String[] @default([])
+  tags             String[] @default([])
 
   // Reverse relation to milestone (if this update triggered one)
   milestones CompanyMilestone[]
@@ -1486,17 +1656,17 @@ model CompanyPlatformUnitUpdate {
 // COMPANY PRODUCT CAPACITY MODEL
 // ============================================
 model CompanyProductCapacity {
-  id          String   @id @default(uuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  name        String               // "Newport News Shipbuilding"
-  location    String?              // "Newport News, VA"
-  contractorType String?           // "shipyard", "module supplier", etc.
-  capabilities String[] @default([]) // e.g. ["pressure hull modules", "final assembly"]
-  constraints  String[] @default([]) // bottlenecks, known issues
-  productionRate String?           // free-text for now
-  notes        String?
+  name           String // "Newport News Shipbuilding"
+  location       String? // "Newport News, VA"
+  contractorType String? // "shipyard", "module supplier", etc.
+  capabilities   String[] @default([]) // e.g. ["pressure hull modules", "final assembly"]
+  constraints    String[] @default([]) // bottlenecks, known issues
+  productionRate String? // free-text for now
+  notes          String?
 
   @@index([name])
   @@index([contractorType])
@@ -1506,14 +1676,14 @@ model CompanyProductCapacity {
 // COMPANY PRODUCT INNOVATION MODEL
 // ============================================
 model CompanyProductInnovation {
-  id          String   @id @default(uuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   name          String
   description   String?
-  impactArea    String?            // "operations", "training", "maintenance", etc.
-  maturityLevel String?            // TRL or internal readiness scale
+  impactArea    String? // "operations", "training", "maintenance", etc.
+  maturityLevel String? // TRL or internal readiness scale
   demoStatus    String?
   partners      String[] @default([])
   benefits      String[] @default([])
@@ -1535,12 +1705,12 @@ model CompanyMilestone {
   platformUnit   CompanyPlatformUnit @relation(fields: [platformUnitId], references: [id], onDelete: Cascade)
 
   milestoneType PlatformMilestoneType
-  date         DateTime?
-  description  String?
-  sourceUrl    String?
+  date          DateTime?
+  description   String?
+  sourceUrl     String?
 
   // Reverse link back to unit update that triggered this
-  updateId String? @unique
+  updateId String?                    @unique
   update   CompanyPlatformUnitUpdate? @relation(fields: [updateId], references: [id], onDelete: SetNull)
 
   @@index([platformUnitId])
