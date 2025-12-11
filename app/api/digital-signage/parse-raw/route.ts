@@ -16,32 +16,29 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     
     const { 
-      personName,
-      unit,
-      achievement,
-      details, // This is the raw citation text/JSON
+      details, // This is the raw citation text/JSON - GPT extracts EVERYTHING from this
     } = body
 
-    if (!personName || !details) {
+    if (!details || !details.trim()) {
       return NextResponse.json(
-        { success: false, error: 'personName and details (raw text) are required' },
+        { success: false, error: 'details (raw text) is required' },
         { status: 400 }
       )
     }
 
-    // Send raw data to GPT builder service
-    // The service will parse the raw text and extract structured data
+    // Send ONLY raw text to GPT builder service
+    // GPT will extract person name, award, year, agency, etc. from the raw text
     const built = await buildDigitalSignFromHighlight({
-      employeeFullName: personName,
+      employeeFullName: '', // GPT will extract from raw text
       employeeTitle: null,
-      employeeUnit: unit || null,
-      companyUnitLabel: unit || null,
+      employeeUnit: null, // GPT will extract from raw text
+      companyUnitLabel: null, // GPT will extract from raw text
       awardName: null, // GPT will extract from raw text
       awardingAgency: null, // GPT will extract from raw text
       awardYear: null, // GPT will extract from raw text
-      achievement: achievement || null,
-      citationText: details, // This is the raw text we send to GPT
-      classification: null,
+      achievement: null, // GPT will extract from raw text
+      citationText: details, // This is the raw text - GPT extracts EVERYTHING from this
+      classification: null, // GPT will extract from raw text
     })
 
     return NextResponse.json({

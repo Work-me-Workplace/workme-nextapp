@@ -50,25 +50,8 @@ export async function buildDigitalSignFromHighlight(
 ): Promise<DigitalSignOutput> {
   const openai = getOpenAI()
 
-  // Extract first name for subhead
-  const firstName = input.employeeFullName.split(' ')[0] || input.employeeFullName
-
-  // Build input object for GPT
-  const inputData = {
-    employee: {
-      fullName: input.employeeFullName,
-      companyUnit: input.companyUnitLabel || input.employeeUnit || null,
-      photoUrl: null,
-    },
-    highlight: {
-      classification: input.classification || null,
-      awardName: input.awardName || null,
-      awardYear: input.awardYear || null,
-      awardingAgency: input.awardingAgency || null,
-      achievement: input.achievement || null,
-      citationText: input.citationText.substring(0, 2000),
-    },
-  }
+  // GPT will extract everything from the raw citationText
+  // We pass the raw text and GPT extracts: person name, award, year, agency, classification, etc.
 
   const systemPrompt = `You are the CommsIQ Digital Signage Builder responsible for generating FINAL signage output for Employee Highlight slides.
 
@@ -76,9 +59,16 @@ You must follow the CommsIQ Signage Build Guide v2.0 exactly.
 
 Your job:
 
-Take structured highlight data (employee info + highlight info + any raw narrative fields)
+Extract ALL information from the raw citation text provided:
+- Employee's full name
+- Award name
+- Award year
+- Awarding agency
+- Classification (EXCELLENCE, LEADERSHIP, INNOVATION, SERVICE, IMPACT)
+- Company unit
+- Achievement description
 
-Infer the correct headline, subhead, detail block, runtime guidance, and suggested image description
+Then generate the correct headline, subhead, detail block, runtime guidance, and suggested image description
 
 Output ONLY a valid JSON object with these keys:
 
@@ -140,9 +130,11 @@ NEVER add dates not provided.
 If a field is missing, gracefully infer context or omit.
 Be concise and professional — signage must be clean.`
 
-  const userPrompt = `Input data:
+  const userPrompt = `Raw Citation Text (extract ALL information from this):
 
-${JSON.stringify(inputData, null, 2)}
+${input.citationText.substring(0, 4000)}
+
+Extract the employee name, award information, classification, and all other details from the raw text above.
 
 Generate the signage output following the rules exactly. Return ONLY the JSON object with headline, subhead, detailBlock, runtimeGuidance, and suggestedImageDescription.`
 
@@ -166,11 +158,10 @@ Generate the signage output following the rules exactly. Return ONLY the JSON ob
     const parsed = JSON.parse(response.choices[0].message.content || '{}')
 
     // Validate and return - all fields are required strings
-    const headline = parsed.headline || `${input.employeeFullName} — Employee Highlight`
-    const subhead = parsed.subhead || `Congratulations, ${firstName}! Recognized for outstanding achievement.`
-    const detailBlock = parsed.detailBlock || (input.awardName && input.awardYear 
-      ? `${input.awardName} · ${input.awardYear}`
-      : input.awardName || `Recognition · ${input.awardYear || new Date().getFullYear()}`)
+    // GPT extracted everything from raw text, so use its output
+    const headline = parsed.headline || 'Employee Recognition'
+    const subhead = parsed.subhead || 'Congratulations! Recognized for outstanding achievement.'
+    const detailBlock = parsed.detailBlock || `Recognition · ${new Date().getFullYear()}`
     const runtimeGuidance = parsed.runtimeGuidance || '1 week'
     const suggestedImageDescription = parsed.suggestedImageDescription || 'Use award presentation handshake photo.'
 
@@ -184,20 +175,10 @@ Generate the signage output following the rules exactly. Return ONLY the JSON ob
   } catch (error) {
     console.error('DigitalSignEmployeeHighlightBuilderService error:', error)
     // Return safe defaults on error
-    const firstName = input.employeeFullName.split(' ')[0] || input.employeeFullName
-    const recognitionPhrase = input.classification === 'EXCELLENCE' ? 'Excellence Award'
-      : input.classification === 'LEADERSHIP' ? 'Leadership Recognition'
-      : input.classification === 'INNOVATION' ? 'Innovation Spotlight'
-      : input.classification === 'SERVICE' ? 'Service Achievement'
-      : input.classification === 'IMPACT' ? 'Impact Recognition'
-      : input.awardName || 'Employee Highlight'
-    
     return {
-      headline: `${input.employeeFullName} — ${recognitionPhrase}`,
-      subhead: `Congratulations, ${firstName}! Recognized by ${input.companyUnitLabel || input.employeeUnit || 'the organization'} for ${input.achievement || 'outstanding achievement'}.`,
-      detailBlock: input.awardName && input.awardYear
-        ? `${input.awardName} · ${input.awardYear}`
-        : input.awardName || `Recognition · ${input.awardYear || new Date().getFullYear()}`,
+      headline: 'Employee Recognition',
+      subhead: 'Congratulations! Recognized for outstanding achievement.',
+      detailBlock: `Recognition · ${new Date().getFullYear()}`,
       runtimeGuidance: '1 week',
       suggestedImageDescription: 'Use award presentation handshake photo.',
     }

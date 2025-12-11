@@ -64,11 +64,14 @@ function DigitalSignageBuilderContent() {
     runtimeGuidance: string | null
     suggestedImageDescription: string | null
   } | null>(null)
-  const [parsingWithGpt, setParsingWithGpt] = useState(false)
   
   // Photo upload state
   const [imageAssetId, setImageAssetId] = useState<string | null>(null)
   const [uploadedImage, setUploadedImage] = useState<{ id: string; url: string; filename: string | null } | null>(null)
+  
+  // Existing signage state (for update flow)
+  const [existingSignageId, setExistingSignageId] = useState<string | null>(null)
+  const [buildingWithAI, setBuildingWithAI] = useState(false)
 
   // Form state - Workforce
   const [workforceTitle, setWorkforceTitle] = useState('')
@@ -243,7 +246,16 @@ function DigitalSignageBuilderContent() {
       const response = await api.get(`/api/company/highlights/${highlightId}`)
       
       if (response.data.success && response.data.highlight) {
-        setHighlight(response.data.highlight)
+        const h = response.data.highlight
+        setHighlight(h)
+        
+        // Auto-fill form fields from highlight
+        if (h.employees?.[0]) {
+          setPersonName(h.employees[0].fullName || '')
+        }
+        setUnit(h.companyUnits?.[0] || '')
+        setAchievement(h.achievement || h.citationText || '')
+        setDetails(h.citationText || '')
       } else {
         setError(response.data.error || 'Failed to load highlight')
       }
@@ -252,6 +264,40 @@ function DigitalSignageBuilderContent() {
       setError(err.response?.data?.error || err.message || 'Failed to load highlight')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleBuildWithAI() {
+    if (!highlightId || !highlight) {
+      setError('Highlight must be loaded first')
+      return
+    }
+
+    try {
+      setBuildingWithAI(true)
+      setError(null)
+
+      const response = await api.post('/api/mywork/digital-signage/build/employee-highlight', {
+        highlightId,
+      })
+
+      if (response.data.success) {
+        // Set GPT output from response
+        setGptOutput({
+          headline: response.data.headline,
+          subhead: response.data.subhead || null,
+          detailBlock: response.data.detailBlock || null,
+          runtimeGuidance: response.data.runtimeGuidance || '1 week',
+          suggestedImageDescription: response.data.suggestedImageDescription || null,
+        })
+      } else {
+        setError(response.data.error || 'Failed to build with AI')
+      }
+    } catch (err: any) {
+      console.error('Failed to build with AI:', err)
+      setError(err.response?.data?.error || err.message || 'Failed to build with AI')
+    } finally {
+      setBuildingWithAI(false)
     }
   }
 
@@ -275,41 +321,6 @@ function DigitalSignageBuilderContent() {
     }
   }
 
-  async function handleParseWithGPT() {
-    if (!personName || !details) {
-      setError('Person name and details (raw text) are required to parse with GPT')
-      return
-    }
-
-    try {
-      setParsingWithGpt(true)
-      setError(null)
-
-      const response = await api.post('/api/digital-signage/parse-raw', {
-        personName,
-        unit,
-        achievement,
-        details,
-      })
-
-      if (response.data.success && response.data.data) {
-        setGptOutput({
-          headline: response.data.data.headline,
-          subhead: response.data.data.subhead || null,
-          detailBlock: response.data.data.detailBlock || null,
-          runtimeGuidance: response.data.data.runtimeGuidance || '1 week',
-          suggestedImageDescription: response.data.data.suggestedImageDescription || null,
-        })
-      } else {
-        setError(response.data.error || 'Failed to parse with GPT')
-      }
-    } catch (err: any) {
-      console.error('Failed to parse with GPT:', err)
-      setError(err.response?.data?.error || err.message || 'Failed to parse with GPT')
-    } finally {
-      setParsingWithGpt(false)
-    }
-  }
 
   async function handleSubmit() {
     if (!signType) {
@@ -319,17 +330,15 @@ function DigitalSignageBuilderContent() {
 
     // Validate based on sign type
     if (signType === 'WORKFORCE_ACHIEVEMENT') {
-      if (!personName || !details) {
-        setError('Person name and details (raw text) are required')
+      // For WORKFORCE_ACHIEVEMENT, we need GPT output (built from highlight)
+      if (!gptOutput) {
+        setError('Please build with AI first. Load a highlight and click "Build Digital Slide with AI".')
         return
       }
       
-      // If we don't have GPT output yet, parse first
-      if (!gptOutput) {
-        await handleParseWithGPT()
-        if (!gptOutput) {
-          return // Error already set by handleParseWithGPT
-        }
+      if (!gptOutput.headline) {
+        setError('Headline is required. Please ensure GPT output includes a headline.')
+        return
       }
     } else if (signType === 'WORKFORCE') {
       if (!workforceTitle) {
@@ -358,9 +367,9 @@ function DigitalSignageBuilderContent() {
       }
 
       if (signType === 'WORKFORCE_ACHIEVEMENT') {
-        // Use GPT output (headline, subhead, detailBlock) to create the signage
+        // Use GPT output (headline, subhead, detailBlock) to save the signage
         if (!gptOutput) {
-          setError('GPT output is required. Please parse with GPT first (Step 1).')
+          setError('GPT output is required. Please build with AI first.')
           return
         }
         
@@ -375,6 +384,13 @@ function DigitalSignageBuilderContent() {
           detailBlock: gptOutput.detailBlock || null,
           runtimeGuidance: gptOutput.runtimeGuidance || '1 week',
           imageAssetId: imageAssetId || null,
+          employeeId: highlight?.employees?.[0]?.id || null,
+          highlightId: highlightId || null,
+        }
+        
+        // Include signageId if updating existing
+        if (existingSignageId) {
+          payload.signageId = existingSignageId
         }
       } else if (signType === 'WORKFORCE') {
         payload.workforce = {
@@ -405,12 +421,16 @@ function DigitalSignageBuilderContent() {
         }
       }
 
-      const response = await api.post('/api/mywork/digital-signage/create', payload)
+      const response = await api.post('/api/mywork/digital-signage/save', payload)
 
       if (response.data.success) {
+        // Store signage ID for future updates
+        if (response.data.signage?.id) {
+          setExistingSignageId(response.data.signage.id)
+        }
         router.push(`/mywork/digital-signage/${response.data.signage.id}`)
       } else {
-        setError(response.data.error || 'Failed to create digital signage')
+        setError(response.data.error || 'Failed to save digital signage')
       }
     } catch (err: any) {
       console.error('Failed to create digital signage:', err)
@@ -672,8 +692,8 @@ function DigitalSignageBuilderContent() {
 
             {/* Show selected highlight info */}
             {highlight && !showHighlightSelector && (
-              <div className="mb-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
+              <div className="mb-6 bg-purple-50 border border-purple-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center">
                     <CheckCircle2 className="h-5 w-5 text-purple-600 mr-2" />
                     <span className="text-sm font-medium text-purple-900">
@@ -684,6 +704,7 @@ function DigitalSignageBuilderContent() {
                     onClick={() => {
                       setHighlight(null)
                       setShowHighlightSelector(true)
+                      setGptOutput(null)
                       // Clear form fields
                       setPersonName('')
                       setUnit('')
@@ -695,6 +716,55 @@ function DigitalSignageBuilderContent() {
                     Change
                   </button>
                 </div>
+                
+                {/* Show highlight details */}
+                <div className="space-y-2 text-sm mb-4">
+                  {highlight.employees?.[0] && (
+                    <div>
+                      <span className="font-medium text-gray-700">Person:</span>{' '}
+                      <span className="text-gray-900">{highlight.employees[0].fullName}</span>
+                    </div>
+                  )}
+                  {highlight.companyUnits?.[0] && (
+                    <div>
+                      <span className="font-medium text-gray-700">Unit:</span>{' '}
+                      <span className="text-gray-900">{highlight.companyUnits[0]}</span>
+                    </div>
+                  )}
+                  {highlight.achievement && (
+                    <div>
+                      <span className="font-medium text-gray-700">Achievement:</span>{' '}
+                      <span className="text-gray-900">{highlight.achievement}</span>
+                    </div>
+                  )}
+                  {highlight.citationText && (
+                    <div>
+                      <span className="font-medium text-gray-700">Citation:</span>
+                      <p className="text-gray-900 mt-1 line-clamp-3">{highlight.citationText}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Build with AI Button */}
+                {!gptOutput && (
+                  <button
+                    onClick={handleBuildWithAI}
+                    disabled={buildingWithAI || !highlightId}
+                    className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  >
+                    {buildingWithAI ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        Building with AI...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-5 w-5 mr-2" />
+                        Build Digital Slide with AI
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             )}
 
@@ -729,8 +799,14 @@ function DigitalSignageBuilderContent() {
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-md p-6">
-                {signType === 'WORKFORCE_ACHIEVEMENT' && (
+                {signType === 'WORKFORCE_ACHIEVEMENT' && !highlight && (
                   <div className="space-y-6">
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-yellow-800">
+                        <strong>Note:</strong> For best results, start by selecting an existing highlight above. 
+                        The AI will extract all information from the highlight's citation text.
+                      </p>
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Person Name <span className="text-red-500">*</span>
@@ -772,7 +848,7 @@ function DigitalSignageBuilderContent() {
                         value={details}
                         onChange={(e) => {
                           setDetails(e.target.value)
-                          setGptOutput(null) // Clear GPT output when details change
+                          setGptOutput(null)
                         }}
                         rows={8}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
@@ -783,120 +859,100 @@ function DigitalSignageBuilderContent() {
                         This raw text will be sent to GPT to extract structured data
                       </p>
                     </div>
+                  </div>
+                )}
 
-                    {/* GPT Parse Button */}
-                    <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Step 1: Parse with GPT</p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          Send raw text to GPT to get structured headline, subhead, and detailBlock
-                        </p>
+                {/* Step 2: Editable GPT Output (shown after AI build for WORKFORCE_ACHIEVEMENT) */}
+                {signType === 'WORKFORCE_ACHIEVEMENT' && gptOutput && (
+                  <div className="p-6 bg-green-50 border-2 border-green-300 rounded-lg space-y-4 mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center">
+                        <CheckCircle2 className="h-5 w-5 text-green-600 mr-2" />
+                        <p className="text-sm font-semibold text-green-900">Step 2: Review & Edit AI Output</p>
                       </div>
                       <button
-                        type="button"
-                        onClick={handleParseWithGPT}
-                        disabled={parsingWithGpt || !personName || !details}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                        onClick={() => setGptOutput(null)}
+                        className="text-xs text-gray-600 hover:text-gray-900"
                       >
-                        {parsingWithGpt ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Parsing...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="h-4 w-4 mr-2" />
-                            Parse with GPT
-                          </>
-                        )}
+                        Rebuild with AI
                       </button>
                     </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Headline <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={gptOutput.headline}
+                        onChange={(e) => setGptOutput({ ...gptOutput, headline: e.target.value })}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        required
+                      />
+                    </div>
 
-                    {/* Step 2: Editable GPT Output */}
-                    {gptOutput && (
-                      <div className="p-6 bg-green-50 border-2 border-green-300 rounded-lg space-y-4">
-                        <div className="flex items-center mb-4">
-                          <CheckCircle2 className="h-5 w-5 text-green-600 mr-2" />
-                          <p className="text-sm font-semibold text-green-900">Step 2: Review & Edit GPT Output</p>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Headline <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={gptOutput.headline}
-                            onChange={(e) => setGptOutput({ ...gptOutput, headline: e.target.value })}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            required
-                          />
-                        </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Subhead</label>
+                      <textarea
+                        value={gptOutput.subhead || ''}
+                        onChange={(e) => setGptOutput({ ...gptOutput, subhead: e.target.value || null })}
+                        rows={2}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
 
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Subhead</label>
-                          <textarea
-                            value={gptOutput.subhead || ''}
-                            onChange={(e) => setGptOutput({ ...gptOutput, subhead: e.target.value || null })}
-                            rows={2}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                          />
-                        </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Detail Block</label>
+                      <input
+                        type="text"
+                        value={gptOutput.detailBlock || ''}
+                        onChange={(e) => setGptOutput({ ...gptOutput, detailBlock: e.target.value || null })}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        placeholder="e.g., NAVSEA Excellence Award · 2025"
+                      />
+                    </div>
 
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Detail Block</label>
-                          <input
-                            type="text"
-                            value={gptOutput.detailBlock || ''}
-                            onChange={(e) => setGptOutput({ ...gptOutput, detailBlock: e.target.value || null })}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            placeholder="e.g., NAVSEA Excellence Award · 2025"
-                          />
-                        </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Runtime Guidance</label>
+                      <input
+                        type="text"
+                        value={gptOutput.runtimeGuidance || '1 week'}
+                        onChange={(e) => setGptOutput({ ...gptOutput, runtimeGuidance: e.target.value || null })}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
 
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Runtime Guidance</label>
-                          <input
-                            type="text"
-                            value={gptOutput.runtimeGuidance || '1 week'}
-                            onChange={(e) => setGptOutput({ ...gptOutput, runtimeGuidance: e.target.value || null })}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                          />
-                        </div>
-
-                        {gptOutput.suggestedImageDescription && (
-                          <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-                            <p className="text-xs font-medium text-blue-900 mb-1">GPT Suggestion:</p>
-                            <p className="text-xs text-blue-700">{gptOutput.suggestedImageDescription}</p>
-                          </div>
-                        )}
+                    {gptOutput.suggestedImageDescription && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+                        <p className="text-xs font-medium text-blue-900 mb-1">GPT Suggestion:</p>
+                        <p className="text-xs text-blue-700">{gptOutput.suggestedImageDescription}</p>
                       </div>
                     )}
+                  </div>
+                )}
 
-                    {/* Step 3: Photo Upload */}
-                    {gptOutput && (
-                      <div className="p-6 bg-purple-50 border-2 border-purple-300 rounded-lg">
-                        <div className="flex items-center mb-4">
-                          <ImageIcon className="h-5 w-5 text-purple-600 mr-2" />
-                          <p className="text-sm font-semibold text-purple-900">Step 3: Add Photo (Optional)</p>
-                        </div>
-                        <AssetUploader
-                          onUploaded={(asset) => {
-                            setImageAssetId(asset.id)
-                            setUploadedImage(asset)
-                          }}
+                {/* Step 3: Photo Upload (shown after AI build for WORKFORCE_ACHIEVEMENT) */}
+                {signType === 'WORKFORCE_ACHIEVEMENT' && gptOutput && (
+                  <div className="p-6 bg-purple-50 border-2 border-purple-300 rounded-lg mb-6">
+                    <div className="flex items-center mb-4">
+                      <ImageIcon className="h-5 w-5 text-purple-600 mr-2" />
+                      <p className="text-sm font-semibold text-purple-900">Step 3: Add Photo (Optional)</p>
+                    </div>
+                    <AssetUploader
+                      onUploaded={(asset) => {
+                        setImageAssetId(asset.id)
+                        setUploadedImage(asset)
+                      }}
+                    />
+                    {uploadedImage && (
+                      <div className="mt-4 p-3 bg-white border border-purple-200 rounded-lg">
+                        <p className="text-xs text-green-600 font-medium mb-2">✓ Photo uploaded successfully!</p>
+                        <img 
+                          src={uploadedImage.url} 
+                          alt={uploadedImage.filename || 'Uploaded image'} 
+                          className="h-32 rounded-lg object-cover"
                         />
-                        {uploadedImage && (
-                          <div className="mt-4 p-3 bg-white border border-purple-200 rounded-lg">
-                            <p className="text-xs text-green-600 font-medium mb-2">✓ Photo uploaded successfully!</p>
-                            <img 
-                              src={uploadedImage.url} 
-                              alt={uploadedImage.filename || 'Uploaded image'} 
-                              className="h-32 rounded-lg object-cover"
-                            />
-                            <p className="text-xs text-gray-600 mt-2">{uploadedImage.filename}</p>
-                          </div>
-                        )}
+                        <p className="text-xs text-gray-600 mt-2">{uploadedImage.filename}</p>
                       </div>
                     )}
                   </div>
@@ -1134,14 +1190,24 @@ function DigitalSignageBuilderContent() {
                   </div>
                 )}
 
-                <div className="mt-8 flex space-x-4">
-                  <button
-                    onClick={handleSubmit}
-                    disabled={saving}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
-                  >
-                    {saving ? 'Creating...' : 'Create Digital Signage'}
-                  </button>
+                {/* Step 4: Save Button - only show after GPT output for WORKFORCE_ACHIEVEMENT */}
+                {signType === 'WORKFORCE_ACHIEVEMENT' && !gptOutput ? null : (
+                  <div className="mt-8 flex space-x-4">
+                    <button
+                      onClick={handleSubmit}
+                      disabled={saving || (signType === 'WORKFORCE_ACHIEVEMENT' && !gptOutput)}
+                      className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {saving ? 'Saving...' : existingSignageId ? 'Update Digital Signage' : 'Save Digital Signage'}
+                    </button>
+                    <button
+                      onClick={() => router.back()}
+                      className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
                   <button
                     onClick={() => router.back()}
                     className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition"
