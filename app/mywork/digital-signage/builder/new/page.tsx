@@ -1208,13 +1208,6 @@ function DigitalSignageBuilderContent() {
                     </button>
                   </div>
                 )}
-                  <button
-                    onClick={() => router.back()}
-                    className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition"
-                  >
-                    Cancel
-                  </button>
-                </div>
               </div>
             )}
               </>
