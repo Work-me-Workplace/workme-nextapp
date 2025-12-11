@@ -23,6 +23,7 @@ interface PlatformData {
   defenseBuilders?: string[]
   unitsInSeries?: string[]
   yearsSinceLastInClass?: number | null
+  classStartDate?: string | null
 }
 
 interface UnitData {
@@ -261,6 +262,18 @@ export default function CreatePlatformPage() {
                       onChange={(e) => setReviewData({
                         ...reviewData,
                         platform: { ...reviewData.platform, whySpecial: e.target.value }
+                      })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Class Start Date (Lead Ship Keel Laid Down)</label>
+                    <input
+                      type="date"
+                      value={reviewData.platform.classStartDate || ''}
+                      onChange={(e) => setReviewData({
+                        ...reviewData,
+                        platform: { ...reviewData.platform, classStartDate: e.target.value || null }
                       })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                     />

@@ -1499,6 +1499,9 @@ model CompanyPlatformProduct {
   // Derived metric for class maturity
   yearsSinceLastInClass Int?
 
+  // When the platform class began (lead ship laid down)
+  classStartDate DateTime?
+
   units      CompanyPlatformUnit[]
   statements CompanyPlatformStatement[]
   updates    CompanyPlatformUpdate[]
