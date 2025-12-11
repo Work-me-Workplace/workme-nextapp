@@ -5,22 +5,11 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Package, Plus } from 'lucide-react'
-import api from '@/lib/api'
-
-interface CompanyProduct {
-  id: string
-  name: string
-  category?: string | null
-  description?: string | null
-  productionStatus?: string | null
-  updatedAt: string
-}
+import { Ship, Factory, Sparkles } from 'lucide-react'
 
 export default function CompanyProductsPage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
-  const [products, setProducts] = useState<CompanyProduct[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -28,31 +17,12 @@ export default function CompanyProductsPage() {
       const id = getWorkMeIdFromStorage()
       if (!id) {
         router.push('/signin')
-      } else {
-        setWorkMeId(id)
-        loadProducts()
+        return
       }
-    }
-  }, [router])
-
-  async function loadProducts() {
-    try {
-      setLoading(true)
-      const response = await api.get('/api/company-products/list')
-      
-      if (response.data.success && response.data.products) {
-        setProducts(response.data.products)
-      } else {
-        console.error('Failed to load products:', response.data.error)
-        setProducts([])
-      }
-    } catch (error) {
-      console.error('Failed to load products:', error)
-      setProducts([])
-    } finally {
+      setWorkMeId(id)
       setLoading(false)
     }
-  }
+  }, [router])
 
   if (!workMeId || loading) {
     return (
@@ -62,8 +32,48 @@ export default function CompanyProductsPage() {
     )
   }
 
+  const productTypes = [
+    {
+      id: 'platform',
+      name: 'Platforms',
+      description: 'Track major company platforms, capabilities, and external pressures. Manage units, milestones, and updates.',
+      icon: Ship,
+      color: 'blue',
+      bgColor: 'bg-blue-100',
+      iconColor: 'text-blue-600',
+      borderColor: 'hover:border-blue-500',
+      path: '/mycompany/platforms',
+      available: true,
+    },
+    {
+      id: 'capacity',
+      name: 'Capacity',
+      description: 'Track production capacity, shipyards, and industrial base capabilities.',
+      icon: Factory,
+      color: 'green',
+      bgColor: 'bg-green-100',
+      iconColor: 'text-green-600',
+      borderColor: 'hover:border-green-500',
+      path: '/mycompany/products/capacity',
+      available: false,
+    },
+    {
+      id: 'innovation',
+      name: 'Innovation',
+      description: 'Track innovation products, R&D initiatives, and emerging technologies.',
+      icon: Sparkles,
+      color: 'purple',
+      bgColor: 'bg-purple-100',
+      iconColor: 'text-purple-600',
+      borderColor: 'hover:border-purple-500',
+      path: '/mycompany/products/innovation',
+      available: false,
+    },
+  ]
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Top Nav */}
       <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -75,17 +85,6 @@ export default function CompanyProductsPage() {
                 <span className="text-xl font-bold text-gray-900">Work.me</span>
               </Link>
             </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => {
-                  localStorage.clear()
-                  router.push('/signin')
-                }}
-                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Sign Out
-              </button>
-            </div>
           </div>
         </div>
       </nav>
@@ -95,63 +94,54 @@ export default function CompanyProductsPage() {
 
         <main className="flex-1">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Company Products</h1>
-                <p className="text-gray-600 mt-2">Track company products, capabilities, and external pressures</p>
-              </div>
-              <Link
-                href="/mycompany/products/create"
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Create Product
-              </Link>
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900">Company Products</h1>
+              <p className="text-gray-600 mt-2">Track company products, capabilities, and external pressures</p>
             </div>
 
-            {products.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map(product => (
-                  <Link
-                    key={product.id}
-                    href={`/mycompany/products/${product.id}`}
-                    className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition"
+            {/* Product Type Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {productTypes.map((productType) => {
+                const Icon = productType.icon
+                const CardWrapper = productType.available ? Link : 'div'
+                const cardProps = productType.available
+                  ? { href: productType.path }
+                  : { className: 'cursor-not-allowed opacity-60' }
+
+                return (
+                  <CardWrapper
+                    key={productType.id}
+                    {...cardProps}
+                    className={`bg-white rounded-lg shadow-sm p-8 hover:shadow-md transition-all border-2 border-transparent ${productType.borderColor} ${!productType.available ? 'opacity-60 cursor-not-allowed' : ''}`}
                   >
-                    <div className="flex items-center mb-3">
-                      <Package className="h-5 w-5 text-blue-600 mr-2" />
-                      <span className="text-xs font-medium text-gray-500">
-                        {new Date(product.updatedAt).toLocaleDateString()}
-                      </span>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`p-4 ${productType.bgColor} rounded-lg`}>
+                        <Icon className={`h-8 w-8 ${productType.iconColor}`} />
+                      </div>
+                      {!productType.available && (
+                        <span className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
+                          Coming Soon
+                        </span>
+                      )}
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
-                    {product.category && (
-                      <p className="text-sm text-gray-600 mb-2">Category: {product.category}</p>
-                    )}
-                    {product.productionStatus && (
-                      <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800">
-                        {product.productionStatus}
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">{productType.name}</h3>
+                    <p className="text-sm text-gray-600 mb-6">{productType.description}</p>
+                    {productType.available ? (
+                      <span className={`${productType.iconColor} font-medium text-sm flex items-center`}>
+                        Open {productType.name} →
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 font-medium text-sm flex items-center">
+                        Coming Soon
                       </span>
                     )}
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow p-12 text-center">
-                <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Products</h3>
-                <p className="text-gray-600 mb-4">Track company products, capabilities, and external pressures.</p>
-                <Link
-                  href="/mycompany/products/create"
-                  className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-                >
-                  Create Your First Product
-                </Link>
-              </div>
-            )}
+                  </CardWrapper>
+                )
+              })}
+            </div>
           </div>
         </main>
       </div>
     </div>
   )
 }
-
