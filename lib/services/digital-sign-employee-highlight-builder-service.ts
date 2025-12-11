@@ -28,59 +28,123 @@ export interface EmployeeHighlightInput {
   achievement?: string | null
   citationText: string
   classification?: string | null
+  companyUnitLabel?: string | null
 }
 
 export interface DigitalSignOutput {
   headline: string
-  subhead: string | null
-  detailBlock: string | null
+  subhead: string
+  detailBlock: string
   runtimeGuidance: string
-  suggestedImageDescription: string | null
+  suggestedImageDescription: string
 }
 
 /**
  * Build final digital signage JSON from employee highlight data
  * Returns structured data according to CommsIQ Signage Build Guide v2.0
+ * 
+ * This is the "digitalSignEmployeeHighlightBuilder" agent.
  */
 export async function buildDigitalSignFromHighlight(
   input: EmployeeHighlightInput
 ): Promise<DigitalSignOutput> {
   const openai = getOpenAI()
 
-  const prompt = `You are the CommsIQ Digital Signage Builder for the Employee Highlight pipeline.
-Your job is to take raw highlight data and generate a final signage product according to the CommsIQ Signage Build Guide v2.0.
+  // Extract first name for subhead
+  const firstName = input.employeeFullName.split(' ')[0] || input.employeeFullName
 
-You MUST return valid JSON with the following fields:
-- headline
-- subhead
-- detailBlock
-- runtimeGuidance
-- suggestedImageDescription
+  // Build input object for GPT
+  const inputData = {
+    employee: {
+      fullName: input.employeeFullName,
+      companyUnit: input.companyUnitLabel || input.employeeUnit || null,
+      photoUrl: null,
+    },
+    highlight: {
+      classification: input.classification || null,
+      awardName: input.awardName || null,
+      awardYear: input.awardYear || null,
+      awardingAgency: input.awardingAgency || null,
+      achievement: input.achievement || null,
+      citationText: input.citationText.substring(0, 2000),
+    },
+  }
 
-Rules:
-- Headline MUST start with the employee's full name followed by a recognition phrase.
-  Example: "Sarah Johnson — Excellence Award"
-- Subhead MUST congratulate the employee and expand context.
-  Example: "Congratulations, Sarah! Recognized by SEA 05 for outstanding leadership."
-- DetailBlock MUST be award name + year, or best available combination.
-  Example: "NAVSEA Excellence Award · 2025"
-- Runtime ALWAYS "1 week"
-- SuggestedImageDescription MUST describe the ideal photo selection ("use award handshake photo").
+  const systemPrompt = `You are the CommsIQ Digital Signage Builder responsible for generating FINAL signage output for Employee Highlight slides.
 
-Return JSON ONLY — with NO commentary.
+You must follow the CommsIQ Signage Build Guide v2.0 exactly.
 
-Employee Data:
-- Full Name: ${input.employeeFullName}
-- Title: ${input.employeeTitle || 'N/A'}
-- Unit: ${input.employeeUnit || 'N/A'}
-- Award Name: ${input.awardName || 'N/A'}
-- Awarding Agency: ${input.awardingAgency || 'N/A'}
-- Award Year: ${input.awardYear || 'N/A'}
-- Achievement: ${input.achievement || 'N/A'}
-- Classification: ${input.classification || 'N/A'}
+Your job:
 
-Citation Text:
-${input.citationText.substring(0, 2000)}`
+Take structured highlight data (employee info + highlight info + any raw narrative fields)
+
+Infer the correct headline, subhead, detail block, runtime guidance, and suggested image description
+
+Output ONLY a valid JSON object with these keys:
+
+{
+  "headline": "",
+  "subhead": "",
+  "detailBlock": "",
+  "runtimeGuidance": "",
+  "suggestedImageDescription": ""
+}
+
+🟦 RULES — FOLLOW EXACTLY
+
+🔹 HEADLINE
+ALWAYS starts with the employee's full name
+MUST append a recognition phrase based on classification OR award
+Format:
+"{FullName} — {RecognitionPhrase}"
+RecognitionPhrase Options:
+EXCELLENCE → "Excellence Award"
+LEADERSHIP → "Leadership Recognition"
+INNOVATION → "Innovation Spotlight"
+SERVICE → "Service Achievement"
+IMPACT → "Impact Recognition"
+If classification missing → use awardName
+If both missing → use "Employee Highlight"
+
+🔹 SUBHEAD
+ALWAYS begins with Congratulations, {FirstName}!
+MUST contain:
+who recognized them (awardingAgency OR companyUnitLabel)
+what they were recognized for (achievement OR citationText summary)
+Aim for 1–2 clean sentences max.
+
+🔹 DETAIL BLOCK
+Format: {awardName} · {awardYear}
+If awardYear missing → omit
+If awardName missing → fallback to:
+"Recognition · {awardYear or current year}"
+
+🔹 RUNTIME GUIDANCE
+ALWAYS "1 week"
+Employee highlights are spotlight content.
+
+🔹 IMAGE DESCRIPTION
+MUST describe the ideal photo for designers to use
+Examples:
+"Use award presentation handshake photo."
+"Use smiling portrait with certificate."
+"Use main podium shot with award presenter."
+
+🔹 STRICT JSON OUTPUT ONLY
+No commentary, no markdown, no explanation.
+
+🟦 BEHAVIORAL RULES
+NEVER modify names.
+NEVER invent ranks, orgs, or award names.
+NEVER add dates not provided.
+If a field is missing, gracefully infer context or omit.
+Be concise and professional — signage must be clean.`
+
+  const userPrompt = `Input data:
+
+${JSON.stringify(inputData, null, 2)}
+
+Generate the signage output following the rules exactly. Return ONLY the JSON object with headline, subhead, detailBlock, runtimeGuidance, and suggestedImageDescription.`
 
   try {
     const response = await openai.chat.completions.create({
@@ -88,11 +152,11 @@ ${input.citationText.substring(0, 2000)}`
       messages: [
         {
           role: 'system',
-          content: 'You are an expert at building digital signage content for employee recognition. Return only valid JSON with no commentary.',
+          content: systemPrompt,
         },
         {
           role: 'user',
-          content: prompt,
+          content: userPrompt,
         },
       ],
       response_format: { type: 'json_object' },
@@ -101,26 +165,41 @@ ${input.citationText.substring(0, 2000)}`
 
     const parsed = JSON.parse(response.choices[0].message.content || '{}')
 
+    // Validate and return - all fields are required strings
+    const headline = parsed.headline || `${input.employeeFullName} — Employee Highlight`
+    const subhead = parsed.subhead || `Congratulations, ${firstName}! Recognized for outstanding achievement.`
+    const detailBlock = parsed.detailBlock || (input.awardName && input.awardYear 
+      ? `${input.awardName} · ${input.awardYear}`
+      : input.awardName || `Recognition · ${input.awardYear || new Date().getFullYear()}`)
+    const runtimeGuidance = parsed.runtimeGuidance || '1 week'
+    const suggestedImageDescription = parsed.suggestedImageDescription || 'Use award presentation handshake photo.'
+
     return {
-      headline: parsed.headline || `${input.employeeFullName} — Recognition`,
-      subhead: parsed.subhead || null,
-      detailBlock: parsed.detailBlock || null,
-      runtimeGuidance: parsed.runtimeGuidance || '1 week',
-      suggestedImageDescription: parsed.suggestedImageDescription || null,
+      headline,
+      subhead,
+      detailBlock,
+      runtimeGuidance,
+      suggestedImageDescription,
     }
   } catch (error) {
     console.error('DigitalSignEmployeeHighlightBuilderService error:', error)
     // Return safe defaults on error
+    const firstName = input.employeeFullName.split(' ')[0] || input.employeeFullName
+    const recognitionPhrase = input.classification === 'EXCELLENCE' ? 'Excellence Award'
+      : input.classification === 'LEADERSHIP' ? 'Leadership Recognition'
+      : input.classification === 'INNOVATION' ? 'Innovation Spotlight'
+      : input.classification === 'SERVICE' ? 'Service Achievement'
+      : input.classification === 'IMPACT' ? 'Impact Recognition'
+      : input.awardName || 'Employee Highlight'
+    
     return {
-      headline: `${input.employeeFullName} — Recognition`,
-      subhead: input.employeeUnit 
-        ? `Congratulations! Recognized by ${input.employeeUnit} for outstanding achievement.`
-        : 'Congratulations on your outstanding achievement!',
+      headline: `${input.employeeFullName} — ${recognitionPhrase}`,
+      subhead: `Congratulations, ${firstName}! Recognized by ${input.companyUnitLabel || input.employeeUnit || 'the organization'} for ${input.achievement || 'outstanding achievement'}.`,
       detailBlock: input.awardName && input.awardYear
         ? `${input.awardName} · ${input.awardYear}`
-        : input.awardName || null,
+        : input.awardName || `Recognition · ${input.awardYear || new Date().getFullYear()}`,
       runtimeGuidance: '1 week',
-      suggestedImageDescription: 'Use award ceremony photo with handshake.',
+      suggestedImageDescription: 'Use award presentation handshake photo.',
     }
   }
 }

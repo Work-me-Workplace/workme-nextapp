@@ -8,7 +8,8 @@ import { getDashboard } from '@/lib/dashboard.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import api from '@/lib/api'
 import { DigitalSignType } from '@prisma/client'
-import { Award, CheckCircle2, FileText, Sparkles, RefreshCw } from 'lucide-react'
+import { Award, CheckCircle2, FileText, Sparkles, RefreshCw, Loader2, Image as ImageIcon } from 'lucide-react'
+import { AssetUploader } from '@/components/assets/AssetUploader'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,6 +55,20 @@ function DigitalSignageBuilderContent() {
   const [achievement, setAchievement] = useState('')
   const [details, setDetails] = useState('')
   // Photo URL removed - use Asset system via DigitalSignAsset on final step instead
+  
+  // GPT parsed output state (editable after GPT parsing)
+  const [gptOutput, setGptOutput] = useState<{
+    headline: string
+    subhead: string | null
+    detailBlock: string | null
+    runtimeGuidance: string | null
+    suggestedImageDescription: string | null
+  } | null>(null)
+  const [parsingWithGpt, setParsingWithGpt] = useState(false)
+  
+  // Photo upload state
+  const [imageAssetId, setImageAssetId] = useState<string | null>(null)
+  const [uploadedImage, setUploadedImage] = useState<{ id: string; url: string; filename: string | null } | null>(null)
 
   // Form state - Workforce
   const [workforceTitle, setWorkforceTitle] = useState('')
@@ -260,6 +275,42 @@ function DigitalSignageBuilderContent() {
     }
   }
 
+  async function handleParseWithGPT() {
+    if (!personName || !details) {
+      setError('Person name and details (raw text) are required to parse with GPT')
+      return
+    }
+
+    try {
+      setParsingWithGpt(true)
+      setError(null)
+
+      const response = await api.post('/api/digital-signage/parse-raw', {
+        personName,
+        unit,
+        achievement,
+        details,
+      })
+
+      if (response.data.success && response.data.data) {
+        setGptOutput({
+          headline: response.data.data.headline,
+          subhead: response.data.data.subhead || null,
+          detailBlock: response.data.data.detailBlock || null,
+          runtimeGuidance: response.data.data.runtimeGuidance || '1 week',
+          suggestedImageDescription: response.data.data.suggestedImageDescription || null,
+        })
+      } else {
+        setError(response.data.error || 'Failed to parse with GPT')
+      }
+    } catch (err: any) {
+      console.error('Failed to parse with GPT:', err)
+      setError(err.response?.data?.error || err.message || 'Failed to parse with GPT')
+    } finally {
+      setParsingWithGpt(false)
+    }
+  }
+
   async function handleSubmit() {
     if (!signType) {
       setError('Sign type is required')
@@ -268,9 +319,17 @@ function DigitalSignageBuilderContent() {
 
     // Validate based on sign type
     if (signType === 'WORKFORCE_ACHIEVEMENT') {
-      if (!personName || !achievement) {
-        setError('Person name and achievement are required')
+      if (!personName || !details) {
+        setError('Person name and details (raw text) are required')
         return
+      }
+      
+      // If we don't have GPT output yet, parse first
+      if (!gptOutput) {
+        await handleParseWithGPT()
+        if (!gptOutput) {
+          return // Error already set by handleParseWithGPT
+        }
       }
     } else if (signType === 'WORKFORCE') {
       if (!workforceTitle) {
@@ -299,12 +358,23 @@ function DigitalSignageBuilderContent() {
       }
 
       if (signType === 'WORKFORCE_ACHIEVEMENT') {
+        // Use GPT output (headline, subhead, detailBlock) to create the signage
+        if (!gptOutput) {
+          setError('GPT output is required. Please parse with GPT first (Step 1).')
+          return
+        }
+        
+        if (!gptOutput.headline) {
+          setError('Headline is required. Please ensure GPT output includes a headline.')
+          return
+        }
+        
         payload.workforceAchievement = {
-          personName,
-          unit: unit || null,
-          achievement,
-          details: details || null,
-          // Photo URL removed - use Asset system via DigitalSignAsset on final step instead
+          headline: gptOutput.headline,
+          subhead: gptOutput.subhead || null,
+          detailBlock: gptOutput.detailBlock || null,
+          runtimeGuidance: gptOutput.runtimeGuidance || '1 week',
+          imageAssetId: imageAssetId || null,
         }
       } else if (signType === 'WORKFORCE') {
         payload.workforce = {
@@ -335,7 +405,7 @@ function DigitalSignageBuilderContent() {
         }
       }
 
-      const response = await api.post('/api/digital-signage/create', payload)
+      const response = await api.post('/api/mywork/digital-signage/create', payload)
 
       if (response.data.success) {
         router.push(`/mywork/digital-signage/${response.data.signage.id}`)
@@ -695,15 +765,140 @@ function DigitalSignageBuilderContent() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Details</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Details (Raw Text/JSON) <span className="text-red-500">*</span>
+                      </label>
                       <textarea
                         value={details}
-                        onChange={(e) => setDetails(e.target.value)}
-                        rows={4}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        onChange={(e) => {
+                          setDetails(e.target.value)
+                          setGptOutput(null) // Clear GPT output when details change
+                        }}
+                        rows={8}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                        placeholder="Paste raw citation text, JSON, or article content here..."
+                        required
                       />
+                      <p className="text-xs text-gray-500 mt-1">
+                        This raw text will be sent to GPT to extract structured data
+                      </p>
                     </div>
-                    {/* Photo URL removed - use Asset system via DigitalSignAsset on final step instead */}
+
+                    {/* GPT Parse Button */}
+                    <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Step 1: Parse with GPT</p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Send raw text to GPT to get structured headline, subhead, and detailBlock
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleParseWithGPT}
+                        disabled={parsingWithGpt || !personName || !details}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                      >
+                        {parsingWithGpt ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Parsing...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Parse with GPT
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Step 2: Editable GPT Output */}
+                    {gptOutput && (
+                      <div className="p-6 bg-green-50 border-2 border-green-300 rounded-lg space-y-4">
+                        <div className="flex items-center mb-4">
+                          <CheckCircle2 className="h-5 w-5 text-green-600 mr-2" />
+                          <p className="text-sm font-semibold text-green-900">Step 2: Review & Edit GPT Output</p>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Headline <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={gptOutput.headline}
+                            onChange={(e) => setGptOutput({ ...gptOutput, headline: e.target.value })}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Subhead</label>
+                          <textarea
+                            value={gptOutput.subhead || ''}
+                            onChange={(e) => setGptOutput({ ...gptOutput, subhead: e.target.value || null })}
+                            rows={2}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Detail Block</label>
+                          <input
+                            type="text"
+                            value={gptOutput.detailBlock || ''}
+                            onChange={(e) => setGptOutput({ ...gptOutput, detailBlock: e.target.value || null })}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            placeholder="e.g., NAVSEA Excellence Award · 2025"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Runtime Guidance</label>
+                          <input
+                            type="text"
+                            value={gptOutput.runtimeGuidance || '1 week'}
+                            onChange={(e) => setGptOutput({ ...gptOutput, runtimeGuidance: e.target.value || null })}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          />
+                        </div>
+
+                        {gptOutput.suggestedImageDescription && (
+                          <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+                            <p className="text-xs font-medium text-blue-900 mb-1">GPT Suggestion:</p>
+                            <p className="text-xs text-blue-700">{gptOutput.suggestedImageDescription}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Step 3: Photo Upload */}
+                    {gptOutput && (
+                      <div className="p-6 bg-purple-50 border-2 border-purple-300 rounded-lg">
+                        <div className="flex items-center mb-4">
+                          <ImageIcon className="h-5 w-5 text-purple-600 mr-2" />
+                          <p className="text-sm font-semibold text-purple-900">Step 3: Add Photo (Optional)</p>
+                        </div>
+                        <AssetUploader
+                          onUploaded={(asset) => {
+                            setImageAssetId(asset.id)
+                            setUploadedImage(asset)
+                          }}
+                        />
+                        {uploadedImage && (
+                          <div className="mt-4 p-3 bg-white border border-purple-200 rounded-lg">
+                            <p className="text-xs text-green-600 font-medium mb-2">✓ Photo uploaded successfully!</p>
+                            <img 
+                              src={uploadedImage.url} 
+                              alt={uploadedImage.filename || 'Uploaded image'} 
+                              className="h-32 rounded-lg object-cover"
+                            />
+                            <p className="text-xs text-gray-600 mt-2">{uploadedImage.filename}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
