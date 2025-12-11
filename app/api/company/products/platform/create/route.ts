@@ -12,6 +12,7 @@ export async function POST(request: Request) {
       payloadNotes,
       intendedTotalUnits,
       knownShipsInClass,
+      classStartDate,
     } = await request.json()
 
     if (!name || !category) {
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
         payloadNotes: payloadNotes || null,
         intendedTotalUnits: intendedTotalUnits || null,
         knownShipsInClass: Array.isArray(knownShipsInClass) ? knownShipsInClass : [],
+        classStartDate: classStartDate ? new Date(classStartDate) : null,
       },
     })
 

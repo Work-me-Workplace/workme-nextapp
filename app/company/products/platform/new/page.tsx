@@ -13,6 +13,13 @@ interface PlatformData {
   platformSeries?: string | null
   description?: string | null
   whySpecial?: string | null
+  payloadNotes?: string | null
+  intendedTotalUnits?: number | null
+  knownShipsInClass?: string[]
+  currentProgressEstimate?: number | null
+  programStatus?: string | null
+  nextDeliveryExpected?: string | null
+  lastDeliveryDate?: string | null
   totalLength?: string | null
   totalBeam?: string | null
   totalDisplacementSubmerged?: string | null
