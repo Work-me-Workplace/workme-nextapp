@@ -99,28 +99,28 @@ export async function POST(request: Request) {
     // Create the appropriate profile
     let created
     if (type === 'Director') {
-      created = await prisma.directorProfile.create({
+      created = await prisma.myTeamDirectorProfile.create({
         data: {
           containerId: container.id,
           ...data,
         },
       })
     } else if (type === 'Deputy') {
-      created = await prisma.deputyProfile.create({
+      created = await prisma.myTeamDeputyProfile.create({
         data: {
           containerId: container.id,
           ...data,
         },
       })
     } else if (type === 'Peer') {
-      created = await prisma.peerProfile.create({
+      created = await prisma.myTeamPeerProfile.create({
         data: {
           containerId: container.id,
           ...data,
         },
       })
     } else {
-      created = await prisma.subordinateProfile.create({
+      created = await prisma.myTeamSubordinateProfile.create({
         data: {
           containerId: container.id,
           ...data,

@@ -13,6 +13,8 @@ interface DigitalSignageProduct {
   signType: string
   companyUnit: string | null
   headline: string
+  subhead: string | null
+  imageUrl: string | null
   createdAt: string
   updatedAt: string
 }
@@ -114,23 +116,39 @@ export default function DigitalSignageListPage() {
                   <Link
                     key={product.id}
                     href={`/mywork/digital-signage/${product.id}`}
-                    className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-200 hover:border-blue-300 p-6"
+                    className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-200 hover:border-blue-300 overflow-hidden"
                   >
-                    <div className="flex items-start justify-between mb-4">
-                      <Monitor className="h-8 w-8 text-purple-600" />
-                      <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                        {product.signType.replace('_', ' ')}
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
-                      {product.headline}
-                    </h3>
-                    {product.companyUnit && (
-                      <p className="text-sm text-gray-500 mb-2">Unit: {product.companyUnit}</p>
+                    {product.imageUrl && (
+                      <div className="w-full h-48 bg-gray-100 overflow-hidden">
+                        <img 
+                          src={product.imageUrl} 
+                          alt={product.headline}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                     )}
-                    <p className="text-xs text-gray-400">
-                      Created {new Date(product.createdAt).toLocaleDateString()}
-                    </p>
+                    <div className="p-6">
+                      <div className="flex items-start justify-between mb-3">
+                        <Monitor className="h-6 w-6 text-purple-600 flex-shrink-0" />
+                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                          {product.signType.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+                        {product.headline}
+                      </h3>
+                      {product.subhead && (
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                          {product.subhead}
+                        </p>
+                      )}
+                      {product.companyUnit && (
+                        <p className="text-xs text-gray-500 mb-2">Unit: {product.companyUnit}</p>
+                      )}
+                      <p className="text-xs text-gray-400">
+                        Created {new Date(product.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
                   </Link>
                 ))}
               </div>

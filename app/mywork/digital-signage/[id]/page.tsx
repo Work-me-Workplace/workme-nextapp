@@ -6,7 +6,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import api from '@/lib/api'
-import { Monitor, ArrowLeft, CheckCircle2, X } from 'lucide-react'
+import { Monitor, ArrowLeft, CheckCircle2, X, Package, Loader2 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,6 +65,8 @@ function DigitalSignageViewContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [assigning, setAssigning] = useState(false)
+  const [assignError, setAssignError] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -104,6 +106,34 @@ function DigitalSignageViewContent() {
       setError(err.response?.data?.error || err.message || 'Failed to load digital signage')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleAssignToDesignPackage() {
+    if (!signageId) return
+
+    setAssigning(true)
+    setAssignError(null)
+
+    try {
+      const response = await api.post('/api/mywork/designworkpackage/create', {
+        signageId,
+        title: signage?.workforceAchievement?.headline || signage?.workforce?.title || signage?.companyNews?.headline || signage?.companyEvent?.eventName || 'Digital Signage Design',
+        description: `Design work package for ${signage?.signType.replace('_', ' ')} digital signage`,
+      })
+
+      if (response.data.success) {
+        // Show success and optionally redirect
+        alert('Design work package created successfully!')
+        // Could redirect to work package page if it exists
+      } else {
+        setAssignError(response.data.error || 'Failed to create design work package')
+      }
+    } catch (err: any) {
+      console.error('Failed to assign to design package:', err)
+      setAssignError(err.response?.data?.error || err.message || 'Failed to create design work package')
+    } finally {
+      setAssigning(false)
     }
   }
 
@@ -371,9 +401,35 @@ function DigitalSignageViewContent() {
                   </div>
                 )}
 
-                <div className="mt-8 pt-6 border-t text-sm text-gray-500">
-                  <p>Created {new Date(signage.createdAt).toLocaleDateString()}</p>
-                  {signage.companyUnit && <p>Unit: {signage.companyUnit}</p>}
+                <div className="mt-8 pt-6 border-t">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="text-sm text-gray-500">
+                      <p>Created {new Date(signage.createdAt).toLocaleDateString()}</p>
+                      {signage.companyUnit && <p>Unit: {signage.companyUnit}</p>}
+                    </div>
+                    <button
+                      onClick={handleAssignToDesignPackage}
+                      disabled={assigning}
+                      className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {assigning ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Assigning...
+                        </>
+                      ) : (
+                        <>
+                          <Package className="h-4 w-4 mr-2" />
+                          Assign to Design Package
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  {assignError && (
+                    <div className="mt-2 bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded text-sm">
+                      {assignError}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

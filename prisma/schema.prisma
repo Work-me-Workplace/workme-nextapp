@@ -838,15 +838,15 @@ model ProductDigitalSignWorkforceAchievement {
   id        String @id @default(cuid())
   signageId String @unique
 
-  headline        String
-  subhead         String?
+  headline         String
+  subhead          String?
   factualStatement String?
-  quote           String?
+  quote            String?
   quoteAttribution String?
-  runtimeGuidance String?
+  runtimeGuidance  String?
 
   // Legacy field - kept for backward compatibility during migration
-  detailBlock     String?
+  detailBlock String?
 
   imageAssetId String?
   imageAsset   Asset?  @relation("ProductDigitalSignWorkforceAchievementImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
@@ -1093,17 +1093,17 @@ model MyTeamContainer {
   workMeId String @unique @db.Uuid
   workMe   WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
 
-  directors    DirectorProfile[]
-  deputies     DeputyProfile[]
-  peers        PeerProfile[]
-  subordinates SubordinateProfile[]
+  directors    MyTeamDirectorProfile[]
+  deputies     MyTeamDeputyProfile[]
+  peers        MyTeamPeerProfile[]
+  subordinates MyTeamSubordinateProfile[]
 
   createdAt DateTime @default(now())
 
   @@index([workMeId])
 }
 
-model DirectorProfile {
+model MyTeamDirectorProfile {
   id          String          @id @default(cuid())
   containerId String
   container   MyTeamContainer @relation(fields: [containerId], references: [id], onDelete: Cascade)
@@ -1142,7 +1142,7 @@ model DirectorProfile {
   @@index([containerId])
 }
 
-model DeputyProfile {
+model MyTeamDeputyProfile {
   id          String          @id @default(cuid())
   containerId String
   container   MyTeamContainer @relation(fields: [containerId], references: [id], onDelete: Cascade)
@@ -1172,7 +1172,7 @@ model DeputyProfile {
   @@index([containerId])
 }
 
-model PeerProfile {
+model MyTeamPeerProfile {
   id          String          @id @default(cuid())
   containerId String
   container   MyTeamContainer @relation(fields: [containerId], references: [id], onDelete: Cascade)
@@ -1202,7 +1202,7 @@ model PeerProfile {
   @@index([containerId])
 }
 
-model SubordinateProfile {
+model MyTeamSubordinateProfile {
   id          String          @id @default(cuid())
   containerId String
   container   MyTeamContainer @relation(fields: [containerId], references: [id], onDelete: Cascade)
@@ -1233,53 +1233,8 @@ model SubordinateProfile {
 // ============================================
 // DEFENSE ECOSYSTEM INTELLIGENCE MODELS
 // ============================================
-
-model Platform {
-  id           String   @id @default(cuid())
-  name         String
-  platformType String
-  category     String
-  isNextGen    Boolean  @default(false)
-  status       String?
-  description  String?
-  latestSignal String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  capabilities       PlatformCapability[]
-  communications     PlatformCommNode[]
-  contractors        PlatformContract[]
-  signals            PlatformSignal[]
-  ecosystemCompanies EcosystemDefenseCompany[] @relation("EcosystemCompanyPlatforms")
-
-  @@index([platformType])
-  @@index([category])
-}
-
-model PlatformCapability {
-  id         String   @id @default(cuid())
-  platformId String
-  capability String
-  createdAt  DateTime @default(now())
-
-  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
-
-  @@index([platformId])
-  @@index([capability])
-}
-
-model PlatformCommNode {
-  id         String   @id @default(cuid())
-  platformId String
-  nodeType   String
-  nodeName   String?
-  createdAt  DateTime @default(now())
-
-  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
-
-  @@index([platformId])
-  @@index([nodeType])
-}
+// NOTE: Platform, PlatformCapability, PlatformCommNode, PlatformContract, and PlatformSignal
+// models have been removed as they were deprecated in favor of CompanyPlatformProduct
 
 model EcosystemDefenseCompany {
   id          String  @id @default(cuid())
@@ -1296,8 +1251,6 @@ model EcosystemDefenseCompany {
   marketTier     String?
   influenceScore Int?
 
-  platforms       Platform[]               @relation("EcosystemCompanyPlatforms")
-  contracts       PlatformContract[]
   workMeFollowers WorkMeEcosystemCompany[]
 
   createdAt DateTime @default(now())
@@ -1305,41 +1258,6 @@ model EcosystemDefenseCompany {
 
   @@index([name])
   @@index([role])
-}
-
-model PlatformContract {
-  id            String   @id @default(cuid())
-  platformId    String
-  companyId     String
-  prime         Boolean  @default(false)
-  onContract    Boolean  @default(false)
-  contractNotes String?
-  createdAt     DateTime @default(now())
-
-  platform Platform                @relation(fields: [platformId], references: [id], onDelete: Cascade)
-  company  EcosystemDefenseCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@index([platformId])
-  @@index([companyId])
-}
-
-model PlatformSignal {
-  id         String   @id @default(cuid())
-  platformId String
-  sourceUrl  String?
-  sourceType String?
-  signalType String
-  headline   String?
-  rawSnippet String?
-  aiSummary  String?
-  confidence Float?
-  createdAt  DateTime @default(now())
-
-  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
-
-  @@index([platformId])
-  @@index([signalType])
-  @@index([createdAt])
 }
 
 model WorkMeEcosystemCompany {
@@ -1462,8 +1380,8 @@ model CompanyPlatformProduct {
   description      String?
 
   platformSeries String? // SSN, SSBN, CVN, DDG
-  whySpecial      String? // High-level: stealth, payload, mission role
-  payloadNotes    String? // e.g., VPM adds 28 missiles
+  whySpecial     String? // High-level: stealth, payload, mission role
+  payloadNotes   String? // e.g., VPM adds 28 missiles
 
   intendedTotalUnits Int? // e.g., 12 Columbia-class subs
   productionNotes    String? // yard performance, challenges, etc.
@@ -1480,12 +1398,12 @@ model CompanyPlatformProduct {
   lastDeliveryDate     DateTime?
 
   // Expanded physical and program attributes
-  totalLength               String? // e.g., "377 ft (115 m)"
-  totalBeam                 String? // optional beam
+  totalLength                String? // e.g., "377 ft (115 m)"
+  totalBeam                  String? // optional beam
   totalDisplacementSubmerged String? // e.g., "8,700 tons"
-  totalManpowerNeeds        String? // e.g., "132 crew"
-  totalTimeToBuild          String? // e.g., "66–84 months"
-  totalEstimatedCostPerUnit String? // e.g., "$3.2–3.8 billion"
+  totalManpowerNeeds         String? // e.g., "132 crew"
+  totalTimeToBuild           String? // e.g., "66–84 months"
+  totalEstimatedCostPerUnit  String? // e.g., "$3.2–3.8 billion"
 
   // Sensors and technology arrays
   sensors String[] @default([])
@@ -1531,6 +1449,10 @@ model CompanyPlatformUnit {
   statements CompanyPlatformUnitStatement[]
   updates    CompanyPlatformUnitUpdate[]
   milestones CompanyMilestone[]
+
+  // Stakeholders with meaning (not employees, not org chart)
+  namesake     CompanyPlatformUnitNamesake?
+  livingHomage CompanyPlatformUnitLivingHomage?
 
   @@index([platformProductId])
   @@index([hullNumber])
@@ -1700,58 +1622,57 @@ model CompanyProductInnovation {
 }
 
 // ============================================
-// NAMESAKE MODEL (Historical/Symbolic Significance)
+// COMPANY PLATFORM UNIT NAMESAKE MODEL (Historical/Symbolic Significance)
 // ============================================
-// Represents the historical figure or entity for whom a platform is named.
+// Represents the historical figure or entity for whom a platform unit is named.
 // This preserves the narrative context that should never be flattened downstream.
-model Namesake {
+// Super niche - tied directly to a specific platform unit.
+model CompanyPlatformUnitNamesake {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  fullName String              // e.g. "Eugene Bennett Fluckey"
-  knownAs  String?             // e.g. "Lucky"
-  role     String?             // e.g. "WWII Submarine Commander"
-  whyKnown String?             // factual significance
+  platformUnitId String              @unique
+  platformUnit   CompanyPlatformUnit @relation(fields: [platformUnitId], references: [id], onDelete: Cascade)
 
-  legacySummary String?        // short, factual (no prose)
+  fullName String // e.g. "Eugene Bennett Fluckey"
+  knownAs  String? // e.g. "Lucky"
+  role     String? // e.g. "WWII Submarine Commander"
+  whyKnown String? // factual significance
+
+  legacySummary String? // short, factual (no prose)
 
   era    String?
   honors String[] @default([])
 
   notes String?
 
-  // Reverse relations
-  livingHomages LivingHomage[]
-  milestones    CompanyMilestone[]
-
+  @@index([platformUnitId])
   @@index([fullName])
 }
 
 // ============================================
-// LIVING HOMAGE MODEL (Meaning Carriers)
+// COMPANY PLATFORM UNIT LIVING HOMAGE MODEL (Meaning Carriers)
 // ============================================
-// Represents living stakeholders who carry forward the legacy of a namesake.
+// Represents living stakeholders who carry forward the legacy of a namesake for a specific platform unit.
 // These are not employees, not org chart positions—they are meaning carriers.
 // Examples: ship sponsors, memorial honorees, dedication representatives.
+// Super niche - tied directly to a specific platform unit.
 // This tab will be shared by: ship sponsors, memorial honorees, dedication representatives, external legacy holders.
-model LivingHomage {
+model CompanyPlatformUnitLivingHomage {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  fullName String              // e.g. "Pamela Bove"
-  role     String?             // e.g. "Ship Sponsor"
-  relation String?             // e.g. "Granddaughter-in-law of namesake"
+  platformUnitId String              @unique
+  platformUnit   CompanyPlatformUnit @relation(fields: [platformUnitId], references: [id], onDelete: Cascade)
 
-  namesakeId String?
-  namesake   Namesake? @relation(fields: [namesakeId], references: [id], onDelete: SetNull)
+  fullName String // e.g. "Pamela Bove"
+  role     String? // e.g. "Ship Sponsor"
+  relation String? // e.g. "Granddaughter-in-law of namesake"
 
   notes String?
 
-  // Reverse relations
-  milestones CompanyMilestone[]
-
+  @@index([platformUnitId])
   @@index([fullName])
-  @@index([namesakeId])
 }
 
 // ============================================
@@ -1760,7 +1681,7 @@ model LivingHomage {
 // Milestones for platform units (keel laying, launch, commissioning, etc.)
 // 
 // INFERENCE RULE (future enforcement):
-// If milestoneType === KEEL_LAYING, a LivingHomage should eventually be required.
+// If milestoneType === KEEL_LAYING, the platform unit should have a CompanyPlatformUnitLivingHomage.
 // This ensures narrative signal is preserved and never reduced to "keel laid".
 // The system should never again flatten these moments—they carry human meaning.
 // 
@@ -1768,6 +1689,9 @@ model LivingHomage {
 // - digital signage language (foregrounding people, not steel)
 // - recognition-first layouts
 // - AI-generated comms that preserve narrative context
+// 
+// Note: Namesake and LivingHomage are now properties of the platform unit itself,
+// accessed via platformUnit.namesake and platformUnit.livingHomage
 model CompanyMilestone {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
@@ -1781,14 +1705,6 @@ model CompanyMilestone {
   description   String?
   sourceUrl     String?
 
-  // Meaning carriers (stakeholders with historical/symbolic significance)
-  // These are NOT employees, NOT org chart positions—they carry narrative meaning
-  livingHomageId String?
-  livingHomage   LivingHomage? @relation(fields: [livingHomageId], references: [id], onDelete: SetNull)
-
-  namesakeId String?
-  namesake   Namesake? @relation(fields: [namesakeId], references: [id], onDelete: SetNull)
-
   // Reverse link back to unit update that triggered this
   updateId String?                    @unique
   update   CompanyPlatformUnitUpdate? @relation(fields: [updateId], references: [id], onDelete: SetNull)
@@ -1796,8 +1712,6 @@ model CompanyMilestone {
   @@index([platformUnitId])
   @@index([milestoneType])
   @@index([date])
-  @@index([livingHomageId])
-  @@index([namesakeId])
 }
 
 // ============================================

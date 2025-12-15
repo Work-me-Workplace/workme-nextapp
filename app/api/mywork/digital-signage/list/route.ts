@@ -44,23 +44,55 @@ export async function GET(request: NextRequest) {
       },
       include: {
         workforceAchievement: {
-          select: {
-            headline: true,
+          include: {
+            imageAsset: {
+              select: {
+                id: true,
+                url: true,
+                filename: true,
+              },
+            },
           },
         },
+        workforce: true,
+        companyNews: true,
+        companyEvent: true,
       },
       orderBy: { createdAt: 'desc' },
     })
 
-    // 4. Format products
-    const products = digitalSignage.map(p => ({
-      id: p.id,
-      signType: p.signType,
-      companyUnit: p.companyUnit,
-      headline: p.workforceAchievement?.headline || `Digital Signage - ${p.signType}`,
-      createdAt: p.createdAt.toISOString(),
-      updatedAt: p.updatedAt.toISOString(),
-    }))
+    // 4. Format products with preview data
+    const products = digitalSignage.map(p => {
+      let headline = `Digital Signage - ${p.signType}`
+      let subhead: string | null = null
+      let imageUrl: string | null = null
+
+      if (p.workforceAchievement) {
+        headline = p.workforceAchievement.headline
+        subhead = p.workforceAchievement.subhead || null
+        imageUrl = p.workforceAchievement.imageAsset?.url || null
+      } else if (p.workforce) {
+        headline = p.workforce.title
+        subhead = p.workforce.summary || null
+      } else if (p.companyNews) {
+        headline = p.companyNews.headline
+        subhead = p.companyNews.subheadline || null
+      } else if (p.companyEvent) {
+        headline = p.companyEvent.eventName
+        subhead = p.companyEvent.description || null
+      }
+
+      return {
+        id: p.id,
+        signType: p.signType,
+        companyUnit: p.companyUnit,
+        headline,
+        subhead,
+        imageUrl,
+        createdAt: p.createdAt.toISOString(),
+        updatedAt: p.updatedAt.toISOString(),
+      }
+    })
 
     return NextResponse.json({
       success: true,
