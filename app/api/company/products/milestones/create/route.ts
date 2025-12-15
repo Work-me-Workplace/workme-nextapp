@@ -14,25 +14,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { description, date, milestoneType, platformUnitId, title } = await request.json()
+    // TypeScript: companyId is now guaranteed to be string after the check above
+    const companyId: string = workMeContext.companyId
 
-    if (!platformUnitId) {
+    const { description, date, milestoneType, platformUnitId, title, category } = await request.json()
+
+    if (!title) {
       return NextResponse.json(
-        { success: false, error: 'Platform unit ID is required' },
+        { success: false, error: 'Title is required' },
         { status: 400 }
       )
     }
 
-    if (!milestoneType) {
-      return NextResponse.json(
-        { success: false, error: 'Milestone type is required' },
-        { status: 400 }
-      )
-    }
-
-    // Look up platform unit to generate title if not provided
+    // Look up platform unit to generate title if not provided and platformUnitId exists
     let milestoneTitle = title
-    if (!milestoneTitle) {
+    if (!milestoneTitle && platformUnitId) {
       const platformUnit = await prisma.companyPlatformUnit.findUnique({
         where: { id: platformUnitId },
         select: {
@@ -48,22 +44,27 @@ export async function POST(request: NextRequest) {
 
       if (platformUnit) {
         const unitName = platformUnit.name || platformUnit.hullNumber
-        const milestoneTypeLabel = milestoneType.replace(/_/g, ' ').toLowerCase()
-          .replace(/\b\w/g, (l: string) => l.toUpperCase())
-        milestoneTitle = `${unitName} ${milestoneTypeLabel}`
+        if (milestoneType) {
+          const milestoneTypeLabel = milestoneType.replace(/_/g, ' ').toLowerCase()
+            .replace(/\b\w/g, (l: string) => l.toUpperCase())
+          milestoneTitle = `${unitName} ${milestoneTypeLabel}`
+        } else {
+          milestoneTitle = `${unitName} Milestone`
+        }
       } else {
-        milestoneTitle = `${milestoneType.replace(/_/g, ' ')} Milestone`
+        milestoneTitle = milestoneType ? `${milestoneType.replace(/_/g, ' ')} Milestone` : 'Company Milestone'
       }
     }
 
     const milestone = await prisma.companyMilestone.create({
       data: {
         title: milestoneTitle,
-        companyId: workMeContext.companyId,
-        description: description || null,
-        date: date ? new Date(date) : null,
-        milestoneType,
-        platformUnitId,
+        companyId,
+        category: category || undefined,
+        milestoneType: milestoneType || undefined,
+        description: description || undefined,
+        date: date ? new Date(date) : undefined,
+        platformUnitId: platformUnitId || undefined,
       },
     })
 

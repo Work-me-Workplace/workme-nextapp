@@ -14,6 +14,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // TypeScript: companyId is now guaranteed to be string after the check above
+    const companyId: string = workMeContext.companyId
+
     const { platform, units, milestones } = await request.json()
 
     if (!platform || !platform.name || !platform.category) {
@@ -114,11 +117,12 @@ export async function POST(request: NextRequest) {
             return prisma.companyMilestone.create({
               data: {
                 title: milestoneTitle,
-                companyId: workMeContext.companyId,
-                description: milestone.description || null,
-                date: milestone.date ? new Date(milestone.date) : null,
-                milestoneType: milestone.milestoneType,
-                platformUnitId,
+                companyId,
+                category: 'Platform',
+                description: milestone.description || undefined,
+                date: milestone.date ? new Date(milestone.date) : undefined,
+                milestoneType: milestone.milestoneType || undefined,
+                platformUnitId: platformUnitId || undefined,
               },
             })
           })
