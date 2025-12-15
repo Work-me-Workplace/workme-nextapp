@@ -411,7 +411,7 @@ export default function CreateUnitPage({ params }: { params: Promise<{ id: strin
                         <label className="block text-sm font-medium text-gray-700 mb-2">Homeport</label>
                         <input
                           type="text"
-                          value={reviewData.homeport || null}
+                          value={reviewData.homeport || ''}
                           onChange={(e) =>
                             setReviewData({
                               ...reviewData,

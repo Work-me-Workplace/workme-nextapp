@@ -7,7 +7,6 @@ export async function POST(request: Request) {
       platformProductId,
       hullNumber,
       name,
-      block,
       shipyard,
       description,
       status,
@@ -26,13 +25,12 @@ export async function POST(request: Request) {
       data: {
         platformProductId,
         hullNumber,
-        name: name || null,
-        block: block || null,
-        shipyard: shipyard || null,
-        description: description || null,
-        status: status || null,
-        percentComplete: percentComplete || null,
-        deliveryExpected: deliveryExpected ? new Date(deliveryExpected) : null,
+        name: name || undefined,
+        shipyard: shipyard || undefined,
+        description: description || undefined,
+        status: status || undefined,
+        percentComplete: percentComplete ?? undefined,
+        deliveryExpected: deliveryExpected ? new Date(deliveryExpected) : undefined,
       },
     })
 
