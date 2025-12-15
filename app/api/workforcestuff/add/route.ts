@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
             ingestStatus: 'saved',
             ingestCreatedAt: new Date(),
             summary: data.description || data.title || null,
-            companyUnit: companyId,
+            companyId,
             createdByWorkMeId: workMeId,
           },
         })
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
             },
             ingestRawText: rawText,
             summary: data.description || data.title || null,
-            companyUnit: companyId,
+            companyId,
             createdByWorkMeId: workMeId,
           },
         })
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
           pocEmail: data.pocEmail,
           pocPhone: data.pocPhone,
           summary: data.description || data.theme || data.title || null,
-          companyUnit: companyId,
+          companyId,
           createdByWorkMeId: workMeId,
         }
 

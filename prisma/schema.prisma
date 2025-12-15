@@ -215,6 +215,14 @@ model Company {
   employees  CompanyEmployee[]
   highlights CompanyEmployeeHighlight[]
   milestones CompanyMilestone[]
+  campaigns  CompanyCampaign[]      @relation("CompanyCampaignCompany")
+  impactEvents CompanyImpactEvent[] @relation("CompanyImpactEventCompany")
+  trainings  CompanyTraining[]      @relation("CompanyTrainingCompany")
+  events     CompanyEvent[]         @relation("CompanyEventCompany")
+  communities CompanyCommunity[]    @relation("CompanyCommunityCompany")
+  benefits   CompanyBenefits[]      @relation("CompanyBenefitsCompany")
+  careers    CompanyCareer[]        @relation("CompanyCareerCompany")
+  employeeCauses CompanyEmployeeCause[] @relation("CompanyEmployeeCauseCompany")
 
   @@index([name])
 }
@@ -405,11 +413,12 @@ model CompanyCampaign {
 
   summary String?
 
-  companyUnit       String?
+  companyId        String?
+  company          Company? @relation("CompanyCampaignCompany", fields: [companyId], references: [id], onDelete: SetNull)
   createdByWorkMeId String  @db.Uuid
   createdBy         WorkMe  @relation("CompanyCampaignCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  @@index([companyUnit])
+  @@index([companyId])
   @@index([createdByWorkMeId])
 }
 
@@ -428,11 +437,12 @@ model CompanyImpactEvent {
 
   summary String?
 
-  companyUnit       String?
+  companyId        String?
+  company          Company? @relation("CompanyImpactEventCompany", fields: [companyId], references: [id], onDelete: SetNull)
   createdByWorkMeId String  @db.Uuid
   createdBy         WorkMe  @relation("CompanyImpactEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  @@index([companyUnit])
+  @@index([companyId])
   @@index([createdByWorkMeId])
 }
 
@@ -467,11 +477,12 @@ model CompanyTraining {
 
   summary String?
 
-  companyUnit       String?
+  companyId        String?
+  company          Company? @relation("CompanyTrainingCompany", fields: [companyId], references: [id], onDelete: SetNull)
   createdByWorkMeId String  @db.Uuid
   createdBy         WorkMe  @relation("CompanyTrainingCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  @@index([companyUnit])
+  @@index([companyId])
   @@index([createdByWorkMeId])
 }
 
@@ -507,13 +518,14 @@ model CompanyEvent {
 
   summary String?
 
-  companyUnit       String?
+  companyId        String?
+  company          Company? @relation("CompanyEventCompany", fields: [companyId], references: [id], onDelete: SetNull)
   createdByWorkMeId String  @db.Uuid
   createdBy         WorkMe  @relation("CompanyEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   eventItems EventItem[]
 
-  @@index([companyUnit])
+  @@index([companyId])
   @@index([createdByWorkMeId])
 }
 
@@ -548,11 +560,12 @@ model CompanyCommunity {
 
   summary String?
 
-  companyUnit       String?
+  companyId        String?
+  company          Company? @relation("CompanyCommunityCompany", fields: [companyId], references: [id], onDelete: SetNull)
   createdByWorkMeId String  @db.Uuid
   createdBy         WorkMe  @relation("CompanyCommunityCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  @@index([companyUnit])
+  @@index([companyId])
   @@index([createdByWorkMeId])
 }
 
@@ -580,11 +593,12 @@ model CompanyBenefits {
 
   ingestRawText String?
 
-  companyUnit       String?
+  companyId        String?
+  company          Company? @relation("CompanyBenefitsCompany", fields: [companyId], references: [id], onDelete: SetNull)
   createdByWorkMeId String  @db.Uuid
   createdBy         WorkMe  @relation("CompanyBenefitsCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  @@index([companyUnit])
+  @@index([companyId])
   @@index([createdByWorkMeId])
 }
 
@@ -620,11 +634,12 @@ model CompanyCareer {
 
   summary String?
 
-  companyUnit       String?
+  companyId        String?
+  company          Company? @relation("CompanyCareerCompany", fields: [companyId], references: [id], onDelete: SetNull)
   createdByWorkMeId String  @db.Uuid
   createdBy         WorkMe  @relation("CompanyCareerCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  @@index([companyUnit])
+  @@index([companyId])
   @@index([createdByWorkMeId])
 }
 
@@ -654,11 +669,12 @@ model CompanyEmployeeCause {
 
   ingestRawText String?
 
-  companyUnit       String?
+  companyId        String?
+  company          Company? @relation("CompanyEmployeeCauseCompany", fields: [companyId], references: [id], onDelete: SetNull)
   createdByWorkMeId String  @db.Uuid
   createdBy         WorkMe  @relation("CompanyEmployeeCauseCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  @@index([companyUnit])
+  @@index([companyId])
   @@index([createdByWorkMeId])
 }
 
