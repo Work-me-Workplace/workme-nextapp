@@ -5,12 +5,26 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Search, FileText, Mail, Twitter, Newspaper, Radio } from 'lucide-react'
+import { Search, FileText, Mail, Twitter, Newspaper, Radio, Plus } from 'lucide-react'
+import api from '@/lib/api'
+
+interface SignalArtifact {
+  id: string
+  title: string | null
+  saidBy: string | null
+  role: string | null
+  source: string | null
+  createdAt: string
+  _count: {
+    topics: number
+  }
+}
 
 export default function SignalLandingPage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [artifacts, setArtifacts] = useState<SignalArtifact[]>([])
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -19,10 +33,28 @@ export default function SignalLandingPage() {
         router.push('/signin')
       } else {
         setWorkMeId(id)
-        setLoading(false)
+        loadArtifacts()
       }
     }
   }, [router])
+
+  async function loadArtifacts() {
+    try {
+      setLoading(true)
+      const response = await api.get('/api/signal/list')
+      
+      if (response.data.success && response.data.artifacts) {
+        setArtifacts(response.data.artifacts)
+      } else {
+        setArtifacts([])
+      }
+    } catch (error: any) {
+      console.error('Failed to load signal artifacts:', error)
+      setArtifacts([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   if (!workMeId || loading) {
     return (
@@ -60,10 +92,10 @@ export default function SignalLandingPage() {
     {
       name: 'Senior Email',
       description: 'SES/Flag email context extraction',
-      path: '/signal/senior',
+      path: '/signal/new',
       icon: Mail,
       color: 'orange',
-      available: false,
+      available: true,
     },
     {
       name: 'Clip Parser',
@@ -110,16 +142,98 @@ export default function SignalLandingPage() {
         <main className="flex-1">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="mb-8">
-              <div className="flex items-center gap-3 mb-2">
-                <Radio className="h-8 w-8 text-blue-600" />
-                <h1 className="text-3xl font-bold text-gray-900">Signals</h1>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <Radio className="h-8 w-8 text-blue-600" />
+                  <h1 className="text-3xl font-bold text-gray-900">Signals</h1>
+                </div>
+                <Link
+                  href="/signal/new"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Plus className="h-5 w-5" />
+                  Add Signal
+                </Link>
               </div>
               <p className="text-gray-600 mb-6">OSINT-based signal ingestion and verification</p>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">What do you want to do?</h2>
             </div>
 
+            {/* Signal Artifacts List */}
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : artifacts.length === 0 ? (
+              <div className="bg-white rounded-lg shadow p-12 text-center">
+                <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No signals yet</h3>
+                <p className="text-gray-600 mb-6">Get started by adding your first signal artifact</p>
+                <Link
+                  href="/signal/new"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Plus className="h-5 w-5" />
+                  Add Signal
+                </Link>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Title
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Said By
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Created At
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Topics
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {artifacts.map((artifact) => (
+                      <tr
+                        key={artifact.id}
+                        className="hover:bg-gray-50 cursor-pointer"
+                        onClick={() => router.push(`/signal/${artifact.id}`)}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {artifact.title || '(Untitled)'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{artifact.saidBy || '-'}</div>
+                          {artifact.role && (
+                            <div className="text-xs text-gray-500">{artifact.role}</div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">
+                            {new Date(artifact.createdAt).toLocaleDateString()}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">
+                            {artifact._count.topics} {artifact._count.topics === 1 ? 'topic' : 'topics'}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
             {/* Signal Types Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="mt-12">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Other Signal Types</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {signalTypes.map((signal) => {
                 const Icon = signal.icon
                 const colorClasses = {

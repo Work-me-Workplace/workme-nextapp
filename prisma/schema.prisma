@@ -1796,3 +1796,43 @@ model EngageMessage {
   @@index([highlightId])
   @@index([createdAt])
 }
+
+// ============================================
+// SIGNAL ARTIFACT MODELS (Scratchpad + Lens)
+// ============================================
+// SignalArtifact = raw memory, immutable, no intelligence
+// SeniorLeaderTopic = lightweight interpretation, not truth
+// This is a thin, non-authoritative layer - scaffolding only
+
+model SignalArtifact {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  title     String?
+  content   String   // full pasted text, untouched
+  saidBy    String?  // free text for now ("Chris Miller")
+  role      String?  // optional
+  source    String?  // "senior_leader_email", "speech", etc.
+  createdByWorkMeId String? @db.Uuid // if user pasted it
+
+  // Relations
+  topics SeniorLeaderTopic[]
+
+  @@index([createdByWorkMeId])
+  @@index([source])
+  @@index([createdAt])
+}
+
+model SeniorLeaderTopic {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  signalArtifactId String
+  signalArtifact   SignalArtifact @relation(fields: [signalArtifactId], references: [id], onDelete: Cascade)
+
+  topic       String   // e.g. "Product Change", "Leadership Transition"
+  description String?  // short human-readable explanation
+
+  @@index([signalArtifactId])
+  @@index([createdAt])
+}
