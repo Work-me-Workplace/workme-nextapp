@@ -26,13 +26,12 @@ export async function GET(request: NextRequest) {
     const { firebaseId } = await verifyAuth(request as Request)
     console.log('[API GET /api/dashboard/hydrate] Auth verified, firebaseId:', firebaseId)
     
-    // 2. Get WorkMe to get companyId and companyUnit
+    // 2. Get WorkMe to get companyId (companyUnit is deprecated)
     const workMe = await prisma.workMe.findUnique({
       where: { firebaseId },
       select: {
         id: true,
         companyId: true,
-        companyUnit: true,
       },
     })
 
@@ -47,11 +46,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { companyId, companyUnit } = workMe
+    const { companyId } = workMe
     console.log('[API GET /api/dashboard/hydrate] WorkMe found:', {
       id: workMe.id,
       companyId,
-      companyUnit,
     })
 
     // 3. Hydrate all models scoped by companyId or companyUnit
@@ -99,76 +97,75 @@ export async function GET(request: NextRequest) {
           })
         : [],
 
-      // CompanyCampaign - scoped by companyUnit string
-      companyUnit
+      // CompanyCampaign - scoped by companyId (companyUnit deprecated)
+      companyId
         ? prisma.companyCampaign.findMany({
-            where: { companyUnit },
+            where: { companyId },
             orderBy: { createdAt: 'desc' },
             take: 50,
           })
         : [],
 
-      // CompanyTraining - scoped by companyUnit string
-      companyUnit
+      // CompanyTraining - scoped by companyId (companyUnit deprecated)
+      companyId
         ? prisma.companyTraining.findMany({
-            where: { companyUnit },
+            where: { companyId },
             orderBy: { createdAt: 'desc' },
             take: 50,
           })
         : [],
 
-      // CompanyEvent - scoped by companyUnit string
-      companyUnit
+      // CompanyEvent - scoped by companyId (companyUnit deprecated)
+      companyId
         ? prisma.companyEvent.findMany({
-            where: { companyUnit },
+            where: { companyId },
             orderBy: { createdAt: 'desc' },
             take: 50,
           })
         : [],
 
-      // CompanyCommunity - scoped by companyUnit string
-      companyUnit
+      // CompanyCommunity - scoped by companyId (companyUnit deprecated)
+      companyId
         ? prisma.companyCommunity.findMany({
-            where: { companyUnit },
+            where: { companyId },
             orderBy: { createdAt: 'desc' },
             take: 50,
           })
         : [],
 
-      // CompanyCareer - scoped by companyUnit string
-      companyUnit
+      // CompanyCareer - scoped by companyId (companyUnit deprecated)
+      companyId
         ? prisma.companyCareer.findMany({
-            where: { companyUnit },
+            where: { companyId },
             orderBy: { createdAt: 'desc' },
             take: 50,
           })
         : [],
 
-      // CompanyBenefits - scoped by companyUnit string
-      companyUnit
+      // CompanyBenefits - scoped by companyId (companyUnit deprecated)
+      companyId
         ? prisma.companyBenefits.findMany({
-            where: { companyUnit },
+            where: { companyId },
             orderBy: { createdAt: 'desc' },
             take: 50,
           })
         : [],
 
-      // CompanyEmployeeCause - scoped by companyUnit string
-      companyUnit
+      // CompanyEmployeeCause - scoped by companyId (companyUnit deprecated)
+      companyId
         ? prisma.companyEmployeeCause.findMany({
-            where: { companyUnit },
+            where: { companyId },
             orderBy: { createdAt: 'desc' },
             take: 50,
           })
         : [],
 
-      // Work Products - scoped by companyUnit and createdByWorkMeId
-      companyUnit && workMe.id
+      // Work Products - scoped by createdByWorkMeId only (companyUnit deprecated)
+      workMe.id
         ? Promise.all([
             // Email Digest Products
             prisma.workForceEnduringProdEmailDigest.findMany({
               where: {
-                companyUnit,
                 createdByWorkMeId: workMe.id,
               },
               include: {
@@ -183,7 +180,6 @@ export async function GET(request: NextRequest) {
             // Digital Signage Products - hydrate with full nested data
             prisma.productDigitalSign.findMany({
               where: {
-                companyUnit,
                 createdByWorkMeId: workMe.id,
                 archivedAt: null, // Only active items
               },
@@ -279,7 +275,6 @@ export async function GET(request: NextRequest) {
       success: true,
       dashboard: {
         companyId,
-        companyUnit,
         employees,
         highlights,
         campaigns,

@@ -13,12 +13,11 @@ export async function GET(request: NextRequest) {
     // 1. Verify authentication
     const { firebaseId } = await verifyAuth(request)
 
-    // 2. Get WorkMe to get companyUnit
+    // 2. Get WorkMe - only need the ID, hydrate everything by createdByWorkMeId
     const workMe = await prisma.workMe.findUnique({
       where: { firebaseId },
       select: {
         id: true,
-        companyUnit: true,
       },
     })
 
@@ -29,17 +28,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    if (!workMe.companyUnit) {
-      return NextResponse.json(
-        { success: false, error: 'Company unit not set' },
-        { status: 400 }
-      )
-    }
-
-    // 3. Fetch Digital Signage Products (only active, not archived)
+    // 3. Fetch Digital Signage Products (only active, not archived) - use workMeId only
     const digitalSignage = await prisma.productDigitalSign.findMany({
       where: {
-        companyUnit: workMe.companyUnit,
         createdByWorkMeId: workMe.id,
         archivedAt: null, // Only show active items
       },

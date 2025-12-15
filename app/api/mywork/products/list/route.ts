@@ -20,12 +20,11 @@ export async function GET(request: NextRequest) {
     const { firebaseId } = await verifyAuth(request)
     console.log('[API GET /api/mywork/products/list] Auth verified, firebaseId:', firebaseId)
 
-    // 2. Get WorkMe to get companyUnit
+    // 2. Get WorkMe - only need the ID, hydrate everything by createdByWorkMeId
     const workMe = await prisma.workMe.findUnique({
       where: { firebaseId },
       select: {
         id: true,
-        companyUnit: true,
       },
     })
 
@@ -37,23 +36,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('[API GET /api/mywork/products/list] WorkMe found:', {
-      id: workMe.id,
-      companyUnit: workMe.companyUnit,
-    })
+    console.log('[API GET /api/mywork/products/list] WorkMe found, id:', workMe.id)
 
-    if (!workMe.companyUnit) {
-      console.warn('[API GET /api/mywork/products/list] Company unit not set for workMe:', workMe.id)
-      return NextResponse.json(
-        { success: false, error: 'Company unit not set' },
-        { status: 400 }
-      )
-    }
-
-    // 3. Fetch Email Digest Products
+    // 3. Fetch Email Digest Products - use workMeId only
     const emailDigests = await prisma.workForceEnduringProdEmailDigest.findMany({
       where: {
-        companyUnit: workMe.companyUnit,
         createdByWorkMeId: workMe.id,
       },
       include: {
@@ -66,10 +53,9 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
 
-    // 4. Fetch Digital Signage Products
+    // 4. Fetch Digital Signage Products - use workMeId only
     const digitalSignage = await prisma.productDigitalSign.findMany({
       where: {
-        companyUnit: workMe.companyUnit,
         createdByWorkMeId: workMe.id,
       },
       orderBy: { createdAt: 'desc' },

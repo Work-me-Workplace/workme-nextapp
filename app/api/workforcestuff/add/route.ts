@@ -22,11 +22,11 @@ export async function POST(request: NextRequest) {
     // Auth
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
+    const { id: workMeId, companyId } = workMe
 
-    if (!workMeId || !companyUnit) {
+    if (!workMeId || !companyId) {
       return NextResponse.json(
-        { success: false, error: 'Not authenticated or companyUnit not set' },
+        { success: false, error: 'Not authenticated or companyId not set' },
         { status: 401 }
       )
     }
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
             ingestStatus: 'saved',
             ingestCreatedAt: new Date(),
             summary: data.description || data.title || null,
-            companyUnit,
+            companyUnit: companyId,
             createdByWorkMeId: workMeId,
           },
         })
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
             },
             ingestRawText: rawText,
             summary: data.description || data.title || null,
-            companyUnit,
+            companyUnit: companyId,
             createdByWorkMeId: workMeId,
           },
         })
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
           pocEmail: data.pocEmail,
           pocPhone: data.pocPhone,
           summary: data.description || data.theme || data.title || null,
-          companyUnit,
+          companyUnit: companyId,
           createdByWorkMeId: workMeId,
         }
 
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
             pocEmail: data.pocEmail,
             pocPhone: data.pocPhone,
             summary: data.description || data.title || null,
-            companyUnit,
+            companyUnit: companyId,
             createdByWorkMeId: workMeId,
           },
         })
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
             pocEmail: data.pocEmail,
             pocPhone: data.pocPhone,
             summary: data.description || data.title || null,
-            companyUnit,
+            companyUnit: companyId,
             createdByWorkMeId: workMeId,
           },
         })
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
             pocEmail: data.pocEmail,
             pocPhone: data.pocPhone,
             summary: data.description || data.title || null,
-            companyUnit,
+            companyUnit: companyId,
             createdByWorkMeId: workMeId,
           },
         })
@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
             ...(data.pocList != null ? { pocList: data.pocList } : {}),
             ingestRawText: rawText,
             summary: data.description || data.employeeBenefitSummary || data.title || null,
-            companyUnit,
+            companyUnit: companyId,
             createdByWorkMeId: workMeId,
           },
         })
@@ -264,7 +264,7 @@ export async function POST(request: NextRequest) {
             ...(data.extraInstructions != null ? { extraInstructions: data.extraInstructions } : {}),
             ingestRawText: rawText,
             summary: data.description || data.impactSummary || data.title || null,
-            companyUnit,
+            companyUnit: companyId,
             createdByWorkMeId: workMeId,
           },
         })
