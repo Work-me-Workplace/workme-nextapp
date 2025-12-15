@@ -1847,7 +1847,7 @@ model SeniorLeaderTopic {
 // Can optionally belong to a Company, but exists independently
 model ProductFamily {
   id          String              @id @default(cuid())
-  companyId   String?             @db.Uuid
+  companyId   String?
   name        String
   description String?
   status      ProductFamilyStatus @default(CONCEPT)
