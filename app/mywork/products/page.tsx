@@ -63,8 +63,8 @@ const productTypeConfig = {
     icon: FileText,
     color: 'orange',
     colorClass: 'text-orange-600',
-    createPath: '/mywork/products/builder/new?type=executive_email',
-    viewPath: (id: string) => `/mywork/products/${id}`,
+    createPath: '/signal/new',
+    viewPath: (id: string) => `/signal/${id}`,
   },
 }
 
@@ -72,9 +72,8 @@ export default function ProductsPage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [products, setProducts] = useState<WorkProduct[]>([])
-  const [needsReview, setNeedsReview] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'create' | 'review'>('create')
+  const [activeTab, setActiveTab] = useState<'create' | 'my-products' | 'review'>('create')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -86,7 +85,6 @@ export default function ProductsPage() {
       
       setWorkMeId(id)
       loadProducts()
-      loadNeedsReview()
     }
   }, [router])
 
@@ -138,20 +136,6 @@ export default function ProductsPage() {
     }
   }
 
-  async function loadNeedsReview() {
-    try {
-      const response = await api.get('/api/mywork/products/needs-review')
-      if (response.data.success && response.data.products) {
-        setNeedsReview(response.data.products)
-      } else {
-        setNeedsReview([])
-      }
-    } catch (error: any) {
-      console.error('Failed to load products needing review:', error)
-      setNeedsReview([])
-    }
-  }
-
   // Group products by type
   const productsByType = products.reduce((acc, product) => {
     if (!acc[product.type]) {
@@ -160,15 +144,6 @@ export default function ProductsPage() {
     acc[product.type].push(product)
     return acc
   }, {} as Record<string, WorkProduct[]>)
-
-  // Group needs review by type
-  const needsReviewByType = needsReview.reduce((acc, product) => {
-    if (!acc[product.type]) {
-      acc[product.type] = []
-    }
-    acc[product.type].push(product)
-    return acc
-  }, {} as Record<string, any[]>)
 
   if (!workMeId || loading) {
     return (
@@ -228,6 +203,21 @@ export default function ProductsPage() {
                   Create New
                 </button>
                 <button
+                  onClick={() => setActiveTab('my-products')}
+                  className={`flex-1 px-4 py-2 rounded-md font-medium transition ${
+                    activeTab === 'my-products'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  My Products
+                  {products.length > 0 && (
+                    <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-600 rounded-full text-xs">
+                      {products.length}
+                    </span>
+                  )}
+                </button>
+                <button
                   onClick={() => setActiveTab('review')}
                   className={`flex-1 px-4 py-2 rounded-md font-medium transition ${
                     activeTab === 'review'
@@ -235,21 +225,47 @@ export default function ProductsPage() {
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  Return to Work Efforts
-                  {needsReview.length > 0 && (
+                  Manage Products
+                  {products.length > 0 && (
                     <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-600 rounded-full text-xs">
-                      {needsReview.length}
+                      {products.length}
                     </span>
                   )}
                 </button>
               </div>
             </div>
 
-            {/* Create New Tab */}
+            {/* Create New Tab - Only show creation cards */}
             {activeTab === 'create' && (
-              <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+                {Object.entries(productTypeConfig).map(([type, config]) => {
+                  const Icon = config.icon
+                  const colorClass = config.colorClass || 'text-gray-600'
+                  // Map color classes to hover states
+                  const hoverColorClass = colorClass === 'text-blue-600' ? 'group-hover:text-blue-600' :
+                                        colorClass === 'text-purple-600' ? 'group-hover:text-purple-600' :
+                                        colorClass === 'text-green-600' ? 'group-hover:text-green-600' :
+                                        colorClass === 'text-orange-600' ? 'group-hover:text-orange-600' :
+                                        'group-hover:text-blue-600'
+                  return (
+                    <Link
+                      key={`create-${type}`}
+                      href={config.createPath}
+                      className="group aspect-square bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all flex flex-col items-center justify-center p-6 text-center"
+                    >
+                      <Icon className={`h-10 w-10 mb-3 text-gray-400 ${hoverColorClass} transition-colors`} />
+                      <span className="text-sm font-medium text-gray-600 group-hover:text-blue-600">New {config.name}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* My Products Tab - Show existing products */}
+            {activeTab === 'my-products' && (
+              <div>
                 {products.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
                     {products.map(product => {
                       const config = productTypeConfig[product.type as keyof typeof productTypeConfig]
                       const Icon = config?.icon || FileText
@@ -265,111 +281,89 @@ export default function ProductsPage() {
                         <Link
                           key={product.id}
                           href={config?.viewPath(product.id) || '#'}
-                          className="group aspect-square bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-200 hover:border-blue-300 flex flex-col items-center justify-center p-4 text-center overflow-hidden"
+                          className="group aspect-square bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-200 hover:border-blue-300 flex flex-col items-center justify-center p-6 text-center overflow-hidden"
                         >
-                          <Icon className={`h-8 w-8 mb-2 ${colorClass} group-hover:scale-110 transition-transform flex-shrink-0`} />
+                          <Icon className={`h-10 w-10 mb-3 ${colorClass} group-hover:scale-110 transition-transform flex-shrink-0`} />
                           <h4 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2 break-words min-h-[2.5rem] flex items-center justify-center">{displayTitle}</h4>
                           <span className="text-xs text-gray-500 mt-auto">{config?.name || product.type}</span>
                         </Link>
                       )
                     })}
-                    
-                    {/* Create New Cards */}
-                    {Object.entries(productTypeConfig).map(([type, config]) => {
-                      const Icon = config.icon
-                      const colorClass = config.colorClass || 'text-gray-600'
-                      // Map color classes to hover states
-                      const hoverColorClass = colorClass === 'text-blue-600' ? 'group-hover:text-blue-600' :
-                                            colorClass === 'text-purple-600' ? 'group-hover:text-purple-600' :
-                                            colorClass === 'text-green-600' ? 'group-hover:text-green-600' :
-                                            colorClass === 'text-orange-600' ? 'group-hover:text-orange-600' :
-                                            'group-hover:text-blue-600'
-                      return (
-                        <Link
-                          key={`create-${type}`}
-                          href={config.createPath}
-                          className="group aspect-square bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all flex flex-col items-center justify-center p-4 text-center"
-                        >
-                          <Icon className={`h-8 w-8 mb-2 text-gray-400 ${hoverColorClass} transition-colors`} />
-                          <span className="text-xs font-medium text-gray-600 group-hover:text-blue-600">New {config.name}</span>
-                        </Link>
-                      )
-                    })}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                    {Object.entries(productTypeConfig).map(([type, config]) => {
-                      const Icon = config.icon
-                      const colorClass = config.colorClass || 'text-gray-600'
-                      // Map color classes to hover states
-                      const hoverColorClass = colorClass === 'text-blue-600' ? 'group-hover:text-blue-600' :
-                                            colorClass === 'text-purple-600' ? 'group-hover:text-purple-600' :
-                                            colorClass === 'text-green-600' ? 'group-hover:text-green-600' :
-                                            colorClass === 'text-orange-600' ? 'group-hover:text-orange-600' :
-                                            'group-hover:text-blue-600'
-                      return (
-                        <Link
-                          key={`create-${type}`}
-                          href={config.createPath}
-                          className="group aspect-square bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all flex flex-col items-center justify-center p-4 text-center"
-                        >
-                          <Icon className={`h-8 w-8 mb-2 text-gray-400 ${hoverColorClass} transition-colors`} />
-                          <span className="text-xs font-medium text-gray-600 group-hover:text-blue-600">New {config.name}</span>
-                        </Link>
-                      )
-                    })}
+                  <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+                    <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Products Yet</h3>
+                    <p className="text-gray-600 mb-4">Create your first work product to get started.</p>
+                    <button
+                      onClick={() => setActiveTab('create')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Create New Product
+                    </button>
                   </div>
                 )}
-              </>
+              </div>
             )}
 
-            {/* Return to Work Efforts Tab */}
+            {/* Manage Products Tab - Segmented by product type */}
             {activeTab === 'review' && (
               <div>
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Return to Work Efforts</h3>
-                  <p className="text-sm text-gray-600">Review and assign products that need design work</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Manage Products</h3>
+                  <p className="text-sm text-gray-600">View, edit, archive, or assign products to work packages</p>
                 </div>
 
-                {needsReview.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                {products.length > 0 ? (
+                  <div className="space-y-8">
                     {Object.entries(productTypeConfig).map(([type, config]) => {
                       const Icon = config.icon
-                      const reviewItems = needsReviewByType[type] || []
+                      const typeProducts = productsByType[type] || []
                       
-                      if (reviewItems.length === 0) return null
+                      if (typeProducts.length === 0) return null
 
-                      return reviewItems.map((item: any) => {
-                        const rawTitle = item.headline || item.title
-                        const normalizedTitle = normalizeTitle(rawTitle)
-                        const displayTitle = normalizedTitle && normalizedTitle.length > 30
-                          ? normalizedTitle.substring(0, 30) + '...'
-                          : normalizedTitle
-                        
-                        return (
-                          <Link
-                            key={`review-${item.id}`}
-                            href={type === 'digital_signage' 
-                              ? `/mywork/products/digital_signage/${item.id}/review`
-                              : `/mywork/products/${type}/${item.id}/review`}
-                            className="group aspect-square bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-200 hover:border-orange-300 flex flex-col items-center justify-center p-4 text-center relative overflow-hidden"
-                          >
-                            <div className="absolute top-2 right-2">
-                              <Eye className="h-4 w-4 text-orange-500" />
-                            </div>
-                            <Icon className="h-8 w-8 mb-2 text-gray-600 group-hover:scale-110 transition-transform flex-shrink-0" />
-                            <h4 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2 break-words min-h-[2.5rem] flex items-center justify-center">{displayTitle}</h4>
-                            <span className="text-xs text-gray-500 mt-auto">Review {config.name}</span>
-                          </Link>
-                        )
-                      })
+                      return (
+                        <div key={type} className="bg-white rounded-lg border border-gray-200 p-6">
+                          <div className="flex items-center mb-4">
+                            <Icon className={`h-6 w-6 ${config.colorClass} mr-2`} />
+                            <h4 className="text-lg font-semibold text-gray-900">{config.name}</h4>
+                            <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">
+                              {typeProducts.length}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                            {typeProducts.map((product) => {
+                              const normalizedTitle = normalizeTitle(product.title)
+                              const displayTitle = normalizedTitle && normalizedTitle.length > 30
+                                ? normalizedTitle.substring(0, 30) + '...'
+                                : normalizedTitle
+                              
+                              return (
+                                <Link
+                                  key={`manage-${product.id}`}
+                                  href={type === 'digital_signage' 
+                                    ? `/mywork/products/digital_signage/${product.id}/review`
+                                    : config?.viewPath(product.id) || '#'}
+                                  className="group aspect-square bg-gray-50 rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-200 hover:border-blue-300 flex flex-col items-center justify-center p-4 text-center relative overflow-hidden"
+                                >
+                                  <div className="absolute top-2 right-2">
+                                    <Eye className="h-4 w-4 text-blue-500" />
+                                  </div>
+                                  <Icon className={`h-8 w-8 mb-2 ${config.colorClass} group-hover:scale-110 transition-transform flex-shrink-0`} />
+                                  <h4 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2 break-words min-h-[2.5rem] flex items-center justify-center">{displayTitle}</h4>
+                                </Link>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )
                     })}
                   </div>
                 ) : (
                   <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
                     <Eye className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Items Need Review</h3>
-                    <p className="text-gray-600">All products have been assigned or archived.</p>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Products to Manage</h3>
+                    <p className="text-gray-600">Create products to view, edit, archive, or assign them to work packages.</p>
                   </div>
                 )}
               </div>
