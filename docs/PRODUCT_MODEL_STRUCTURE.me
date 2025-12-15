@@ -1,0 +1,177 @@
+# Product Model Structure
+
+## Overview
+
+**There is NO top-level "Product" model** - only **`CompanyPlatformProduct`** which represents platform products (e.g., "Virginia-class", "Columbia-class").
+
+All models that reference products use `platformProductId` pointing to `CompanyPlatformProduct`.
+
+---
+
+## Models with `platformProductId`
+
+### 1. CompanyPlatformUnit
+**Purpose:** Individual units/ships within a platform class (e.g., "SSN 804 Barb")
+
+```prisma
+model CompanyPlatformUnit {
+  id        String   @id @default(cuid())
+  platformProductId String  // Required FK
+  platformProduct   CompanyPlatformProduct @relation(...)
+  
+  // Unit-specific fields:
+  hullNumber    String  // "SSN 804"
+  name          String? // "Barb"
+  numberInClass Int?
+  platformClass String?
+  // ... lifecycle dates, status, etc.
+  
+  @@index([platformProductId])
+}
+```
+
+**Relationship:** Many units belong to one platform product
+
+---
+
+### 2. CompanyPlatformStatement
+**Purpose:** Raw statements/news/articles about a platform product
+
+```prisma
+model CompanyPlatformStatement {
+  id        String   @id @default(cuid())
+  platformProductId String  // Required FK
+  platformProduct   CompanyPlatformProduct @relation(...)
+  
+  sourceName String?
+  sourceUrl  String?
+  headline   String?
+  rawText    String
+  aiSummary  String?
+  aiTags     String[]
+  
+  @@index([platformProductId])
+}
+```
+
+**Relationship:** Many statements belong to one platform product
+
+---
+
+### 3. CompanyPlatformUpdate
+**Purpose:** Structured updates derived from statements about a platform product
+
+```prisma
+model CompanyPlatformUpdate {
+  id        String   @id @default(cuid())
+  platformProductId String  // Required FK
+  platformProduct   CompanyPlatformProduct @relation(...)
+  
+  statementId String?
+  statement   CompanyPlatformStatement? @relation(...)
+  
+  scheduleStatus          String?
+  costStatus              String?
+  industrialBaseNote      String?
+  // ... override fields, narrative summary
+  
+  @@index([platformProductId])
+}
+```
+
+**Relationship:** Many updates belong to one platform product
+
+---
+
+## Top-Level Model: CompanyPlatformProduct
+
+**This is the "product" model** - there is no separate top-level Product model.
+
+```prisma
+model CompanyPlatformProduct {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Identity
+  name             String  // "Virginia-class"
+  alternativeNames String[] @default([])
+  category         String? // "Submarine", "Surface Combatant"
+  description      String?
+  
+  platformSeries String? // SSN, SSBN, CVN, DDG
+  whySpecial     String?
+  payloadNotes   String?
+
+  // Program info
+  intendedTotalUnits Int?
+  productionNotes    String?
+  currentProgressEstimate Int? // 0-100
+  programStatus           String?
+
+  // Physical attributes
+  totalLength                String?
+  totalBeam                  String?
+  totalDisplacementSubmerged String?
+  totalManpowerNeeds         String?
+  totalTimeToBuild           String?
+  totalEstimatedCostPerUnit  String?
+
+  // Arrays
+  sensors         String[] @default([])
+  defenseBuilders String[] @default([])
+  unitsInSeries   String[] @default([])
+  knownShipsInClass String[] @default([])
+
+  // Dates
+  classStartDate DateTime?
+  nextDeliveryExpected DateTime?
+  lastDeliveryDate     DateTime?
+
+  // Relations (children)
+  units      CompanyPlatformUnit[]
+  statements CompanyPlatformStatement[]
+  updates    CompanyPlatformUpdate[]
+
+  @@index([name])
+  @@index([platformSeries])
+  @@index([category])
+}
+```
+
+---
+
+## Relationship Hierarchy
+
+```
+CompanyPlatformProduct (TOP-LEVEL)
+  ├── CompanyPlatformUnit (many units per platform)
+  ├── CompanyPlatformStatement (many statements per platform)
+  └── CompanyPlatformUpdate (many updates per platform)
+```
+
+**Key Points:**
+- `CompanyPlatformProduct` is the top-level "product" model
+- All three child models require `platformProductId` (cascade delete)
+- No standalone "Product" model exists - only platform products
+
+---
+
+## Other "Product" Models (Unrelated)
+
+These models have "Product" in their name but **do NOT** use `platformProductId`:
+
+1. **ProductDigitalSign** - Digital signage products (unrelated to platforms)
+2. **CompanyProductCapacity** - Production capacity tracking (no platformProductId)
+3. **CompanyProductInnovation** - Innovation tracking (no platformProductId)
+
+These are separate concerns and don't relate to the platform product hierarchy.
+
+---
+
+## Summary
+
+✅ **Top-level product model:** `CompanyPlatformProduct` (platform-specific)  
+❌ **No generic "Product" model exists**  
+✅ **3 models use `platformProductId`:** Unit, Statement, Update  
+✅ **All cascade delete** when platform product is deleted

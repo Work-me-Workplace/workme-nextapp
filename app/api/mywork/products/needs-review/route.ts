@@ -38,25 +38,19 @@ export async function GET(request: NextRequest) {
       companyUnit: workMe.companyUnit,
     })
 
-    if (!workMe.companyUnit) {
-      console.warn('[API GET /api/mywork/products/needs-review] Company unit not set for workMe:', workMe.id)
-      return NextResponse.json(
-        { success: false, error: 'Company unit not set' },
-        { status: 400 }
-      )
-    }
-
     // 3. Fetch Digital Signage Products that need review
     // (not archived, no design packages assigned)
+    // Use workMeId only - don't require companyUnit
     console.log('[API GET /api/mywork/products/needs-review] Fetching digital signage products...')
     const digitalSignage = await prisma.productDigitalSign.findMany({
       where: {
-        companyUnit: workMe.companyUnit,
         createdByWorkMeId: workMe.id,
         archivedAt: null, // Not archived
         designPackages: {
           none: {}, // No design packages assigned
         },
+        // Optionally filter by companyUnit if it exists
+        ...(workMe.companyUnit ? { companyUnit: workMe.companyUnit } : {}),
       },
       include: {
         workforceAchievement: {
