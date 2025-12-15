@@ -6,50 +6,35 @@ import { use, useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Ship, ArrowLeft, Wand2, FileText, Loader2 } from 'lucide-react'
+import { Ship, ArrowLeft, Wand2, Loader2 } from 'lucide-react'
 
-type Mode = 'manual' | 'ai'
-
-interface UnitFormData {
+interface UnitData {
   hullNumber: string
-  name: string
-  block: string
-  shipyard: string
-  description: string
-  status: string
-  percentComplete: string
-  deliveryExpected: string
-}
-
-interface AIParseResult {
-  hullNumber: string
-  name: string | null
-  block: string | null
-  shipyard: string | null
-  status: string | null
-  percentComplete: number | null
-  milestoneType: string | null
-  milestoneDate: string | null
+  name?: string | null
+  numberInClass?: number | null
+  platformClass?: string | null
+  defenseContractor?: string | null
+  shipyard?: string | null
+  whereBuilt?: string | null
+  unitCost?: string | null
+  constructionStartDate?: string | null
+  constructionCompleteDate?: string | null
+  deliveryToFleetDate?: string | null
+  commissioningDate?: string | null
+  homeport?: string | null
+  currentStatus?: string | null
+  percentComplete?: number | null
+  createdVia: 'AI_INGEST'
 }
 
 export default function CreateUnitPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: platformId } = use(params)
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
-  const [activeMode, setActiveMode] = useState<Mode>('manual')
   const [loading, setLoading] = useState(false)
   const [parsing, setParsing] = useState(false)
-  const [aiResult, setAiResult] = useState<AIParseResult | null>(null)
-  const [formData, setFormData] = useState<UnitFormData>({
-    hullNumber: '',
-    name: '',
-    block: '',
-    shipyard: '',
-    description: '',
-    status: '',
-    percentComplete: '',
-    deliveryExpected: '',
-  })
+  const [reviewData, setReviewData] = useState<UnitData | null>(null)
+  const [aiText, setAiText] = useState('')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -62,34 +47,18 @@ export default function CreateUnitPage({ params }: { params: Promise<{ id: strin
     }
   }, [router])
 
-  async function handleAIParse(text: string) {
-    if (!text.trim()) {
+  async function handleAIParse() {
+    if (!aiText.trim()) {
       alert('Please paste some text to parse')
       return
     }
 
     try {
       setParsing(true)
-      // Use the platform process-news endpoint or create a unit-specific parser
-      const response = await api.post('/api/platform/process-news', {
-        platformProductId: platformId,
-        rawText: text,
-      })
+      const response = await api.post('/api/platform/unit/ai-parse', { text: aiText })
 
-      if (response.data.success) {
-        // Parse the response to extract unit info
-        // This is a simplified version - you may need to enhance the AI parsing
-        const result: AIParseResult = {
-          hullNumber: '',
-          name: null,
-          block: null,
-          shipyard: null,
-          status: null,
-          percentComplete: null,
-          milestoneType: null,
-          milestoneDate: null,
-        }
-        setAiResult(result)
+      if (response.data.success && response.data.data) {
+        setReviewData(response.data.data)
       } else {
         alert('Failed to parse: ' + (response.data.error || 'Unknown error'))
       }
@@ -101,45 +70,22 @@ export default function CreateUnitPage({ params }: { params: Promise<{ id: strin
     }
   }
 
-  function applyAIResult() {
-    if (!aiResult) return
-    setFormData({
-      ...formData,
-      hullNumber: aiResult.hullNumber || formData.hullNumber,
-      name: aiResult.name || formData.name,
-      block: aiResult.block || formData.block,
-      shipyard: aiResult.shipyard || formData.shipyard,
-      status: aiResult.status || formData.status,
-      percentComplete: aiResult.percentComplete?.toString() || formData.percentComplete,
-    })
-    setActiveMode('manual')
-  }
+  const [createdUnitId, setCreatedUnitId] = useState<string | null>(null)
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!formData.hullNumber) {
-      alert('Hull Number is required')
-      return
-    }
+  async function handleReviewSubmit() {
+    if (!reviewData) return
 
     try {
       setLoading(true)
       const payload = {
         platformProductId: platformId,
-        hullNumber: formData.hullNumber,
-        name: formData.name || null,
-        block: formData.block || null,
-        shipyard: formData.shipyard || null,
-        description: formData.description || null,
-        status: formData.status || null,
-        percentComplete: formData.percentComplete ? parseInt(formData.percentComplete) : null,
-        deliveryExpected: formData.deliveryExpected || null,
+        unit: reviewData,
       }
 
-      const response = await api.post('/api/company/products/platform/unit/create', payload)
+      const response = await api.post('/api/company/products/platform/unit/create-with-ai', payload)
 
       if (response.data.success) {
-        router.push(`/mycompany/platforms/${platformId}`)
+        setCreatedUnitId(response.data.unit.id)
       } else {
         alert('Failed to create unit: ' + response.data.error)
       }
@@ -196,153 +142,23 @@ export default function CreateUnitPage({ params }: { params: Promise<{ id: strin
                 <h1 className="text-3xl font-bold text-gray-900">Create Platform Unit</h1>
               </div>
 
-              {/* Mode Selection */}
-              <div className="border-b border-gray-200 mb-6">
-                <nav className="-mb-px flex space-x-8">
-                  <button
-                    onClick={() => setActiveMode('manual')}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeMode === 'manual'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    <FileText className="h-4 w-4 inline mr-2" />
-                    Manual Entry
-                  </button>
-                  <button
-                    onClick={() => setActiveMode('ai')}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeMode === 'ai'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    <Wand2 className="h-4 w-4 inline mr-2" />
-                    AI Ingest
-                  </button>
-                </nav>
-              </div>
-
-              {/* Manual Mode */}
-              {activeMode === 'manual' && (
-                <form onSubmit={handleSubmit} className="space-y-6">
+              {!reviewData ? (
+                <div className="space-y-6">
                   <div>
-                    <label htmlFor="hullNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                      Hull Number *
-                    </label>
-                    <input
-                      type="text"
-                      id="hullNumber"
-                      required
-                      value={formData.hullNumber}
-                      onChange={(e) => setFormData({ ...formData, hullNumber: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., SSN 804"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                        Name
-                      </label>
-                      <input
-                        type="text"
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="e.g., Barb"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="block" className="block text-sm font-medium text-gray-700 mb-2">
-                        Block
-                      </label>
-                      <input
-                        type="text"
-                        id="block"
-                        value={formData.block}
-                        onChange={(e) => setFormData({ ...formData, block: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="e.g., Block V"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="shipyard" className="block text-sm font-medium text-gray-700 mb-2">
-                      Shipyard
-                    </label>
-                    <input
-                      type="text"
-                      id="shipyard"
-                      value={formData.shipyard}
-                      onChange={(e) => setFormData({ ...formData, shipyard: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., HII Newport News"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                      Description
+                    <label htmlFor="aiText" className="block text-sm font-medium text-gray-700 mb-2">
+                      Paste Article or Text
                     </label>
                     <textarea
-                      id="description"
-                      rows={3}
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Unit description..."
+                      id="aiText"
+                      rows={12}
+                      value={aiText}
+                      onChange={(e) => setAiText(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                      placeholder="Paste any article, fact file, or Wikipedia entry about this platform unit..."
                     />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                        Current Status
-                      </label>
-                      <input
-                        type="text"
-                        id="status"
-                        value={formData.status}
-                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="e.g., Under Construction"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="percentComplete" className="block text-sm font-medium text-gray-700 mb-2">
-                        Percent Complete
-                      </label>
-                      <input
-                        type="number"
-                        id="percentComplete"
-                        min="0"
-                        max="100"
-                        value={formData.percentComplete}
-                        onChange={(e) => setFormData({ ...formData, percentComplete: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="0-100"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="deliveryExpected" className="block text-sm font-medium text-gray-700 mb-2">
-                      Expected Delivery Date
-                    </label>
-                    <input
-                      type="date"
-                      id="deliveryExpected"
-                      value={formData.deliveryExpected}
-                      onChange={(e) => setFormData({ ...formData, deliveryExpected: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
+                    <p className="text-sm text-gray-500 mt-2">
+                      AI will extract unit details and milestones from your text.
+                    </p>
                   </div>
 
                   <div className="flex items-center justify-end space-x-4">
@@ -353,47 +169,8 @@ export default function CreateUnitPage({ params }: { params: Promise<{ id: strin
                       Cancel
                     </Link>
                     <button
-                      type="submit"
-                      disabled={loading}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        'Create Unit'
-                      )}
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {/* AI Mode */}
-              {activeMode === 'ai' && (
-                <div className="space-y-6">
-                  <div>
-                    <label htmlFor="aiText" className="block text-sm font-medium text-gray-700 mb-2">
-                      Paste Press Release or Article
-                    </label>
-                    <textarea
-                      id="aiText"
-                      rows={12}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
-                      placeholder="Paste press release or article text about this submarine..."
-                    />
-                  </div>
-
-                  <div className="flex items-center space-x-4">
-                    <button
-                      onClick={() => {
-                        const textarea = document.getElementById('aiText') as HTMLTextAreaElement
-                        if (textarea) {
-                          handleAIParse(textarea.value)
-                        }
-                      }}
-                      disabled={parsing}
+                      onClick={handleAIParse}
+                      disabled={parsing || !aiText.trim()}
                       className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {parsing ? (
@@ -404,61 +181,329 @@ export default function CreateUnitPage({ params }: { params: Promise<{ id: strin
                       ) : (
                         <>
                           <Wand2 className="h-4 w-4 mr-2" />
-                          Parse with AI
+                          Ingest with AI
                         </>
                       )}
                     </button>
                   </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800">
+                      Review the parsed data below. You can edit fields before creating the unit.
+                    </p>
+                  </div>
 
-                  {aiResult && (
-                    <div className="border border-blue-200 rounded-lg p-6 bg-blue-50">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Parsed Results</h3>
-                      <div className="space-y-3 text-sm">
-                        {aiResult.hullNumber && (
-                          <div>
-                            <span className="font-medium">Hull Number:</span> {aiResult.hullNumber}
-                          </div>
-                        )}
-                        {aiResult.name && (
-                          <div>
-                            <span className="font-medium">Name:</span> {aiResult.name}
-                          </div>
-                        )}
-                        {aiResult.block && (
-                          <div>
-                            <span className="font-medium">Block:</span> {aiResult.block}
-                          </div>
-                        )}
-                        {aiResult.shipyard && (
-                          <div>
-                            <span className="font-medium">Shipyard:</span> {aiResult.shipyard}
-                          </div>
-                        )}
-                        {aiResult.status && (
-                          <div>
-                            <span className="font-medium">Status:</span> {aiResult.status}
-                          </div>
-                        )}
-                        {aiResult.percentComplete !== null && (
-                          <div>
-                            <span className="font-medium">Percent Complete:</span> {aiResult.percentComplete}%
-                          </div>
-                        )}
-                        {aiResult.milestoneType && (
-                          <div>
-                            <span className="font-medium">Milestone:</span> {aiResult.milestoneType}
-                            {aiResult.milestoneDate && ` on ${aiResult.milestoneDate}`}
-                          </div>
-                        )}
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Unit</h2>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Hull Number *</label>
+                        <input
+                          type="text"
+                          value={reviewData.hullNumber}
+                          onChange={(e) =>
+                            setReviewData({
+                              ...reviewData,
+                              hullNumber: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          required
+                        />
                       </div>
-                      <button
-                        onClick={applyAIResult}
-                        className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
-                      >
-                        Apply to Form
-                      </button>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                        <input
+                          type="text"
+                          value={reviewData.name || ''}
+                          onChange={(e) =>
+                            setReviewData({
+                              ...reviewData,
+                              name: e.target.value || null,
+                            })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Number in Class</label>
+                          <input
+                            type="number"
+                            value={reviewData.numberInClass || ''}
+                            onChange={(e) =>
+                              setReviewData({
+                                ...reviewData,
+                                numberInClass: e.target.value ? parseInt(e.target.value) : null,
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Platform Class</label>
+                          <input
+                            type="text"
+                            value={reviewData.platformClass || ''}
+                            onChange={(e) =>
+                              setReviewData({
+                                ...reviewData,
+                                platformClass: e.target.value || null,
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Shipyard</label>
+                          <input
+                            type="text"
+                            value={reviewData.shipyard || ''}
+                            onChange={(e) =>
+                              setReviewData({
+                                ...reviewData,
+                                shipyard: e.target.value || null,
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Defense Contractor</label>
+                          <input
+                            type="text"
+                            value={reviewData.defenseContractor || ''}
+                            onChange={(e) =>
+                              setReviewData({
+                                ...reviewData,
+                                defenseContractor: e.target.value || null,
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Where Built</label>
+                        <input
+                          type="text"
+                          value={reviewData.whereBuilt || ''}
+                          onChange={(e) =>
+                            setReviewData({
+                              ...reviewData,
+                              whereBuilt: e.target.value || null,
+                            })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Unit Cost</label>
+                        <input
+                          type="text"
+                          value={reviewData.unitCost || ''}
+                          onChange={(e) =>
+                            setReviewData({
+                              ...reviewData,
+                              unitCost: e.target.value || null,
+                            })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Current Status</label>
+                          <input
+                            type="text"
+                            value={reviewData.currentStatus || ''}
+                            onChange={(e) =>
+                              setReviewData({
+                                ...reviewData,
+                                currentStatus: e.target.value || null,
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Percent Complete</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={reviewData.percentComplete || ''}
+                            onChange={(e) =>
+                              setReviewData({
+                                ...reviewData,
+                                percentComplete: e.target.value ? parseInt(e.target.value) : null,
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Construction Start Date</label>
+                          <input
+                            type="date"
+                            value={reviewData.constructionStartDate || ''}
+                            onChange={(e) =>
+                              setReviewData({
+                                ...reviewData,
+                                constructionStartDate: e.target.value || null,
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Construction Complete Date</label>
+                          <input
+                            type="date"
+                            value={reviewData.constructionCompleteDate || ''}
+                            onChange={(e) =>
+                              setReviewData({
+                                ...reviewData,
+                                constructionCompleteDate: e.target.value || null,
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Delivery to Fleet Date</label>
+                          <input
+                            type="date"
+                            value={reviewData.deliveryToFleetDate || ''}
+                            onChange={(e) =>
+                              setReviewData({
+                                ...reviewData,
+                                deliveryToFleetDate: e.target.value || null,
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Commissioning Date</label>
+                          <input
+                            type="date"
+                            value={reviewData.commissioningDate || ''}
+                            onChange={(e) =>
+                              setReviewData({
+                                ...reviewData,
+                                commissioningDate: e.target.value || null,
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Homeport</label>
+                        <input
+                          type="text"
+                          value={reviewData.homeport || null}
+                          onChange={(e) =>
+                            setReviewData({
+                              ...reviewData,
+                              homeport: e.target.value || null,
+                            })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
                     </div>
-                  )}
+                  </div>
+
+                  <div className="flex items-center justify-end space-x-4">
+                    <button
+                      onClick={() => {
+                        setReviewData(null)
+                        setAiText('')
+                      }}
+                      className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    >
+                      Start Over
+                    </button>
+                    <button
+                      onClick={handleReviewSubmit}
+                      disabled={loading}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? 'Creating...' : 'Create Unit'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Success Screen with Options */}
+              {createdUnitId && (
+                <div className="space-y-6">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                    <div className="flex items-center mb-4">
+                      <svg className="h-6 w-6 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <h2 className="text-xl font-semibold text-green-900">Unit Created Successfully!</h2>
+                    </div>
+                    <p className="text-sm text-green-800 mb-4">
+                      What would you like to do next?
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <Link
+                        href={`/mycompany/platforms/${platformId}/units/${createdUnitId}/namesake`}
+                        className="flex items-center justify-center px-4 py-3 border-2 border-green-300 rounded-lg text-green-700 hover:bg-green-100 transition-colors"
+                      >
+                        <span className="font-medium">1. Add Namesake</span>
+                      </Link>
+
+                      <Link
+                        href={`/mycompany/platforms/${platformId}/units/${createdUnitId}/living-homage`}
+                        className="flex items-center justify-center px-4 py-3 border-2 border-green-300 rounded-lg text-green-700 hover:bg-green-100 transition-colors"
+                      >
+                        <span className="font-medium">2. Add Living Homage</span>
+                      </Link>
+
+                      <Link
+                        href={`/mycompany/platforms/${platformId}/units/${createdUnitId}/update`}
+                        className="flex items-center justify-center px-4 py-3 border-2 border-green-300 rounded-lg text-green-700 hover:bg-green-100 transition-colors"
+                      >
+                        <span className="font-medium">3. Add Update</span>
+                      </Link>
+
+                      <Link
+                        href={`/mycompany/platforms/${platformId}/units/${createdUnitId}/statement`}
+                        className="flex items-center justify-center px-4 py-3 border-2 border-green-300 rounded-lg text-green-700 hover:bg-green-100 transition-colors"
+                      >
+                        <span className="font-medium">4. Add Statement</span>
+                      </Link>
+                    </div>
+
+                    <div className="mt-6 flex items-center justify-end space-x-4">
+                      <Link
+                        href={`/mycompany/platforms/${platformId}`}
+                        className="px-4 py-2 text-sm text-green-700 hover:text-green-900"
+                      >
+                        Skip for now
+                      </Link>
+                      <Link
+                        href={`/mycompany/platforms/${platformId}/units/${createdUnitId}`}
+                        className="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
+                      >
+                        View Unit
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
