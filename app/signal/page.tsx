@@ -286,6 +286,7 @@ export default function SignalLandingPage() {
                   </div>
                 )
               })}
+              </div>
             </div>
           </div>
         </main>
