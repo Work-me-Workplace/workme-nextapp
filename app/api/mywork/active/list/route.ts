@@ -1,7 +1,8 @@
 /**
  * API Route: GET /api/mywork/active/list
  * 
- * Returns all active work items (not archived) including digital signage
+ * Returns ALL work items created by the authenticated user (workMeId)
+ * Includes: Digital Signage, Email Digests, WorkOutputStandalone, etc.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -13,12 +14,11 @@ export async function GET(request: NextRequest) {
     // 1. Verify authentication
     const { firebaseId } = await verifyAuth(request)
 
-    // 2. Get WorkMe to get companyUnit
+    // 2. Get WorkMe - only need the ID, hydrate everything by createdByWorkMeId
     const workMe = await prisma.workMe.findUnique({
       where: { firebaseId },
       select: {
         id: true,
-        companyUnit: true,
       },
     })
 
@@ -29,72 +29,132 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    if (!workMe.companyUnit) {
-      return NextResponse.json(
-        { success: false, error: 'Company unit not set' },
-        { status: 400 }
-      )
-    }
+    // 3. Fetch ALL products created by this workMeId
+    const [
+      digitalSignage,
+      emailDigests,
+      workOutputs,
+    ] = await Promise.all([
+      // Digital Signage Products
+      prisma.productDigitalSign.findMany({
+        where: {
+          createdByWorkMeId: workMe.id,
+        },
+        include: {
+          workforceAchievement: {
+            select: {
+              headline: true,
+              subhead: true,
+            },
+          },
+          workforce: {
+            select: {
+              title: true,
+            },
+          },
+          companyNews: {
+            select: {
+              headline: true,
+            },
+          },
+          companyEvent: {
+            select: {
+              eventName: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
 
-    // 3. Fetch active Digital Signage Products
-    const digitalSignage = await prisma.productDigitalSign.findMany({
-      where: {
-        companyUnit: workMe.companyUnit,
-        createdByWorkMeId: workMe.id,
-      },
-      include: {
-        workforceAchievement: {
-          select: {
-            headline: true,
-            subhead: true,
-          },
+      // Email Digest Products
+      prisma.workForceEnduringProdEmailDigest.findMany({
+        where: {
+          createdByWorkMeId: workMe.id,
         },
-        workforce: {
-          select: {
-            title: true,
-          },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          createdAt: true,
+          updatedAt: true,
         },
-        companyNews: {
-          select: {
-            headline: true,
-          },
-        },
-        companyEvent: {
-          select: {
-            eventName: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+        orderBy: { createdAt: 'desc' },
+      }),
 
-    // 4. Format as active work items
-    const activeItems = digitalSignage.map(p => {
-      let title = `Digital Signage - ${p.signType}`
-      
-      if (p.workforceAchievement) {
-        title = p.workforceAchievement.headline
-      } else if (p.workforce) {
-        title = p.workforce.title
-      } else if (p.companyNews) {
-        title = p.companyNews.headline
-      } else if (p.companyEvent) {
-        title = p.companyEvent.eventName
-      }
+      // Work Output Standalone
+      prisma.workOutputStandalone.findMany({
+        where: {
+          createdByWorkMeId: workMe.id,
+        },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          outputType: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ])
 
-      return {
+    // 4. Format all items as active work items
+    const activeItems = [
+      // Digital Signage
+      ...digitalSignage.map(p => {
+        let title = `Digital Signage - ${p.signType}`
+        
+        if (p.workforceAchievement) {
+          title = p.workforceAchievement.headline
+        } else if (p.workforce) {
+          title = p.workforce.title
+        } else if (p.companyNews) {
+          title = p.companyNews.headline
+        } else if (p.companyEvent) {
+          title = p.companyEvent.eventName
+        }
+
+        return {
+          id: p.id,
+          type: 'digital_signage',
+          title,
+          outputType: 'digital_signage',
+          status: p.archivedAt ? 'archived' : 'active',
+          createdAt: p.createdAt.toISOString(),
+          updatedAt: p.updatedAt.toISOString(),
+          viewPath: `/mywork/digital-signage/${p.id}`,
+        }
+      }),
+
+      // Email Digests
+      ...emailDigests.map(p => ({
         id: p.id,
-        type: 'digital_signage',
-        title,
-        outputType: 'digital_signage',
+        type: 'email_digest',
+        title: p.title,
+        outputType: 'email_digest',
         status: 'active',
         createdAt: p.createdAt.toISOString(),
         updatedAt: p.updatedAt.toISOString(),
-        viewPath: `/mywork/digital-signage/${p.id}`,
-      }
-    })
+        viewPath: `/workforce/enduring/email-digest/${p.id}`,
+      })),
 
-    // TODO: Add other work product types (email digests, etc.)
+      // Work Outputs
+      ...workOutputs.map(p => ({
+        id: p.id,
+        type: p.outputType,
+        title: p.title,
+        outputType: p.outputType,
+        status: 'active',
+        createdAt: p.createdAt.toISOString(),
+        updatedAt: p.updatedAt.toISOString(),
+        viewPath: `/mywork/outputs/${p.id}`,
+      })),
+    ]
+
+    // Sort by creation date (newest first)
+    activeItems.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
 
     return NextResponse.json({
       success: true,

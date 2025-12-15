@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, Suspense } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
-import { getDashboard } from '@/lib/dashboard.client'
+import { getDashboard, refreshDashboard } from '@/lib/dashboard.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import api from '@/lib/api'
 import { DigitalSignType } from '@prisma/client'
@@ -134,44 +134,27 @@ function DigitalSignageBuilderContent() {
   }, [router, highlightId, source, signType])
 
   async function loadHighlights(forceRefresh = false) {
-    const cacheKey = 'company-highlights-digital-signage'
-    const cacheTimestampKey = 'company-highlights-digital-signage-timestamp'
-    const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
-
     try {
       setHighlightsLoadError(false)
       
-      // Try localStorage first (instant load) unless forcing refresh
+      // Try dashboard hydration first (instant load from localStorage)
       if (!forceRefresh && typeof window !== 'undefined') {
-        const cached = localStorage.getItem(cacheKey)
-        const cachedTimestamp = localStorage.getItem(cacheTimestampKey)
-        
-        if (cached && cachedTimestamp) {
-          const age = Date.now() - parseInt(cachedTimestamp, 10)
-          if (age < CACHE_DURATION) {
-            try {
-              const highlights = JSON.parse(cached)
-              setAvailableHighlights(highlights)
-              setLoadingHighlights(false)
-              // Refresh in background if stale
-              if (age > CACHE_DURATION / 2) {
-                refreshHighlightsFromAPI(cacheKey, cacheTimestampKey, false)
-              }
-              return
-            } catch (parseError) {
-              // localStorage data corrupted, fall through to API fetch
-              console.warn('Failed to parse cached highlights, fetching from API:', parseError)
-              setHighlightsLoadError(true)
+        const dashboard = getDashboard()
+        if (dashboard && dashboard.highlights && dashboard.highlights.length > 0) {
+          setAvailableHighlights(dashboard.highlights)
+          setLoadingHighlights(false)
+          // Refresh in background if needed
+          refreshDashboard().then(updated => {
+            if (updated && updated.highlights) {
+              setAvailableHighlights(updated.highlights)
             }
-          }
-        } else {
-          // No cached data, mark as error so sync button shows
-          setHighlightsLoadError(true)
+          })
+          return
         }
       }
 
-      // If not in localStorage or forcing refresh, fetch from API
-      await refreshHighlightsFromAPI(cacheKey, cacheTimestampKey, true)
+      // If not in dashboard or forcing refresh, try API
+      await refreshHighlightsFromAPI(forceRefresh)
     } catch (error) {
       console.error('Failed to load highlights:', error)
       setHighlightsLoadError(true)
@@ -180,24 +163,28 @@ function DigitalSignageBuilderContent() {
     }
   }
 
-  async function refreshHighlightsFromAPI(cacheKey: string, cacheTimestampKey: string, showLoading: boolean) {
+  async function refreshHighlightsFromAPI(showLoading: boolean = true) {
     if (showLoading) {
       setLoadingHighlights(true)
     }
 
     try {
+      // First try to refresh dashboard (which includes highlights)
+      const dashboard = await refreshDashboard()
+      if (dashboard && dashboard.highlights) {
+        setAvailableHighlights(dashboard.highlights)
+        setHighlightsLoadError(false)
+        setLoadingHighlights(false)
+        return
+      }
+
+      // Fallback: direct API call
       const response = await api.get('/api/company/highlights')
       
       if (response.data.success && response.data.highlights) {
         const highlights = response.data.highlights
         setAvailableHighlights(highlights)
         setHighlightsLoadError(false)
-        
-        // Cache in localStorage
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(cacheKey, JSON.stringify(highlights))
-          localStorage.setItem(cacheTimestampKey, Date.now().toString())
-        }
       } else {
         setAvailableHighlights([])
         setHighlightsLoadError(true)

@@ -171,11 +171,28 @@ export async function GET(request: NextRequest) {
               },
               orderBy: { createdAt: 'desc' },
             }),
-            // Digital Signage Products
+            // Digital Signage Products - hydrate with full nested data
             prisma.productDigitalSign.findMany({
               where: {
                 companyUnit,
                 createdByWorkMeId: workMe.id,
+                archivedAt: null, // Only active items
+              },
+              include: {
+                workforceAchievement: {
+                  include: {
+                    imageAsset: {
+                      select: {
+                        id: true,
+                        url: true,
+                        filename: true,
+                      },
+                    },
+                  },
+                },
+                workforce: true,
+                companyNews: true,
+                companyEvent: true,
               },
               orderBy: { createdAt: 'desc' },
             }),
@@ -191,17 +208,47 @@ export async function GET(request: NextRequest) {
                 editionsCount: p._count.editions,
               },
             })),
-            ...digitalSignage.map(p => ({
-              id: p.id,
-              type: 'digital_signage',
-              title: `Digital Signage - ${p.signType}`,
-              description: null,
-              createdAt: p.createdAt.toISOString(),
-              updatedAt: p.updatedAt.toISOString(),
-              metadata: {
-                signType: p.signType,
-              },
-            })),
+            ...digitalSignage.map(p => {
+              // Extract preview data from nested relations
+              let headline = `Digital Signage - ${p.signType}`
+              let subhead: string | null = null
+              let imageUrl: string | null = null
+
+              if (p.workforceAchievement) {
+                headline = p.workforceAchievement.headline
+                subhead = p.workforceAchievement.subhead || null
+                imageUrl = p.workforceAchievement.imageAsset?.url || null
+              } else if (p.workforce) {
+                headline = p.workforce.title
+                subhead = p.workforce.summary || null
+              } else if (p.companyNews) {
+                headline = p.companyNews.headline
+                subhead = p.companyNews.subheadline || null
+              } else if (p.companyEvent) {
+                headline = p.companyEvent.eventName
+                subhead = p.companyEvent.description || null
+              }
+
+              return {
+                id: p.id,
+                type: 'digital_signage',
+                title: headline,
+                description: subhead,
+                createdAt: p.createdAt.toISOString(),
+                updatedAt: p.updatedAt.toISOString(),
+                metadata: {
+                  signType: p.signType,
+                  headline,
+                  subhead,
+                  imageUrl,
+                  // Include full nested data for detail views
+                  workforceAchievement: p.workforceAchievement,
+                  workforce: p.workforce,
+                  companyNews: p.companyNews,
+                  companyEvent: p.companyEvent,
+                },
+              }
+            }),
           ])
         : [],
     ])
