@@ -3,7 +3,9 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { use, useEffect, useState } from 'react'
+import { getAuth } from 'firebase/auth'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
+import { refreshWorkMe } from '@/lib/workme.client'
 import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { Ship, ArrowLeft, Wand2, Loader2 } from 'lucide-react'
@@ -31,20 +33,45 @@ export default function CreateUnitPage({ params }: { params: Promise<{ id: strin
   const { id: platformId } = use(params)
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
+  const [authReady, setAuthReady] = useState(false)
   const [loading, setLoading] = useState(false)
   const [parsing, setParsing] = useState(false)
   const [reviewData, setReviewData] = useState<UnitData | null>(null)
   const [aiText, setAiText] = useState('')
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const id = getWorkMeIdFromStorage()
-      if (!id) {
+    if (typeof window === 'undefined') return
+
+    const auth = getAuth()
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        setAuthReady(true)
+        let id = getWorkMeIdFromStorage()
+        
+        // If workMeId not in localStorage, try to refresh from API
+        if (!id) {
+          try {
+            const refreshed = await refreshWorkMe()
+            if (refreshed) {
+              id = refreshed.id
+            }
+          } catch (error) {
+            console.error('Failed to refresh WorkMe:', error)
+          }
+        }
+        
+        if (id) {
+          setWorkMeId(id)
+        } else {
+          // Still no workMeId after refresh attempt - redirect to signin
+          router.push('/signin')
+        }
+      } else {
         router.push('/signin')
-        return
       }
-      setWorkMeId(id)
-    }
+    })
+
+    return () => unsubscribe()
   }, [router])
 
   async function handleAIParse() {
@@ -97,7 +124,7 @@ export default function CreateUnitPage({ params }: { params: Promise<{ id: strin
     }
   }
 
-  if (!workMeId) {
+  if (!authReady || !workMeId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>

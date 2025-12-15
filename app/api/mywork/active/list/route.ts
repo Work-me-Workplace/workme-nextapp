@@ -76,21 +76,20 @@ export async function GET(request: NextRequest) {
           title: true,
           description: true,
           createdAt: true,
-          updatedAt: true,
         },
         orderBy: { createdAt: 'desc' },
       }),
 
-      // Work Output Standalone
-      prisma.workOutputStandalone.findMany({
+      // CommsOutput (work outputs)
+      prisma.commsOutput.findMany({
         where: {
-          createdByWorkMeId: workMe.id,
+          originatorId: workMe.id,
         },
         select: {
           id: true,
           title: true,
           description: true,
-          outputType: true,
+          type: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -134,19 +133,19 @@ export async function GET(request: NextRequest) {
         outputType: 'email_digest',
         status: 'active',
         createdAt: p.createdAt.toISOString(),
-        updatedAt: p.updatedAt.toISOString(),
+        updatedAt: p.createdAt.toISOString(), // Use createdAt since updatedAt doesn't exist
         viewPath: `/workforce/enduring/email-digest/${p.id}`,
       })),
 
-      // Work Outputs
+      // Work Outputs (CommsOutput)
       ...workOutputs.map(p => ({
         id: p.id,
-        type: p.outputType,
+        type: p.type,
         title: p.title,
-        outputType: p.outputType,
+        outputType: p.type,
         status: 'active',
         createdAt: p.createdAt.toISOString(),
-        updatedAt: p.updatedAt.toISOString(),
+        updatedAt: p.updatedAt?.toISOString() || p.createdAt.toISOString(),
         viewPath: `/mywork/outputs/${p.id}`,
       })),
     ]

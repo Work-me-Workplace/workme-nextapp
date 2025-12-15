@@ -98,9 +98,9 @@ export async function POST(request: NextRequest) {
       quote: string | null
       quoteAttribution: string | null
       runtimeGuidance: string
-      imageAssetId?: string
-      employeeId?: string
-      highlightId?: string
+      imageAssetId?: string | null
+      employeeId?: string | null
+      highlightId?: string | null
     } | null = null
 
     if (signType === DigitalSignType.WORKFORCE_ACHIEVEMENT && workforceAchievement) {
