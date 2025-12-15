@@ -1,7 +1,7 @@
 /**
- * API Route: GET /api/mywork/digital-signage/list
+ * API Route: GET /api/mywork/active/list
  * 
- * Returns all digital signage products for the authenticated user
+ * Returns all active work items (not archived) including digital signage
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -36,73 +36,74 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 3. Fetch Digital Signage Products (only active, not archived)
+    // 3. Fetch active Digital Signage Products
     const digitalSignage = await prisma.productDigitalSign.findMany({
       where: {
         companyUnit: workMe.companyUnit,
         createdByWorkMeId: workMe.id,
-        archivedAt: null, // Only show active items
       },
       include: {
         workforceAchievement: {
-          include: {
-            imageAsset: {
-              select: {
-                id: true,
-                url: true,
-                filename: true,
-              },
-            },
+          select: {
+            headline: true,
+            subhead: true,
           },
         },
-        workforce: true,
-        companyNews: true,
-        companyEvent: true,
+        workforce: {
+          select: {
+            title: true,
+          },
+        },
+        companyNews: {
+          select: {
+            headline: true,
+          },
+        },
+        companyEvent: {
+          select: {
+            eventName: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     })
 
-    // 4. Format products with preview data
-    const products = digitalSignage.map(p => {
-      let headline = `Digital Signage - ${p.signType}`
-      let subhead: string | null = null
-      let imageUrl: string | null = null
-
+    // 4. Format as active work items
+    const activeItems = digitalSignage.map(p => {
+      let title = `Digital Signage - ${p.signType}`
+      
       if (p.workforceAchievement) {
-        headline = p.workforceAchievement.headline
-        subhead = p.workforceAchievement.subhead || null
-        imageUrl = p.workforceAchievement.imageAsset?.url || null
+        title = p.workforceAchievement.headline
       } else if (p.workforce) {
-        headline = p.workforce.title
-        subhead = p.workforce.summary || null
+        title = p.workforce.title
       } else if (p.companyNews) {
-        headline = p.companyNews.headline
-        subhead = p.companyNews.subheadline || null
+        title = p.companyNews.headline
       } else if (p.companyEvent) {
-        headline = p.companyEvent.eventName
-        subhead = p.companyEvent.description || null
+        title = p.companyEvent.eventName
       }
 
       return {
         id: p.id,
-        signType: p.signType,
-        companyUnit: p.companyUnit,
-        headline,
-        subhead,
-        imageUrl,
+        type: 'digital_signage',
+        title,
+        outputType: 'digital_signage',
+        status: 'active',
         createdAt: p.createdAt.toISOString(),
         updatedAt: p.updatedAt.toISOString(),
+        viewPath: `/mywork/digital-signage/${p.id}`,
       }
     })
 
+    // TODO: Add other work product types (email digests, etc.)
+
     return NextResponse.json({
       success: true,
-      products,
+      items: activeItems,
     })
   } catch (error: any) {
-    console.error('[API] Failed to list digital signage:', error)
+    console.error('[API] Failed to list active work:', error)
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to fetch digital signage' },
+      { success: false, error: error.message || 'Failed to fetch active work' },
       { status: 500 }
     )
   }

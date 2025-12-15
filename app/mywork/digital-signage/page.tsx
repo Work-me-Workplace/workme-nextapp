@@ -89,11 +89,11 @@ export default function DigitalSignageListPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="mb-8">
               <Link
-                href="/mywork"
+                href="/mywork/products"
                 className="flex items-center text-blue-600 hover:text-blue-700 mb-4 text-sm"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to MyWork
+                Back to Work Products
               </Link>
               <div className="flex items-center justify-between">
                 <div>

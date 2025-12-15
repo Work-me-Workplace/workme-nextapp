@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { CheckSquare, Clock, Archive } from 'lucide-react'
+import api from '@/lib/api'
 
 interface WorkOutput {
   id: string
@@ -14,6 +15,7 @@ interface WorkOutput {
   status: string
   deadline?: string | null
   createdAt: string
+  viewPath?: string
 }
 
 export default function StuffImWorkingOnPage() {
@@ -37,12 +39,16 @@ export default function StuffImWorkingOnPage() {
   async function loadActiveOutputs() {
     try {
       setLoading(true)
-      // TODO: Implement API call to fetch active WorkOutputs
-      // Active = status !== archived AND createdAt < deadline
-      // Archive automatically when past certain date
-      setOutputs([])
-    } catch (error) {
+      const response = await api.get('/api/mywork/active/list')
+      
+      if (response.data.success && response.data.items) {
+        setOutputs(response.data.items)
+      } else {
+        setOutputs([])
+      }
+    } catch (error: any) {
       console.error('Failed to load active outputs:', error)
+      setOutputs([])
     } finally {
       setLoading(false)
     }
@@ -97,13 +103,14 @@ export default function StuffImWorkingOnPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {activeOutputs.map(output => (
-                    <div
+                    <Link
                       key={output.id}
-                      className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500"
+                      href={output.viewPath || '#'}
+                      className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500 hover:shadow-md transition"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-gray-500 uppercase bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                          {output.outputType}
+                          {output.outputType.replace('_', ' ')}
                         </span>
                         {output.deadline && new Date(output.deadline) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) && (
                           <span className="text-xs font-medium text-orange-600">Due Soon</span>
@@ -116,7 +123,10 @@ export default function StuffImWorkingOnPage() {
                           Due {new Date(output.deadline).toLocaleDateString()}
                         </div>
                       )}
-                    </div>
+                      <div className="text-xs text-gray-400 mt-2">
+                        Created {new Date(output.createdAt).toLocaleDateString()}
+                      </div>
+                    </Link>
                   ))}
                 </div>
               </div>

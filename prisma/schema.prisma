@@ -214,6 +214,7 @@ model Company {
   workplaces Workplace[]
   employees  CompanyEmployee[]
   highlights CompanyEmployeeHighlight[]
+  milestones CompanyMilestone[]
 
   @@index([name])
 }
@@ -782,9 +783,10 @@ model EmailDigestEdition {
 // ============================================
 
 model ProductDigitalSign {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String    @id @default(cuid())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archivedAt DateTime? // When archived, null if active
 
   signType DigitalSignType
 
@@ -806,6 +808,7 @@ model ProductDigitalSign {
   @@index([companyUnit])
   @@index([createdByWorkMeId])
   @@index([signType])
+  @@index([archivedAt])
 }
 
 model ProductDigitalSignWorkforce {
@@ -1434,16 +1437,35 @@ model CompanyPlatformUnit {
   platformProductId String
   platformProduct   CompanyPlatformProduct @relation(fields: [platformProductId], references: [id], onDelete: Cascade)
 
-  hullNumber  String // "SSN 804"
-  name        String? // "Barb"
-  block       String? // "Block V", "Block IV"
-  shipyard    String? // HII Newport News, Electric Boat
-  status      String? // "Under Construction", "Keel Laid", "Sea Trials", etc.
-  description String?
+  // Identity & Ordinal Context
+  hullNumber    String // "SSN 804"
+  name          String? // "Barb"
+  numberInClass Int? // ordinal position in class (replaces "block")
+  platformClass String? // optional denormalized label (e.g., "Virginia-class")
 
-  percentComplete   Int?
-  deliveryExpected  DateTime?
-  commissioningDate DateTime?
+  // Industrial / Build Context
+  defenseContractor String? // e.g., "General Dynamics Electric Boat"
+  shipyard          String? // HII Newport News, Electric Boat
+  whereBuilt        String? // e.g., "Newport News, VA"
+  unitCost          String? // free-text cost range for now
+
+  // Lifecycle Dates (authoritative state, not events)
+  constructionStartDate    DateTime?
+  constructionCompleteDate DateTime?
+  deliveryToFleetDate      DateTime?
+  deliveryExpected         DateTime? // legacy field - kept for backward compatibility
+  commissioningDate        DateTime?
+
+  // Operational Context
+  homeport        String?
+  currentStatus   String? // keep loose (enum later)
+  status          String? // legacy field - "Under Construction", "Keel Laid", "Sea Trials", etc.
+  percentComplete Int?
+
+  // System / Creation Metadata
+  createdVia String? // "MANUAL" | "AI_INGEST"
+
+  description String?
 
   // Raw signals & updates
   statements CompanyPlatformUnitStatement[]
@@ -1457,6 +1479,9 @@ model CompanyPlatformUnit {
   @@index([platformProductId])
   @@index([hullNumber])
   @@index([name])
+  @@index([numberInClass])
+  @@index([platformClass])
+  @@index([currentStatus])
 }
 
 // ============================================
@@ -1678,7 +1703,16 @@ model CompanyPlatformUnitLivingHomage {
 // ============================================
 // COMPANY MILESTONE MODEL
 // ============================================
-// Milestones for platform units (keel laying, launch, commissioning, etc.)
+// Generic company-level milestones (platform events, business milestones, strategic milestones)
+// 
+// OWNERSHIP: CompanyMilestone is owned by Company (companyId REQUIRED)
+// 
+// CONTEXT: platformUnitId is OPTIONAL - provides context when milestone relates to a platform unit
+// PROVENANCE: updateId is OPTIONAL - links back to the update that triggered this milestone
+// 
+// Milestones may exist:
+// - without updates (manual creation)
+// - without platform units (business/strategic milestones)
 // 
 // INFERENCE RULE (future enforcement):
 // If milestoneType === KEEL_LAYING, the platform unit should have a CompanyPlatformUnitLivingHomage.
@@ -1697,19 +1731,29 @@ model CompanyMilestone {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  platformUnitId String
-  platformUnit   CompanyPlatformUnit @relation(fields: [platformUnitId], references: [id], onDelete: Cascade)
+  // Ownership - Company owns the milestone
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  milestoneType PlatformMilestoneType
+  // General milestone information
+  title         String // e.g., "USS Barb (SSN-804) Keel Laying"
+  category      String? // e.g., "Platform", "Business", "Strategy"
+  milestoneType String? // free-text or derived label (e.g., "KEEL_LAYING", "Product Launch", "Merger")
   date          DateTime?
   description   String?
   sourceUrl     String?
 
-  // Reverse link back to unit update that triggered this
+  // Optional contextual linkage (not ownership)
+  platformUnitId String?
+  platformUnit   CompanyPlatformUnit? @relation(fields: [platformUnitId], references: [id], onDelete: SetNull)
+
+  // Optional provenance linkage (which update triggered this milestone)
   updateId String?                    @unique
   update   CompanyPlatformUnitUpdate? @relation(fields: [updateId], references: [id], onDelete: SetNull)
 
+  @@index([companyId])
   @@index([platformUnitId])
+  @@index([category])
   @@index([milestoneType])
   @@index([date])
 }

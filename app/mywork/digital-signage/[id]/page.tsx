@@ -6,7 +6,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import api from '@/lib/api'
-import { Monitor, ArrowLeft, CheckCircle2, X, Package, Loader2 } from 'lucide-react'
+import { Monitor, ArrowLeft, CheckCircle2, X, Package, Loader2, Archive } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -67,6 +67,8 @@ function DigitalSignageViewContent() {
   const [showSuccess, setShowSuccess] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const [assignError, setAssignError] = useState<string | null>(null)
+  const [archiving, setArchiving] = useState(false)
+  const [archiveError, setArchiveError] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -134,6 +136,33 @@ function DigitalSignageViewContent() {
       setAssignError(err.response?.data?.error || err.message || 'Failed to create design work package')
     } finally {
       setAssigning(false)
+    }
+  }
+
+  async function handleArchive() {
+    if (!signageId) return
+
+    if (!confirm('Are you sure you want to archive this digital signage? It will be moved to archived items.')) {
+      return
+    }
+
+    setArchiving(true)
+    setArchiveError(null)
+
+    try {
+      const response = await api.post(`/api/mywork/digital-signage/${signageId}/archive`)
+
+      if (response.data.success) {
+        // Redirect to list page
+        router.push('/mywork/digital-signage')
+      } else {
+        setArchiveError(response.data.error || 'Failed to archive digital signage')
+      }
+    } catch (err: any) {
+      console.error('Failed to archive:', err)
+      setArchiveError(err.response?.data?.error || err.message || 'Failed to archive digital signage')
+    } finally {
+      setArchiving(false)
     }
   }
 
@@ -407,27 +436,51 @@ function DigitalSignageViewContent() {
                       <p>Created {new Date(signage.createdAt).toLocaleDateString()}</p>
                       {signage.companyUnit && <p>Unit: {signage.companyUnit}</p>}
                     </div>
-                    <button
-                      onClick={handleAssignToDesignPackage}
-                      disabled={assigning}
-                      className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {assigning ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Assigning...
-                        </>
-                      ) : (
-                        <>
-                          <Package className="h-4 w-4 mr-2" />
-                          Assign to Design Package
-                        </>
-                      )}
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={handleAssignToDesignPackage}
+                        disabled={assigning}
+                        className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {assigning ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Assigning...
+                          </>
+                        ) : (
+                          <>
+                            <Package className="h-4 w-4 mr-2" />
+                            Assign to Design Package
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={handleArchive}
+                        disabled={archiving}
+                        className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {archiving ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Archiving...
+                          </>
+                        ) : (
+                          <>
+                            <Archive className="h-4 w-4 mr-2" />
+                            Archive
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                   {assignError && (
                     <div className="mt-2 bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded text-sm">
                       {assignError}
+                    </div>
+                  )}
+                  {archiveError && (
+                    <div className="mt-2 bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded text-sm">
+                      {archiveError}
                     </div>
                   )}
                 </div>

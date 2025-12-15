@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Package, Eye, Calendar, Plus, CheckSquare } from 'lucide-react'
+import { Package, Eye, Calendar, Plus, CheckSquare, Monitor } from 'lucide-react'
 
 export default function MyWorkHubPage() {
   const router = useRouter()
@@ -39,13 +39,6 @@ export default function MyWorkHubPage() {
       icon: Package,
       href: '/mywork/products',
       color: 'blue',
-    },
-    {
-      title: 'Create Product',
-      description: 'Start building a new work product',
-      icon: Plus,
-      href: '/mywork/products',
-      color: 'green',
     },
     {
       title: 'Active Work',

@@ -46,8 +46,8 @@ export async function POST(request: Request) {
         data: units.map((unit: any) => ({
           platformProductId: product.id,
           hullNumber: unit.hullNumber,
-          name: unit.name || null,
-          status: unit.lifecycleStatus || null,
+          name: unit.name || undefined,
+          currentStatus: unit.lifecycleStatus || undefined,
         })),
       })
     }

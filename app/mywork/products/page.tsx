@@ -159,7 +159,27 @@ export default function ProductsPage() {
                   <h2 className="text-3xl font-bold text-gray-900">Work Products</h2>
                   <p className="text-gray-600 mt-2">Your work outputs and communication products</p>
                 </div>
-                {/* Create button removed - use individual product type create buttons below */}
+              </div>
+            </div>
+
+            {/* Digital Signage Section */}
+            <div className="mb-12">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <Monitor className="h-8 w-8 text-purple-600 mr-4" />
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900">Digital Signage</h3>
+                      <p className="text-sm text-gray-600">Create and manage digital signage products</p>
+                    </div>
+                  </div>
+                  <Link
+                    href="/mywork/digital-signage"
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium"
+                  >
+                    View / Create →
+                  </Link>
+                </div>
               </div>
             </div>
 
