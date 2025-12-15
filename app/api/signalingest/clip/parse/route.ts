@@ -57,15 +57,71 @@ export async function POST(request: Request) {
       hasSnippet: !!snippet,
     })
 
-    // Step 1: Infer CompanyX type from article content
-    const inference = await inferCompanyXType(rawText)
-    const inferredType: ContextType = inference.type
+    // Step 1: Infer type from article content
+    // First try to detect external company models (pressure, milestone, platform product)
+    // If not detected, use CompanyX inference
+    let inferredType: string
+    let parsed: any
+    let isExternalModel = false
 
-    // Step 2: Parse content using appropriate mapper
-    const parsed = await parseCompanyXContent(rawText, inferredType)
+    // Simple keyword-based detection for external models
+    const lowerText = rawText.toLowerCase()
+    
+    // Check for platform/product keywords (submarine, ship, vessel, platform, class, etc.)
+    const platformKeywords = [
+      'submarine', 'ship', 'vessel', 'platform', 'class', 'ssn', 'ssbn', 'cvn', 'ddg', 
+      'virginia-class', 'columbia-class', 'ford-class', 'arleigh burke', 'shipyard',
+      'keel', 'hull', 'delivery', 'commissioning', 'sea trials', 'construction'
+    ]
+    
+    if (platformKeywords.some(keyword => lowerText.includes(keyword))) {
+      // Likely CompanyPlatformStatement (needs platformProductId - will need user to select)
+      inferredType = 'platform_product'
+      isExternalModel = true
+      parsed = { 
+        type: 'platform_product', 
+        data: { 
+          title: title || 'Platform News',
+          rawText,
+          sourceUrl: url,
+          sourceName: source
+        } 
+      }
+    } else if (
+      lowerText.includes('pressure') ||
+      lowerText.includes('criticism') ||
+      lowerText.includes('challenge') ||
+      lowerText.includes('opposition') ||
+      lowerText.includes('external') ||
+      lowerText.includes('congress') ||
+      lowerText.includes('budget cut') ||
+      lowerText.includes('funding') ||
+      lowerText.includes('appropriations')
+    ) {
+      // Likely ExternalCompanyPressure
+      inferredType = 'external_pressure'
+      isExternalModel = true
+      parsed = { type: 'external_pressure', data: { summary: rawText, source: source || url || 'Unknown' } }
+    } else if (
+      lowerText.includes('milestone') ||
+      lowerText.includes('keel laying') ||
+      lowerText.includes('keel laid') ||
+      lowerText.includes('launch') ||
+      lowerText.includes('christening')
+    ) {
+      // Likely CompanyMilestone
+      inferredType = 'milestone'
+      isExternalModel = true
+      parsed = { type: 'milestone', data: { title: title || 'Milestone', description: rawText, sourceUrl: url } }
+    } else {
+      // Use CompanyX inference
+      const inference = await inferCompanyXType(rawText)
+      inferredType = inference.type
+      parsed = await parseCompanyXContent(rawText, inferredType as ContextType)
+    }
 
-    // Step 3: Create CompanyX record
-    const modelName = CONTEXT_TYPE_TO_MODEL[inferredType]
+    // Step 3: Create record (CompanyX, ExternalCompanyPressure, or CompanyMilestone)
+    const modelName = isExternalModel ? inferredType : CONTEXT_TYPE_TO_MODEL[inferredType as ContextType]
     let createdRecord: any
 
     // Use the same creation logic as workforcestuff/add
@@ -245,8 +301,61 @@ export async function POST(request: Request) {
       }
 
       default:
+        // Handle external company models
+        if (inferredType === 'external_pressure') {
+          // ExternalCompanyPressure requires workMeId, not companyId
+          // Use title + snippet as summary, or fallback to truncated rawText
+          const summaryText = title && snippet 
+            ? `${title}\n\n${snippet}` 
+            : (title || snippet || rawText.substring(0, 500))
+          
+          createdRecord = await prisma.externalCompanyPressure.create({
+            data: {
+              workMeId,
+              source: parsed.data.source || source || url || 'Unknown',
+              summary: summaryText,
+              category: null, // Could be inferred in the future
+              impact: null,
+            },
+          })
+          break
+        } else if (inferredType === 'milestone') {
+          // CompanyMilestone requires companyId
+          if (!companyId) {
+            return NextResponse.json(
+              { success: false, error: 'companyId is required for milestones' },
+              { status: 400 }
+            )
+          }
+          createdRecord = await prisma.companyMilestone.create({
+            data: {
+              companyId,
+              title: parsed.data.title || title || 'Company Milestone',
+              description: parsed.data.description || snippet || rawText.substring(0, 1000),
+              sourceUrl: parsed.data.sourceUrl || url || null,
+              category: 'Platform', // Default, could be inferred
+              milestoneType: null, // Could be inferred from keywords
+              date: date ? new Date(date) : null,
+            },
+          })
+          break
+        } else if (inferredType === 'platform_product') {
+          // CompanyPlatformStatement - requires platformProductId
+          // For articles detected as platform/product related, users should use
+          // the platform product detail pages which have the ingest flow
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: 'Platform/product articles need to be ingested via the platform product pages where you can select the specific platform. Detected as: platform/product article.',
+              inferredType: 'platform_product',
+              suggestion: 'Navigate to the platform product page and use the article ingest feature there.'
+            },
+            { status: 400 }
+          )
+        }
+        
         return NextResponse.json(
-          { success: false, error: `Unsupported type: ${parsed.type}` },
+          { success: false, error: `Unsupported type: ${parsed.type || inferredType}` },
           { status: 400 }
         )
     }
