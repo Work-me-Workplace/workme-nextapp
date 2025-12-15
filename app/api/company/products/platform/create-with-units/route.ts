@@ -1,8 +1,19 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getWorkMeContext } from '@/lib/server/getWorkMeContext'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    // Get WorkMe context for companyId
+    const workMeContext = await getWorkMeContext(request)
+    
+    if (!workMeContext.companyId) {
+      return NextResponse.json(
+        { success: false, error: 'Company ID is required. Please set your company affiliation.' },
+        { status: 400 }
+      )
+    }
+
     const { platform, units, milestones } = await request.json()
 
     if (!platform || !platform.name || !platform.category) {
@@ -79,16 +90,38 @@ export async function POST(request: Request) {
               ['CONTRACT_AWARDED', 'KEEL_LAYING', 'HULL_COMPLETION', 'LAUNCH', 'SEA_TRIALS', 'DELIVERY', 'COMMISSIONING'].includes(milestone.milestoneType)
             )
           })
-          .map((milestone: any) =>
-            prisma.companyMilestone.create({
+          .map(async (milestone: any) => {
+            const platformUnitId = unitMap[milestone.unitHullNumber]
+            
+            // Look up platform unit to generate title
+            const platformUnit = await prisma.companyPlatformUnit.findUnique({
+              where: { id: platformUnitId },
+              select: {
+                hullNumber: true,
+                name: true,
+              },
+            })
+
+            // Generate title from unit info and milestone type
+            let milestoneTitle = milestone.title
+            if (!milestoneTitle) {
+              const unitName = platformUnit?.name || platformUnit?.hullNumber || milestone.unitHullNumber
+              const milestoneTypeLabel = milestone.milestoneType.replace(/_/g, ' ').toLowerCase()
+                .replace(/\b\w/g, (l: string) => l.toUpperCase())
+              milestoneTitle = `${unitName} ${milestoneTypeLabel}`
+            }
+
+            return prisma.companyMilestone.create({
               data: {
+                title: milestoneTitle,
+                companyId: workMeContext.companyId,
                 description: milestone.description || null,
                 date: milestone.date ? new Date(milestone.date) : null,
                 milestoneType: milestone.milestoneType,
-                platformUnitId: unitMap[milestone.unitHullNumber],
+                platformUnitId,
               },
             })
-          )
+          })
       )
     }
 
