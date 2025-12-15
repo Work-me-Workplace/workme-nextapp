@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
 
 /**
  * Get all CompanyX models for the authenticated user
- * Returns all CompanyX models (campaigns, trainings, events, etc.) scoped by companyUnit
+ * Returns all CompanyX models (campaigns, trainings, events, etc.) scoped by companyId
  */
 export async function getCompanyXModels() {
   try {
@@ -15,48 +15,48 @@ export async function getCompanyXModels() {
     
     // 2. Load WorkMe identity
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
+    const { id: workMeId, companyId } = workMe
 
-    if (!companyUnit) {
+    if (!companyId) {
       return { 
         success: false as const, 
-        error: 'User must set a companyUnit',
+        error: 'User must set a companyId',
         companyXModels: []
       }
     }
 
-    // Get all CompanyX models for user's company unit (multi-tenant scoping)
+    // Get all CompanyX models for user's company (multi-tenant scoping)
     const [campaigns, impactEvents, trainings, events, communities, benefits, careers, employeeCauses] = await Promise.all([
       prisma.companyCampaign.findMany({
-        where: { companyUnit },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyImpactEvent.findMany({
-        where: { companyUnit },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyTraining.findMany({
-        where: { companyUnit },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyEvent.findMany({
-        where: { companyUnit },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyCommunity.findMany({
-        where: { companyUnit },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyBenefits.findMany({
-        where: { companyUnit },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyCareer.findMany({
-        where: { companyUnit },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.companyEmployeeCause.findMany({
-        where: { companyUnit },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
     ])

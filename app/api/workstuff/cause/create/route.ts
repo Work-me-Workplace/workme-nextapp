@@ -16,11 +16,11 @@ export async function POST(request: NextRequest) {
     const workMe = await requireWorkMeAuth(request)
     const { id: workMeId } = workMe
 
-    const { rawText, companyUnitId } = await request.json()
+    const { rawText, companyId } = await request.json()
 
-    if (!companyUnitId) {
+    if (!companyId) {
       return NextResponse.json(
-        { success: false, error: 'companyUnitId is required' },
+        { success: false, error: 'companyId is required' },
         { status: 400 }
       )
     }
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       'employee_cause',
       rawText,
       workMeId,
-      companyUnitId
+      companyId
     )
 
     return NextResponse.json({

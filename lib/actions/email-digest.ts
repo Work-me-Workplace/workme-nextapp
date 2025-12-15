@@ -24,17 +24,17 @@ export async function createEmailDigestProduct(data: z.infer<typeof createEmailD
     const validated = createEmailDigestProductSchema.parse(data)
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
+    const { id: workMeId, companyId } = workMe
 
-    if (!workMeId || !companyUnit) {
-      return { success: false, error: 'Not authenticated or user must set a companyUnit' }
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or user must set a companyId' }
     }
 
     const product = await prisma.workForceEnduringProdEmailDigest.create({
       data: {
         title: validated.title,
         description: validated.description ?? undefined,
-        companyUnit: companyUnit,
+        companyUnit: companyId, // Note: WorkForceEnduringProdEmailDigest still uses companyUnit field
         createdByWorkMeId: workMeId,
       },
     })
@@ -58,17 +58,17 @@ export async function createEmailDigestEdition(data: z.infer<typeof createEmailD
     const validated = createEmailDigestEditionSchema.parse(data)
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
+    const { id: workMeId, companyId } = workMe
 
-    if (!workMeId || !companyUnit) {
-      return { success: false, error: 'Not authenticated or user must set a companyUnit' }
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or user must set a companyId' }
     }
 
-    // Verify product exists and belongs to user's company unit
+    // Verify product exists and belongs to user's company
     const product = await prisma.workForceEnduringProdEmailDigest.findFirst({
       where: {
         id: validated.emailDigestId,
-        companyUnit,
+        companyUnit: companyId, // Note: WorkForceEnduringProdEmailDigest still uses companyUnit field
       },
     })
 
@@ -76,38 +76,38 @@ export async function createEmailDigestEdition(data: z.infer<typeof createEmailD
       return { success: false, error: 'Email digest product not found' }
     }
 
-    // Query all CompanyX summaries for this company unit
+    // Query all CompanyX summaries for this company
     const [events, campaigns, trainings, benefits, impactEvents, communities, careers, employeeCauses] = await Promise.all([
       prisma.companyEvent.findMany({
-        where: { companyUnit },
+        where: { companyId },
         select: { id: true, title: true, description: true, summary: true },
       }),
       prisma.companyCampaign.findMany({
-        where: { companyUnit },
+        where: { companyId },
         select: { id: true, title: true, description: true, summary: true },
       }),
       prisma.companyTraining.findMany({
-        where: { companyUnit },
+        where: { companyId },
         select: { id: true, title: true, description: true, summary: true },
       }),
       prisma.companyBenefits.findMany({
-        where: { companyUnit },
+        where: { companyId },
         select: { id: true, title: true, description: true, summary: true },
       }),
       prisma.companyImpactEvent.findMany({
-        where: { companyUnit },
+        where: { companyId },
         select: { id: true, title: true, description: true, summary: true },
       }),
       prisma.companyCommunity.findMany({
-        where: { companyUnit },
+        where: { companyId },
         select: { id: true, title: true, description: true, summary: true },
       }),
       prisma.companyCareer.findMany({
-        where: { companyUnit },
+        where: { companyId },
         select: { id: true, title: true, description: true, summary: true },
       }),
       prisma.companyEmployeeCause.findMany({
-        where: { companyUnit },
+        where: { companyId },
         select: { id: true, title: true, description: true, summary: true },
       }),
     ])
@@ -183,7 +183,7 @@ export async function createEmailDigestEdition(data: z.infer<typeof createEmailD
         emailDigestId: validated.emailDigestId,
         contentJson: generatedContent,
         originatorId: workMeId,
-        companyUnit: companyUnit,
+        companyUnit: companyId, // Note: EmailDigestEdition still uses companyUnit field
       },
     })
 

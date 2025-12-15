@@ -17,17 +17,17 @@ export async function GET(request: NextRequest) {
     await requireWorkMeAuth(request)
 
     const { searchParams } = new URL(request.url)
-    const companyUnitId = searchParams.get('companyUnitId')
+    const companyId = searchParams.get('companyId')
 
-    if (!companyUnitId) {
+    if (!companyId) {
       return NextResponse.json(
-        { success: false, error: 'companyUnitId query parameter is required' },
+        { success: false, error: 'companyId query parameter is required' },
         { status: 400 }
       )
     }
 
     const causes = await prisma.companyEmployeeCause.findMany({
-      where: { companyUnit: companyUnitId },
+      where: { companyId },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -50,11 +50,11 @@ export async function POST(request: NextRequest) {
     const { id: workMeId } = workMe
 
     const body = await request.json()
-    const { companyUnitId, data, rawText } = body
+    const { companyId, data, rawText } = body
 
-    if (!companyUnitId) {
+    if (!companyId) {
       return NextResponse.json(
-        { success: false, error: 'companyUnitId is required' },
+        { success: false, error: 'companyId is required' },
         { status: 400 }
       )
     }
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         'employee_cause',
         rawText,
         workMeId,
-        companyUnitId
+        companyId
       )
 
       return NextResponse.json({
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     const cause = await prisma.companyEmployeeCause.create({
       data: {
         ...data,
-        companyUnit: companyUnitId,
+        companyId,
       },
     })
 

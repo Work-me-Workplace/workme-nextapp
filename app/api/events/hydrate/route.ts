@@ -40,10 +40,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch all CompanyEvent models for this company unit directly
+    // Fetch all CompanyEvent models for this company directly
     const events = await prisma.companyEvent.findMany({
       where: {
-        companyUnit: targetCompanyUnit, // Multi-tenant security
+        companyId: targetCompanyUnit, // Multi-tenant security (using companyId)
       },
       orderBy: { createdAt: 'desc' },
       include: {

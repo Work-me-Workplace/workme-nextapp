@@ -13,9 +13,9 @@ export const dynamic = 'force-dynamic'
  * Returns:
  * - CompanyEmployee[] (scoped by companyId)
  * - CompanyEmployeeHighlight[] (scoped by companyId)
- * - CompanyCampaign[] (scoped by companyUnit string)
- * - CompanyTraining[] (scoped by companyUnit string)
- * - CompanyEvent[] (scoped by companyUnit string)
+ * - CompanyCampaign[] (scoped by companyId)
+ * - CompanyTraining[] (scoped by companyId)
+ * - CompanyEvent[] (scoped by companyId)
  * - etc.
  */
 export async function GET(request: NextRequest) {

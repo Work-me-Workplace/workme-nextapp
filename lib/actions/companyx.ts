@@ -25,10 +25,10 @@ export async function createCampaign(data: {
   try {
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
-    
-    if (!workMeId || !companyUnit) {
-      return { success: false, error: 'Not authenticated or companyUnit not set' }
+    const { id: workMeId, companyId } = workMe
+
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or companyId not set' }
     }
 
     const campaign = await prisma.companyCampaign.create({
@@ -43,7 +43,7 @@ export async function createCampaign(data: {
         pocLastName: data.pocLastName || null,
         pocEmail: data.pocEmail || null,
         pocPhone: data.pocPhone || null,
-        companyUnit,
+        companyId,
         createdByWorkMeId: workMeId,
       },
     })
@@ -68,10 +68,10 @@ export async function createImpactEvent(data: {
   try {
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
-    
-    if (!workMeId || !companyUnit) {
-      return { success: false, error: 'Not authenticated or companyUnit not set' }
+    const { id: workMeId, companyId } = workMe
+
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or companyId not set' }
     }
 
     const impactEvent = await prisma.companyImpactEvent.create({
@@ -85,7 +85,7 @@ export async function createImpactEvent(data: {
         pocLastName: data.pocLastName || null,
         pocEmail: data.pocEmail || null,
         pocPhone: data.pocPhone || null,
-        companyUnit,
+        companyId,
         createdByWorkMeId: workMeId,
       },
     })
@@ -112,10 +112,10 @@ export async function createTraining(data: {
   try {
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
-    
-    if (!workMeId || !companyUnit) {
-      return { success: false, error: 'Not authenticated or companyUnit not set' }
+    const { id: workMeId, companyId } = workMe
+
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or companyId not set' }
     }
 
     const training = await prisma.companyTraining.create({
@@ -130,7 +130,7 @@ export async function createTraining(data: {
         pocLastName: data.pocLastName || null,
         pocEmail: data.pocEmail || null,
         pocPhone: data.pocPhone || null,
-        companyUnit,
+        companyId,
         createdByWorkMeId: workMeId,
       },
     })
@@ -164,10 +164,10 @@ export async function createEvent(data: {
   try {
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
-    
-    if (!workMeId || !companyUnit) {
-      return { success: false, error: 'Not authenticated or companyUnit not set' }
+    const { id: workMeId, companyId } = workMe
+
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or companyId not set' }
     }
 
     const event = await prisma.companyEvent.create({
@@ -190,7 +190,7 @@ export async function createEvent(data: {
         speakers: data.speakers || [],
         pocEmail: data.pocEmail || null,
         pocPhone: data.pocPhone || null,
-        companyUnit,
+        companyId,
         createdByWorkMeId: workMeId,
       },
     })
@@ -216,10 +216,10 @@ export async function createCommunityOpportunity(data: {
   try {
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
-    
-    if (!workMeId || !companyUnit) {
-      return { success: false, error: 'Not authenticated or companyUnit not set' }
+    const { id: workMeId, companyId } = workMe
+
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or companyId not set' }
     }
 
     const community = await prisma.companyCommunity.create({
@@ -234,7 +234,7 @@ export async function createCommunityOpportunity(data: {
         pocLastName: data.pocLastName || null,
         pocEmail: data.pocEmail || null,
         pocPhone: data.pocPhone || null,
-        companyUnit,
+        companyId,
         createdByWorkMeId: workMeId,
       },
     })
@@ -264,10 +264,10 @@ export async function createBenefits(data: {
   try {
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
-    
-    if (!workMeId || !companyUnit) {
-      return { success: false, error: 'Not authenticated or companyUnit not set' }
+    const { id: workMeId, companyId } = workMe
+
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or companyId not set' }
     }
 
     const benefits = await prisma.companyBenefits.create({
@@ -277,7 +277,7 @@ export async function createBenefits(data: {
         windowStart: data.windowStart || null,
         windowEnd: data.windowEnd || null,
         actionLink: data.fehbLink || data.fedvipLink || data.fsafedsLink || null,
-        companyUnit,
+        companyId,
         createdByWorkMeId: workMeId,
       },
     })
@@ -303,10 +303,10 @@ export async function createCareer(data: {
   try {
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
-    
-    if (!workMeId || !companyUnit) {
-      return { success: false, error: 'Not authenticated or companyUnit not set' }
+    const { id: workMeId, companyId } = workMe
+
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or companyId not set' }
     }
 
     const career = await prisma.companyCareer.create({
@@ -315,7 +315,7 @@ export async function createCareer(data: {
         description: data.description || null,
         ...(data.deadlines ? { eligibility: { deadlines: data.deadlines } } : {}),
         ...(data.resourceLink ? { application: { link: data.resourceLink } } : {}),
-        companyUnit,
+        companyId,
         createdByWorkMeId: workMeId,
       },
     })
@@ -345,10 +345,10 @@ export async function createEmployeeCause(data: {
   try {
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
-    
-    if (!workMeId || !companyUnit) {
-      return { success: false, error: 'Not authenticated or companyUnit not set' }
+    const { id: workMeId, companyId } = workMe
+
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or companyId not set' }
     }
 
     const employeeCause = await prisma.companyEmployeeCause.create({
@@ -369,7 +369,7 @@ export async function createEmployeeCause(data: {
             }]
           : undefined,
         sponsoringDepartment: data.sponsoringDepartment || null,
-        companyUnit,
+        companyId,
         createdByWorkMeId: workMeId,
       },
     })

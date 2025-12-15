@@ -1,45 +1,33 @@
 import { prisma } from "@/lib/prisma";
 
 /**
- * Example: Attach an asset to a Digital Sign
+ * WORKFLOW-OPS ARCHITECTURE:
+ * Assets attach directly to ProductDigitalSign (the product), not to work packages.
+ * Products are outcomes; work packages are effort.
+ * 
+ * Draft vs Final is represented via metadata on assets (e.g. stage, active, or similar),
+ * not via separate attachment systems.
  */
-export async function attachAssetToDigitalSign(assetId: string, signageId: string) {
+
+/**
+ * Attach an asset to a Digital Sign product
+ * Assets attach to the product, not the work package.
+ */
+export async function attachAssetToDigitalSign(assetId: string, digitalSignId: string) {
   return await prisma.digitalSignAsset.create({
     data: {
       assetId,
-      signageId
+      digitalSignId
     }
   });
 }
 
 /**
- * Example: Attach an asset to a Design Work Package
+ * Get all assets for a Digital Sign product
  */
-export async function attachAssetToWorkPackage(assetId: string, packageId: string) {
-  return await prisma.designWorkPackageAsset.create({
-    data: {
-      assetId,
-      packageId
-    }
-  });
-}
-
-/**
- * Example: Get all assets for a Digital Sign
- */
-export async function getDigitalSignAssets(signageId: string) {
+export async function getDigitalSignAssets(digitalSignId: string) {
   return await prisma.digitalSignAsset.findMany({
-    where: { signageId },
-    include: { asset: true }
-  });
-}
-
-/**
- * Example: Get all assets for a Work Package
- */
-export async function getWorkPackageAssets(packageId: string) {
-  return await prisma.designWorkPackageAsset.findMany({
-    where: { packageId },
+    where: { digitalSignId },
     include: { asset: true }
   });
 }

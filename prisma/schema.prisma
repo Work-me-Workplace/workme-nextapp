@@ -828,8 +828,8 @@ model ProductDigitalSign {
 }
 
 model ProductDigitalSignWorkforce {
-  id        String @id @default(cuid())
-  signageId String @unique
+  id           String @id @default(cuid())
+  digitalSignId String @unique
 
   title      String
   summary    String?
@@ -838,24 +838,24 @@ model ProductDigitalSignWorkforce {
   background String?
   footerNote String?
 
-  signage ProductDigitalSign @relation(fields: [signageId], references: [id], onDelete: Cascade)
+  signage ProductDigitalSign @relation(fields: [digitalSignId], references: [id], onDelete: Cascade)
 }
 
 model ProductDigitalSignCompanyNews {
-  id        String @id @default(cuid())
-  signageId String @unique
+  id           String @id @default(cuid())
+  digitalSignId String @unique
 
   headline    String
   subheadline String?
   body        String?
   link        String?
 
-  signage ProductDigitalSign @relation(fields: [signageId], references: [id], onDelete: Cascade)
+  signage ProductDigitalSign @relation(fields: [digitalSignId], references: [id], onDelete: Cascade)
 }
 
 model ProductDigitalSignWorkforceAchievement {
-  id        String @id @default(cuid())
-  signageId String @unique
+  id           String @id @default(cuid())
+  digitalSignId String @unique
 
   headline         String
   subhead          String?
@@ -873,15 +873,15 @@ model ProductDigitalSignWorkforceAchievement {
   employeeId  String?
   highlightId String?
 
-  signage ProductDigitalSign @relation(fields: [signageId], references: [id], onDelete: Cascade)
+  signage ProductDigitalSign @relation(fields: [digitalSignId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])
   @@index([highlightId])
 }
 
 model ProductDigitalSignCompanyEvent {
-  id        String @id @default(cuid())
-  signageId String @unique
+  id           String @id @default(cuid())
+  digitalSignId String @unique
 
   eventName        String
   eventDate        DateTime?
@@ -892,7 +892,7 @@ model ProductDigitalSignCompanyEvent {
   perks            String[]  @default([])
   registrationLink String?
 
-  signage ProductDigitalSign @relation(fields: [signageId], references: [id], onDelete: Cascade)
+  signage ProductDigitalSign @relation(fields: [digitalSignId], references: [id], onDelete: Cascade)
 }
 
 // ============================================
@@ -927,24 +927,27 @@ model Asset {
 
   // Relations
   digitalSignAttachments                       DigitalSignAsset[]
-  workPackageAttachments                       DesignWorkPackageAsset[]
   productDigitalSignWorkforceAchievementImages ProductDigitalSignWorkforceAchievement[] @relation("ProductDigitalSignWorkforceAchievementImage")
 }
 
 model DigitalSignAsset {
-  id        String @id @default(cuid())
-  assetId   String
-  signageId String
+  id           String @id @default(cuid())
+  assetId      String
+  digitalSignId String
 
   asset   Asset              @relation(fields: [assetId], references: [id])
-  signage ProductDigitalSign @relation(fields: [signageId], references: [id])
+  signage ProductDigitalSign @relation(fields: [digitalSignId], references: [id])
 
-  @@unique([assetId, signageId])
+  @@unique([assetId, digitalSignId])
 }
 
 // ============================================
-// DESIGN WORK PACKAGE MODEL (MVP1 Creative Workflow)
+// DESIGN WORK PACKAGE MODEL (Workflow-Ops Architecture)
 // ============================================
+// DesignWorkPackage represents assigned human work on a digital product.
+// A work package is "assigned" to a digital product by setting digitalSignId.
+// Products are outcomes; work packages are effort.
+// Assets attach to the product (ProductDigitalSign), not the work package.
 model DesignWorkPackage {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
@@ -954,15 +957,13 @@ model DesignWorkPackage {
   assignedToWorkMeId String?                 @db.Uuid
   status             DesignWorkPackageStatus @default(PENDING)
 
-  // Tie this work package to the originating digital sign product (optional)
-  signageId String?
-  signage   ProductDigitalSign? @relation(fields: [signageId], references: [id], onDelete: SetNull)
+  // Work assignment: link to the digital product this work is for
+  // A product may have zero, one, or many work packages over time
+  digitalSignId String?
+  signage       ProductDigitalSign? @relation(fields: [digitalSignId], references: [id], onDelete: SetNull)
 
   title       String?
   description String?
-
-  // Asset attachments (Blob-backed system)
-  assetAttachments DesignWorkPackageAsset[]
 
   // Relations
   createdBy  WorkMe  @relation("DesignWorkPackageCreator", fields: [createdByWorkMeId], references: [id])
@@ -972,18 +973,7 @@ model DesignWorkPackage {
   @@index([createdByWorkMeId])
   @@index([assignedToWorkMeId])
   @@index([status])
-  @@index([signageId])
-}
-
-model DesignWorkPackageAsset {
-  id        String @id @default(cuid())
-  assetId   String
-  packageId String
-
-  asset       Asset             @relation(fields: [assetId], references: [id])
-  workPackage DesignWorkPackage @relation(fields: [packageId], references: [id])
-
-  @@unique([assetId, packageId])
+  @@index([digitalSignId])
 }
 
 // ============================================

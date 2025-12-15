@@ -5,7 +5,7 @@
  * and returns them in a unified format for the dashboard
  * 
  * AUTH: WorkMe-only (Firebase → WorkMe)
- * SCOPE: companyUnitId from query parameter (NOT from WorkMe)
+ * SCOPE: companyId from query parameter (NOT from WorkMe)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -19,52 +19,52 @@ export async function GET(request: NextRequest) {
     // AUTH: WorkMe-only
     await requireWorkMeAuth(request)
 
-    // SCOPE: companyUnitId from query parameter
+    // SCOPE: companyId from query parameter
     const { searchParams } = new URL(request.url)
-    const companyUnitId = searchParams.get('companyUnitId')
+    const companyId = searchParams.get('companyId')
 
-    if (!companyUnitId) {
+    if (!companyId) {
       return NextResponse.json(
-        { success: false, error: 'companyUnitId query parameter is required' },
+        { success: false, error: 'companyId query parameter is required' },
         { status: 400 }
       )
     }
 
-    // Fetch all CompanyX models scoped by companyUnitId
+    // Fetch all CompanyX models scoped by companyId
     const [trainings, events, campaigns, impactEvents, community, benefits, careers] = await Promise.all([
       // CompanyTraining
       prisma.companyTraining.findMany({
-        where: { companyUnit: companyUnitId },
+        where: { companyId },
         orderBy: { trainingDate: 'asc' },
       }),
       // CompanyEvent
       prisma.companyEvent.findMany({
-        where: { companyUnit: companyUnitId },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
       // CompanyCampaign
       prisma.companyCampaign.findMany({
-        where: { companyUnit: companyUnitId },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
       // CompanyImpactEvent
       prisma.companyImpactEvent.findMany({
-        where: { companyUnit: companyUnitId },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
       // CompanyCommunity
       prisma.companyCommunity.findMany({
-        where: { companyUnit: companyUnitId },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
       // CompanyBenefits
       prisma.companyBenefits.findMany({
-        where: { companyUnit: companyUnitId },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
       // CompanyCareer
       prisma.companyCareer.findMany({
-        where: { companyUnit: companyUnitId },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
     ])

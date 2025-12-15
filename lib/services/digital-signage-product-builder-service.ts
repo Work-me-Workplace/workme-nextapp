@@ -214,7 +214,7 @@ export async function buildDigitalSignageProduct(
     await prisma.digitalSignAsset.createMany({
       data: assetIds.map(assetId => ({
         assetId,
-        signageId: signage.id,
+        digitalSignId: signage.id,
       })),
       skipDuplicates: true,
     })

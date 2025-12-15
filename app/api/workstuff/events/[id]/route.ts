@@ -56,7 +56,7 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
-    const { data, companyUnitId } = body
+    const { data, companyId } = body
 
     const existing = await prisma.companyEvent.findUnique({
       where: { id },
@@ -69,9 +69,9 @@ export async function PUT(
       )
     }
 
-    if (companyUnitId && existing.companyUnit !== companyUnitId) {
+    if (companyId && existing.companyId !== companyId) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized: companyUnit mismatch' },
+        { success: false, error: 'Unauthorized: companyId mismatch' },
         { status: 403 }
       )
     }

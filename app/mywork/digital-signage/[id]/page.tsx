@@ -119,7 +119,7 @@ function DigitalSignageViewContent() {
 
     try {
       const response = await api.post('/api/mywork/designworkpackage/create', {
-        signageId,
+        digitalSignId: signageId,
         title: signage?.workforceAchievement?.headline || signage?.workforce?.title || signage?.companyNews?.headline || signage?.companyEvent?.eventName || 'Digital Signage Design',
         description: `Design work package for ${signage?.signType.replace('_', ' ')} digital signage`,
       })

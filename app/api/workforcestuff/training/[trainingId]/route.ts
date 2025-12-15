@@ -16,11 +16,11 @@ export async function GET(
   try {
     const { firebaseId } = await verifyAuth(request)
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
+    const { id: workMeId, companyId } = workMe
 
-    if (!workMeId || !companyUnit) {
+    if (!workMeId || !companyId) {
       return NextResponse.json(
-        { success: false, error: 'Not authenticated or companyUnit not set' },
+        { success: false, error: 'Not authenticated or companyId not set' },
         { status: 401 }
       )
     }
@@ -29,7 +29,7 @@ export async function GET(
     const training = await prisma.companyTraining.findFirst({
       where: {
         id: trainingId,
-        companyUnit, // Multi-tenant security
+        companyId, // Multi-tenant security
       },
     })
 

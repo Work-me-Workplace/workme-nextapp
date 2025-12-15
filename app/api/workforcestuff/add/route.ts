@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
             pocEmail: data.pocEmail,
             pocPhone: data.pocPhone,
             summary: data.description || data.title || null,
-            companyUnit: companyId,
+            companyId,
             createdByWorkMeId: workMeId,
           },
         })
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
             pocEmail: data.pocEmail,
             pocPhone: data.pocPhone,
             summary: data.description || data.title || null,
-            companyUnit: companyId,
+            companyId,
             createdByWorkMeId: workMeId,
           },
         })
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
             pocEmail: data.pocEmail,
             pocPhone: data.pocPhone,
             summary: data.description || data.title || null,
-            companyUnit: companyId,
+            companyId,
             createdByWorkMeId: workMeId,
           },
         })
@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
             ...(data.pocList != null ? { pocList: data.pocList } : {}),
             ingestRawText: rawText,
             summary: data.description || data.employeeBenefitSummary || data.title || null,
-            companyUnit: companyId,
+            companyId,
             createdByWorkMeId: workMeId,
           },
         })
@@ -264,7 +264,7 @@ export async function POST(request: NextRequest) {
             ...(data.extraInstructions != null ? { extraInstructions: data.extraInstructions } : {}),
             ingestRawText: rawText,
             summary: data.description || data.impactSummary || data.title || null,
-            companyUnit: companyId,
+            companyId,
             createdByWorkMeId: workMeId,
           },
         })

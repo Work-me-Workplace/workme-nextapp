@@ -74,7 +74,7 @@ export const REQUIRED_FIELDS: Record<ContextType, Record<string, any>> = {
  * @param type - CompanyX type (campaign, training, event, etc.)
  * @param rawText - Raw ingestion text
  * @param workMeId - WorkMe ID (actor)
- * @param companyUnitId - Company unit string label (scope)
+ * @param companyId - Company ID (scope)
  * @returns Created CompanyX record
  */
 export async function createCompanyXWithIngest(
@@ -82,7 +82,7 @@ export async function createCompanyXWithIngest(
   type: ContextType,
   rawText: string,
   workMeId: string,
-  companyUnitId: string
+  companyId: string
 ) {
   const modelName = CONTEXT_TYPE_TO_MODEL[type]
   const requiredFields = REQUIRED_FIELDS[type]
@@ -90,7 +90,7 @@ export async function createCompanyXWithIngest(
   // Base data for all CompanyX models
   const baseData: any = {
     ...requiredFields,
-    companyUnit: companyUnitId,
+    companyId,
     createdByWorkMeId: workMeId,
   }
 

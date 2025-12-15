@@ -12,18 +12,18 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireWorkMeAuth(request)
     const body = await request.json()
-    const { signageId, title, description, assignedToWorkMeId } = body
+    const { digitalSignId, title, description, assignedToWorkMeId } = body
 
-    if (!signageId) {
+    if (!digitalSignId) {
       return NextResponse.json(
-        { success: false, error: 'signageId is required' },
+        { success: false, error: 'digitalSignId is required' },
         { status: 400 }
       )
     }
 
     // Verify the signage exists
     const signage = await prisma.productDigitalSign.findUnique({
-      where: { id: signageId },
+      where: { id: digitalSignId },
       select: { id: true },
     })
 
@@ -35,12 +35,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the design work package
+    // Work assignment: link to the digital product this work is for
     const workPackage = await prisma.designWorkPackage.create({
       data: {
-        signageId,
+        digitalSignId,
         createdByWorkMeId: auth.id,
         assignedToWorkMeId: assignedToWorkMeId || null,
-        title: title || `Design work for ${signageId}`,
+        title: title || `Design work for ${digitalSignId}`,
         description: description || null,
         status: 'PENDING',
       },

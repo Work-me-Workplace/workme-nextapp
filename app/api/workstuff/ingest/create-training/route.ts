@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
  * All "real" fields remain null until Stage 2.
  * 
  * AUTH: WorkMe-only (Firebase → WorkMe)
- * SCOPE: companyUnitId from payload (NOT from WorkMe)
+ * SCOPE: companyId from payload (NOT from WorkMe)
  * 
  * Supports all CompanyX types: training, career, event, campaign, impact_event, 
  * community, benefits, employee_cause
@@ -25,12 +25,12 @@ export async function POST(request: NextRequest) {
     const workMe = await requireWorkMeAuth(request)
     const { id: workMeId } = workMe
 
-    // SCOPE: companyUnitId from payload
-    const { rawText, selectedType, companyUnitId } = await request.json()
+    // SCOPE: companyId from payload
+    const { rawText, selectedType, companyId } = await request.json()
 
-    if (!companyUnitId) {
+    if (!companyId) {
       return NextResponse.json(
-        { success: false, error: 'companyUnitId is required' },
+        { success: false, error: 'companyId is required' },
         { status: 400 }
       )
     }
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       selectedType as ContextType,
       rawText,
       workMeId,
-      companyUnitId
+      companyId
     )
 
     // Build response with type-specific ID field
