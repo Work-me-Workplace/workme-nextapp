@@ -9,6 +9,30 @@ import { getDashboard, refreshDashboard, type WorkProduct } from '@/lib/dashboar
 import api from '@/lib/api'
 import { Mail, Image, Monitor, FileText, Plus, Eye } from 'lucide-react'
 
+// Normalize text - convert all caps to title case, handle underscores (fallback for edge cases)
+function normalizeTitle(text: string | null | undefined): string {
+  if (!text) return ''
+  
+  // If it's all caps or has underscores, normalize it
+  const isAllCaps = text === text.toUpperCase() && text !== text.toLowerCase()
+  const hasUnderscores = text.includes('_')
+  
+  if (isAllCaps || hasUnderscores) {
+    // Replace underscores with spaces
+    let normalized = text.replace(/_/g, ' ')
+    
+    // Convert to title case (first letter of each word capitalized)
+    normalized = normalized.toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+    
+    return normalized
+  }
+  
+  return text
+}
+
 const productTypeConfig = {
   email_digest: {
     name: 'Email Digest',
@@ -231,10 +255,11 @@ export default function ProductsPage() {
                       const Icon = config?.icon || FileText
                       const colorClass = config?.colorClass || 'text-gray-600'
                       
-                      // Truncate title to reasonable length for display
-                      const displayTitle = product.title && product.title.length > 30 
-                        ? product.title.substring(0, 30) + '...' 
-                        : product.title
+                      // Normalize and truncate title
+                      const normalizedTitle = normalizeTitle(product.title)
+                      const displayTitle = normalizedTitle && normalizedTitle.length > 30 
+                        ? normalizedTitle.substring(0, 30) + '...' 
+                        : normalizedTitle
                       
                       return (
                         <Link
@@ -315,9 +340,11 @@ export default function ProductsPage() {
                       if (reviewItems.length === 0) return null
 
                       return reviewItems.map((item: any) => {
-                        const displayTitle = (item.headline || item.title) && (item.headline || item.title).length > 30
-                          ? (item.headline || item.title).substring(0, 30) + '...'
-                          : (item.headline || item.title)
+                        const rawTitle = item.headline || item.title
+                        const normalizedTitle = normalizeTitle(rawTitle)
+                        const displayTitle = normalizedTitle && normalizedTitle.length > 30
+                          ? normalizedTitle.substring(0, 30) + '...'
+                          : normalizedTitle
                         
                         return (
                           <Link

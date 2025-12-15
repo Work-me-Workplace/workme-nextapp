@@ -53,13 +53,35 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
 
-    // 4. Fetch Digital Signage Products - use workMeId only
+    // 4. Fetch Digital Signage Products - use workMeId only, include related content
     const digitalSignage = await prisma.productDigitalSign.findMany({
       where: {
         createdByWorkMeId: workMe.id,
       },
+      include: {
+        workforce: true,
+        workforceAchievement: true,
+        companyNews: true,
+        companyEvent: true,
+      },
       orderBy: { createdAt: 'desc' },
     })
+
+    // Helper function to get display title from digital signage product
+    function getDigitalSignageTitle(p: typeof digitalSignage[0]): string {
+      switch (p.signType) {
+        case 'WORKFORCE':
+          return p.workforce?.title || 'Workforce Signage'
+        case 'WORKFORCE_ACHIEVEMENT':
+          return p.workforceAchievement?.headline || 'Workforce Achievement'
+        case 'COMPANY_NEWS':
+          return p.companyNews?.headline || 'Company News'
+        case 'COMPANY_EVENT':
+          return p.companyEvent?.eventName || 'Company Event'
+        default:
+          return 'Digital Signage'
+      }
+    }
 
     // 5. Format products with type information
     const products = [
@@ -77,7 +99,7 @@ export async function GET(request: NextRequest) {
       ...digitalSignage.map(p => ({
         id: p.id,
         type: 'digital_signage',
-        title: `Digital Signage - ${p.signType}`,
+        title: getDigitalSignageTitle(p),
         description: null,
         createdAt: p.createdAt.toISOString(),
         updatedAt: p.updatedAt.toISOString(),
