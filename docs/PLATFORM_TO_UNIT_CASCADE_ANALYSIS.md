@@ -104,3 +104,5 @@ model CompanyPlatformUnit {
 3. **Consider allowing unit creation during platform creation** (currently only via AI parse)
 
 4. **Verify the cascade behavior** - test that deleting a platform deletes all its units (should work due to `onDelete: Cascade`)
+
+

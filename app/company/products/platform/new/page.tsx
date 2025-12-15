@@ -29,7 +29,6 @@ interface PlatformData {
   sensors?: string[]
   defenseBuilders?: string[]
   unitsInSeries?: string[]
-  yearsSinceLastInClass?: number | null
   classStartDate?: string | null
 }
 
@@ -506,19 +505,6 @@ export default function CreatePlatformPage() {
                       })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                       placeholder="Comma-separated: SSN 774, SSN 775, SSN 776"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Years Since Last In Class</label>
-                    <input
-                      type="number"
-                      value={reviewData.platform.yearsSinceLastInClass || ''}
-                      onChange={(e) => setReviewData({
-                        ...reviewData,
-                        platform: { ...reviewData.platform, yearsSinceLastInClass: e.target.value ? parseInt(e.target.value) : null }
-                      })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                      placeholder="e.g., 5"
                     />
                   </div>
                 </div>

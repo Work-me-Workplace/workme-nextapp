@@ -20,7 +20,11 @@ export async function GET(
     const signage = await prisma.productDigitalSign.findUnique({
       where: { id },
       include: {
-        workforceAchievement: true,
+        workforceAchievement: {
+          include: {
+            imageAsset: true,
+          },
+        },
         workforce: true,
         companyNews: true,
         companyEvent: true,

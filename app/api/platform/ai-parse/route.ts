@@ -33,7 +33,6 @@ export interface PlatformParseResult {
     sensors?: string[]
     defenseBuilders?: string[]
     unitsInSeries?: string[]
-    yearsSinceLastInClass?: number | null
     classStartDate?: string | null
   }
   units: Array<{
@@ -90,7 +89,6 @@ Return JSON with this exact structure - EVERY field must be present:
     "sensors": ["Array of sensor systems mentioned (e.g., 'AN/BQQ-10 sonar', 'AN/BVS-1 photonics mast', 'radar systems')"] or [],
     "defenseBuilders": ["Array of shipyard/builder/contractor names mentioned (e.g., 'HII Newport News', 'Electric Boat', 'General Dynamics')"] or [],
     "unitsInSeries": ["Array of all unit names/hull numbers in the series if listed (e.g., 'SSN 774', 'SSN 775', 'SSN 776')"] or [],
-    "yearsSinceLastInClass": "Years since last unit in class was delivered (integer) or null",
     "classStartDate": "ISO date string (YYYY-MM-DD) when the platform class began (lead ship keel laid down date) or null"
   },
   "units": [
@@ -171,7 +169,6 @@ ${text.substring(0, 4000)}`
         sensors: Array.isArray(parsed.platform.sensors) ? parsed.platform.sensors : [],
         defenseBuilders: Array.isArray(parsed.platform.defenseBuilders) ? parsed.platform.defenseBuilders : [],
         unitsInSeries: Array.isArray(parsed.platform.unitsInSeries) ? parsed.platform.unitsInSeries : [],
-        yearsSinceLastInClass: parsed.platform.yearsSinceLastInClass ? parseInt(parsed.platform.yearsSinceLastInClass) : null,
         classStartDate: parsed.platform.classStartDate || null,
       },
       units: Array.isArray(parsed.units) ? parsed.units.map((u: any) => ({

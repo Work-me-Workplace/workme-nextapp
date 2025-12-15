@@ -27,6 +27,7 @@ import {
   MessageSquare,
   Sparkles,
   History,
+  Monitor,
 } from 'lucide-react'
 
 export default function SidebarNav() {
@@ -39,6 +40,7 @@ export default function SidebarNav() {
     if (path === '/mycompany/products') return pathname?.startsWith(path) || pathname?.startsWith('/mycompany/platforms')
     if (path === '/mycompany/external-pressures') return pathname?.startsWith(path)
     if (path === '/mywork/products') return pathname === path
+    if (path === '/mywork/digital-signage') return pathname?.startsWith(path)
     if (path === '/mywork/active') return pathname === path
     if (path === '/mywork/team') return pathname === path
     if (path === '/workops/daily') return pathname === path
@@ -72,6 +74,7 @@ export default function SidebarNav() {
       name: 'Mywork',
       items: [
         { name: 'Work Products', path: '/mywork/products', icon: Package },
+        { name: 'Digital Signage', path: '/mywork/digital-signage', icon: Monitor },
         { name: "Stuff I'm Working On", path: '/mywork/active', icon: CheckSquare },
         { name: 'Team Members', path: '/mywork/team', icon: Users },
       ],

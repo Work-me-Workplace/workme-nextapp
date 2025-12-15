@@ -434,8 +434,12 @@ function DigitalSignageBuilderContent() {
         // Store signage ID for future updates
         if (response.data.signage?.id) {
           setExistingSignageId(response.data.signage.id)
+          // Mark that we just saved for success message
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('digitalSignageJustSaved', response.data.signage.id)
+          }
         }
-        router.push(`/mywork/digital-signage/${response.data.signage.id}`)
+        router.push(`/mywork/digital-signage/${response.data.signage.id}?saved=true`)
       } else {
         setError(response.data.error || 'Failed to save digital signage')
       }
@@ -982,17 +986,6 @@ function DigitalSignageBuilderContent() {
                         setUploadedImage(asset)
                       }}
                     />
-                    {uploadedImage && (
-                      <div className="mt-4 p-3 bg-white border border-purple-200 rounded-lg">
-                        <p className="text-xs text-green-600 font-medium mb-2">✓ Photo uploaded successfully!</p>
-                        <img 
-                          src={uploadedImage.url} 
-                          alt={uploadedImage.filename || 'Uploaded image'} 
-                          className="h-32 rounded-lg object-cover"
-                        />
-                        <p className="text-xs text-gray-600 mt-2">{uploadedImage.filename}</p>
-                      </div>
-                    )}
                   </div>
                 )}
 

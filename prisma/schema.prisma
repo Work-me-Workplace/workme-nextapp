@@ -1496,9 +1496,6 @@ model CompanyPlatformProduct {
   // All units (names only — not the CompanyPlatformUnit models)
   unitsInSeries String[] @default([])
 
-  // Derived metric for class maturity
-  yearsSinceLastInClass Int?
-
   // When the platform class began (lead ship laid down)
   classStartDate DateTime?
 
@@ -1703,8 +1700,74 @@ model CompanyProductInnovation {
 }
 
 // ============================================
+// NAMESAKE MODEL (Historical/Symbolic Significance)
+// ============================================
+// Represents the historical figure or entity for whom a platform is named.
+// This preserves the narrative context that should never be flattened downstream.
+model Namesake {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  fullName String              // e.g. "Eugene Bennett Fluckey"
+  knownAs  String?             // e.g. "Lucky"
+  role     String?             // e.g. "WWII Submarine Commander"
+  whyKnown String?             // factual significance
+
+  legacySummary String?        // short, factual (no prose)
+
+  era    String?
+  honors String[] @default([])
+
+  notes String?
+
+  // Reverse relations
+  livingHomages LivingHomage[]
+  milestones    CompanyMilestone[]
+
+  @@index([fullName])
+}
+
+// ============================================
+// LIVING HOMAGE MODEL (Meaning Carriers)
+// ============================================
+// Represents living stakeholders who carry forward the legacy of a namesake.
+// These are not employees, not org chart positions—they are meaning carriers.
+// Examples: ship sponsors, memorial honorees, dedication representatives.
+// This tab will be shared by: ship sponsors, memorial honorees, dedication representatives, external legacy holders.
+model LivingHomage {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  fullName String              // e.g. "Pamela Bove"
+  role     String?             // e.g. "Ship Sponsor"
+  relation String?             // e.g. "Granddaughter-in-law of namesake"
+
+  namesakeId String?
+  namesake   Namesake? @relation(fields: [namesakeId], references: [id], onDelete: SetNull)
+
+  notes String?
+
+  // Reverse relations
+  milestones CompanyMilestone[]
+
+  @@index([fullName])
+  @@index([namesakeId])
+}
+
+// ============================================
 // COMPANY MILESTONE MODEL
 // ============================================
+// Milestones for platform units (keel laying, launch, commissioning, etc.)
+// 
+// INFERENCE RULE (future enforcement):
+// If milestoneType === KEEL_LAYING, a LivingHomage should eventually be required.
+// This ensures narrative signal is preserved and never reduced to "keel laid".
+// The system should never again flatten these moments—they carry human meaning.
+// 
+// This model drives downstream:
+// - digital signage language (foregrounding people, not steel)
+// - recognition-first layouts
+// - AI-generated comms that preserve narrative context
 model CompanyMilestone {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
@@ -1718,6 +1781,14 @@ model CompanyMilestone {
   description   String?
   sourceUrl     String?
 
+  // Meaning carriers (stakeholders with historical/symbolic significance)
+  // These are NOT employees, NOT org chart positions—they carry narrative meaning
+  livingHomageId String?
+  livingHomage   LivingHomage? @relation(fields: [livingHomageId], references: [id], onDelete: SetNull)
+
+  namesakeId String?
+  namesake   Namesake? @relation(fields: [namesakeId], references: [id], onDelete: SetNull)
+
   // Reverse link back to unit update that triggered this
   updateId String?                    @unique
   update   CompanyPlatformUnitUpdate? @relation(fields: [updateId], references: [id], onDelete: SetNull)
@@ -1725,6 +1796,8 @@ model CompanyMilestone {
   @@index([platformUnitId])
   @@index([milestoneType])
   @@index([date])
+  @@index([livingHomageId])
+  @@index([namesakeId])
 }
 
 // ============================================

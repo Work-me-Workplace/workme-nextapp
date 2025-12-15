@@ -36,7 +36,6 @@ export async function POST(request: Request) {
         sensors: Array.isArray(platform.sensors) ? platform.sensors : [],
         defenseBuilders: Array.isArray(platform.defenseBuilders) ? platform.defenseBuilders : [],
         unitsInSeries: Array.isArray(platform.unitsInSeries) ? platform.unitsInSeries : [],
-        yearsSinceLastInClass: platform.yearsSinceLastInClass || null,
         classStartDate: platform.classStartDate ? new Date(platform.classStartDate) : null,
       },
     })

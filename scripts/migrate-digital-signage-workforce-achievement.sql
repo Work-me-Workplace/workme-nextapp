@@ -102,3 +102,6 @@ ALTER TABLE "ProductDigitalSignWorkforceAchievement"
 -- 4. Run: npx prisma generate (to update Prisma Client types)
 -- ============================================
 
+
+
+

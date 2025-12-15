@@ -1,12 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter, useParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import api from '@/lib/api'
-import { Monitor, ArrowLeft } from 'lucide-react'
+import { Monitor, ArrowLeft, CheckCircle2, X } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,11 +16,17 @@ interface DigitalSignage {
   companyUnit?: string | null
   createdAt: string
   workforceAchievement?: {
-    personName: string
-    unit?: string | null
-    achievement: string
-    details?: string | null
-    photoUrl?: string | null
+    headline: string
+    subhead?: string | null
+    factualStatement?: string | null
+    quote?: string | null
+    quoteAttribution?: string | null
+    runtimeGuidance?: string | null
+    imageAsset?: {
+      id: string
+      url: string
+      filename?: string | null
+    } | null
   } | null
   workforce?: {
     title: string
@@ -48,15 +54,17 @@ interface DigitalSignage {
   } | null
 }
 
-export default function DigitalSignageViewPage() {
+function DigitalSignageViewContent() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const signageId = params?.id as string
 
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [signage, setSignage] = useState<DigitalSignage | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showSuccess, setShowSuccess] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -65,10 +73,19 @@ export default function DigitalSignageViewPage() {
         router.push('/signin')
       } else {
         setWorkMeId(id)
+        // Check if we just saved (from URL param or localStorage)
+        const saved = searchParams?.get('saved') === 'true'
+        const fromSave = typeof window !== 'undefined' && localStorage.getItem('digitalSignageJustSaved') === signageId
+        if (saved || fromSave) {
+          setShowSuccess(true)
+          if (fromSave) {
+            localStorage.removeItem('digitalSignageJustSaved')
+          }
+        }
         loadSignage()
       }
     }
-  }, [router, signageId])
+  }, [router, signageId, searchParams])
 
   async function loadSignage() {
     if (!signageId) return
@@ -155,33 +172,60 @@ export default function DigitalSignageViewPage() {
               </div>
 
               <div className="px-8 py-6">
+                {showSuccess && (
+                  <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
+                    <div className="flex items-center">
+                      <CheckCircle2 className="h-5 w-5 text-green-600 mr-3" />
+                      <div>
+                        <p className="text-sm font-semibold text-green-900">Digital Signage Saved Successfully!</p>
+                        <p className="text-xs text-green-700">Your digital signage has been created and is ready to use.</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowSuccess(false)}
+                      className="text-green-600 hover:text-green-800"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+
                 {signage.workforceAchievement && (
                   <div className="space-y-6">
-                    {signage.workforceAchievement.photoUrl && (
+                    {signage.workforceAchievement.imageAsset?.url && (
                       <div className="text-center">
                         <img 
-                          src={signage.workforceAchievement.photoUrl} 
-                          alt={signage.workforceAchievement.personName}
-                          className="mx-auto rounded-full w-32 h-32 object-cover"
+                          src={signage.workforceAchievement.imageAsset.url} 
+                          alt={signage.workforceAchievement.headline}
+                          className="mx-auto rounded-lg max-w-md w-full object-cover"
                         />
                       </div>
                     )}
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                        {signage.workforceAchievement.personName}
+                      <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                        {signage.workforceAchievement.headline}
                       </h2>
-                      {signage.workforceAchievement.unit && (
-                        <p className="text-gray-600 mb-4">{signage.workforceAchievement.unit}</p>
+                      {signage.workforceAchievement.subhead && (
+                        <p className="text-xl text-gray-600 mb-4">{signage.workforceAchievement.subhead}</p>
                       )}
                     </div>
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Achievement</h3>
-                      <p className="text-gray-700 text-lg">{signage.workforceAchievement.achievement}</p>
-                    </div>
-                    {signage.workforceAchievement.details && (
+                    {signage.workforceAchievement.factualStatement && (
                       <div>
                         <h3 className="text-xl font-semibold text-gray-900 mb-2">Details</h3>
-                        <p className="text-gray-700 whitespace-pre-wrap">{signage.workforceAchievement.details}</p>
+                        <p className="text-gray-700 text-lg">{signage.workforceAchievement.factualStatement}</p>
+                      </div>
+                    )}
+                    {signage.workforceAchievement.quote && (
+                      <div className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 rounded-r">
+                        <p className="text-gray-700 text-lg italic">"{signage.workforceAchievement.quote}"</p>
+                        {signage.workforceAchievement.quoteAttribution && (
+                          <p className="text-gray-600 text-sm mt-2">— {signage.workforceAchievement.quoteAttribution}</p>
+                        )}
+                      </div>
+                    )}
+                    {signage.workforceAchievement.runtimeGuidance && (
+                      <div className="text-sm text-gray-500">
+                        <p>Display duration: {signage.workforceAchievement.runtimeGuidance}</p>
                       </div>
                     )}
                   </div>
@@ -339,4 +383,19 @@ export default function DigitalSignageViewPage() {
     </div>
   )
 }
+
+export default function DigitalSignageViewPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <DigitalSignageViewContent />
+    </Suspense>
+  )
+}
+
+
+
 
