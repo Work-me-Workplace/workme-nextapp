@@ -11,8 +11,11 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('[API GET /api/mywork/active/list] Starting...')
+    
     // 1. Verify authentication
     const { firebaseId } = await verifyAuth(request)
+    console.log('[API GET /api/mywork/active/list] Auth verified, firebaseId:', firebaseId)
 
     // 2. Get WorkMe - only need the ID, hydrate everything by createdByWorkMeId
     const workMe = await prisma.workMe.findUnique({
@@ -23,11 +26,14 @@ export async function GET(request: NextRequest) {
     })
 
     if (!workMe) {
+      console.error('[API GET /api/mywork/active/list] WorkMe not found for firebaseId:', firebaseId)
       return NextResponse.json(
         { success: false, error: 'WorkMe identity not found' },
         { status: 404 }
       )
     }
+
+    console.log('[API GET /api/mywork/active/list] WorkMe found, id:', workMe.id)
 
     // 3. Fetch ALL products created by this workMeId
     const [
@@ -155,14 +161,28 @@ export async function GET(request: NextRequest) {
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
 
+    console.log('[API GET /api/mywork/active/list] Success, returning', activeItems.length, 'items:', {
+      digitalSignage: activeItems.filter(i => i.type === 'digital_signage').length,
+      emailDigests: activeItems.filter(i => i.type === 'email_digest').length,
+      workOutputs: activeItems.filter(i => i.type !== 'digital_signage' && i.type !== 'email_digest').length,
+    })
+
     return NextResponse.json({
       success: true,
       items: activeItems,
     })
   } catch (error: any) {
-    console.error('[API] Failed to list active work:', error)
+    console.error('[API GET /api/mywork/active/list] Error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    })
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to fetch active work' },
+      { 
+        success: false, 
+        error: error.message || 'Failed to fetch active work',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      },
       { status: 500 }
     )
   }

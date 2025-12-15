@@ -20,8 +20,11 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: NextRequest) {
   try {
+    console.log('[API GET /api/dashboard/hydrate] Starting...')
+    
     // 1. Auth - Verify Firebase token
     const { firebaseId } = await verifyAuth(request as Request)
+    console.log('[API GET /api/dashboard/hydrate] Auth verified, firebaseId:', firebaseId)
     
     // 2. Get WorkMe to get companyId and companyUnit
     const workMe = await prisma.workMe.findUnique({
@@ -34,6 +37,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!workMe) {
+      console.error('[API GET /api/dashboard/hydrate] WorkMe not found for firebaseId:', firebaseId)
       return NextResponse.json(
         {
           success: false,
@@ -44,6 +48,11 @@ export async function GET(request: NextRequest) {
     }
 
     const { companyId, companyUnit } = workMe
+    console.log('[API GET /api/dashboard/hydrate] WorkMe found:', {
+      id: workMe.id,
+      companyId,
+      companyUnit,
+    })
 
     // 3. Hydrate all models scoped by companyId or companyUnit
     const [
@@ -253,6 +262,19 @@ export async function GET(request: NextRequest) {
         : [],
     ])
 
+    console.log('[API GET /api/dashboard/hydrate] Success, returning dashboard data:', {
+      employees: employees.length,
+      highlights: highlights.length,
+      campaigns: campaigns.length,
+      trainings: trainings.length,
+      events: events.length,
+      communities: communities.length,
+      careers: careers.length,
+      benefits: benefits.length,
+      employeeCauses: employeeCauses.length,
+      products: products.length,
+    })
+
     return NextResponse.json({
       success: true,
       dashboard: {
@@ -272,8 +294,9 @@ export async function GET(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[API GET /api/dashboard/hydrate] Error:', {
-      error: error.message,
+      message: error.message,
       stack: error.stack,
+      name: error.name,
     })
 
     return NextResponse.json(

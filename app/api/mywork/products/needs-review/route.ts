@@ -10,8 +10,11 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('[API GET /api/mywork/products/needs-review] Starting...')
+    
     // 1. Verify authentication
     const { firebaseId } = await verifyAuth(request)
+    console.log('[API GET /api/mywork/products/needs-review] Auth verified, firebaseId:', firebaseId)
 
     // 2. Get WorkMe to get companyUnit
     const workMe = await prisma.workMe.findUnique({
@@ -23,13 +26,20 @@ export async function GET(request: NextRequest) {
     })
 
     if (!workMe) {
+      console.error('[API GET /api/mywork/products/needs-review] WorkMe not found for firebaseId:', firebaseId)
       return NextResponse.json(
         { success: false, error: 'WorkMe identity not found' },
         { status: 404 }
       )
     }
 
+    console.log('[API GET /api/mywork/products/needs-review] WorkMe found:', {
+      id: workMe.id,
+      companyUnit: workMe.companyUnit,
+    })
+
     if (!workMe.companyUnit) {
+      console.warn('[API GET /api/mywork/products/needs-review] Company unit not set for workMe:', workMe.id)
       return NextResponse.json(
         { success: false, error: 'Company unit not set' },
         { status: 400 }
@@ -38,6 +48,7 @@ export async function GET(request: NextRequest) {
 
     // 3. Fetch Digital Signage Products that need review
     // (not archived, no design packages assigned)
+    console.log('[API GET /api/mywork/products/needs-review] Fetching digital signage products...')
     const digitalSignage = await prisma.productDigitalSign.findMany({
       where: {
         companyUnit: workMe.companyUnit,
@@ -65,6 +76,7 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { createdAt: 'desc' },
     })
+    console.log('[API GET /api/mywork/products/needs-review] Found', digitalSignage.length, 'products needing review')
 
     // 4. Format products with preview data
     const products = digitalSignage.map(p => {
@@ -100,14 +112,23 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    console.log('[API GET /api/mywork/products/needs-review] Success, returning', products.length, 'products')
     return NextResponse.json({
       success: true,
       products,
     })
   } catch (error: any) {
-    console.error('[API] Failed to fetch products needing review:', error)
+    console.error('[API GET /api/mywork/products/needs-review] Error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    })
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to fetch products' },
+      { 
+        success: false, 
+        error: error.message || 'Failed to fetch products',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      },
       { status: 500 }
     )
   }
