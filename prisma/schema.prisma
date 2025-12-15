@@ -210,19 +210,20 @@ model Company {
   country String?
 
   // Relations
-  members    WorkMe[]
-  workplaces Workplace[]
-  employees  CompanyEmployee[]
-  highlights CompanyEmployeeHighlight[]
-  milestones CompanyMilestone[]
-  campaigns  CompanyCampaign[]      @relation("CompanyCampaignCompany")
-  impactEvents CompanyImpactEvent[] @relation("CompanyImpactEventCompany")
-  trainings  CompanyTraining[]      @relation("CompanyTrainingCompany")
-  events     CompanyEvent[]         @relation("CompanyEventCompany")
-  communities CompanyCommunity[]    @relation("CompanyCommunityCompany")
-  benefits   CompanyBenefits[]      @relation("CompanyBenefitsCompany")
-  careers    CompanyCareer[]        @relation("CompanyCareerCompany")
-  employeeCauses CompanyEmployeeCause[] @relation("CompanyEmployeeCauseCompany")
+  members         WorkMe[]
+  workplaces      Workplace[]
+  employees       CompanyEmployee[]
+  highlights      CompanyEmployeeHighlight[]
+  milestones      CompanyMilestone[]
+  campaigns       CompanyCampaign[]          @relation("CompanyCampaignCompany")
+  impactEvents    CompanyImpactEvent[]       @relation("CompanyImpactEventCompany")
+  trainings       CompanyTraining[]          @relation("CompanyTrainingCompany")
+  events          CompanyEvent[]             @relation("CompanyEventCompany")
+  communities     CompanyCommunity[]         @relation("CompanyCommunityCompany")
+  benefits        CompanyBenefits[]          @relation("CompanyBenefitsCompany")
+  careers         CompanyCareer[]            @relation("CompanyCareerCompany")
+  employeeCauses  CompanyEmployeeCause[]     @relation("CompanyEmployeeCauseCompany")
+  productFamilies ProductFamily[]
 
   @@index([name])
 }
@@ -413,10 +414,10 @@ model CompanyCampaign {
 
   summary String?
 
-  companyId        String?
-  company          Company? @relation("CompanyCampaignCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  createdByWorkMeId String  @db.Uuid
-  createdBy         WorkMe  @relation("CompanyCampaignCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId         String?
+  company           Company? @relation("CompanyCampaignCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  createdByWorkMeId String   @db.Uuid
+  createdBy         WorkMe   @relation("CompanyCampaignCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([createdByWorkMeId])
@@ -437,10 +438,10 @@ model CompanyImpactEvent {
 
   summary String?
 
-  companyId        String?
-  company          Company? @relation("CompanyImpactEventCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  createdByWorkMeId String  @db.Uuid
-  createdBy         WorkMe  @relation("CompanyImpactEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId         String?
+  company           Company? @relation("CompanyImpactEventCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  createdByWorkMeId String   @db.Uuid
+  createdBy         WorkMe   @relation("CompanyImpactEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([createdByWorkMeId])
@@ -477,10 +478,10 @@ model CompanyTraining {
 
   summary String?
 
-  companyId        String?
-  company          Company? @relation("CompanyTrainingCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  createdByWorkMeId String  @db.Uuid
-  createdBy         WorkMe  @relation("CompanyTrainingCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId         String?
+  company           Company? @relation("CompanyTrainingCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  createdByWorkMeId String   @db.Uuid
+  createdBy         WorkMe   @relation("CompanyTrainingCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([createdByWorkMeId])
@@ -518,10 +519,10 @@ model CompanyEvent {
 
   summary String?
 
-  companyId        String?
-  company          Company? @relation("CompanyEventCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  createdByWorkMeId String  @db.Uuid
-  createdBy         WorkMe  @relation("CompanyEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId         String?
+  company           Company? @relation("CompanyEventCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  createdByWorkMeId String   @db.Uuid
+  createdBy         WorkMe   @relation("CompanyEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   eventItems EventItem[]
 
@@ -560,10 +561,10 @@ model CompanyCommunity {
 
   summary String?
 
-  companyId        String?
-  company          Company? @relation("CompanyCommunityCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  createdByWorkMeId String  @db.Uuid
-  createdBy         WorkMe  @relation("CompanyCommunityCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId         String?
+  company           Company? @relation("CompanyCommunityCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  createdByWorkMeId String   @db.Uuid
+  createdBy         WorkMe   @relation("CompanyCommunityCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([createdByWorkMeId])
@@ -593,10 +594,10 @@ model CompanyBenefits {
 
   ingestRawText String?
 
-  companyId        String?
-  company          Company? @relation("CompanyBenefitsCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  createdByWorkMeId String  @db.Uuid
-  createdBy         WorkMe  @relation("CompanyBenefitsCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId         String?
+  company           Company? @relation("CompanyBenefitsCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  createdByWorkMeId String   @db.Uuid
+  createdBy         WorkMe   @relation("CompanyBenefitsCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([createdByWorkMeId])
@@ -634,10 +635,10 @@ model CompanyCareer {
 
   summary String?
 
-  companyId        String?
-  company          Company? @relation("CompanyCareerCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  createdByWorkMeId String  @db.Uuid
-  createdBy         WorkMe  @relation("CompanyCareerCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId         String?
+  company           Company? @relation("CompanyCareerCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  createdByWorkMeId String   @db.Uuid
+  createdBy         WorkMe   @relation("CompanyCareerCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([createdByWorkMeId])
@@ -669,10 +670,10 @@ model CompanyEmployeeCause {
 
   ingestRawText String?
 
-  companyId        String?
-  company          Company? @relation("CompanyEmployeeCauseCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  createdByWorkMeId String  @db.Uuid
-  createdBy         WorkMe  @relation("CompanyEmployeeCauseCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId         String?
+  company           Company? @relation("CompanyEmployeeCauseCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  createdByWorkMeId String   @db.Uuid
+  createdBy         WorkMe   @relation("CompanyEmployeeCauseCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([createdByWorkMeId])
@@ -828,7 +829,7 @@ model ProductDigitalSign {
 }
 
 model ProductDigitalSignWorkforce {
-  id           String @id @default(cuid())
+  id            String @id @default(cuid())
   digitalSignId String @unique
 
   title      String
@@ -842,7 +843,7 @@ model ProductDigitalSignWorkforce {
 }
 
 model ProductDigitalSignCompanyNews {
-  id           String @id @default(cuid())
+  id            String @id @default(cuid())
   digitalSignId String @unique
 
   headline    String
@@ -854,7 +855,7 @@ model ProductDigitalSignCompanyNews {
 }
 
 model ProductDigitalSignWorkforceAchievement {
-  id           String @id @default(cuid())
+  id            String @id @default(cuid())
   digitalSignId String @unique
 
   headline         String
@@ -880,7 +881,7 @@ model ProductDigitalSignWorkforceAchievement {
 }
 
 model ProductDigitalSignCompanyEvent {
-  id           String @id @default(cuid())
+  id            String @id @default(cuid())
   digitalSignId String @unique
 
   eventName        String
@@ -931,8 +932,8 @@ model Asset {
 }
 
 model DigitalSignAsset {
-  id           String @id @default(cuid())
-  assetId      String
+  id            String @id @default(cuid())
+  assetId       String
   digitalSignId String
 
   asset   Asset              @relation(fields: [assetId], references: [id])
@@ -1429,6 +1430,7 @@ model CompanyPlatformProduct {
   units      CompanyPlatformUnit[]
   statements CompanyPlatformStatement[]
   updates    CompanyPlatformUpdate[]
+  evidence   ExternalEvidence[]
 
   @@index([name])
   @@index([platformSeries])
@@ -1808,11 +1810,11 @@ model SignalArtifact {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  title     String?
-  content   String   // full pasted text, untouched
-  saidBy    String?  // free text for now ("Chris Miller")
-  role      String?  // optional
-  source    String?  // "senior_leader_email", "speech", etc.
+  title             String?
+  content           String // full pasted text, untouched
+  saidBy            String? // free text for now ("Chris Miller")
+  role              String? // optional
+  source            String? // "senior_leader_email", "speech", etc.
   createdByWorkMeId String? @db.Uuid // if user pasted it
 
   // Relations
@@ -1830,9 +1832,94 @@ model SeniorLeaderTopic {
   signalArtifactId String
   signalArtifact   SignalArtifact @relation(fields: [signalArtifactId], references: [id], onDelete: Cascade)
 
-  topic       String   // e.g. "Product Change", "Leadership Transition"
-  description String?  // short human-readable explanation
+  topic       String // e.g. "Product Change", "Leadership Transition"
+  description String? // short human-readable explanation
 
   @@index([signalArtifactId])
   @@index([createdAt])
+}
+
+// ============================================
+// PRODUCT FAMILY MODEL
+// ============================================
+// ProductFamily represents a high-level product concept or program
+// (e.g., "Golden Fleet", "Virginia-class", "Columbia Program")
+// Can optionally belong to a Company, but exists independently
+model ProductFamily {
+  id          String              @id @default(cuid())
+  companyId   String?             @db.Uuid
+  name        String
+  description String?
+  status      ProductFamilyStatus @default(CONCEPT)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  company Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  evidence ExternalEvidence[]
+
+  @@index([companyId])
+  @@index([name])
+  @@index([status])
+}
+
+enum ProductFamilyStatus {
+  CONCEPT
+  ADVOCATED
+  PROGRAM
+}
+
+// ============================================
+// EXTERNAL EVIDENCE MODEL
+// ============================================
+// External evidence from publicly verifiable sources (OSINT)
+// Always belongs to a ProductFamily (required anchor point)
+// Can optionally link to a CompanyPlatformProduct for additional context
+model ExternalEvidence {
+  id                String    @id @default(cuid())
+  productFamilyId   String // REQUIRED - evidence must belong to a ProductFamily
+  productPlatformId String? // OPTIONAL - can link to CompanyPlatformProduct for context
+  title             String
+  url               String
+  publisher         String?
+  publishedAt       DateTime?
+  snippet           String?
+  capturedAt        DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+
+  productFamily   ProductFamily           @relation(fields: [productFamilyId], references: [id], onDelete: Cascade)
+  productPlatform CompanyPlatformProduct? @relation(fields: [productPlatformId], references: [id], onDelete: SetNull)
+
+  classifications EvidenceClassification[]
+
+  @@index([productFamilyId])
+  @@index([productPlatformId])
+  @@index([url])
+  @@index([capturedAt])
+}
+
+// ============================================
+// EVIDENCE CLASSIFICATION MODEL
+// ============================================
+// Optional inferred classifications for evidence
+// Only stored after user confirmation (confirmedByUser = true)
+model EvidenceClassification {
+  id                 String                     @id @default(cuid())
+  evidenceId         String
+  classificationType EvidenceClassificationType
+  confirmedByUser    Boolean                    @default(false)
+  createdAt          DateTime                   @default(now())
+
+  evidence ExternalEvidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+
+  @@unique([evidenceId, classificationType])
+  @@index([evidenceId])
+  @@index([classificationType])
+  @@index([confirmedByUser])
+}
+
+enum EvidenceClassificationType {
+  COMPANY_PRODUCTS
+  COMPANY_PUBLIC_PERCEPTION
+  EXTERNAL_COMPANY_PRESSURE
 }

@@ -5,11 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, FileText, Clipboard } from 'lucide-react'
 import api from '@/lib/api'
+
+type Mode = 'choice' | 'ingest' | 'create'
 
 export default function NewSignalPage() {
   const router = useRouter()
+  const [mode, setMode] = useState<Mode>('choice')
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
@@ -81,9 +84,72 @@ export default function NewSignalPage() {
             </Link>
 
             <div className="bg-white rounded-lg shadow p-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-6">Add Signal</h1>
+              {mode === 'choice' ? (
+                <>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">Add Signal</h1>
+                  <p className="text-gray-600 mb-8">How do you want to add this signal?</p>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <button
+                      onClick={() => setMode('ingest')}
+                      className="group p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
+                    >
+                      <div className="flex items-center mb-3">
+                        <div className="p-3 bg-orange-100 text-orange-600 rounded-lg mr-4">
+                          <Clipboard className="h-6 w-6" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">Ingest Existing</h3>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Copy/paste an email that someone else worked on. Store it as raw content for topic parsing.
+                      </p>
+                    </button>
+
+                    <button
+                      onClick={() => setMode('create')}
+                      className="group p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
+                    >
+                      <div className="flex items-center mb-3">
+                        <div className="p-3 bg-blue-100 text-blue-600 rounded-lg mr-4">
+                          <FileText className="h-6 w-6" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">Create New</h3>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Create a new signal artifact from scratch. Add metadata and content manually.
+                      </p>
+                    </button>
+                  </div>
+
+                  <Link
+                    href="/signal"
+                    className="text-blue-600 hover:text-blue-700 text-sm"
+                  >
+                    ← Back to Signals
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h1 className="text-3xl font-bold text-gray-900">
+                        {mode === 'ingest' ? 'Ingest Existing Signal' : 'Create New Signal'}
+                      </h1>
+                      <p className="text-gray-600 mt-1">
+                        {mode === 'ingest' 
+                          ? 'Paste the email content below. It will be stored as raw, immutable content.'
+                          : 'Fill in the details to create a new signal artifact.'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setMode('choice')}
+                      className="text-sm text-gray-600 hover:text-gray-900"
+                    >
+                      ← Change option
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
                     Title (optional)
@@ -162,6 +228,8 @@ export default function NewSignalPage() {
                   </button>
                 </div>
               </form>
+                </>
+              )}
             </div>
           </div>
         </main>

@@ -51,3 +51,52 @@ export interface GoogleScanError {
   error: string
 }
 
+// ============================================
+// External Evidence Types
+// ============================================
+
+export interface EvidenceAttachmentRequest {
+  evidence: Array<{
+    title: string
+    url: string
+    snippet?: string
+    source?: string
+    date?: string
+  }>
+  productFamilyId?: string
+  productFamilyName?: string
+  productFamilyDescription?: string
+  productPlatformId?: string
+  companyId?: string
+  classifications?: Array<{
+    type: 'COMPANY_PRODUCTS' | 'COMPANY_PUBLIC_PERCEPTION' | 'EXTERNAL_COMPANY_PRESSURE'
+    confirmed: boolean
+  }>
+}
+
+export interface EvidenceAttachmentResponse {
+  success: true
+  productFamilyId: string
+  evidenceIds: string[]
+  message: string
+}
+
+export interface EvidenceAttachmentError {
+  success: false
+  error: string
+}
+
+export interface ProductFamilyOption {
+  id: string
+  name: string
+  description?: string
+  status: string
+  companyId?: string
+}
+
+export interface ProductPlatformOption {
+  id: string
+  name: string
+  category?: string
+}
+
