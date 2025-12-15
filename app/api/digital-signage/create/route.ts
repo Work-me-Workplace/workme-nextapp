@@ -25,6 +25,7 @@ interface CreateDigitalSignageRequest {
     citationText?: string
     classification?: string
     // Final slide data (if already built) - v6.0 structure
+    // Note: highlightId should be included here too to preserve the source highlight
     headline?: string
     subhead?: string
     factualStatement?: string
@@ -161,6 +162,7 @@ export async function POST(request: NextRequest) {
           runtimeGuidance: workforceAchievement.runtimeGuidance || '2 weeks',
           imageAssetId: workforceAchievement.imageAssetId,
           employeeId: workforceAchievement.employeeId,
+          highlightId: workforceAchievement.highlightId || null,
         }
       } else if (workforceAchievement.citationText) {
         // Build from raw data

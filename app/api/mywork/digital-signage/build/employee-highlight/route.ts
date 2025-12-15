@@ -80,6 +80,8 @@ export async function POST(request: NextRequest) {
       quoteAttribution: built.quoteAttribution,
       detailBlock: detailBlock, // For backward compatibility
       runtimeGuidance: built.runtimeGuidance,
+      highlightId: highlight.id, // Preserve highlightId so frontend can carry it forward
+      employeeId: highlight.employeeId, // Also include employeeId for convenience
     })
   } catch (error: any) {
     console.error('❌ POST /api/mywork/digital-signage/build/employee-highlight error:', error)
