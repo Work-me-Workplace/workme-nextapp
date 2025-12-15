@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import api from '@/lib/api'
-import { Search, ExternalLink, XCircle } from 'lucide-react'
+import { Search, ExternalLink, XCircle, Download, Loader2 } from 'lucide-react'
 import type { GoogleScanResponse, SignalSearchResult } from '@/lib/types/signal'
 
 export default function GoogleScanPage() {
@@ -16,6 +16,7 @@ export default function GoogleScanPage() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<GoogleScanResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [ingesting, setIngesting] = useState<number | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -35,6 +36,7 @@ export default function GoogleScanPage() {
     setLoading(true)
     setError(null)
     setResults(null)
+    setIngesting(null)
 
     try {
       const response = await api.post<GoogleScanResponse>('/api/signalingest/google/scan', {
@@ -51,6 +53,34 @@ export default function GoogleScanPage() {
       setError(err.response?.data?.error || 'Failed to scan signal')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleIngestArticle = async (index: number, article: SignalSearchResult) => {
+    setIngesting(index)
+    setError(null)
+
+    try {
+      const response = await api.post('/api/signalingest/clip/parse', {
+        title: article.title,
+        url: article.url,
+        snippet: article.snippet,
+        source: article.source,
+        date: article.date,
+      })
+
+      if (response.data.success) {
+        const successMsg = `Article ingested as ${response.data.inferredType}`
+        setError(null)
+        alert(successMsg)
+      } else {
+        setError(response.data.error || 'Failed to ingest article')
+      }
+    } catch (err: any) {
+      console.error('Ingest article error:', err)
+      setError(err.response?.data?.error || 'Failed to ingest article')
+    } finally {
+      setIngesting(null)
     }
   }
 
@@ -181,17 +211,37 @@ export default function GoogleScanPage() {
                           </a>
                         </div>
                         <p className="text-sm text-gray-600 mb-2">{result.snippet}</p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <a
-                            href={result.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-green-600 hover:underline truncate max-w-md"
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <a
+                              href={result.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-green-600 hover:underline truncate max-w-md"
+                            >
+                              {result.url}
+                            </a>
+                            {result.source && <span>Source: {result.source}</span>}
+                            {result.date && <span>{result.date}</span>}
+                          </div>
+                          <button
+                            onClick={() => handleIngestArticle(index, result)}
+                            disabled={ingesting === index}
+                            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Ingest article - infer type and parse into CompanyX model"
                           >
-                            {result.url}
-                          </a>
-                          {result.source && <span>Source: {result.source}</span>}
-                          {result.date && <span>{result.date}</span>}
+                            {ingesting === index ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Ingesting...
+                              </>
+                            ) : (
+                              <>
+                                <Download className="h-4 w-4" />
+                                Ingest Article
+                              </>
+                            )}
+                          </button>
                         </div>
                       </div>
                     ))}

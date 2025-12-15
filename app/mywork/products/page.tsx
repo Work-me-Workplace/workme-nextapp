@@ -63,7 +63,7 @@ const productTypeConfig = {
     icon: FileText,
     color: 'orange',
     colorClass: 'text-orange-600',
-    createPath: '/signal/new',
+    createPath: '/mywork/products/builder/new?type=executive_email',
     viewPath: (id: string) => `/signal/${id}`,
   },
 }

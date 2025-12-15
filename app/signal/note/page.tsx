@@ -6,17 +6,8 @@ import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import api from '@/lib/api'
-import { FileText, Search, ExternalLink, CheckCircle, XCircle, Plus, Save, Loader2 } from 'lucide-react'
-import type {
-  NoteLookupResponse,
-  SignalSearchResult,
-  ProductFamilyOption,
-  ProductPlatformOption,
-  EvidenceAttachmentRequest,
-  EvidenceAttachmentResponse,
-} from '@/lib/types/signal'
-
-type AttachmentStep = 'selection' | 'attachment' | 'saving' | 'complete'
+import { FileText, Search, ExternalLink, CheckCircle, XCircle, Download, Loader2 } from 'lucide-react'
+import type { NoteLookupResponse, SignalSearchResult } from '@/lib/types/signal'
 
 export default function NoteLookupPage() {
   const router = useRouter()
@@ -25,18 +16,7 @@ export default function NoteLookupPage() {
   const [signal, setSignal] = useState('')
   const [results, setResults] = useState<NoteLookupResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
-  
-  // Evidence attachment state
-  const [selectedEvidence, setSelectedEvidence] = useState<Set<number>>(new Set())
-  const [attachmentStep, setAttachmentStep] = useState<AttachmentStep | null>(null)
-  const [productFamilies, setProductFamilies] = useState<ProductFamilyOption[]>([])
-  const [productPlatforms, setProductPlatforms] = useState<ProductPlatformOption[]>([])
-  const [selectedProductFamilyId, setSelectedProductFamilyId] = useState<string>('')
-  const [newProductFamilyName, setNewProductFamilyName] = useState('')
-  const [newProductFamilyDescription, setNewProductFamilyDescription] = useState('')
-  const [selectedProductPlatformId, setSelectedProductPlatformId] = useState<string>('')
-  const [creatingNewFamily, setCreatingNewFamily] = useState(false)
-  const [saving, setSaving] = useState(false)
+  const [ingesting, setIngesting] = useState<number | null>(null) // Track which article is being ingested
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -56,8 +36,7 @@ export default function NoteLookupPage() {
     setLoading(true)
     setError(null)
     setResults(null)
-    setSelectedEvidence(new Set())
-    setAttachmentStep(null)
+    setIngesting(null)
 
     try {
       const response = await api.post<NoteLookupResponse>('/api/signalingest/note/lookup', {
@@ -77,117 +56,35 @@ export default function NoteLookupPage() {
     }
   }
 
-  const handleEvidenceToggle = (index: number) => {
-    const newSelected = new Set(selectedEvidence)
-    if (newSelected.has(index)) {
-      newSelected.delete(index)
-    } else {
-      newSelected.add(index)
-    }
-    setSelectedEvidence(newSelected)
-  }
-
-  const handleAttachEvidence = async () => {
-    if (selectedEvidence.size === 0) {
-      setError('Please select at least one evidence item')
-      return
-    }
-
-    if (!creatingNewFamily && !selectedProductFamilyId) {
-      setError('Please select or create a Product Family')
-      return
-    }
-
-    if (creatingNewFamily && !newProductFamilyName.trim()) {
-      setError('Product Family name is required')
-      return
-    }
-
-    setSaving(true)
+  const handleIngestArticle = async (index: number, article: SignalSearchResult) => {
+    setIngesting(index)
     setError(null)
 
     try {
-      // Prepare evidence data from selected items
-      const evidenceData = Array.from(selectedEvidence)
-        .map((index) => {
-          const result = results!.results[index]
-          return {
-            title: result.title,
-            url: result.url,
-            snippet: result.snippet,
-            source: result.source,
-            date: result.date,
-          }
-        })
-
-      const request: EvidenceAttachmentRequest = {
-        evidence: evidenceData,
-        productFamilyId: creatingNewFamily ? undefined : selectedProductFamilyId,
-        productFamilyName: creatingNewFamily ? newProductFamilyName.trim() : undefined,
-        productFamilyDescription: creatingNewFamily ? newProductFamilyDescription.trim() || undefined : undefined,
-        productPlatformId: selectedProductPlatformId || undefined,
-      }
-
-      const response = await api.post<EvidenceAttachmentResponse>('/api/company/product-family/evidence', request)
+      const response = await api.post('/api/signalingest/clip/parse', {
+        title: article.title,
+        url: article.url,
+        snippet: article.snippet,
+        source: article.source,
+        date: article.date,
+      })
 
       if (response.data.success) {
-        setAttachmentStep('complete')
-        // Reset form
-        setSelectedEvidence(new Set())
-        setSelectedProductFamilyId('')
-        setNewProductFamilyName('')
-        setNewProductFamilyDescription('')
-        setSelectedProductPlatformId('')
-        setCreatingNewFamily(false)
+        // Show success message briefly
+        const successMsg = `Article ingested as ${response.data.inferredType}`
+        setError(null)
+        // You could add a success toast here
+        alert(successMsg)
       } else {
-        setError('Failed to save evidence')
+        setError(response.data.error || 'Failed to ingest article')
       }
     } catch (err: any) {
-      console.error('Evidence attachment error:', err)
-      setError(err.response?.data?.error || 'Failed to save evidence')
+      console.error('Ingest article error:', err)
+      setError(err.response?.data?.error || 'Failed to ingest article')
     } finally {
-      setSaving(false)
+      setIngesting(null)
     }
   }
-
-  const loadProductFamilies = async () => {
-    try {
-      const response = await api.get<{ success: boolean; productFamilies: ProductFamilyOption[] }>(
-        '/api/company/product-family/list'
-      )
-      if (response.data.success) {
-        setProductFamilies(response.data.productFamilies)
-      }
-    } catch (err) {
-      console.error('Failed to load product families:', err)
-    }
-  }
-
-  const loadProductPlatforms = async () => {
-    try {
-      const response = await api.get<{ success: boolean; products: any[] }>(
-        '/api/company/products/platform/list'
-      )
-      if (response.data.success) {
-        setProductPlatforms(
-          response.data.products.map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            category: p.category,
-          }))
-        )
-      }
-    } catch (err) {
-      console.error('Failed to load product platforms:', err)
-    }
-  }
-
-  useEffect(() => {
-    if (attachmentStep === 'attachment') {
-      loadProductFamilies()
-      loadProductPlatforms()
-    }
-  }, [attachmentStep])
 
   if (!workMeId) {
     return (
@@ -311,219 +208,59 @@ export default function NoteLookupPage() {
                 </div>
 
                 {results.results.length > 0 ? (
-                  <>
-                    <div className="p-6 space-y-4">
-                      {results.results.map((result: SignalSearchResult, index: number) => (
-                        <div
-                          key={index}
-                          className={`border rounded-lg p-4 transition ${
-                            selectedEvidence.has(index)
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            {attachmentStep !== null && (
-                              <input
-                                type="checkbox"
-                                checked={selectedEvidence.has(index)}
-                                onChange={() => handleEvidenceToggle(index)}
-                                className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                              />
-                            )}
-                            <div className="flex-1">
-                              <div className="flex items-start justify-between mb-2">
-                                <h3 className="text-lg font-semibold text-gray-900 flex-1">{result.title}</h3>
-                                <a
-                                  href={result.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:text-blue-800 ml-4"
-                                >
-                                  <ExternalLink className="h-5 w-5" />
-                                </a>
-                              </div>
-                              <p className="text-sm text-gray-600 mb-2">{result.snippet}</p>
-                              <div className="flex items-center gap-4 text-xs text-gray-500">
-                                <a
-                                  href={result.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:underline truncate max-w-md"
-                                >
-                                  {result.url}
-                                </a>
-                                {result.source && <span>Source: {result.source}</span>}
-                                {result.date && <span>{result.date}</span>}
-                              </div>
-                            </div>
+                  <div className="p-6 space-y-4">
+                    {results.results.map((result: SignalSearchResult, index: number) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900 flex-1">{result.title}</h3>
+                          <div className="flex items-center gap-2 ml-4">
+                            <a
+                              href={result.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800"
+                              title="Open in new tab"
+                            >
+                              <ExternalLink className="h-5 w-5" />
+                            </a>
                           </div>
                         </div>
-                      ))}
-                    </div>
-
-                    {/* Attach Evidence Button */}
-                    {results.public && attachmentStep === null && (
-                      <div className="p-6 border-t border-gray-200">
-                        <button
-                          onClick={() => setAttachmentStep('selection')}
-                          className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2"
-                        >
-                          <Plus className="h-5 w-5" />
-                          Attach Evidence To Product Family
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Attachment Form */}
-                    {attachmentStep === 'selection' && (
-                      <div className="p-6 border-t border-gray-200 bg-gray-50">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                          Attach Evidence ({selectedEvidence.size} selected)
-                        </h3>
-
-                        <div className="space-y-4">
-                          {/* Product Family Selection */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Product Family *
-                            </label>
-                            <div className="flex gap-2 mb-2">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCreatingNewFamily(false)
-                                  setSelectedProductFamilyId('')
-                                }}
-                                className={`px-3 py-2 text-sm rounded-lg ${
-                                  !creatingNewFamily
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                }`}
-                              >
-                                Select Existing
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCreatingNewFamily(true)
-                                  setSelectedProductFamilyId('')
-                                }}
-                                className={`px-3 py-2 text-sm rounded-lg ${
-                                  creatingNewFamily
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                }`}
-                              >
-                                Create New
-                              </button>
-                            </div>
-
-                            {!creatingNewFamily ? (
-                              <select
-                                value={selectedProductFamilyId}
-                                onChange={(e) => setSelectedProductFamilyId(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              >
-                                <option value="">Select a Product Family...</option>
-                                {productFamilies.map((family) => (
-                                  <option key={family.id} value={family.id}>
-                                    {family.name} {family.description && `- ${family.description}`}
-                                  </option>
-                                ))}
-                              </select>
+                        <p className="text-sm text-gray-600 mb-2">{result.snippet}</p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <a
+                              href={result.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline truncate max-w-md"
+                            >
+                              {result.url}
+                            </a>
+                            {result.source && <span>Source: {result.source}</span>}
+                            {result.date && <span>{result.date}</span>}
+                          </div>
+                          <button
+                            onClick={() => handleIngestArticle(index, result)}
+                            disabled={ingesting === index}
+                            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Ingest article - infer type and parse into CompanyX model"
+                          >
+                            {ingesting === index ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Ingesting...
+                              </>
                             ) : (
-                              <div className="space-y-2">
-                                <input
-                                  type="text"
-                                  value={newProductFamilyName}
-                                  onChange={(e) => setNewProductFamilyName(e.target.value)}
-                                  placeholder="Product Family Name *"
-                                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                  required
-                                />
-                                <textarea
-                                  value={newProductFamilyDescription}
-                                  onChange={(e) => setNewProductFamilyDescription(e.target.value)}
-                                  placeholder="Description (optional)"
-                                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                  rows={2}
-                                />
-                              </div>
+                              <>
+                                <Download className="h-4 w-4" />
+                                Ingest Article
+                              </>
                             )}
-                          </div>
-
-                          {/* Product Platform Selection (Optional) */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Product Platform (Optional)
-                            </label>
-                            <select
-                              value={selectedProductPlatformId}
-                              onChange={(e) => setSelectedProductPlatformId(e.target.value)}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                              <option value="">None</option>
-                              {productPlatforms.map((platform) => (
-                                <option key={platform.id} value={platform.id}>
-                                  {platform.name} {platform.category && `(${platform.category})`}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          {/* Action Buttons */}
-                          <div className="flex gap-3 pt-4">
-                            <button
-                              onClick={handleAttachEvidence}
-                              disabled={saving || selectedEvidence.size === 0}
-                              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                              {saving ? (
-                                <>
-                                  <Loader2 className="h-5 w-5 animate-spin" />
-                                  Saving...
-                                </>
-                              ) : (
-                                <>
-                                  <Save className="h-5 w-5" />
-                                  Save Evidence
-                                </>
-                              )}
-                            </button>
-                            <button
-                              onClick={() => {
-                                setAttachmentStep(null)
-                                setSelectedEvidence(new Set())
-                              }}
-                              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
-                            >
-                              Cancel
-                            </button>
-                          </div>
+                          </button>
                         </div>
                       </div>
-                    )}
-
-                    {/* Success Message */}
-                    {attachmentStep === 'complete' && (
-                      <div className="p-6 border-t border-gray-200 bg-green-50">
-                        <div className="flex items-center gap-2 text-green-800">
-                          <CheckCircle className="h-5 w-5" />
-                          <span className="font-medium">Evidence saved successfully!</span>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setAttachmentStep(null)
-                            setSelectedEvidence(new Set())
-                          }}
-                          className="mt-3 text-sm text-green-700 hover:text-green-900 underline"
-                        >
-                          Attach more evidence
-                        </button>
-                      </div>
-                    )}
-                  </>
+                    ))}
+                  </div>
                 ) : (
                   <div className="p-12 text-center">
                     <p className="text-gray-500">No public results found for this signal</p>
@@ -537,4 +274,3 @@ export default function NoteLookupPage() {
     </div>
   )
 }
-

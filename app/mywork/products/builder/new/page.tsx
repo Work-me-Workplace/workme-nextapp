@@ -1,0 +1,275 @@
+'use client'
+
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
+import SidebarNav from '@/components/mywork/SidebarNav'
+import { ArrowLeft, FileText, Clipboard } from 'lucide-react'
+import api from '@/lib/api'
+
+type Mode = 'choice' | 'ingest' | 'create'
+
+function ProductBuilderContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const type = searchParams.get('type')
+  const [mode, setMode] = useState<Mode>('choice')
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    title: '',
+    saidBy: '',
+    role: '',
+    content: '',
+  })
+
+  // Only show fork for executive_email type
+  const showFork = type === 'executive_email'
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!formData.content.trim()) {
+      alert('Content is required')
+      return
+    }
+
+    try {
+      setLoading(true)
+      const response = await api.post('/api/signal/create', {
+        title: formData.title || undefined,
+        content: formData.content,
+        saidBy: formData.saidBy || undefined,
+        role: formData.role || undefined,
+        source: 'senior_leader_email',
+      })
+
+      if (response.data.success) {
+        // After creating, automatically parse topics for executive_email
+        if (type === 'executive_email') {
+          await api.post(`/api/signal/${response.data.artifact.id}/parse-topics`)
+        }
+        router.push(`/signal/${response.data.artifact.id}`)
+      } else {
+        alert('Failed to create signal artifact')
+      }
+    } catch (error: any) {
+      console.error('Failed to create signal artifact:', error)
+      alert(error.response?.data?.error || 'Failed to create signal artifact')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!showFork) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Invalid Product Type</h1>
+          <Link href="/mywork/products" className="text-blue-600 hover:text-blue-700">
+            ← Back to Products
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Nav */}
+      <nav className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <Link href="/dashboard" className="flex items-center space-x-2">
+                <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span className="text-xl font-bold text-gray-900">Work.me</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div className="flex">
+        <SidebarNav />
+
+        <main className="flex-1">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <Link
+              href="/mywork/products"
+              className="flex items-center text-blue-600 hover:text-blue-700 mb-6 text-sm"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Products
+            </Link>
+
+            <div className="bg-white rounded-lg shadow p-8">
+              {mode === 'choice' ? (
+                <>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">Senior Leader Email</h1>
+                  <p className="text-gray-600 mb-8">How do you want to add this email?</p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <button
+                      onClick={() => setMode('ingest')}
+                      className="group p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
+                    >
+                      <div className="flex items-center mb-3">
+                        <div className="p-3 bg-orange-100 text-orange-600 rounded-lg mr-4">
+                          <Clipboard className="h-6 w-6" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">Ingest Existing</h3>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Copy/paste an email that someone else worked on. Store it as raw content and parse topics.
+                      </p>
+                    </button>
+
+                    <button
+                      onClick={() => setMode('create')}
+                      className="group p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
+                    >
+                      <div className="flex items-center mb-3">
+                        <div className="p-3 bg-blue-100 text-blue-600 rounded-lg mr-4">
+                          <FileText className="h-6 w-6" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">Create New</h3>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Create a new senior leader email artifact from scratch. Add metadata and content manually.
+                      </p>
+                    </button>
+                  </div>
+
+                  <Link
+                    href="/mywork/products"
+                    className="text-blue-600 hover:text-blue-700 text-sm"
+                  >
+                    ← Back to Products
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h1 className="text-3xl font-bold text-gray-900">
+                        {mode === 'ingest' ? 'Ingest Existing Email' : 'Create New Email'}
+                      </h1>
+                      <p className="text-gray-600 mt-1">
+                        {mode === 'ingest' 
+                          ? 'Paste the email content below. It will be stored and topics will be parsed automatically.'
+                          : 'Fill in the details to create a new senior leader email artifact.'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setMode('choice')}
+                      className="text-sm text-gray-600 hover:text-gray-900"
+                    >
+                      ← Change option
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                      <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                        Title (optional)
+                      </label>
+                      <input
+                        type="text"
+                        id="title"
+                        value={formData.title}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="e.g., Q1 All-Hands Email"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="saidBy" className="block text-sm font-medium text-gray-700 mb-2">
+                          Said By (optional)
+                        </label>
+                        <input
+                          type="text"
+                          id="saidBy"
+                          value={formData.saidBy}
+                          onChange={(e) => setFormData({ ...formData, saidBy: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="e.g., Chris Miller"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+                          Role (optional)
+                        </label>
+                        <input
+                          type="text"
+                          id="role"
+                          value={formData.role}
+                          onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="e.g., SES, Director"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
+                        Content <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        id="content"
+                        value={formData.content}
+                        onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                        rows={20}
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                        placeholder="Paste the full email or text content here..."
+                      />
+                      <p className="mt-2 text-sm text-gray-500">
+                        {mode === 'ingest' 
+                          ? 'Paste the complete email. It will be stored as raw content and topics will be parsed automatically.'
+                          : 'Paste the complete email or text. This will be stored as raw, immutable content.'}
+                      </p>
+                    </div>
+
+                    <div className="flex justify-end gap-4">
+                      <Link
+                        href="/mywork/products"
+                        className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </Link>
+                      <button
+                        type="submit"
+                        disabled={loading || !formData.content.trim()}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loading ? 'Creating...' : mode === 'ingest' ? 'Ingest & Parse Topics' : 'Create Signal'}
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )}
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  )
+}
+
+export default function ProductBuilderPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <ProductBuilderContent />
+    </Suspense>
+  )
+}
