@@ -11,34 +11,26 @@ import api from '@/lib/api'
 export default function SeniorSignalPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    title: '',
-    saidBy: '',
-    role: '',
-    content: '',
-  })
+  const [content, setContent] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.content.trim()) {
+    if (!content.trim()) {
       alert('Content is required')
       return
     }
 
     try {
       setLoading(true)
+      // Signal section: just create SignalArtifact (raw signal, no topics)
       const response = await api.post('/api/signal/create', {
-        title: formData.title || undefined,
-        content: formData.content,
-        saidBy: formData.saidBy || undefined,
-        role: formData.role || undefined,
+        content: content.trim(),
         source: 'senior_leader_email',
       })
 
       if (response.data.success) {
-        // Signal section: just store raw artifact, no topic parsing
-        // (Topic parsing is for MyWork section - "what did the boss say")
+        // Signal section: just store raw SignalArtifact, no topic parsing
         router.push(`/signal/${response.data.artifact.id}`)
       } else {
         alert('Failed to create signal artifact')
@@ -88,64 +80,20 @@ export default function SeniorSignalPage() {
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                    Title (optional)
-                  </label>
-                  <input
-                    type="text"
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="e.g., Q1 All-Hands Email"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="saidBy" className="block text-sm font-medium text-gray-700 mb-2">
-                      Said By (optional)
-                    </label>
-                    <input
-                      type="text"
-                      id="saidBy"
-                      value={formData.saidBy}
-                      onChange={(e) => setFormData({ ...formData, saidBy: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="e.g., Chris Miller"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
-                      Role (optional)
-                    </label>
-                    <input
-                      type="text"
-                      id="role"
-                      value={formData.role}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="e.g., SES, Director"
-                    />
-                  </div>
-                </div>
-
-                <div>
                   <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
                     Content <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     id="content"
-                    value={formData.content}
-                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    rows={20}
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    rows={25}
                     required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
                     placeholder="Paste the full email content here..."
                   />
                   <p className="mt-2 text-sm text-gray-500">
-                    Paste the complete email. It will be stored as raw SignalArtifact only (no topic parsing).
+                    Raw SignalArtifact only - no topic parsing, no metadata. Just raw content dump.
                   </p>
                 </div>
 
@@ -158,7 +106,7 @@ export default function SeniorSignalPage() {
                   </Link>
                   <button
                     type="submit"
-                    disabled={loading || !formData.content.trim()}
+                    disabled={loading || !content.trim()}
                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? 'Saving...' : 'Save Signal'}
