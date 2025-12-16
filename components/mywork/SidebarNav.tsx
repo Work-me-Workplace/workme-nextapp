@@ -37,6 +37,7 @@ export default function SidebarNav() {
     if (path === '/dashboard') return pathname === path
     if (path === '/mycompany/workforcestuff') return pathname?.startsWith(path)
     if (path === '/mycompany/milestones') return pathname?.startsWith(path)
+    if (path === '/mycompany/senior-leaders') return pathname?.startsWith(path)
     if (path === '/mycompany/products') return pathname?.startsWith(path) || pathname?.startsWith('/mycompany/platforms')
     if (path === '/mycompany/external-pressures') return pathname?.startsWith(path)
     if (path === '/mywork/products') return pathname === path || pathname?.startsWith('/mywork/digital-signage')
@@ -65,6 +66,7 @@ export default function SidebarNav() {
         { name: 'Workforce Stuff', path: '/mycompany/workforcestuff', icon: Users },
         { name: 'Company Milestones', path: '/mycompany/milestones', icon: TrendingUp },
         { name: 'Employee Highlights', path: '/mycompany/highlights', icon: Award },
+        { name: 'Senior Leaders', path: '/mycompany/senior-leaders', icon: UserPlus },
         { name: 'Company Products', path: '/mycompany/products', icon: Package },
         { name: 'External Company Pressures', path: '/mycompany/external-pressures', icon: AlertTriangle },
       ],

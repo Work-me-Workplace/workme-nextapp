@@ -7,9 +7,10 @@ export const dynamic = 'force-dynamic'
 
 interface CreateSeniorLeaderEmailProductRequest {
   title?: string
+  actualSubjectLine?: string
   content: string
-  saidBy?: string
-  role?: string
+  role: string // SeniorLeaderRole enum
+  companyEmployeeId?: string // FK to CompanyEmployee
   companyUnit?: string
 }
 
@@ -23,12 +24,29 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireWorkMeAuth(request)
     const body: CreateSeniorLeaderEmailProductRequest = await request.json()
-    const { title, content, saidBy, role, companyUnit } = body
+    const { title, actualSubjectLine, content, role, companyEmployeeId, companyUnit } = body
 
     // Validate content is required
     if (!content || !content.trim()) {
       return NextResponse.json(
         { success: false, error: 'Content is required' },
+        { status: 400 }
+      )
+    }
+
+    // Validate role is required
+    if (!role) {
+      return NextResponse.json(
+        { success: false, error: 'Role is required' },
+        { status: 400 }
+      )
+    }
+
+    // Validate role is a valid enum value
+    const validRoles = ['SES', 'DIRECTOR', 'DEPUTY_DIRECTOR', 'EXECUTIVE_DIRECTOR', 'CHIEF', 'DEPUTY_CHIEF', 'COMMANDER', 'DEPUTY_COMMANDER', 'OTHER']
+    if (!validRoles.includes(role)) {
+      return NextResponse.json(
+        { success: false, error: `Invalid role. Must be one of: ${validRoles.join(', ')}` },
         { status: 400 }
       )
     }
@@ -44,9 +62,10 @@ export async function POST(request: NextRequest) {
         content: {
           create: {
             title: title || null,
+            actualSubjectLine: actualSubjectLine || null,
             content: content.trim(),
-            saidBy: saidBy || null,
-            role: role || null,
+            role: role as any, // Prisma enum
+            companyEmployeeId: companyEmployeeId || null,
           },
         },
         topics: {
@@ -57,7 +76,18 @@ export async function POST(request: NextRequest) {
         },
       },
       include: {
-        content: true,
+        content: {
+          include: {
+            companyEmployee: {
+              select: {
+                id: true,
+                fullName: true,
+                title: true,
+                email: true,
+              },
+            },
+          },
+        },
         topics: true,
       },
     })

@@ -151,6 +151,18 @@ enum PlatformMilestoneType {
   COMMISSIONING
 }
 
+enum SeniorLeaderRole {
+  SES
+  DIRECTOR
+  DEPUTY_DIRECTOR
+  EXECUTIVE_DIRECTOR
+  CHIEF
+  DEPUTY_CHIEF
+  COMMANDER
+  DEPUTY_COMMANDER
+  OTHER
+}
+
 // ============================================
 // WORKME COMPANY MODEL (Silent Background Tag)
 // ============================================
@@ -714,9 +726,14 @@ model CompanyEmployee {
   updatedAt DateTime @updatedAt
 
   // Relations
-  highlights CompanyEmployeeHighlight[]
-  company    Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdBy  WorkMe                     @relation("CompanyEmployeeCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  highlights         CompanyEmployeeHighlight[]
+  seniorLeaderEmails ProductSeniorLeaderEmailContent[]
+  myTeamDirectors    MyTeamDirectorProfile[]
+  myTeamDeputies     MyTeamDeputyProfile[]
+  myTeamPeers        MyTeamPeerProfile[]
+  myTeamSubordinates MyTeamSubordinateProfile[]
+  company            Company                           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy          WorkMe                            @relation("CompanyEmployeeCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([workMeCompanyId])
@@ -1108,6 +1125,14 @@ model WorkGoal {
 // ============================================
 // Personal intelligence captured by the user - NOT company data
 // Every WorkMe identity gets exactly ONE MyTeamContainer
+//
+// ARCHITECTURAL NOTE:
+// CompanyEmployee is the single identity model for all company people.
+// All role and workplace intelligence models reference it by FK.
+// Roles describe capacity; intelligence describes personal perception.
+// MyTeam models may optionally link to CompanyEmployee via employeeId FK
+// to enrich personal intelligence with company truth, but can also exist
+// independently for external people, former employees, or fuzzy relationships.
 
 model MyTeamContainer {
   id       String @id @default(cuid())
@@ -1129,7 +1154,12 @@ model MyTeamDirectorProfile {
   containerId String
   container   MyTeamContainer @relation(fields: [containerId], references: [id], onDelete: Cascade)
 
-  // Identity
+  // Optional link to CompanyEmployee (company truth)
+  // Allows enriching personal intelligence with company data
+  employeeId String?
+  employee   CompanyEmployee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  // Identity (kept for external/former employees or when no CompanyEmployee match)
   firstName   String
   lastName    String
   ageEstimate Int?
@@ -1161,12 +1191,17 @@ model MyTeamDirectorProfile {
   miscNotes String?
 
   @@index([containerId])
+  @@index([employeeId])
 }
 
 model MyTeamDeputyProfile {
   id          String          @id @default(cuid())
   containerId String
   container   MyTeamContainer @relation(fields: [containerId], references: [id], onDelete: Cascade)
+
+  // Optional link to CompanyEmployee (company truth)
+  employeeId String?
+  employee   CompanyEmployee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
 
   firstName   String
   lastName    String
@@ -1191,12 +1226,17 @@ model MyTeamDeputyProfile {
   miscNotes String?
 
   @@index([containerId])
+  @@index([employeeId])
 }
 
 model MyTeamPeerProfile {
   id          String          @id @default(cuid())
   containerId String
   container   MyTeamContainer @relation(fields: [containerId], references: [id], onDelete: Cascade)
+
+  // Optional link to CompanyEmployee (company truth)
+  employeeId String?
+  employee   CompanyEmployee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
 
   firstName   String
   lastName    String
@@ -1221,12 +1261,17 @@ model MyTeamPeerProfile {
   miscNotes String?
 
   @@index([containerId])
+  @@index([employeeId])
 }
 
 model MyTeamSubordinateProfile {
   id          String          @id @default(cuid())
   containerId String
   container   MyTeamContainer @relation(fields: [containerId], references: [id], onDelete: Cascade)
+
+  // Optional link to CompanyEmployee (company truth)
+  employeeId String?
+  employee   CompanyEmployee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
 
   firstName   String
   lastName    String
@@ -1249,6 +1294,7 @@ model MyTeamSubordinateProfile {
   miscNotes String?
 
   @@index([containerId])
+  @@index([employeeId])
 }
 
 // ============================================
@@ -1861,6 +1907,11 @@ model SeniorLeaderTopic {
 // Product artifact for senior leader emails - "what did the boss say"
 // This is a PRODUCT, not a signal
 // Always includes topic parsing (SeniorLeaderTopics)
+//
+// ARCHITECTURAL NOTE:
+// ProductSeniorLeaderEmailContent references CompanyEmployee via companyEmployeeId.
+// CompanyEmployee is the single source of truth for all company people.
+// Role enum (SeniorLeaderRole) is context only, not identity.
 model ProductSeniorLeaderEmail {
   id         String    @id @default(cuid())
   createdAt  DateTime  @default(now())
@@ -1883,15 +1934,24 @@ model ProductSeniorLeaderEmail {
 }
 
 model ProductSeniorLeaderEmailContent {
-  id                        String @id @default(cuid())
+  id                         String @id @default(cuid())
   seniorLeaderEmailProductId String @unique
 
-  title  String?
-  content String // full pasted text, untouched
-  saidBy String? // free text for now ("Chris Miller")
-  role   String? // optional
+  title             String?
+  actualSubjectLine String? // actual email subject line
+  content           String // full pasted text, untouched (BodyofEmail)
+
+  // Role enum - user selects this first, then looks up people
+  role SeniorLeaderRole
+
+  // Reference to CompanyEmployee (the actual person selected after role lookup)
+  companyEmployeeId String?
+  companyEmployee   CompanyEmployee? @relation(fields: [companyEmployeeId], references: [id], onDelete: SetNull)
 
   product ProductSeniorLeaderEmail @relation(fields: [seniorLeaderEmailProductId], references: [id], onDelete: Cascade)
+
+  @@index([role])
+  @@index([companyEmployeeId])
 }
 
 // ============================================

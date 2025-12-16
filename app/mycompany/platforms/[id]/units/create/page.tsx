@@ -13,8 +13,8 @@ import { Ship, ArrowLeft, Wand2, Loader2 } from 'lucide-react'
 interface UnitData {
   hullNumber: string
   name?: string | null
-  numberInClass?: number | null
   platformClass?: string | null
+  numberInClass?: number | null
   defenseContractor?: string | null
   shipyard?: string | null
   whereBuilt?: string | null

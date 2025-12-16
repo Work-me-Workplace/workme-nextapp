@@ -2,13 +2,23 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { ArrowLeft, FileText, Clipboard } from 'lucide-react'
+import { ArrowLeft, FileText, Clipboard, Search, UserPlus } from 'lucide-react'
 import api from '@/lib/api'
 
 type Mode = 'choice' | 'ingest' | 'create'
+
+type SeniorLeaderRole = 'SES' | 'DIRECTOR' | 'DEPUTY_DIRECTOR' | 'EXECUTIVE_DIRECTOR' | 'CHIEF' | 'DEPUTY_CHIEF' | 'COMMANDER' | 'DEPUTY_COMMANDER' | 'OTHER'
+
+interface Employee {
+  id: string
+  fullName: string
+  title: string | null
+  email: string | null
+  companyUnit: string | null
+}
 
 export default function SeniorLeaderBuildPage() {
   const router = useRouter()
@@ -16,10 +26,79 @@ export default function SeniorLeaderBuildPage() {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
-    saidBy: '',
-    role: '',
+    actualSubjectLine: '',
+    role: '' as SeniorLeaderRole | '',
+    companyEmployeeId: '',
     content: '',
   })
+  const [selectedRole, setSelectedRole] = useState<SeniorLeaderRole | ''>('')
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
+  const [loadingEmployees, setLoadingEmployees] = useState(false)
+  const [enrichingFromApollo, setEnrichingFromApollo] = useState(false)
+  const [apolloSearchName, setApolloSearchName] = useState('')
+
+  // Lookup employees by role
+  const handleRoleChange = async (role: SeniorLeaderRole) => {
+    setSelectedRole(role)
+    setFormData({ ...formData, role, companyEmployeeId: '' })
+    setSelectedEmployee(null)
+    setEmployees([])
+
+    if (!role) return
+
+    try {
+      setLoadingEmployees(true)
+      const response = await api.get(`/api/employee/lookup-by-role?role=${role}`)
+      
+      if (response.data.success) {
+        setEmployees(response.data.employees || [])
+      } else {
+        console.error('Failed to lookup employees:', response.data.error)
+      }
+    } catch (error: any) {
+      console.error('Failed to lookup employees:', error)
+    } finally {
+      setLoadingEmployees(false)
+    }
+  }
+
+  // Enrich from Apollo
+  const handleEnrichFromApollo = async () => {
+    if (!apolloSearchName.trim()) {
+      alert('Please enter a name to search')
+      return
+    }
+
+    if (!selectedRole) {
+      alert('Please select a role first')
+      return
+    }
+
+    try {
+      setEnrichingFromApollo(true)
+      const response = await api.post('/api/employee/enrich-from-apollo', {
+        fullName: apolloSearchName.trim(),
+        role: selectedRole,
+      })
+
+      if (response.data.success) {
+        const employee = response.data.employee
+        setSelectedEmployee(employee)
+        setFormData({ ...formData, companyEmployeeId: employee.id })
+        setEmployees([...employees, employee])
+        setApolloSearchName('')
+        alert(`Successfully enriched and created employee: ${employee.fullName}`)
+      } else {
+        alert(response.data.error || 'Failed to enrich from Apollo')
+      }
+    } catch (error: any) {
+      console.error('Failed to enrich from Apollo:', error)
+      alert(error.response?.data?.error || 'Failed to enrich from Apollo')
+    } finally {
+      setEnrichingFromApollo(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,25 +108,31 @@ export default function SeniorLeaderBuildPage() {
       return
     }
 
+    if (!formData.role) {
+      alert('Role is required')
+      return
+    }
+
     try {
       setLoading(true)
       // Create ProductSeniorLeaderEmail (product artifact) + auto-parse topics
       const response = await api.post('/api/mywork/senior-leader-email/create', {
         title: formData.title || undefined,
+        actualSubjectLine: formData.actualSubjectLine || undefined,
         content: formData.content,
-        saidBy: formData.saidBy || undefined,
-        role: formData.role || undefined,
+        role: formData.role,
+        companyEmployeeId: formData.companyEmployeeId || undefined,
       })
 
       if (response.data.success) {
         // Redirect back to products page (product is created with topics)
         router.push('/mywork/products')
       } else {
-        alert('Failed to create signal artifact')
+        alert('Failed to create senior leader email')
       }
     } catch (error: any) {
-      console.error('Failed to create signal artifact:', error)
-      alert(error.response?.data?.error || 'Failed to create signal artifact')
+      console.error('Failed to create senior leader email:', error)
+      alert(error.response?.data?.error || 'Failed to create senior leader email')
     } finally {
       setLoading(false)
     }
@@ -161,39 +246,116 @@ export default function SeniorLeaderBuildPage() {
                         value={formData.title}
                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="e.g., Q1 All-Hands Email"
+                        placeholder="Enter a title for this email"
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="saidBy" className="block text-sm font-medium text-gray-700 mb-2">
-                          Said By (optional)
-                        </label>
-                        <input
-                          type="text"
-                          id="saidBy"
-                          value={formData.saidBy}
-                          onChange={(e) => setFormData({ ...formData, saidBy: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="e.g., Chris Miller"
-                        />
-                      </div>
-
-                      <div>
-                        <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
-                          Role (optional)
-                        </label>
-                        <input
-                          type="text"
-                          id="role"
-                          value={formData.role}
-                          onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="e.g., SES, Director"
-                        />
-                      </div>
+                    <div>
+                      <label htmlFor="actualSubjectLine" className="block text-sm font-medium text-gray-700 mb-2">
+                        Subject Line (optional)
+                      </label>
+                      <input
+                        type="text"
+                        id="actualSubjectLine"
+                        value={formData.actualSubjectLine}
+                        onChange={(e) => setFormData({ ...formData, actualSubjectLine: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter the email subject line"
+                      />
                     </div>
+
+                    <div>
+                      <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+                        Role <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        id="role"
+                        value={selectedRole}
+                        onChange={(e) => handleRoleChange(e.target.value as SeniorLeaderRole)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      >
+                        <option value="">Select a role...</option>
+                        <option value="SES">SES</option>
+                        <option value="DIRECTOR">Director</option>
+                        <option value="DEPUTY_DIRECTOR">Deputy Director</option>
+                        <option value="EXECUTIVE_DIRECTOR">Executive Director</option>
+                        <option value="CHIEF">Chief</option>
+                        <option value="DEPUTY_CHIEF">Deputy Chief</option>
+                        <option value="COMMANDER">Commander</option>
+                        <option value="DEPUTY_COMMANDER">Deputy Commander</option>
+                        <option value="OTHER">Other</option>
+                      </select>
+                    </div>
+
+                    {selectedRole && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Select Person
+                        </label>
+                        
+                        {loadingEmployees ? (
+                          <div className="text-sm text-gray-500">Loading employees...</div>
+                        ) : employees.length > 0 ? (
+                          <div className="space-y-2">
+                            <select
+                              value={formData.companyEmployeeId}
+                              onChange={(e) => {
+                                const employee = employees.find(emp => emp.id === e.target.value)
+                                setSelectedEmployee(employee || null)
+                                setFormData({ ...formData, companyEmployeeId: e.target.value })
+                              }}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                              <option value="">Select a person...</option>
+                              {employees.map((emp) => (
+                                <option key={emp.id} value={emp.id}>
+                                  {emp.fullName} {emp.title ? `- ${emp.title}` : ''}
+                                </option>
+                              ))}
+                            </select>
+                            
+                            {selectedEmployee && (
+                              <div className="p-3 bg-blue-50 rounded-lg text-sm">
+                                <div className="font-medium">{selectedEmployee.fullName}</div>
+                                {selectedEmployee.title && <div className="text-gray-600">{selectedEmployee.title}</div>}
+                                {selectedEmployee.email && <div className="text-gray-600">{selectedEmployee.email}</div>}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-500 mb-3">No employees found for this role.</div>
+                        )}
+
+                        {/* Apollo Enrichment */}
+                        <div className="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                          <div className="flex items-center mb-2">
+                            <UserPlus className="h-4 w-4 mr-2 text-gray-600" />
+                            <span className="text-sm font-medium text-gray-700">Enrich from Apollo</span>
+                          </div>
+                          <p className="text-xs text-gray-600 mb-3">
+                            If the person isn't in the list, search and enrich from Apollo
+                          </p>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={apolloSearchName}
+                              onChange={(e) => setApolloSearchName(e.target.value)}
+                              placeholder="Enter full name..."
+                              className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleEnrichFromApollo}
+                              disabled={enrichingFromApollo || !apolloSearchName.trim()}
+                              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {enrichingFromApollo ? 'Enriching...' : 'Enrich'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div>
                       <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">

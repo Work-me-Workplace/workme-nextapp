@@ -455,7 +455,7 @@ export default function NewHighlightPage() {
                         type="text"
                         value={newEmployee.companyUnit}
                         onChange={(e) => setNewEmployee({ ...newEmployee, companyUnit: e.target.value })}
-                        placeholder="Unit (e.g., SEA 05, SEA08D1) *"
+                        placeholder="Enter company unit"
                         required
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
@@ -500,7 +500,7 @@ export default function NewHighlightPage() {
                           onChange={(e) => {
                             setSelectedEmployee({ ...selectedEmployee, companyUnit: e.target.value })
                           }}
-                          placeholder="SEA 05, SEA08D1, etc."
+                          placeholder="Enter company unit"
                           disabled={!!selectedEmployee.companyUnit}
                           className={`w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                             selectedEmployee.companyUnit 
@@ -620,7 +620,7 @@ export default function NewHighlightPage() {
                             value={parsedHighlight.awardName || ''}
                             onChange={(e) => setParsedHighlight({ ...parsedHighlight, awardName: e.target.value || null })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                            placeholder="e.g., NAVSEA Excellence Awards"
+                            placeholder="Enter award name"
                           />
                         </div>
                         <div>
@@ -630,7 +630,7 @@ export default function NewHighlightPage() {
                             value={parsedHighlight.categoryOfAward || ''}
                             onChange={(e) => setParsedHighlight({ ...parsedHighlight, categoryOfAward: e.target.value || null })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                            placeholder="e.g., Technical Innovation Category"
+                            placeholder="Enter award category"
                           />
                           <p className="mt-1 text-xs text-gray-500">For awards with multiple categories</p>
                         </div>
