@@ -92,7 +92,7 @@ export default function SignalLandingPage() {
     {
       name: 'Senior Email',
       description: 'SES/Flag email context extraction',
-      path: '/signal/new',
+      path: '/signal/senior',
       icon: Mail,
       color: 'orange',
       available: true,
@@ -147,13 +147,6 @@ export default function SignalLandingPage() {
                   <Radio className="h-8 w-8 text-blue-600" />
                   <h1 className="text-3xl font-bold text-gray-900">Signals</h1>
                 </div>
-                <Link
-                  href="/signal/new"
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Plus className="h-5 w-5" />
-                  Add Signal
-                </Link>
               </div>
               <p className="text-gray-600 mb-6">OSINT-based signal ingestion and verification</p>
             </div>
@@ -168,13 +161,7 @@ export default function SignalLandingPage() {
                 <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No signals yet</h3>
                 <p className="text-gray-600 mb-6">Get started by adding your first signal artifact</p>
-                <Link
-                  href="/signal/new"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Plus className="h-5 w-5" />
-                  Add Signal
-                </Link>
+                <p className="text-gray-500">Select a signal type from below to get started.</p>
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow overflow-hidden">

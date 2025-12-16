@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, Suspense } from 'react'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { ArrowLeft, FileText, Clipboard } from 'lucide-react'
@@ -10,10 +10,8 @@ import api from '@/lib/api'
 
 type Mode = 'choice' | 'ingest' | 'create'
 
-function ProductBuilderContent() {
+export default function SeniorLeaderBuildPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const type = searchParams.get('type')
   const [mode, setMode] = useState<Mode>('choice')
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -22,9 +20,6 @@ function ProductBuilderContent() {
     role: '',
     content: '',
   })
-
-  // Only show fork for executive_email type
-  const showFork = type === 'executive_email'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,10 +40,8 @@ function ProductBuilderContent() {
       })
 
       if (response.data.success) {
-        // After creating, automatically parse topics for executive_email
-        if (type === 'executive_email') {
-          await api.post(`/api/signal/${response.data.artifact.id}/parse-topics`)
-        }
+        // Automatically parse topics for senior leader emails
+        await api.post(`/api/signal/${response.data.artifact.id}/parse-topics`)
         router.push(`/signal/${response.data.artifact.id}`)
       } else {
         alert('Failed to create signal artifact')
@@ -59,19 +52,6 @@ function ProductBuilderContent() {
     } finally {
       setLoading(false)
     }
-  }
-
-  if (!showFork) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Invalid Product Type</h1>
-          <Link href="/mywork/products" className="text-blue-600 hover:text-blue-700">
-            ← Back to Products
-          </Link>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -259,18 +239,6 @@ function ProductBuilderContent() {
         </main>
       </div>
     </div>
-  )
-}
-
-export default function ProductBuilderPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    }>
-      <ProductBuilderContent />
-    </Suspense>
   )
 }
 
