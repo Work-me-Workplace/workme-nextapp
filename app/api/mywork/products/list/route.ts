@@ -89,7 +89,15 @@ export async function GET(request: NextRequest) {
         createdByWorkMeId: workMe.id,
       },
       include: {
-        content: true,
+        content: {
+          include: {
+            companyEmployee: {
+              select: {
+                fullName: true,
+              },
+            },
+          },
+        },
         _count: {
           select: {
             topics: true,
@@ -132,7 +140,7 @@ export async function GET(request: NextRequest) {
         updatedAt: p.updatedAt.toISOString(),
         metadata: {
           topicsCount: p._count.topics,
-          saidBy: p.content?.saidBy || null,
+          saidBy: p.content?.companyEmployee?.fullName || null,
         },
       })),
     ]

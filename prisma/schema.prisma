@@ -81,6 +81,9 @@ model WorkMe {
   // Product Relations
   createdSeniorLeaderEmailProducts ProductSeniorLeaderEmail[] @relation("ProductSeniorLeaderEmailCreator")
 
+  // News Artifact Relations
+  createdCompanyNewsArtifacts CompanyNewsArtifact[] @relation("CompanyNewsArtifactCreator")
+
   @@index([handle])
   @@index([companyId])
   @@index([companyUnit])
@@ -1894,7 +1897,7 @@ model CompanyNewsArtifact {
 
   // Optional: Link to who created/ingested it
   createdByWorkMeId String? @db.Uuid
-  createdBy         WorkMe? @relation(fields: [createdByWorkMeId], references: [id], onDelete: SetNull)
+  createdBy         WorkMe? @relation("CompanyNewsArtifactCreator", fields: [createdByWorkMeId], references: [id], onDelete: SetNull)
 
   // Relations - can be used by multiple entities
   platformStatements     CompanyPlatformStatement[]
@@ -2088,4 +2091,124 @@ enum EvidenceClassificationType {
   COMPANY_PRODUCTS
   COMPANY_PUBLIC_PERCEPTION
   EXTERNAL_COMPANY_PRESSURE
+}
+
+// ============================================
+// PLANNER MODELS (Conceptual Planning Staging Area)
+// ============================================
+// Planner is a staging area for future ideas - NOT a calendar, NOT a task manager, NOT a source of truth
+// PlannedItem OWNS time. PlannerContainer range is DERIVED later (do not store start/end).
+
+model PlannerContainer {
+  id            String       @id @default(cuid())
+  name          String
+  description   String?
+  timeframeLabel String? // e.g. "2026", "Q2 2026", "Rolling"
+  companyId     String
+  divisionUnitId String?
+  ownerUserId   String
+  createdAt     DateTime     @default(now())
+
+  items PlannedItem[]
+
+  @@index([companyId])
+  @@index([ownerUserId])
+  @@index([createdAt])
+}
+
+model PlannedItem {
+  id        String   @id @default(cuid())
+  plannerContainerId String
+  plannerContainer   PlannerContainer @relation(fields: [plannerContainerId], references: [id], onDelete: Cascade)
+
+  companyId       String
+  divisionUnitId  String?
+
+  // Optional source links (nullable FK placeholders)
+  sourceEventId    String?
+  sourceCampaignId String?
+  sourceProgramId  String?
+
+  itemKind        String // e.g. "event", "series", "campaign", free text
+  title           String
+  description     String?
+
+  plannedTimeLabel  String // REQUIRED human-readable time, e.g. "Q2 2026", "Spring"
+  plannedTimeAnchor DateTime? // nullable, for sorting only
+
+  notes String?
+
+  createdByUserId String
+  createdAt       DateTime @default(now())
+
+  @@index([plannerContainerId])
+  @@index([companyId])
+  @@index([createdByUserId])
+  @@index([plannedTimeAnchor])
+  @@index([createdAt])
+}
+
+// ============================================
+// SENIOR LEADER DIGEST MODELS
+// ============================================
+
+enum DigestStatus {
+  DRAFT
+  GENERATED
+  SENT
+}
+
+enum DigestEntryType {
+  DELIVERY
+  WIN
+  WORKFORCE
+  REMINDER
+}
+
+enum DigestSourceType {
+  COMPANY_UNIT
+  PLATFORM_UNIT
+  EVENT
+  MILESTONE
+  WORKFORCE
+  MANUAL
+}
+
+model SeniorLeaderDigest {
+  id             String        @id @default(cuid())
+  leaderName     String
+  leaderRole     String
+  organizationId String
+  weekOf         DateTime
+  subjectLine    String?
+  openingNote    String? // AI-generated, editable
+  status         DigestStatus  @default(DRAFT)
+
+  entries SeniorLeaderDigestEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([weekOf])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model SeniorLeaderDigestEntry {
+  id          String @id @default(cuid())
+  digestId    String
+  type        DigestEntryType
+  title       String
+  description String?
+  sourceType  DigestSourceType?
+  sourceId    String?
+
+  orderIndex Int
+
+  digest SeniorLeaderDigest @relation(fields: [digestId], references: [id], onDelete: Cascade)
+
+  @@index([digestId])
+  @@index([type])
+  @@index([orderIndex])
 }

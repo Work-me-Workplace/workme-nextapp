@@ -10,6 +10,22 @@ import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { Wand2, Loader2, CheckCircle, ArrowLeft, AlertCircle } from 'lucide-react'
 
+type ParseableModelType =
+  | 'platform_unit_update'
+  | 'platform_unit_statement'
+  | 'platform_statement'
+  | 'platform_product'
+  | 'milestone'
+  | 'external_pressure'
+  | 'training'
+  | 'event'
+  | 'career'
+  | 'campaign'
+  | 'impact_event'
+  | 'community'
+  | 'benefits'
+  | 'employee_cause'
+
 interface UpdateData {
   percentComplete?: number | null
   statusUpdate?: string | null
@@ -39,9 +55,11 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
   const [authReady, setAuthReady] = useState(false)
   const [loading, setLoading] = useState(false)
   const [parsing, setParsing] = useState(false)
-  const [reviewData, setReviewData] = useState<UpdateData | null>(null)
+  const [reviewData, setReviewData] = useState<any>(null)
   const [artifact, setArtifact] = useState<NewsArtifact | null>(null)
+  const [modelType, setModelType] = useState<ParseableModelType>('platform_unit_update')
   const [unitId, setUnitId] = useState('')
+  const [platformProductId, setPlatformProductId] = useState('')
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -104,11 +122,18 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
       return
     }
 
+    if (!modelType) {
+      setError('Please select a model type')
+      return
+    }
+
     try {
       setParsing(true)
       setError(null)
-      const response = await api.post('/api/platform/unit/update/ai-parse', { 
-        text: artifact.rawText 
+      const response = await api.post('/api/utils/news-artifact/parse', {
+        artifactId: artifact.id,
+        modelType,
+        text: artifact.rawText,
       })
 
       if (response.data.success && response.data.data) {
@@ -130,36 +155,63 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
       return
     }
 
-    if (!unitId.trim()) {
+    // Validate required fields based on model type
+    if (modelType === 'platform_unit_update' && !unitId.trim()) {
       setError('Please enter a platform unit ID')
+      return
+    }
+
+    if (modelType === 'platform_unit_statement' && !unitId.trim()) {
+      setError('Please enter a platform unit ID')
+      return
+    }
+
+    if (modelType === 'platform_statement' && !platformProductId.trim()) {
+      setError('Please enter a platform product ID')
       return
     }
 
     try {
       setLoading(true)
       setError(null)
-      const response = await api.post(`/api/company/products/platform/unit/${unitId}/update`, reviewData)
+
+      let response
+      if (modelType === 'platform_unit_update') {
+        response = await api.post(`/api/company/products/platform/unit/${unitId}/update`, {
+          ...reviewData,
+          newsArtifactId: artifact?.id,
+        })
+      } else if (modelType === 'platform_unit_statement') {
+        // TODO: Create API endpoint for platform unit statement
+        setError('Platform unit statement save not yet implemented')
+        return
+      } else if (modelType === 'platform_statement') {
+        // TODO: Create API endpoint for platform statement
+        setError('Platform statement save not yet implemented')
+        return
+      } else {
+        // For CompanyX types, use the existing workstuff/add endpoint
+        response = await api.post('/api/workforcestuff/add', {
+          type: modelType,
+          data: reviewData,
+          newsArtifactId: artifact?.id,
+        })
+      }
 
       if (response.data.success) {
         setSuccess(true)
       } else {
-        setError(response.data.error || 'Failed to save update')
+        setError(response.data.error || 'Failed to save')
       }
     } catch (error: any) {
-      console.error('Failed to save update:', error)
-      setError(error.response?.data?.error || error.message || 'Failed to save update')
+      console.error('Failed to save:', error)
+      setError(error.response?.data?.error || error.message || 'Failed to save')
     } finally {
       setLoading(false)
     }
   }
 
-  // Auto-parse when artifact is loaded
-  useEffect(() => {
-    if (artifact?.rawText && !reviewData && !parsing && !loading) {
-      handleAIParse()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [artifact?.rawText, loading])
+  // Don't auto-parse - let user select model type first
 
   // Load artifact when ready
   useEffect(() => {
@@ -237,11 +289,75 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                 </div>
               ) : !reviewData ? (
                 <div className="space-y-6">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-sm text-blue-800">
-                      Parsing article for update information...
+                  {/* Model Type Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Model Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={modelType}
+                      onChange={(e) => {
+                        setModelType(e.target.value as ParseableModelType)
+                        setReviewData(null) // Reset parsed data when model changes
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      disabled={parsing}
+                    >
+                      <optgroup label="Platform Models">
+                        <option value="platform_unit_update">Platform Unit Update</option>
+                        <option value="platform_unit_statement">Platform Unit Statement</option>
+                        <option value="platform_statement">Platform Statement</option>
+                        <option value="platform_product">Platform Product</option>
+                      </optgroup>
+                      <optgroup label="Company Models">
+                        <option value="milestone">Milestone</option>
+                        <option value="external_pressure">External Pressure</option>
+                      </optgroup>
+                      <optgroup label="CompanyX Models">
+                        <option value="training">Training</option>
+                        <option value="event">Event</option>
+                        <option value="career">Career</option>
+                        <option value="campaign">Campaign</option>
+                        <option value="impact_event">Impact Event</option>
+                        <option value="community">Community</option>
+                        <option value="benefits">Benefits</option>
+                        <option value="employee_cause">Employee Cause</option>
+                      </optgroup>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Choose the model type to parse this article into
                     </p>
                   </div>
+
+                  {artifact && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Article Preview</p>
+                      <p className="text-sm text-gray-600 line-clamp-3">
+                        {artifact.headline || artifact.rawText.substring(0, 200)}...
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end">
+                    <button
+                      onClick={handleAIParse}
+                      disabled={parsing || !modelType}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                    >
+                      {parsing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Parsing...
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="w-4 h-4 mr-2" />
+                          Parse Article
+                        </>
+                      )}
+                    </button>
+                  </div>
+
                   {parsing && (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
@@ -264,51 +380,79 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                     </p>
                   </div>
 
-                  {/* Unit ID Input */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Platform Unit ID <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={unitId}
-                      onChange={(e) => setUnitId(e.target.value)}
-                      placeholder="Enter the platform unit ID to apply this update to"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      You can find the unit ID from the platform unit detail page URL
+                  {/* Model Type Display */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-sm font-medium text-gray-700">
+                      Parsing as: <span className="text-blue-600 capitalize">{modelType.replace(/_/g, ' ')}</span>
                     </p>
                   </div>
 
-                  {/* Parsed Data Fields */}
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Percent Complete</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={reviewData.percentComplete || ''}
-                          onChange={(e) => setReviewData({ 
-                            ...reviewData, 
-                            percentComplete: e.target.value ? parseInt(e.target.value) : null 
-                          })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Status Update</label>
-                        <input
-                          type="text"
-                          value={reviewData.statusUpdate || ''}
-                          onChange={(e) => setReviewData({ ...reviewData, statusUpdate: e.target.value || null })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                          placeholder="e.g., Keel Laid, Construction 60% complete"
-                        />
-                      </div>
+                  {/* Unit/Product ID Input - Conditional based on model type */}
+                  {(modelType === 'platform_unit_update' || modelType === 'platform_unit_statement') && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Platform Unit ID <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={unitId}
+                        onChange={(e) => setUnitId(e.target.value)}
+                        placeholder="Enter the platform unit ID"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        You can find the unit ID from the platform unit detail page URL
+                      </p>
                     </div>
+                  )}
+
+                  {modelType === 'platform_statement' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Platform Product ID <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={platformProductId}
+                        onChange={(e) => setPlatformProductId(e.target.value)}
+                        placeholder="Enter the platform product ID"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        You can find the product ID from the platform product detail page URL
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Parsed Data Fields - Show different fields based on model type */}
+                  {modelType === 'platform_unit_update' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Percent Complete</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={reviewData.percentComplete || ''}
+                            onChange={(e) => setReviewData({ 
+                              ...reviewData, 
+                              percentComplete: e.target.value ? parseInt(e.target.value) : null 
+                            })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Status Update</label>
+                          <input
+                            type="text"
+                            value={reviewData.statusUpdate || ''}
+                            onChange={(e) => setReviewData({ ...reviewData, statusUpdate: e.target.value || null })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                            placeholder="e.g., Keel Laid, Construction 60% complete"
+                          />
+                        </div>
+                      </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Schedule Note</label>
                       <input
@@ -398,7 +542,32 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                         placeholder="milestone, schedule, construction"
                       />
                     </div>
-                  </div>
+                  )}
+
+                  {/* For other model types, show generic JSON editor or specific forms */}
+                  {modelType !== 'platform_unit_update' && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Parsed Data</label>
+                        <textarea
+                          rows={10}
+                          value={JSON.stringify(reviewData, null, 2)}
+                          onChange={(e) => {
+                            try {
+                              setReviewData(JSON.parse(e.target.value))
+                            } catch {
+                              // Invalid JSON, ignore
+                            }
+                          }}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm"
+                          placeholder="Parsed data will appear here..."
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Review and edit the parsed data (JSON format)
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Error Message */}
                   {error && (
@@ -417,7 +586,7 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                     </Link>
                     <button
                       onClick={handleSubmit}
-                      disabled={loading || !unitId.trim()}
+                      disabled={loading || (modelType === 'platform_unit_update' && !unitId.trim()) || (modelType === 'platform_unit_statement' && !unitId.trim()) || (modelType === 'platform_statement' && !platformProductId.trim())}
                       className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                     >
                       {loading ? (
