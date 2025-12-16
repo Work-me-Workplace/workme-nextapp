@@ -6,7 +6,7 @@ import { use, useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Ship, ArrowLeft, Plus, Calendar, TrendingUp, FileText } from 'lucide-react'
+import { Ship, ArrowLeft, Plus, Calendar, TrendingUp, FileText, User, Heart } from 'lucide-react'
 
 interface Milestone {
   id: string
@@ -46,6 +46,26 @@ interface Statement {
   createdAt: string
 }
 
+interface Namesake {
+  id: string
+  fullName: string
+  knownAs: string | null
+  role: string | null
+  whyKnown: string | null
+  legacySummary: string | null
+  era: string | null
+  honors: string[]
+  notes: string | null
+}
+
+interface LivingHomage {
+  id: string
+  fullName: string
+  role: string | null
+  relation: string | null
+  notes: string | null
+}
+
 interface Unit {
   id: string
   hullNumber: string
@@ -61,6 +81,8 @@ interface Unit {
     id: string
     name: string
   }
+  namesake: Namesake | null
+  livingHomage: LivingHomage | null
   milestones: Milestone[]
   updates: Update[]
   statements: Statement[]
@@ -85,6 +107,17 @@ export default function UnitDetailPage({ params }: { params: Promise<{ id: strin
       loadUnit()
     }
   }, [id, router])
+
+  // Reload unit data when page comes into focus (e.g., after returning from add pages)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (workMeId) {
+        loadUnit()
+      }
+    }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [workMeId])
 
   async function loadUnit() {
     try {
@@ -218,6 +251,69 @@ export default function UnitDetailPage({ params }: { params: Promise<{ id: strin
                   <p className="text-sm text-gray-700">{unit.description}</p>
                 </div>
               )}
+
+              {/* Namesake and Living Homage Section */}
+              <div className="mt-6 pt-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <User className="h-4 w-4 text-gray-500" />
+                      <p className="text-sm font-medium text-gray-700">Namesake</p>
+                    </div>
+                    <Link
+                      href={`/mycompany/platforms/${unit.platformProduct.id}/units/${unit.id}/namesake`}
+                      className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      {unit.namesake ? 'Edit' : 'Add'}
+                    </Link>
+                  </div>
+                  {unit.namesake ? (
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{unit.namesake.fullName}</p>
+                      {unit.namesake.knownAs && (
+                        <p className="text-xs text-gray-600 mt-1">Known as: {unit.namesake.knownAs}</p>
+                      )}
+                      {unit.namesake.role && (
+                        <p className="text-xs text-gray-600 mt-1">{unit.namesake.role}</p>
+                      )}
+                      {unit.namesake.whyKnown && (
+                        <p className="text-xs text-gray-500 mt-2 line-clamp-2">{unit.namesake.whyKnown}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400 italic">No namesake added</p>
+                  )}
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <Heart className="h-4 w-4 text-gray-500" />
+                      <p className="text-sm font-medium text-gray-700">Living Homage</p>
+                    </div>
+                    <Link
+                      href={`/mycompany/platforms/${unit.platformProduct.id}/units/${unit.id}/living-homage`}
+                      className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      {unit.livingHomage ? 'Edit' : 'Add'}
+                    </Link>
+                  </div>
+                  {unit.livingHomage ? (
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{unit.livingHomage.fullName}</p>
+                      {unit.livingHomage.role && (
+                        <p className="text-xs text-gray-600 mt-1">{unit.livingHomage.role}</p>
+                      )}
+                      {unit.livingHomage.relation && (
+                        <p className="text-xs text-gray-600 mt-1">{unit.livingHomage.relation}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400 italic">No living homage added</p>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -274,7 +370,7 @@ export default function UnitDetailPage({ params }: { params: Promise<{ id: strin
                 ) : (
                   <div className="text-center py-8 text-gray-500">
                     <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                    <p>No milestones yet</p>
+                    <p className="text-sm">No milestones yet</p>
                   </div>
                 )}
               </div>
@@ -286,7 +382,7 @@ export default function UnitDetailPage({ params }: { params: Promise<{ id: strin
                     Updates ({unit.updates.length})
                   </h2>
                   <Link
-                    href={`/mycompany/platforms/units/${unit.id}/updates/create`}
+                    href={`/mycompany/platforms/${unit.platformProduct.id}/units/${unit.id}/update`}
                     className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm"
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -350,9 +446,16 @@ export default function UnitDetailPage({ params }: { params: Promise<{ id: strin
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8">
                     <FileText className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                    <p>No updates yet</p>
+                    <p className="text-gray-500 text-sm mb-4">No updates yet</p>
+                    <Link
+                      href={`/mycompany/platforms/${unit.platformProduct.id}/units/${unit.id}/update`}
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Update
+                    </Link>
                   </div>
                 )}
               </div>
@@ -360,9 +463,18 @@ export default function UnitDetailPage({ params }: { params: Promise<{ id: strin
 
             {/* Statements Feed */}
             <div className="mt-6 bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                Statements ({unit.statements.length})
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Statements ({unit.statements.length})
+                </h2>
+                <Link
+                  href={`/mycompany/platforms/${unit.platformProduct.id}/units/${unit.id}/statement`}
+                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Statement
+                </Link>
+              </div>
 
               {unit.statements.length > 0 ? (
                 <div className="space-y-3">
@@ -399,7 +511,17 @@ export default function UnitDetailPage({ params }: { params: Promise<{ id: strin
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm text-center py-4">No statements yet</p>
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-500 text-sm mb-4">No statements yet</p>
+                  <Link
+                    href={`/mycompany/platforms/${unit.platformProduct.id}/units/${unit.id}/statement`}
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Statement
+                  </Link>
+                </div>
               )}
             </div>
           </div>

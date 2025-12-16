@@ -103,7 +103,7 @@ export default function SignalLandingPage() {
       path: '/signal/clip',
       icon: Newspaper,
       color: 'indigo',
-      available: false,
+      available: true,
     },
   ]
 

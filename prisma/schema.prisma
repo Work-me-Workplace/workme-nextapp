@@ -239,6 +239,7 @@ model Company {
   careers         CompanyCareer[]            @relation("CompanyCareerCompany")
   employeeCauses  CompanyEmployeeCause[]     @relation("CompanyEmployeeCauseCompany")
   productFamilies ProductFamily[]
+  newsArtifacts   CompanyNewsArtifact[]
 
   @@index([name])
 }
@@ -1559,6 +1560,10 @@ model CompanyPlatformStatement {
   platformProductId String
   platformProduct   CompanyPlatformProduct @relation(fields: [platformProductId], references: [id], onDelete: Cascade)
 
+  // Optional: Link to news artifact if created from one
+  newsArtifactId String?
+  newsArtifact   CompanyNewsArtifact? @relation(fields: [newsArtifactId], references: [id], onDelete: SetNull)
+
   sourceName String? // "USNI News", "DoD Release", "GD CEO Earnings Call"
   sourceUrl  String?
   headline   String?
@@ -1571,6 +1576,7 @@ model CompanyPlatformStatement {
   updates CompanyPlatformUpdate[]
 
   @@index([platformProductId])
+  @@index([newsArtifactId])
   @@index([sourceName])
 }
 
@@ -1618,6 +1624,10 @@ model CompanyPlatformUnitStatement {
   platformUnitId String
   platformUnit   CompanyPlatformUnit @relation(fields: [platformUnitId], references: [id], onDelete: Cascade)
 
+  // Optional: Link to news artifact if created from one
+  newsArtifactId String?
+  newsArtifact   CompanyNewsArtifact? @relation(fields: [newsArtifactId], references: [id], onDelete: SetNull)
+
   sourceName String? // "USNI News", "HII Release"
   sourceUrl  String?
   headline   String?
@@ -1629,6 +1639,7 @@ model CompanyPlatformUnitStatement {
   updates CompanyPlatformUnitUpdate[]
 
   @@index([platformUnitId])
+  @@index([newsArtifactId])
 }
 
 // ============================================
@@ -1853,6 +1864,46 @@ model EngageMessage {
   @@index([ownerId])
   @@index([templateId])
   @@index([highlightId])
+  @@index([createdAt])
+}
+
+// ============================================
+// COMPANY NEWS ARTIFACT MODEL (Universal Article/Press Release Storage)
+// ============================================
+// Universal staging area for news articles and press releases
+// Can be used by platform statements, unit statements, updates, etc.
+// Similar to SignalArtifact but for news/press content
+
+model CompanyNewsArtifact {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Article metadata
+  sourceName String? // "USNI News", "HII Release", "DoD Release"
+  sourceUrl  String? // URL of the article/press release
+  headline   String? // Article headline or title
+  rawText    String // Full article/press release text
+
+  // AI-extracted metadata
+  aiSummary String? // AI-generated summary (2-3 sentences)
+  aiTags    String[] @default([]) // e.g. ["milestone", "schedule", "industrial base"]
+
+  // Optional: Link to who created/ingested it
+  createdByWorkMeId String? @db.Uuid
+  createdBy         WorkMe? @relation(fields: [createdByWorkMeId], references: [id], onDelete: SetNull)
+
+  // Relations - can be used by multiple entities
+  platformStatements     CompanyPlatformStatement[]
+  platformUnitStatements CompanyPlatformUnitStatement[]
+
+  @@index([companyId])
+  @@index([sourceName])
+  @@index([sourceUrl])
+  @@index([createdByWorkMeId])
   @@index([createdAt])
 }
 

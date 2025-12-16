@@ -11,6 +11,8 @@ export async function GET(
       where: { id },
       include: {
         platformProduct: true,
+        namesake: true,
+        livingHomage: true,
         milestones: {
           orderBy: { date: 'asc' },
         },
