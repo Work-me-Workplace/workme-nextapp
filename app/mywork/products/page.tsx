@@ -73,7 +73,8 @@ export default function ProductsPage() {
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [products, setProducts] = useState<WorkProduct[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'create' | 'my-products' | 'review'>('create')
+  const [activeTab, setActiveTab] = useState<'create' | 'review'>('create')
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -203,21 +204,6 @@ export default function ProductsPage() {
                   Create New
                 </button>
                 <button
-                  onClick={() => setActiveTab('my-products')}
-                  className={`flex-1 px-4 py-2 rounded-md font-medium transition ${
-                    activeTab === 'my-products'
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  My Products
-                  {products.length > 0 && (
-                    <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-600 rounded-full text-xs">
-                      {products.length}
-                    </span>
-                  )}
-                </button>
-                <button
                   onClick={() => setActiveTab('review')}
                   className={`flex-1 px-4 py-2 rounded-md font-medium transition ${
                     activeTab === 'review'
@@ -261,109 +247,113 @@ export default function ProductsPage() {
               </div>
             )}
 
-            {/* My Products Tab - Show existing products */}
-            {activeTab === 'my-products' && (
+            {/* Manage Products Tab - Category cards like create, then list on click */}
+            {activeTab === 'review' && (
               <div>
-                {products.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-                    {products.map(product => {
-                      const config = productTypeConfig[product.type as keyof typeof productTypeConfig]
+                {!selectedCategory ? (
+                  <>
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Manage Products</h3>
+                      <p className="text-sm text-gray-600">Select a category to view and manage products</p>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+                      {Object.entries(productTypeConfig).map(([type, config]) => {
+                        const Icon = config.icon
+                        const colorClass = config.colorClass || 'text-gray-600'
+                        const typeProducts = productsByType[type] || []
+                        const count = typeProducts.length
+                        
+                        // Map color classes to hover states
+                        const hoverColorClass = colorClass === 'text-blue-600' ? 'group-hover:text-blue-600' :
+                                              colorClass === 'text-purple-600' ? 'group-hover:text-purple-600' :
+                                              colorClass === 'text-green-600' ? 'group-hover:text-green-600' :
+                                              colorClass === 'text-orange-600' ? 'group-hover:text-orange-600' :
+                                              'group-hover:text-blue-600'
+                        
+                        return (
+                          <button
+                            key={type}
+                            onClick={() => setSelectedCategory(type)}
+                            className="group aspect-square bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all flex flex-col items-center justify-center p-6 text-center relative"
+                          >
+                            <Icon className={`h-10 w-10 mb-3 text-gray-400 ${hoverColorClass} transition-colors`} />
+                            <span className="text-sm font-medium text-gray-600 group-hover:text-blue-600">{config.name}</span>
+                            {count > 0 && (
+                              <span className="absolute top-2 right-2 px-2 py-0.5 bg-blue-100 text-blue-600 rounded-full text-xs font-medium">
+                                {count}
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <div className="mb-6 flex items-center">
+                      <button
+                        onClick={() => setSelectedCategory(null)}
+                        className="mr-4 text-gray-600 hover:text-gray-900"
+                      >
+                        ← Back
+                      </button>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {productTypeConfig[selectedCategory as keyof typeof productTypeConfig]?.name || selectedCategory}
+                        </h3>
+                        <p className="text-sm text-gray-600">View, edit, archive, or assign products</p>
+                      </div>
+                    </div>
+                    
+                    {(() => {
+                      const typeProducts = productsByType[selectedCategory] || []
+                      const config = productTypeConfig[selectedCategory as keyof typeof productTypeConfig]
                       const Icon = config?.icon || FileText
                       const colorClass = config?.colorClass || 'text-gray-600'
                       
-                      // Normalize and truncate title
-                      const normalizedTitle = normalizeTitle(product.title)
-                      const displayTitle = normalizedTitle && normalizedTitle.length > 30 
-                        ? normalizedTitle.substring(0, 30) + '...' 
-                        : normalizedTitle
-                      
-                      return (
-                        <Link
-                          key={product.id}
-                          href={config?.viewPath(product.id) || '#'}
-                          className="group aspect-square bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-200 hover:border-blue-300 flex flex-col items-center justify-center p-6 text-center overflow-hidden"
-                        >
-                          <Icon className={`h-10 w-10 mb-3 ${colorClass} group-hover:scale-110 transition-transform flex-shrink-0`} />
-                          <h4 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2 break-words min-h-[2.5rem] flex items-center justify-center">{displayTitle}</h4>
-                          <span className="text-xs text-gray-500 mt-auto">{config?.name || product.type}</span>
-                        </Link>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-                    <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Products Yet</h3>
-                    <p className="text-gray-600 mb-4">Create your first work product to get started.</p>
-                    <button
-                      onClick={() => setActiveTab('create')}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      Create New Product
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Manage Products Tab - Segmented by product type */}
-            {activeTab === 'review' && (
-              <div>
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Manage Products</h3>
-                  <p className="text-sm text-gray-600">View, edit, archive, or assign products to work packages</p>
-                </div>
-
-                {products.length > 0 ? (
-                  <div className="space-y-8">
-                    {Object.entries(productTypeConfig).map(([type, config]) => {
-                      const Icon = config.icon
-                      const typeProducts = productsByType[type] || []
-                      
-                      if (typeProducts.length === 0) return null
-
-                      return (
-                        <div key={type} className="bg-white rounded-lg border border-gray-200 p-6">
-                          <div className="flex items-center mb-4">
-                            <Icon className={`h-6 w-6 ${config.colorClass} mr-2`} />
-                            <h4 className="text-lg font-semibold text-gray-900">{config.name}</h4>
-                            <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">
-                              {typeProducts.length}
-                            </span>
+                      if (typeProducts.length === 0) {
+                        return (
+                          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+                            <Icon className={`h-16 w-16 ${colorClass} mx-auto mb-4`} />
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">No {config?.name} Products</h3>
+                            <p className="text-gray-600">Create your first {config?.name.toLowerCase()} product to get started.</p>
                           </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        )
+                      }
+                      
+                      return (
+                        <div className="bg-white rounded-lg border border-gray-200">
+                          <div className="divide-y divide-gray-200">
                             {typeProducts.map((product) => {
                               const normalizedTitle = normalizeTitle(product.title)
-                              const displayTitle = normalizedTitle && normalizedTitle.length > 30
-                                ? normalizedTitle.substring(0, 30) + '...'
-                                : normalizedTitle
                               
                               return (
                                 <Link
-                                  key={`manage-${product.id}`}
-                                  href={type === 'digital_signage' 
+                                  key={product.id}
+                                  href={selectedCategory === 'digital_signage' 
                                     ? `/mywork/products/digital_signage/${product.id}/review`
                                     : config?.viewPath(product.id) || '#'}
-                                  className="group aspect-square bg-gray-50 rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-200 hover:border-blue-300 flex flex-col items-center justify-center p-4 text-center relative overflow-hidden"
+                                  className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors group"
                                 >
-                                  <div className="absolute top-2 right-2">
-                                    <Eye className="h-4 w-4 text-blue-500" />
+                                  <div className="flex items-center space-x-4 flex-1 min-w-0">
+                                    <Icon className={`h-6 w-6 ${colorClass} flex-shrink-0`} />
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-600">
+                                        {normalizedTitle}
+                                      </h4>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        Created {new Date(product.createdAt).toLocaleDateString()}
+                                      </p>
+                                    </div>
                                   </div>
-                                  <Icon className={`h-8 w-8 mb-2 ${config.colorClass} group-hover:scale-110 transition-transform flex-shrink-0`} />
-                                  <h4 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2 break-words min-h-[2.5rem] flex items-center justify-center">{displayTitle}</h4>
+                                  <Eye className="h-5 w-5 text-gray-400 group-hover:text-blue-600 flex-shrink-0" />
                                 </Link>
                               )
                             })}
                           </div>
                         </div>
                       )
-                    })}
-                  </div>
-                ) : (
-                  <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-                    <Eye className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Products to Manage</h3>
-                    <p className="text-gray-600">Create products to view, edit, archive, or assign them to work packages.</p>
+                    })()}
                   </div>
                 )}
               </div>
