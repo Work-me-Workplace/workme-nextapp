@@ -214,3 +214,4 @@ This separation supports:
 4. **Do you need to support standalone work packages?**
    - If yes, keep separate systems
    - If no, could simplify
+

@@ -54,3 +54,4 @@ ALTER TABLE "CompanyMilestone" ADD CONSTRAINT "CompanyMilestone_livingHomageId_f
 
 -- AddForeignKey
 ALTER TABLE "CompanyMilestone" ADD CONSTRAINT "CompanyMilestone_namesakeId_fkey" FOREIGN KEY ("namesakeId") REFERENCES "Namesake"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+

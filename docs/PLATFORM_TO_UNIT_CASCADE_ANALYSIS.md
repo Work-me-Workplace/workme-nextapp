@@ -106,3 +106,4 @@ model CompanyPlatformUnit {
 4. **Verify the cascade behavior** - test that deleting a platform deletes all its units (should work due to `onDelete: Cascade`)
 
 
+

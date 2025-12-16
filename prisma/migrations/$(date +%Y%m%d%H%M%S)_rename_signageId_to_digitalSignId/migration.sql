@@ -25,3 +25,4 @@ CREATE INDEX IF NOT EXISTS "DesignWorkPackage_digitalSignId_idx" ON "DesignWorkP
 
 -- Drop DesignWorkPackageAsset table
 DROP TABLE IF EXISTS "DesignWorkPackageAsset";
+

@@ -21,3 +21,4 @@ DROP TABLE IF EXISTS "PlatformContract";
 DROP TABLE IF EXISTS "PlatformCommNode";
 DROP TABLE IF EXISTS "PlatformCapability";
 DROP TABLE IF EXISTS "Platform";
+

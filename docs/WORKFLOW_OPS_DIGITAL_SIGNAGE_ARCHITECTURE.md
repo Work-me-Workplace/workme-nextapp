@@ -278,3 +278,4 @@ const workPackage = await prisma.designWorkPackage.create({
 - **Assets** = Attach to products only
 
 This architecture is workflow-ready and supports future operations without refactor.
+

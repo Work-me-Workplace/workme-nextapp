@@ -20,3 +20,4 @@ DROP INDEX IF EXISTS "CompanyPlatformProduct_programCode_idx";
 CREATE INDEX "CompanyPlatformProduct_platformSeries_idx" ON "CompanyPlatformProduct"("platformSeries");
 
 
+
