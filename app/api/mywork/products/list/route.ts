@@ -83,7 +83,23 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 5. Format products with type information
+    // 5. Fetch Senior Leader Email Products
+    const seniorLeaderEmails = await prisma.productSeniorLeaderEmail.findMany({
+      where: {
+        createdByWorkMeId: workMe.id,
+      },
+      include: {
+        content: true,
+        _count: {
+          select: {
+            topics: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    // 6. Format products with type information
     const products = [
       ...emailDigests.map(p => ({
         id: p.id,
@@ -105,6 +121,18 @@ export async function GET(request: NextRequest) {
         updatedAt: p.updatedAt.toISOString(),
         metadata: {
           signType: p.signType,
+        },
+      })),
+      ...seniorLeaderEmails.map(p => ({
+        id: p.id,
+        type: 'senior_leader_email',
+        title: p.content?.title || null,
+        description: null,
+        createdAt: p.createdAt.toISOString(),
+        updatedAt: p.updatedAt.toISOString(),
+        metadata: {
+          topicsCount: p._count.topics,
+          saidBy: p.content?.saidBy || null,
         },
       })),
     ]

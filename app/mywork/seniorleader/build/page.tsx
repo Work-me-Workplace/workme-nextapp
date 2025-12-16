@@ -31,18 +31,17 @@ export default function SeniorLeaderBuildPage() {
 
     try {
       setLoading(true)
-      const response = await api.post('/api/signal/create', {
+      // Create ProductSeniorLeaderEmail (product artifact) + auto-parse topics
+      const response = await api.post('/api/mywork/senior-leader-email/create', {
         title: formData.title || undefined,
         content: formData.content,
         saidBy: formData.saidBy || undefined,
         role: formData.role || undefined,
-        source: 'senior_leader_email',
       })
 
       if (response.data.success) {
-        // Automatically parse topics for senior leader emails
-        await api.post(`/api/signal/${response.data.artifact.id}/parse-topics`)
-        router.push(`/signal/${response.data.artifact.id}`)
+        // Redirect back to products page (product is created with topics)
+        router.push('/mywork/products')
       } else {
         alert('Failed to create signal artifact')
       }

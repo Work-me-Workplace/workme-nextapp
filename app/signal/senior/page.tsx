@@ -37,8 +37,8 @@ export default function SeniorSignalPage() {
       })
 
       if (response.data.success) {
-        // Automatically parse topics for senior leader emails
-        await api.post(`/api/signal/${response.data.artifact.id}/parse-topics`)
+        // Signal section: just store raw artifact, no topic parsing
+        // (Topic parsing is for MyWork section - "what did the boss say")
         router.push(`/signal/${response.data.artifact.id}`)
       } else {
         alert('Failed to create signal artifact')
@@ -83,8 +83,8 @@ export default function SeniorSignalPage() {
             </Link>
 
             <div className="bg-white rounded-lg shadow p-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Senior Leader Email</h1>
-              <p className="text-gray-600 mb-6">Stored record for later topic parsing. Paste the email content below.</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Senior Leader Email Signal</h1>
+              <p className="text-gray-600 mb-6">Raw signal artifact - something to watch, don't know yet. Just paste content below.</p>
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
@@ -145,7 +145,7 @@ export default function SeniorSignalPage() {
                     placeholder="Paste the full email content here..."
                   />
                   <p className="mt-2 text-sm text-gray-500">
-                    Paste the complete email. It will be stored as raw content and topics will be parsed automatically.
+                    Paste the complete email. It will be stored as raw SignalArtifact only (no topic parsing).
                   </p>
                 </div>
 
@@ -161,7 +161,7 @@ export default function SeniorSignalPage() {
                     disabled={loading || !formData.content.trim()}
                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loading ? 'Saving...' : 'Save & Parse Topics'}
+                    {loading ? 'Saving...' : 'Save Signal'}
                   </button>
                 </div>
               </form>

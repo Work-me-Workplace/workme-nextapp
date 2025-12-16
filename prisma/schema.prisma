@@ -78,6 +78,9 @@ model WorkMe {
   externalCompanyPressures ExternalCompanyPressure[]
   Company                  Company?                  @relation(fields: [companyId], references: [id])
 
+  // Product Relations
+  createdSeniorLeaderEmailProducts ProductSeniorLeaderEmail[] @relation("ProductSeniorLeaderEmailCreator")
+
   @@index([handle])
   @@index([companyId])
   @@index([companyUnit])
@@ -412,6 +415,8 @@ model CompanyCampaign {
   pocEmail     String?
   pocPhone     String?
 
+  ingestRawText String?
+
   summary String?
 
   companyId         String?
@@ -435,6 +440,8 @@ model CompanyImpactEvent {
   pocLastName        String?
   pocEmail           String?
   pocPhone           String?
+
+  ingestRawText String?
 
   summary String?
 
@@ -517,6 +524,8 @@ model CompanyEvent {
   pocEmail String?
   pocPhone String?
 
+  ingestRawText String?
+
   summary String?
 
   companyId         String?
@@ -558,6 +567,8 @@ model CompanyCommunity {
   pocLastName  String?
   pocEmail     String?
   pocPhone     String?
+
+  ingestRawText String?
 
   summary String?
 
@@ -1829,14 +1840,58 @@ model SeniorLeaderTopic {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  signalArtifactId String
-  signalArtifact   SignalArtifact @relation(fields: [signalArtifactId], references: [id], onDelete: Cascade)
+  // Can belong to either SignalArtifact (raw signal) or ProductSeniorLeaderEmail (product)
+  signalArtifactId String?
+  signalArtifact   SignalArtifact? @relation(fields: [signalArtifactId], references: [id], onDelete: Cascade)
+
+  seniorLeaderEmailProductId String?
+  seniorLeaderEmailProduct   ProductSeniorLeaderEmail? @relation(fields: [seniorLeaderEmailProductId], references: [id], onDelete: Cascade)
 
   topic       String // e.g. "Product Change", "Leadership Transition"
   description String? // short human-readable explanation
 
   @@index([signalArtifactId])
+  @@index([seniorLeaderEmailProductId])
   @@index([createdAt])
+}
+
+// ============================================
+// SENIOR LEADER EMAIL PRODUCT MODEL (MyWork)
+// ============================================
+// Product artifact for senior leader emails - "what did the boss say"
+// This is a PRODUCT, not a signal
+// Always includes topic parsing (SeniorLeaderTopics)
+model ProductSeniorLeaderEmail {
+  id         String    @id @default(cuid())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archivedAt DateTime? // When archived, null if active
+
+  companyUnit       String?
+  createdByWorkMeId String  @db.Uuid
+  createdBy         WorkMe  @relation("ProductSeniorLeaderEmailCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
+  // Typed variant (1:1 relationship)
+  content ProductSeniorLeaderEmailContent?
+
+  // Parsed topics (always present for products)
+  topics SeniorLeaderTopic[]
+
+  @@index([companyUnit])
+  @@index([createdByWorkMeId])
+  @@index([archivedAt])
+}
+
+model ProductSeniorLeaderEmailContent {
+  id                        String @id @default(cuid())
+  seniorLeaderEmailProductId String @unique
+
+  title  String?
+  content String // full pasted text, untouched
+  saidBy String? // free text for now ("Chris Miller")
+  role   String? // optional
+
+  product ProductSeniorLeaderEmail @relation(fields: [seniorLeaderEmailProductId], references: [id], onDelete: Cascade)
 }
 
 // ============================================

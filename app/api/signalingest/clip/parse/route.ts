@@ -223,9 +223,9 @@ export async function POST(request: Request) {
           data: {
             title: data.title || title || 'Untitled Campaign',
             description: data.description,
-            startDate: data.startDate ? new Date(data.startDate) : null,
-            endDate: data.endDate ? new Date(data.endDate) : null,
-            link: data.link || url || null,
+            windowStart: data.startDate ? new Date(data.startDate) : null,
+            windowEnd: data.endDate ? new Date(data.endDate) : null,
+            ctaLink: data.link || url || null,
             ingestRawText: rawText,
             summary: data.description || data.title || title || null,
             companyId,
@@ -241,8 +241,7 @@ export async function POST(request: Request) {
           data: {
             title: data.title || title || 'Untitled Impact Event',
             description: data.description,
-            eventDate: data.eventDate ? new Date(data.eventDate) : null,
-            link: data.link || url || null,
+            effectiveDate: data.eventDate ? new Date(data.eventDate) : null,
             ingestRawText: rawText,
             summary: data.description || data.title || title || null,
             companyId,
@@ -258,7 +257,7 @@ export async function POST(request: Request) {
           data: {
             title: data.title || title || 'Untitled Community',
             description: data.description,
-            link: data.link || url || null,
+            signUpLink: data.link || url || null,
             ingestRawText: rawText,
             summary: data.description || data.title || title || null,
             companyId,
@@ -274,7 +273,7 @@ export async function POST(request: Request) {
           data: {
             title: data.title || title || 'Untitled Benefit',
             description: data.description,
-            link: data.link || url || null,
+            actionLink: data.link || url || null,
             ingestRawText: rawText,
             summary: data.description || data.title || title || null,
             companyId,
