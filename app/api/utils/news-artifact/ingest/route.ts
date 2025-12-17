@@ -13,8 +13,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAuth } from '@/lib/auth'
-import { loadWorkMe } from '@/lib/workme'
+import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
+import { prisma } from '@/lib/prisma'
 import OpenAI from 'openai'
 
 function getOpenAI() {
@@ -31,19 +32,14 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     // Auth
-    const user = await verifyAuth(request)
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const { firebaseId } = await verifyAuth(request)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyId } = workMe
 
-    const workMe = await loadWorkMe(user.uid)
-    if (!workMe) {
+    if (!workMeId || !companyId) {
       return NextResponse.json(
-        { success: false, error: 'WorkMe profile not found' },
-        { status: 404 }
+        { success: false, error: 'Not authenticated or companyId not set' },
+        { status: 401 }
       )
     }
 
