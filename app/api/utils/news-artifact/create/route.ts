@@ -26,7 +26,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { sourceUrl, sourceName, headline, rawText } = body
+    const { 
+      sourceUrl, 
+      sourceName, 
+      headline, 
+      rawText,
+      aiSummary,
+      artifactType,
+      sentiment,
+      humanElements,
+      noteworthyItems,
+      leaderStatement,
+    } = body
 
     if (!rawText || !rawText.trim()) {
       return NextResponse.json(
@@ -40,9 +51,11 @@ export async function POST(request: NextRequest) {
       companyId,
       hasUrl: !!sourceUrl,
       hasHeadline: !!headline,
+      artifactType,
+      sentiment,
     })
 
-    // Create CompanyNewsArtifact
+    // Create CompanyNewsArtifact with full intelligence
     const artifact = await prisma.companyNewsArtifact.create({
       data: {
         companyId,
@@ -50,6 +63,12 @@ export async function POST(request: NextRequest) {
         sourceName: sourceName || null,
         headline: headline || null,
         rawText: rawText.trim(),
+        aiSummary: aiSummary || null,
+        artifactType: artifactType || null,
+        sentiment: sentiment || null,
+        humanElements: humanElements || null,
+        noteworthyItems: noteworthyItems || null,
+        leaderStatement: leaderStatement || null,
         createdByWorkMeId: workMeId,
       },
     })

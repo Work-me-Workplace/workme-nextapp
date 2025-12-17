@@ -11,12 +11,8 @@ function getOpenAI() {
 }
 
 export interface StatementParseResult {
-  sourceName?: string | null
-  sourceUrl?: string | null
-  headline?: string | null
-  rawText: string
-  aiSummary?: string | null
-  aiTags?: string[]
+  aiSummary: string
+  aiTags: string[]
 }
 
 export async function POST(request: Request) {
@@ -32,61 +28,22 @@ export async function POST(request: Request) {
 
     const openai = getOpenAI()
 
-    const systemPrompt = `You are implementing ai-platform-unit-statement-service.
+    const systemPrompt = `You are a platform unit statement summarizer.
 
-This service EXTRACTS structured information from articles, press releases, or statements about a platform unit.
+Your job is to create a concise summary and extract relevant tags from articles about platform units (ships, aircraft, systems, etc.).
 
-Input:
-- Freeform text (article, press release, news item, statement)
+Keep it simple - just summarize what happened and tag it.`
 
-Output:
-- A single JSON object matching CompanyPlatformUnitStatement fields
-- Extracts metadata (source, headline, summary, tags) from the raw text
-- Preserves the full raw text`
+    const userPrompt = `Summarize this article about a platform unit and extract relevant tags.
 
-    const userPrompt = `Extract structured statement information from this text.
-
-----------------------------------------
-FIELDS TO INFER
-----------------------------------------
-
-METADATA
-- sourceName             // Source publication or organization (e.g., "USNI News", "HII Release")
-- sourceUrl              // URL if mentioned in text
-- headline               // Article headline or title if present
-
-AI-GENERATED
-- aiSummary              // AI-generated summary (2-3 sentences)
-- aiTags                 // Array of relevant tags (e.g., ["milestone", "schedule", "industrial base", "leadership"])
-
-NOTE: The rawText field will be automatically set to the input text - do not include it in your response.
-
-----------------------------------------
-EXTRACTION RULES
-----------------------------------------
-- Preserve the full rawText (use the input text as-is)
-- Extract source name if mentioned (publication, organization, etc.)
-- Extract headline if present at the beginning of the text
-- Generate a concise summary (2-3 sentences)
-- Tags should be relevant keywords that categorize the content
-- Common tags: milestone, schedule, cost, industrial base, leadership, construction, delivery, commissioning
-
-----------------------------------------
-OUTPUT FORMAT
-----------------------------------------
-Return ONLY valid JSON.
-
-Example output structure:
-{
-  "sourceName": "USNI News",
-  "sourceUrl": "https://news.usni.org/2025/12/09/keel-laid-for-uss-barb",
-  "headline": "Keel Laid for USS Barb (SSN-804)",
-  "aiSummary": "Keel laying ceremony held for USS Barb (SSN-804) at Newport News Shipbuilding. Construction is 60% complete and on track for 2027 delivery. Ship sponsor Pamela Bove, granddaughter-in-law of namesake Eugene Fluckey, participated in the ceremony.",
-  "aiTags": ["milestone", "schedule", "construction", "ceremony"]
-}
+Return JSON with:
+- aiSummary: A 2-4 sentence summary of what happened (factual, concise)
+- aiTags: Array of 3-6 relevant tags (e.g., ["keel laying", "milestone", "shipyard", "virginia class"])
 
 Text:
-${text.substring(0, 4000)}`
+${text.substring(0, 4000)}
+
+Return ONLY valid JSON.`
 
     const response = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
@@ -101,20 +58,14 @@ ${text.substring(0, 4000)}`
         },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.2,
+      temperature: 0.3,
     })
 
     const parsed = JSON.parse(response.choices[0].message.content || '{}')
 
-    // No validation needed for rawText - we always use the input text
-
     const result: StatementParseResult = {
-      sourceName: parsed.sourceName || null,
-      sourceUrl: parsed.sourceUrl || null,
-      headline: parsed.headline || null,
-      rawText: text, // Always use the original input text
-      aiSummary: parsed.aiSummary || null,
-      aiTags: Array.isArray(parsed.aiTags) ? parsed.aiTags : [],
+      aiSummary: parsed.aiSummary || parsed.summary || '',
+      aiTags: Array.isArray(parsed.aiTags) ? parsed.aiTags : (Array.isArray(parsed.tags) ? parsed.tags : []),
     }
 
     return NextResponse.json({

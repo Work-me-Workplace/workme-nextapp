@@ -1893,11 +1893,17 @@ model CompanyNewsArtifact {
   sourceName String? // "USNI News", "HII Release", "DoD Release"
   sourceUrl  String? // URL of the article/press release
   headline   String? // Article headline or title
-  rawText    String // Full article/press release text
 
-  // AI-extracted metadata
-  aiSummary String? // AI-generated summary (2-3 sentences)
-  aiTags    String[] @default([]) // e.g. ["milestone", "schedule", "industrial base"]
+  // Content
+  rawText   String // Full article/press release text
+  aiSummary String? // AI-generated one paragraph summary
+
+  // Article Intelligence
+  artifactType    String? // "unit_update", "milestone", "workforce", "leadership", etc.
+  sentiment       String? // "positive", "negative", "neutral"
+  humanElements   Json? // e.g., {"sponsor": "Pamela Bove", "leaders": ["SECNAV"], "attendees": [...]}
+  noteworthyItems Json? // e.g., {"key_facts": [...], "dates": [...], "milestones": [...]}
+  leaderStatement Json? // e.g., {"statement": "...", "leader": "SECNAV Del Toro", "role": "Secretary of the Navy"}
 
   // Optional: Link to who created/ingested it
   createdByWorkMeId String? @db.Uuid
@@ -1910,6 +1916,8 @@ model CompanyNewsArtifact {
   @@index([companyId])
   @@index([sourceName])
   @@index([sourceUrl])
+  @@index([artifactType])
+  @@index([sentiment])
   @@index([createdByWorkMeId])
   @@index([createdAt])
 }

@@ -10,18 +10,31 @@ import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { RefreshCw, ArrowLeft, Wand2, Loader2, CheckCircle, Link as LinkIcon, Newspaper, AlertCircle } from 'lucide-react'
 
-interface UpdateData {
-  percentComplete?: number | null
-  statusUpdate?: string | null
-  scheduleNote?: string | null
-  industrialBaseNote?: string | null
-  leadershipQuote?: string | null
-  keelLaidDate?: string | null
-  seaTrialsStartDate?: string | null
-  deliveryDate?: string | null
-  commissioningDate?: string | null
-  narrativeSummary?: string | null
-  tags?: string[]
+interface IngestedData {
+  artifactType: string
+  aiSummary: string
+  sentiment: string
+  humanElements: {
+    sponsor?: string | null
+    leaders?: string[]
+    attendees?: string[]
+    roles?: Record<string, string>
+  } | null
+  noteworthyItems: {
+    keyFacts?: string[]
+    dates?: string[]
+    milestones?: string[]
+    locations?: string[]
+  } | null
+  leaderStatement: {
+    statement?: string | null
+    leader?: string | null
+    role?: string | null
+  } | null
+  rawText: string
+  headline?: string | null
+  sourceUrl?: string | null
+  sourceName?: string | null
 }
 
 export default function UpdatePage({ params }: { params: Promise<{ id: string; unitId: string }> }) {
@@ -32,7 +45,7 @@ export default function UpdatePage({ params }: { params: Promise<{ id: string; u
   const [loading, setLoading] = useState(false)
   const [parsing, setParsing] = useState(false)
   const [fetching, setFetching] = useState(false)
-  const [reviewData, setReviewData] = useState<UpdateData | null>(null)
+  const [reviewData, setReviewData] = useState<IngestedData | null>(null)
   const [aiText, setAiText] = useState('')
   const [url, setUrl] = useState('')
   const [inputMode, setInputMode] = useState<'url' | 'text'>('url')
@@ -119,7 +132,11 @@ export default function UpdatePage({ params }: { params: Promise<{ id: string; u
     try {
       setParsing(true)
       setError(null)
-      const response = await api.post('/api/platform/unit/update/ai-parse', { text: aiText })
+      const response = await api.post('/api/utils/news-artifact/ingest', { 
+        text: aiText,
+        sourceUrl: url || undefined,
+        headline: aiText.split('\n')[0]?.substring(0, 200) || undefined,
+      })
 
       if (response.data.success && response.data.data) {
         setReviewData(response.data.data)
@@ -135,24 +152,38 @@ export default function UpdatePage({ params }: { params: Promise<{ id: string; u
     }
   }
 
-  async function handleSubmit() {
+  async function handleSaveArtifact() {
     if (!reviewData) {
-      alert('No data to save')
+      setError('No data to save')
       return
     }
 
     try {
       setLoading(true)
-      const response = await api.post(`/api/company/products/platform/unit/${unitId}/update`, reviewData)
+      setError(null)
+      
+      // Save as CompanyNewsArtifact with full intelligence
+      const response = await api.post('/api/utils/news-artifact/create', {
+        rawText: reviewData.rawText,
+        aiSummary: reviewData.aiSummary,
+        artifactType: reviewData.artifactType,
+        sentiment: reviewData.sentiment,
+        humanElements: reviewData.humanElements,
+        noteworthyItems: reviewData.noteworthyItems,
+        leaderStatement: reviewData.leaderStatement,
+        sourceUrl: reviewData.sourceUrl,
+        sourceName: reviewData.sourceName,
+        headline: reviewData.headline,
+      })
 
       if (response.data.success) {
         setSuccess(true)
       } else {
-        alert('Failed to save update: ' + response.data.error)
+        setError('Failed to save artifact: ' + response.data.error)
       }
     } catch (error: any) {
-      console.error('Failed to save update:', error)
-      alert('Failed to save update: ' + (error.response?.data?.error || error.message))
+      console.error('Failed to save artifact:', error)
+      setError('Failed to save artifact: ' + (error.response?.data?.error || error.message))
     } finally {
       setLoading(false)
     }
@@ -361,147 +392,144 @@ export default function UpdatePage({ params }: { params: Promise<{ id: string; u
                 </div>
               ) : (
                 <div className="space-y-6">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-sm text-blue-800">
-                      Review the parsed data below. You can edit fields before saving.
-                    </p>
-                  </div>
+                  {/* Article Intelligence Summary */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Article Intelligence</h2>
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <p className="text-sm text-gray-600">Type</p>
+                        <p className="font-medium text-gray-900">{reviewData.artifactType?.replace('_', ' ').toUpperCase()}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Sentiment</p>
+                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                          reviewData.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
+                          reviewData.sentiment === 'negative' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {reviewData.sentiment?.toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
 
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Percent Complete</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={reviewData.percentComplete || ''}
-                          onChange={(e) => setReviewData({ 
-                            ...reviewData, 
-                            percentComplete: e.target.value ? parseInt(e.target.value) : null 
-                          })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Status Update</label>
-                        <input
-                          type="text"
-                          value={reviewData.statusUpdate || ''}
-                          onChange={(e) => setReviewData({ ...reviewData, statusUpdate: e.target.value || null })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                          placeholder="e.g., Keel Laid, Construction 60% complete"
-                        />
-                      </div>
-                    </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Schedule Note</label>
-                      <input
-                        type="text"
-                        value={reviewData.scheduleNote || ''}
-                        onChange={(e) => setReviewData({ ...reviewData, scheduleNote: e.target.value || null })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Industrial Base Note</label>
-                      <input
-                        type="text"
-                        value={reviewData.industrialBaseNote || ''}
-                        onChange={(e) => setReviewData({ ...reviewData, industrialBaseNote: e.target.value || null })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Leadership Quote</label>
+                      <p className="text-sm text-gray-600 mb-2">AI Summary</p>
                       <textarea
-                        rows={2}
-                        value={reviewData.leadershipQuote || ''}
-                        onChange={(e) => setReviewData({ ...reviewData, leadershipQuote: e.target.value || null })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Keel Laid Date</label>
-                        <input
-                          type="date"
-                          value={reviewData.keelLaidDate || ''}
-                          onChange={(e) => setReviewData({ ...reviewData, keelLaidDate: e.target.value || null })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Sea Trials Start Date</label>
-                        <input
-                          type="date"
-                          value={reviewData.seaTrialsStartDate || ''}
-                          onChange={(e) => setReviewData({ ...reviewData, seaTrialsStartDate: e.target.value || null })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Date</label>
-                        <input
-                          type="date"
-                          value={reviewData.deliveryDate || ''}
-                          onChange={(e) => setReviewData({ ...reviewData, deliveryDate: e.target.value || null })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Commissioning Date</label>
-                        <input
-                          type="date"
-                          value={reviewData.commissioningDate || ''}
-                          onChange={(e) => setReviewData({ ...reviewData, commissioningDate: e.target.value || null })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Narrative Summary</label>
-                      <textarea
-                        rows={3}
-                        value={reviewData.narrativeSummary || ''}
-                        onChange={(e) => setReviewData({ ...reviewData, narrativeSummary: e.target.value || null })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Tags (comma-separated)</label>
-                      <input
-                        type="text"
-                        value={reviewData.tags?.join(', ') || ''}
-                        onChange={(e) => setReviewData({ 
-                          ...reviewData, 
-                          tags: e.target.value ? e.target.value.split(',').map(t => t.trim()).filter(t => t) : []
-                        })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                        placeholder="milestone, schedule, construction"
+                        rows={4}
+                        value={reviewData.aiSummary}
+                        onChange={(e) => setReviewData({ ...reviewData, aiSummary: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end space-x-4">
-                    <button
-                      onClick={() => {
-                        setReviewData(null)
-                        setAiText('')
-                      }}
-                      className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                    >
-                      Start Over
-                    </button>
-                    <button
-                      onClick={handleSubmit}
-                      disabled={loading}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {loading ? 'Saving...' : 'Save Update'}
-                    </button>
+                  {/* Human Elements */}
+                  {reviewData.humanElements && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-6">
+                      <h3 className="text-md font-semibold text-gray-900 mb-3">Human Elements</h3>
+                      <div className="space-y-2 text-sm">
+                        {reviewData.humanElements.sponsor && (
+                          <p><span className="font-medium">Sponsor:</span> {reviewData.humanElements.sponsor}</p>
+                        )}
+                        {reviewData.humanElements.leaders && reviewData.humanElements.leaders.length > 0 && (
+                          <p><span className="font-medium">Leaders:</span> {reviewData.humanElements.leaders.join(', ')}</p>
+                        )}
+                        {reviewData.humanElements.attendees && reviewData.humanElements.attendees.length > 0 && (
+                          <p><span className="font-medium">Attendees:</span> {reviewData.humanElements.attendees.join(', ')}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Noteworthy Items */}
+                  {reviewData.noteworthyItems && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-6">
+                      <h3 className="text-md font-semibold text-gray-900 mb-3">Noteworthy Items</h3>
+                      <div className="space-y-3">
+                        {reviewData.noteworthyItems.keyFacts && reviewData.noteworthyItems.keyFacts.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-gray-700 mb-1">Key Facts</p>
+                            <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                              {reviewData.noteworthyItems.keyFacts.map((fact, i) => (
+                                <li key={i}>{fact}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {reviewData.noteworthyItems.milestones && reviewData.noteworthyItems.milestones.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-gray-700 mb-1">Milestones</p>
+                            <div className="flex flex-wrap gap-2">
+                              {reviewData.noteworthyItems.milestones.map((m, i) => (
+                                <span key={i} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">{m}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {reviewData.noteworthyItems.dates && reviewData.noteworthyItems.dates.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-gray-700 mb-1">Dates</p>
+                            <div className="flex flex-wrap gap-2">
+                              {reviewData.noteworthyItems.dates.map((d, i) => (
+                                <span key={i} className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-sm">{d}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Leader Statement */}
+                  {reviewData.leaderStatement && reviewData.leaderStatement.statement && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+                      <h3 className="text-md font-semibold text-gray-900 mb-3">Leader Statement</h3>
+                      <blockquote className="italic text-gray-700 mb-2">"{reviewData.leaderStatement.statement}"</blockquote>
+                      {reviewData.leaderStatement.leader && (
+                        <p className="text-sm text-gray-600">
+                          — {reviewData.leaderStatement.leader}
+                          {reviewData.leaderStatement.role && `, ${reviewData.leaderStatement.role}`}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="border-t pt-6">
+                    <p className="text-sm text-gray-600 mb-4">What would you like to do with this article?</p>
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => {
+                          setReviewData(null)
+                          setAiText('')
+                        }}
+                        className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                      >
+                        Start Over
+                      </button>
+                      <button
+                        onClick={handleSaveArtifact}
+                        disabled={loading}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loading ? 'Saving...' : 'Save as News Artifact'}
+                      </button>
+                      <button
+                        disabled
+                        className="px-6 py-2 bg-gray-300 text-gray-500 rounded-lg font-semibold cursor-not-allowed"
+                        title="Coming soon"
+                      >
+                        Bolt to Unit Update
+                      </button>
+                      <button
+                        disabled
+                        className="px-6 py-2 bg-gray-300 text-gray-500 rounded-lg font-semibold cursor-not-allowed"
+                        title="Coming soon"
+                      >
+                        Create Comms Product
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
