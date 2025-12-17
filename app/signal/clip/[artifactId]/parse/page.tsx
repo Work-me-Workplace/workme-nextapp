@@ -542,6 +542,7 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                         placeholder="milestone, schedule, construction"
                       />
                     </div>
+                    </div>
                   )}
 
                   {/* For other model types, show generic JSON editor or specific forms */}
