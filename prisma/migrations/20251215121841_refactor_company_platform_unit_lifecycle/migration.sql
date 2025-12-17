@@ -31,3 +31,5 @@ CREATE INDEX IF NOT EXISTS "CompanyPlatformUnit_platformClass_idx" ON "CompanyPl
 -- CreateIndex
 CREATE INDEX IF NOT EXISTS "CompanyPlatformUnit_currentStatus_idx" ON "CompanyPlatformUnit"("currentStatus");
 
+
+

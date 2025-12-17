@@ -614,3 +614,5 @@ model CompanyEmployee {
 - Whether we maintain separate models or unify
 - The UX patterns for employee lookup/selection
 - The employee management capabilities
+
+

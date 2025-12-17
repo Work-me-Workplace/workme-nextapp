@@ -41,3 +41,5 @@ ADD CONSTRAINT "MyTeamSubordinateProfile_employeeId_fkey"
 FOREIGN KEY ("employeeId") REFERENCES "CompanyEmployee"("id") ON DELETE SET NULL;
 
 CREATE INDEX "MyTeamSubordinateProfile_employeeId_idx" ON "MyTeamSubordinateProfile"("employeeId");
+
+

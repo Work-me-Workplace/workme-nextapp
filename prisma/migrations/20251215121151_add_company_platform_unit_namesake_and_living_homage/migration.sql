@@ -52,3 +52,5 @@ ALTER TABLE "CompanyPlatformUnitNamesake" ADD CONSTRAINT "CompanyPlatformUnitNam
 -- AddForeignKey
 ALTER TABLE "CompanyPlatformUnitLivingHomage" ADD CONSTRAINT "CompanyPlatformUnitLivingHomage_platformUnitId_fkey" FOREIGN KEY ("platformUnitId") REFERENCES "CompanyPlatformUnit"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+
+

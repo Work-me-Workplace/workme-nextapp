@@ -41,3 +41,5 @@ CREATE INDEX "SeniorLeaderTopic_createdAt_idx" ON "SeniorLeaderTopic"("createdAt
 -- AddForeignKey
 ALTER TABLE "SeniorLeaderTopic" ADD CONSTRAINT "SeniorLeaderTopic_signalArtifactId_fkey" FOREIGN KEY ("signalArtifactId") REFERENCES "SignalArtifact"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+
+
