@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 1. Auth - Verify Firebase token
@@ -28,7 +28,7 @@ export async function POST(
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    const { id: digestId } = params
+    const { id: digestId } = await params
 
     // 3. Verify digest exists
     const digest = await prisma.seniorLeaderDigest.findUnique({
@@ -115,3 +115,4 @@ export async function POST(
     )
   }
 }
+

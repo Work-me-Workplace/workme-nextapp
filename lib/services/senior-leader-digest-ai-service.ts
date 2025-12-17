@@ -195,3 +195,4 @@ Return ONLY valid JSON with this exact structure:
     openingNote: parsedData.openingNote.trim(),
   }
 }
+
