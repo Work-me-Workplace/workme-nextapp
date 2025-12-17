@@ -8,7 +8,7 @@ import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { refreshWorkMe } from '@/lib/workme.client'
 import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { RefreshCw, ArrowLeft, Wand2, Loader2, CheckCircle } from 'lucide-react'
+import { RefreshCw, ArrowLeft, Wand2, Loader2, CheckCircle, Link as LinkIcon, Newspaper, AlertCircle } from 'lucide-react'
 
 interface UpdateData {
   percentComplete?: number | null
@@ -31,8 +31,12 @@ export default function UpdatePage({ params }: { params: Promise<{ id: string; u
   const [authReady, setAuthReady] = useState(false)
   const [loading, setLoading] = useState(false)
   const [parsing, setParsing] = useState(false)
+  const [fetching, setFetching] = useState(false)
   const [reviewData, setReviewData] = useState<UpdateData | null>(null)
   const [aiText, setAiText] = useState('')
+  const [url, setUrl] = useState('')
+  const [inputMode, setInputMode] = useState<'url' | 'text'>('url')
+  const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
@@ -68,24 +72,64 @@ export default function UpdatePage({ params }: { params: Promise<{ id: string; u
     return () => unsubscribe()
   }, [router])
 
+  async function handleFetchUrl() {
+    if (!url.trim()) {
+      setError('Please enter a URL')
+      return
+    }
+
+    try {
+      setFetching(true)
+      setError(null)
+
+      const response = await api.post('/api/utils/fetch-article', { url: url.trim() })
+
+      if (response.data.success && response.data.data) {
+        const article = response.data.data
+        setAiText(article.textContent || article.content || '')
+        setUrl(article.url || url)
+        setError(null)
+      } else {
+        if (response.data.requiresManualPaste) {
+          setError(response.data.error || 'Could not extract article. Please paste the content manually.')
+          setInputMode('text')
+        } else {
+          setError(response.data.error || 'Failed to fetch article')
+        }
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch article:', error)
+      if (error.response?.data?.requiresManualPaste) {
+        setError(error.response.data.error || 'Could not extract article. Please paste the content manually.')
+        setInputMode('text')
+      } else {
+        setError(error.response?.data?.error || error.message || 'Failed to fetch article')
+      }
+    } finally {
+      setFetching(false)
+    }
+  }
+
   async function handleAIParse() {
     if (!aiText.trim()) {
-      alert('Please paste some text to parse')
+      setError('Please provide article text (either via URL or paste)')
       return
     }
 
     try {
       setParsing(true)
+      setError(null)
       const response = await api.post('/api/platform/unit/update/ai-parse', { text: aiText })
 
       if (response.data.success && response.data.data) {
         setReviewData(response.data.data)
+        setError(null)
       } else {
-        alert('Failed to parse: ' + (response.data.error || 'Unknown error'))
+        setError('Failed to parse: ' + (response.data.error || 'Unknown error'))
       }
     } catch (error: any) {
       console.error('Failed to parse with AI:', error)
-      alert('Failed to parse: ' + (error.response?.data?.error || error.message))
+      setError('Failed to parse: ' + (error.response?.data?.error || error.message))
     } finally {
       setParsing(false)
     }
@@ -177,22 +221,117 @@ export default function UpdatePage({ params }: { params: Promise<{ id: string; u
                 </div>
               ) : !reviewData ? (
                 <div className="space-y-6">
+                  {/* Input Mode Toggle */}
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => {
+                        setInputMode('url')
+                        setError(null)
+                      }}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        inputMode === 'url'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <LinkIcon className="w-4 h-4 inline mr-2" />
+                      URL
+                    </button>
+                    <button
+                      onClick={() => {
+                        setInputMode('text')
+                        setError(null)
+                      }}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        inputMode === 'text'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <Newspaper className="w-4 h-4 inline mr-2" />
+                      Paste Text
+                    </button>
+                  </div>
+
+                  {/* URL Input */}
+                  {inputMode === 'url' && (
+                    <div className="space-y-4">
+                      <div>
+                        <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-2">
+                          Article URL
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            id="url"
+                            type="url"
+                            value={url}
+                            onChange={(e) => setUrl(e.target.value)}
+                            placeholder="https://example.com/article"
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            disabled={fetching || parsing}
+                          />
+                          <button
+                            onClick={handleFetchUrl}
+                            disabled={fetching || parsing || !url.trim()}
+                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
+                          >
+                            {fetching ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Fetching...
+                              </>
+                            ) : (
+                              'Fetch'
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Text Input */}
                   <div>
                     <label htmlFor="aiText" className="block text-sm font-medium text-gray-700 mb-2">
-                      Paste Article or Text
+                      Article Text {inputMode === 'url' && '(will be populated from URL)'}
                     </label>
                     <textarea
                       id="aiText"
                       rows={12}
                       value={aiText}
                       onChange={(e) => setAiText(e.target.value)}
+                      placeholder={inputMode === 'url' ? 'Click "Fetch" to load article content...' : 'Paste any article, press release, or status report about this platform unit...'}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
-                      placeholder="Paste any article, press release, or status report about this platform unit..."
+                      disabled={fetching || parsing}
                     />
-                    <p className="text-sm text-gray-500 mt-2">
-                      AI will extract update information from your text.
-                    </p>
+                    {aiText && (
+                      <p className="text-sm text-gray-500 mt-2">
+                        {aiText.length} characters
+                      </p>
+                    )}
+                    {!aiText && (
+                      <p className="text-sm text-gray-500 mt-2">
+                        AI will extract update information from your text.
+                      </p>
+                    )}
                   </div>
+
+                  {/* Error Message */}
+                  {error && (
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
+                      <AlertCircle className="w-5 h-5 text-red-600 mr-2 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm text-red-800">{error}</p>
+                        {error.includes('paste manually') && inputMode === 'url' && (
+                          <button
+                            onClick={() => setInputMode('text')}
+                            className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+                          >
+                            Switch to paste mode
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-end space-x-4">
                     <Link
@@ -203,7 +342,7 @@ export default function UpdatePage({ params }: { params: Promise<{ id: string; u
                     </Link>
                     <button
                       onClick={handleAIParse}
-                      disabled={parsing || !aiText.trim()}
+                      disabled={parsing || fetching || !aiText.trim()}
                       className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {parsing ? (

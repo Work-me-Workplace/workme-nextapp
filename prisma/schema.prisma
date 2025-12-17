@@ -84,6 +84,10 @@ model WorkMe {
   // News Artifact Relations
   createdCompanyNewsArtifacts CompanyNewsArtifact[] @relation("CompanyNewsArtifactCreator")
 
+  // Memo & LinkedIn Relations
+  memos         Memo[]         @relation("WorkMeMemos")
+  linkedInPosts LinkedInPost[] @relation("WorkMeLinkedInPosts")
+
   @@index([handle])
   @@index([companyId])
   @@index([companyUnit])
@@ -2100,14 +2104,14 @@ enum EvidenceClassificationType {
 // PlannedItem OWNS time. PlannerContainer range is DERIVED later (do not store start/end).
 
 model PlannerContainer {
-  id            String       @id @default(cuid())
-  name          String
-  description   String?
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
   timeframeLabel String? // e.g. "2026", "Q2 2026", "Rolling"
-  companyId     String
+  companyId      String
   divisionUnitId String?
-  ownerUserId   String
-  createdAt     DateTime     @default(now())
+  ownerUserId    String
+  createdAt      DateTime @default(now())
 
   items PlannedItem[]
 
@@ -2117,21 +2121,21 @@ model PlannerContainer {
 }
 
 model PlannedItem {
-  id        String   @id @default(cuid())
+  id                 String           @id @default(cuid())
   plannerContainerId String
   plannerContainer   PlannerContainer @relation(fields: [plannerContainerId], references: [id], onDelete: Cascade)
 
-  companyId       String
-  divisionUnitId  String?
+  companyId      String
+  divisionUnitId String?
 
   // Optional source links (nullable FK placeholders)
   sourceEventId    String?
   sourceCampaignId String?
   sourceProgramId  String?
 
-  itemKind        String // e.g. "event", "series", "campaign", free text
-  title           String
-  description     String?
+  itemKind    String // e.g. "event", "series", "campaign", free text
+  title       String
+  description String?
 
   plannedTimeLabel  String // REQUIRED human-readable time, e.g. "Q2 2026", "Spring"
   plannedTimeAnchor DateTime? // nullable, for sorting only
@@ -2175,14 +2179,14 @@ enum DigestSourceType {
 }
 
 model SeniorLeaderDigest {
-  id             String        @id @default(cuid())
+  id             String       @id @default(cuid())
   leaderName     String
   leaderRole     String
   organizationId String
   weekOf         DateTime
   subjectLine    String?
   openingNote    String? // AI-generated, editable
-  status         DigestStatus  @default(DRAFT)
+  status         DigestStatus @default(DRAFT)
 
   entries SeniorLeaderDigestEntry[]
 
@@ -2196,7 +2200,7 @@ model SeniorLeaderDigest {
 }
 
 model SeniorLeaderDigestEntry {
-  id          String @id @default(cuid())
+  id          String            @id @default(cuid())
   digestId    String
   type        DigestEntryType
   title       String
@@ -2211,4 +2215,83 @@ model SeniorLeaderDigestEntry {
   @@index([digestId])
   @@index([type])
   @@index([orderIndex])
+}
+
+// ============================================
+// MEMO & LINKEDIN POST MODELS
+// ============================================
+// Memo = Human source of truth for work moments
+// LinkedInPost = Distribution artifact (user-approved posts)
+
+enum MemoContextType {
+  EVENT
+  MEETING
+  DELIVERY
+  RECOGNITION
+  OTHER
+}
+
+enum LinkedInPostStatus {
+  DRAFT
+  POSTED
+  FAILED
+}
+
+model Memo {
+  id        String   @id @default(cuid())
+  workMeId  String   @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // When did this actually happen (can differ from createdAt)
+  happenedAt DateTime @default(now())
+
+  // Structured Reflection (the narrative)
+  whatHappened String // Factual description
+  whySpecial   String? // Why this moment mattered
+  myRole       String? // How the user contributed
+  impact       String? // Outcome or effect
+  thoughts     String? // Optional reflection / emotion
+
+  // Context
+  contextType MemoContextType @default(OTHER)
+
+  // Relations
+  workMe        WorkMe         @relation("WorkMeMemos", fields: [workMeId], references: [id], onDelete: Cascade)
+  linkedInPosts LinkedInPost[]
+
+  @@index([workMeId])
+  @@index([happenedAt])
+  @@index([contextType])
+  @@index([createdAt])
+}
+
+model LinkedInPost {
+  id        String   @id @default(cuid())
+  workMeId  String   @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relation (nullable - can create post without memo)
+  memoId String?
+  memo   Memo?   @relation(fields: [memoId], references: [id], onDelete: SetNull)
+
+  // Content
+  title   String? // Internal label (optional)
+  content String // Final, edited, user-approved text
+
+  // State
+  status          LinkedInPostStatus @default(DRAFT)
+  postedAt        DateTime?
+  linkedinPostUrn String? // LinkedIn's unique identifier
+  errorMessage    String? // If posting failed
+
+  // Relations
+  workMe WorkMe @relation("WorkMeLinkedInPosts", fields: [workMeId], references: [id], onDelete: Cascade)
+
+  @@index([workMeId])
+  @@index([memoId])
+  @@index([status])
+  @@index([postedAt])
+  @@index([createdAt])
 }
