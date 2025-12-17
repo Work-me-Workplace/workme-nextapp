@@ -99,7 +99,7 @@ export async function createEmailDigestEdition(data: z.infer<typeof createEmailD
       data: {
         emailDigestId: validated.emailDigestId,
         status: 'DRAFT',
-        contentJson: null, // Empty until generated
+        // contentJson omitted - will be null by default until generated
         originatorId: workMeId,
         companyId,
       },
