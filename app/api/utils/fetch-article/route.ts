@@ -49,21 +49,35 @@ export async function POST(request: NextRequest) {
 
     console.log('[API POST /api/utils/fetch-article] Fetching:', url)
 
-    // Fetch HTML
+    // Fetch HTML with browser-like headers
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Cache-Control': 'max-age=0',
       },
     })
 
     if (!response.ok) {
+      const errorMessage = response.status === 403 
+        ? 'The website is blocking automated requests. Please paste the article content manually.'
+        : `Failed to fetch URL: ${response.status} ${response.statusText}`
+      
       return NextResponse.json(
         { 
           success: false, 
-          error: `Failed to fetch URL: ${response.status} ${response.statusText}`,
+          error: errorMessage,
           requiresManualPaste: true 
         },
-        { status: response.status }
+        { status: 400 } // Always return 400 to client, don't leak upstream status
       )
     }
 
