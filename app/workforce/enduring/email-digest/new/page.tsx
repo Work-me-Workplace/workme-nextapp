@@ -50,16 +50,32 @@ export default function NewEmailDigestPage() {
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link href="/workforce/enduring/email-digest" className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm">
-          ← Back to Products
+          ← Back to Email Digest Series
         </Link>
 
         <div className="bg-white rounded-lg shadow p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Email Digest Product</h2>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Create New Email Digest Series</h2>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex">
+                <svg className="h-5 w-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <h3 className="text-sm font-semibold text-blue-900 mb-1">Recurring Email Series</h3>
+                  <p className="text-sm text-blue-800">
+                    This creates a <strong>recurring email digest series</strong> (e.g., "Weekly Workforce Update", "Monthly Benefits Digest"). 
+                    After creating the series, you'll generate individual editions over time.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                Product Title <span className="text-red-500">*</span>
+                Series Title <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -70,11 +86,12 @@ export default function NewEmailDigestPage() {
                 required
                 placeholder="e.g., Weekly Workforce Update"
               />
+              <p className="mt-1 text-xs text-gray-500">The name of your recurring email digest series</p>
             </div>
 
             <div>
               <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                Description
+                Series Description
               </label>
               <textarea
                 id="description"
@@ -82,8 +99,9 @@ export default function NewEmailDigestPage() {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={4}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Brief description of this email digest product..."
+                placeholder="What will this recurring email digest cover? (e.g., 'Weekly summary of company events, trainings, and announcements')"
               />
+              <p className="mt-1 text-xs text-gray-500">Describe the purpose and content of this recurring series</p>
             </div>
 
             <div className="flex gap-4 pt-4">
@@ -92,7 +110,7 @@ export default function NewEmailDigestPage() {
                 disabled={loading}
                 className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
               >
-                {loading ? 'Creating...' : 'Create Product'}
+                {loading ? 'Creating Series...' : 'Create Email Digest Series'}
               </button>
               <Link
                 href="/workforce/enduring/email-digest"

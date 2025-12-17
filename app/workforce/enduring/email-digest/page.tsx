@@ -46,8 +46,9 @@ export default function EmailDigestListPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Email Digest Products</h1>
-          <p className="text-gray-600">Manage your email digest products and editions</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Email Digest Series</h1>
+          <p className="text-gray-600">Manage your recurring email digest series and editions</p>
+          <p className="text-xs text-blue-600 mt-1">📍 Direct URL: /workforce/enduring/email-digest</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -78,7 +79,7 @@ export default function EmailDigestListPage() {
               <svg className="h-12 w-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              <p className="text-gray-600 font-medium">Create New Product</p>
+              <p className="text-gray-600 font-medium">Create New Series</p>
             </div>
           </Link>
         </div>

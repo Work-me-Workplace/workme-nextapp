@@ -11,9 +11,27 @@ const createEmailDigestProductSchema = z.object({
   description: z.string().optional().nullable(),
 })
 
-// Schema for creating email digest edition
+// Schema for creating email digest edition (DRAFT)
 const createEmailDigestEditionSchema = z.object({
   emailDigestId: z.string().uuid(),
+})
+
+// Schema for updating edition items (curation)
+const updateEditionItemsSchema = z.object({
+  editionId: z.string().uuid(),
+  items: z.array(
+    z.object({
+      companyEventId: z.string().optional(),
+      companyCampaignId: z.string().optional(),
+      companyTrainingId: z.string().optional(),
+      companyBenefitsId: z.string().optional(),
+      companyImpactEventId: z.string().optional(),
+      companyCommunityId: z.string().optional(),
+      companyCareerId: z.string().optional(),
+      companyEmployeeCauseId: z.string().optional(),
+      notes: z.string().optional().nullable(),
+    })
+  ),
 })
 
 /**
@@ -34,7 +52,7 @@ export async function createEmailDigestProduct(data: z.infer<typeof createEmailD
       data: {
         title: validated.title,
         description: validated.description ?? undefined,
-        companyUnit: companyId, // Note: WorkForceEnduringProdEmailDigest still uses companyUnit field
+        companyId,
         createdByWorkMeId: workMeId,
       },
     })
@@ -50,8 +68,8 @@ export async function createEmailDigestProduct(data: z.infer<typeof createEmailD
 }
 
 /**
- * Create an email digest edition
- * Queries all CompanyX summaries and generates content via OpenAI
+ * Create an email digest edition in DRAFT status (for curation)
+ * This creates an empty edition that the user will populate with items
  */
 export async function createEmailDigestEdition(data: z.infer<typeof createEmailDigestEditionSchema>) {
   try {
@@ -68,7 +86,7 @@ export async function createEmailDigestEdition(data: z.infer<typeof createEmailD
     const product = await prisma.workForceEnduringProdEmailDigest.findFirst({
       where: {
         id: validated.emailDigestId,
-        companyUnit: companyId, // Note: WorkForceEnduringProdEmailDigest still uses companyUnit field
+        companyId,
       },
     })
 
@@ -76,114 +94,14 @@ export async function createEmailDigestEdition(data: z.infer<typeof createEmailD
       return { success: false, error: 'Email digest product not found' }
     }
 
-    // Query all CompanyX summaries for this company
-    const [events, campaigns, trainings, benefits, impactEvents, communities, careers, employeeCauses] = await Promise.all([
-      prisma.companyEvent.findMany({
-        where: { companyId },
-        select: { id: true, title: true, description: true, summary: true },
-      }),
-      prisma.companyCampaign.findMany({
-        where: { companyId },
-        select: { id: true, title: true, description: true, summary: true },
-      }),
-      prisma.companyTraining.findMany({
-        where: { companyId },
-        select: { id: true, title: true, description: true, summary: true },
-      }),
-      prisma.companyBenefits.findMany({
-        where: { companyId },
-        select: { id: true, title: true, description: true, summary: true },
-      }),
-      prisma.companyImpactEvent.findMany({
-        where: { companyId },
-        select: { id: true, title: true, description: true, summary: true },
-      }),
-      prisma.companyCommunity.findMany({
-        where: { companyId },
-        select: { id: true, title: true, description: true, summary: true },
-      }),
-      prisma.companyCareer.findMany({
-        where: { companyId },
-        select: { id: true, title: true, description: true, summary: true },
-      }),
-      prisma.companyEmployeeCause.findMany({
-        where: { companyId },
-        select: { id: true, title: true, description: true, summary: true },
-      }),
-    ])
-
-    // Build prompt string from CompanyX summaries
-    const summaries: string[] = []
-
-    if (events.length > 0) {
-      summaries.push('EVENTS:')
-      events.forEach((event) => {
-        summaries.push(`- ${event.title}: ${event.summary || event.description || 'No description'}`)
-      })
-    }
-
-    if (campaigns.length > 0) {
-      summaries.push('\nCAMPAIGNS:')
-      campaigns.forEach((campaign) => {
-        summaries.push(`- ${campaign.title}: ${campaign.summary || campaign.description || 'No description'}`)
-      })
-    }
-
-    if (trainings.length > 0) {
-      summaries.push('\nTRAINING:')
-      trainings.forEach((training) => {
-        summaries.push(`- ${training.title}: ${training.summary || training.description || 'No description'}`)
-      })
-    }
-
-    if (benefits.length > 0) {
-      summaries.push('\nBENEFITS:')
-      benefits.forEach((benefit) => {
-        summaries.push(`- ${benefit.title}: ${benefit.summary || benefit.description || 'No description'}`)
-      })
-    }
-
-    if (impactEvents.length > 0) {
-      summaries.push('\nIMPACT EVENTS:')
-      impactEvents.forEach((impact) => {
-        summaries.push(`- ${impact.title}: ${impact.summary || impact.description || 'No description'}`)
-      })
-    }
-
-    if (communities.length > 0) {
-      summaries.push('\nCOMMUNITY:')
-      communities.forEach((community) => {
-        summaries.push(`- ${community.title}: ${community.summary || community.description || 'No description'}`)
-      })
-    }
-
-    if (careers.length > 0) {
-      summaries.push('\nCAREER:')
-      careers.forEach((career) => {
-        summaries.push(`- ${career.title}: ${career.summary || career.description || 'No description'}`)
-      })
-    }
-
-    if (employeeCauses.length > 0) {
-      summaries.push('\nEMPLOYEE CAUSES:')
-      employeeCauses.forEach((cause) => {
-        summaries.push(`- ${cause.title}: ${cause.summary || cause.description || 'No description'}`)
-      })
-    }
-
-    const promptText = summaries.join('\n')
-
-    // TODO: Replace with actual OpenAI API call
-    // For now, return a placeholder response
-    const generatedContent = await generateEmailDigestContent(promptText, product.title)
-
-    // Create edition
+    // Create empty edition in DRAFT status
     const edition = await prisma.emailDigestEdition.create({
       data: {
         emailDigestId: validated.emailDigestId,
-        contentJson: generatedContent,
+        status: 'DRAFT',
+        contentJson: null, // Empty until generated
         originatorId: workMeId,
-        companyUnit: companyId, // Note: EmailDigestEdition still uses companyUnit field
+        companyId,
       },
     })
 
@@ -198,22 +116,329 @@ export async function createEmailDigestEdition(data: z.infer<typeof createEmailD
 }
 
 /**
+ * Get available CompanyX items for curation
+ */
+export async function getAvailableCompanyXItems() {
+  try {
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyId } = workMe
+
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or user must set a companyId' }
+    }
+
+    // Query all CompanyX items for this company
+    const [events, campaigns, trainings, benefits, impactEvents, communities, careers, employeeCauses] = await Promise.all([
+      prisma.companyEvent.findMany({
+        where: { companyId },
+        select: { id: true, title: true, description: true, summary: true, eventDate: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyCampaign.findMany({
+        where: { companyId },
+        select: { id: true, title: true, description: true, summary: true, windowStart: true, windowEnd: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyTraining.findMany({
+        where: { companyId },
+        select: { id: true, title: true, description: true, summary: true, trainingDate: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyBenefits.findMany({
+        where: { companyId },
+        select: { id: true, title: true, description: true, summary: true, windowStart: true, windowEnd: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyImpactEvent.findMany({
+        where: { companyId },
+        select: { id: true, title: true, description: true, summary: true, effectiveDate: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyCommunity.findMany({
+        where: { companyId },
+        select: { id: true, title: true, description: true, summary: true, date: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyCareer.findMany({
+        where: { companyId },
+        select: { id: true, title: true, description: true, summary: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.companyEmployeeCause.findMany({
+        where: { companyId },
+        select: { id: true, title: true, description: true, summary: true, windowStart: true, windowEnd: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ])
+
+    return {
+      success: true,
+      items: {
+        events,
+        campaigns,
+        trainings,
+        benefits,
+        impactEvents,
+        communities,
+        careers,
+        employeeCauses,
+      },
+    }
+  } catch (error) {
+    console.error('Error fetching available CompanyX items:', error)
+    return { success: false, error: 'Failed to fetch available items' }
+  }
+}
+
+/**
+ * Update edition items (curation)
+ */
+export async function updateEditionItems(data: z.infer<typeof updateEditionItemsSchema>) {
+  try {
+    const validated = updateEditionItemsSchema.parse(data)
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyId } = workMe
+
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or user must set a companyId' }
+    }
+
+    // Verify edition exists and belongs to user's company
+    const edition = await prisma.emailDigestEdition.findFirst({
+      where: {
+        id: validated.editionId,
+        companyId,
+      },
+    })
+
+    if (!edition) {
+      return { success: false, error: 'Email digest edition not found' }
+    }
+
+    // Delete existing items
+    await prisma.emailDigestItem.deleteMany({
+      where: { editionId: validated.editionId },
+    })
+
+    // Create new items
+    const items = await Promise.all(
+      validated.items.map((item, index) =>
+        prisma.emailDigestItem.create({
+          data: {
+            editionId: validated.editionId,
+            companyEventId: item.companyEventId,
+            companyCampaignId: item.companyCampaignId,
+            companyTrainingId: item.companyTrainingId,
+            companyBenefitsId: item.companyBenefitsId,
+            companyImpactEventId: item.companyImpactEventId,
+            companyCommunityId: item.companyCommunityId,
+            companyCareerId: item.companyCareerId,
+            companyEmployeeCauseId: item.companyEmployeeCauseId,
+            notes: item.notes ?? undefined,
+            order: index,
+          },
+        })
+      )
+    )
+
+    return { success: true, items }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors }
+    }
+    console.error('Error updating edition items:', error)
+    return { success: false, error: 'Failed to update edition items' }
+  }
+}
+
+/**
+ * Get edition with items for curation/editing
+ */
+export async function getEditionWithItems(editionId: string) {
+  try {
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyId } = workMe
+
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or user must set a companyId' }
+    }
+
+    const edition = await prisma.emailDigestEdition.findFirst({
+      where: {
+        id: editionId,
+        companyId,
+      },
+      include: {
+        product: true,
+        items: {
+          include: {
+            companyEvent: true,
+            companyCampaign: true,
+            companyTraining: true,
+            companyBenefits: true,
+            companyImpactEvent: true,
+            companyCommunity: true,
+            companyCareer: true,
+            companyEmployeeCause: true,
+          },
+          orderBy: { order: 'asc' },
+        },
+      },
+    })
+
+    if (!edition) {
+      return { success: false, error: 'Email digest edition not found' }
+    }
+
+    return { success: true, edition }
+  } catch (error) {
+    console.error('Error fetching edition:', error)
+    return { success: false, error: 'Failed to fetch edition' }
+  }
+}
+
+/**
+ * Generate edition content using OpenAI (replaces placeholder)
+ */
+export async function generateEditionContent(editionId: string) {
+  try {
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyId } = workMe
+
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or user must set a companyId' }
+    }
+
+    // Get edition with items and related CompanyX data
+    const edition = await prisma.emailDigestEdition.findFirst({
+      where: {
+        id: editionId,
+        companyId,
+      },
+      include: {
+        product: true,
+        items: {
+          include: {
+            companyEvent: true,
+            companyCampaign: true,
+            companyTraining: true,
+            companyBenefits: true,
+            companyImpactEvent: true,
+            companyCommunity: true,
+            companyCareer: true,
+            companyEmployeeCause: true,
+          },
+          orderBy: { order: 'asc' },
+        },
+      },
+    })
+
+    if (!edition) {
+      return { success: false, error: 'Email digest edition not found' }
+    }
+
+    if (edition.items.length === 0) {
+      return { success: false, error: 'No items selected for this edition. Please add items first.' }
+    }
+
+    // Update status to GENERATING
+    await prisma.emailDigestEdition.update({
+      where: { id: editionId },
+      data: { status: 'GENERATING' },
+    })
+
+    // Build prompt from selected items
+    const promptText = buildPromptFromItems(edition.items)
+
+    // TODO: Replace with actual OpenAI API call
+    const generatedContent = await generateEmailDigestContent(promptText, edition.product.title)
+
+    // Update edition with generated content
+    await prisma.emailDigestEdition.update({
+      where: { id: editionId },
+      data: {
+        status: 'GENERATED',
+        contentJson: generatedContent,
+      },
+    })
+
+    return { success: true, content: generatedContent }
+  } catch (error) {
+    console.error('Error generating edition content:', error)
+    // Revert status on error
+    try {
+      await prisma.emailDigestEdition.update({
+        where: { id: editionId },
+        data: { status: 'DRAFT' },
+      })
+    } catch {}
+    return { success: false, error: 'Failed to generate edition content' }
+  }
+}
+
+// Helper function to build prompt from selected items
+function buildPromptFromItems(items: any[]): string {
+  const summaries: string[] = []
+
+  items.forEach((item) => {
+    const source =
+      item.companyEvent ||
+      item.companyCampaign ||
+      item.companyTraining ||
+      item.companyBenefits ||
+      item.companyImpactEvent ||
+      item.companyCommunity ||
+      item.companyCareer ||
+      item.companyEmployeeCause
+
+    if (source) {
+      const type = item.companyEvent
+        ? 'EVENT'
+        : item.companyCampaign
+        ? 'CAMPAIGN'
+        : item.companyTraining
+        ? 'TRAINING'
+        : item.companyBenefits
+        ? 'BENEFITS'
+        : item.companyImpactEvent
+        ? 'IMPACT EVENT'
+        : item.companyCommunity
+        ? 'COMMUNITY'
+        : item.companyCareer
+        ? 'CAREER'
+        : 'EMPLOYEE CAUSE'
+
+      summaries.push(`[${type}] ${source.title}: ${source.summary || source.description || 'No description'}`)
+      if (item.notes) {
+        summaries.push(`  Note: ${item.notes}`)
+      }
+    }
+  })
+
+  return summaries.join('\n')
+}
+
+/**
  * Get email digest product by ID
  */
 export async function getEmailDigestProduct(id: string) {
   try {
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
+    const { id: workMeId, companyId } = workMe
 
-    if (!workMeId || !companyUnit) {
-      return { success: false, error: 'Not authenticated or user must set a companyUnit' }
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or user must set a companyId' }
     }
 
     const product = await prisma.workForceEnduringProdEmailDigest.findFirst({
       where: {
         id,
-        companyUnit,
+        companyId,
       },
       include: {
         editions: {
@@ -240,15 +465,15 @@ export async function getEmailDigestProducts() {
   try {
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
+    const { id: workMeId, companyId } = workMe
 
-    if (!workMeId || !companyUnit) {
-      return { success: false, error: 'Not authenticated or user must set a companyUnit', products: [] }
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or user must set a companyId', products: [] }
     }
 
     const products = await prisma.workForceEnduringProdEmailDigest.findMany({
       where: {
-        companyUnit,
+        companyId,
       },
       include: {
         editions: {
@@ -278,16 +503,16 @@ export async function getEmailDigestEdition(editionId: string) {
   try {
     const { firebaseId } = await verifyAuth()
     const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyUnit } = workMe
+    const { id: workMeId, companyId } = workMe
 
-    if (!workMeId || !companyUnit) {
-      return { success: false, error: 'Not authenticated or user must set a companyUnit' }
+    if (!workMeId || !companyId) {
+      return { success: false, error: 'Not authenticated or user must set a companyId' }
     }
 
     const edition = await prisma.emailDigestEdition.findFirst({
       where: {
         id: editionId,
-        companyUnit,
+        companyId,
       },
       include: {
         product: true,
@@ -315,4 +540,3 @@ async function generateEmailDigestContent(promptText: string, productTitle: stri
     generatedAt: new Date().toISOString(),
   }
 }
-

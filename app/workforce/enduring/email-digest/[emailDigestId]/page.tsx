@@ -26,19 +26,17 @@ export default function EmailDigestProductPage({ params }: { params: Promise<{ e
     try {
       const result = await createEmailDigestEdition({ emailDigestId })
       if (result.success && result.edition) {
-        // Refresh product to show new edition
-        const productResult = await getEmailDigestProduct(emailDigestId)
-        if (productResult.success && productResult.product) {
-          setProduct(productResult.product)
-        }
+        // Redirect to edition detail page (curation will happen there)
+        window.location.href = `/workforce/enduring/email-digest/${emailDigestId}/editions/${result.edition.id}`
       } else {
-        alert('Failed to generate edition: ' + (result.error || 'Unknown error'))
+        alert('Failed to create edition: ' + (result.error || 'Unknown error'))
+        setGenerating(false)
       }
     } catch (error) {
-      console.error('Error generating edition:', error)
-      alert('Failed to generate edition')
+      console.error('Error creating edition:', error)
+      alert('Failed to create edition')
+      setGenerating(false)
     }
-    setGenerating(false)
   }
 
   if (loading) {
