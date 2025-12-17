@@ -21,7 +21,7 @@ function getOpenAI() {
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 1. Auth
@@ -31,14 +31,17 @@ export async function POST(
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    // 3. Parse request body for tone selector
+    // 3. Await params
+    const { id } = await params
+
+    // 4. Parse request body for tone selector
     const body = await request.json().catch(() => ({}))
     const { tone = 'professional' } = body
 
-    // 4. Fetch memo (ensure it belongs to user)
+    // 5. Fetch memo (ensure it belongs to user)
     const memo = await prisma.memo.findFirst({
       where: {
-        id: params.id,
+        id,
         workMeId,
       },
     })
@@ -50,7 +53,7 @@ export async function POST(
       )
     }
 
-    // 5. Build tone instructions
+    // 6. Build tone instructions
     const toneInstructions: Record<string, string> = {
       professional: 'Professional and polished tone. Suitable for senior leaders and broad audience.',
       appreciative: 'Warm and appreciative tone. Express gratitude and acknowledge team contributions.',
@@ -60,7 +63,7 @@ export async function POST(
 
     const toneInstruction = toneInstructions[tone] || toneInstructions.professional
 
-    // 6. Generate LinkedIn post with AI
+    // 7. Generate LinkedIn post with AI
     const openai = getOpenAI()
 
     const prompt = `Transform this work moment into a professional LinkedIn post.

@@ -10,7 +10,7 @@ import { prisma } from '@/lib/prisma'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 1. Auth
@@ -20,10 +20,13 @@ export async function GET(
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    // 3. Fetch memo (ensure it belongs to user)
+    // 3. Await params
+    const { id } = await params
+
+    // 4. Fetch memo (ensure it belongs to user)
     const memo = await prisma.memo.findFirst({
       where: {
-        id: params.id,
+        id,
         workMeId,
       },
       include: {
@@ -60,7 +63,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 1. Auth
@@ -70,7 +73,10 @@ export async function PUT(
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    // 3. Parse request body
+    // 3. Await params
+    const { id } = await params
+
+    // 4. Parse request body
     const body = await request.json()
     const {
       whatHappened,
@@ -82,10 +88,10 @@ export async function PUT(
       happenedAt,
     } = body
 
-    // 4. Verify memo belongs to user
+    // 5. Verify memo belongs to user
     const existingMemo = await prisma.memo.findFirst({
       where: {
-        id: params.id,
+        id,
         workMeId,
       },
     })
@@ -97,9 +103,9 @@ export async function PUT(
       )
     }
 
-    // 5. Update memo
+    // 6. Update memo
     const memo = await prisma.memo.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         whatHappened: whatHappened?.trim() || existingMemo.whatHappened,
         whySpecial: whySpecial !== undefined ? (whySpecial?.trim() || null) : existingMemo.whySpecial,
@@ -131,7 +137,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 1. Auth
@@ -141,10 +147,13 @@ export async function DELETE(
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    // 3. Verify memo belongs to user
+    // 3. Await params
+    const { id } = await params
+
+    // 4. Verify memo belongs to user
     const existingMemo = await prisma.memo.findFirst({
       where: {
-        id: params.id,
+        id,
         workMeId,
       },
     })
@@ -156,9 +165,9 @@ export async function DELETE(
       )
     }
 
-    // 4. Delete memo (LinkedInPosts will be set to null via onDelete: SetNull)
+    // 5. Delete memo (LinkedInPosts will be set to null via onDelete: SetNull)
     await prisma.memo.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     return NextResponse.json({

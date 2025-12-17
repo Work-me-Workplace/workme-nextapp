@@ -10,7 +10,7 @@ import { prisma } from '@/lib/prisma'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 1. Auth
@@ -20,10 +20,13 @@ export async function GET(
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    // 3. Fetch LinkedIn post (ensure it belongs to user)
+    // 3. Await params
+    const { id } = await params
+
+    // 4. Fetch LinkedIn post (ensure it belongs to user)
     const linkedInPost = await prisma.linkedInPost.findFirst({
       where: {
-        id: params.id,
+        id,
         workMeId,
       },
       include: {
@@ -58,7 +61,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 1. Auth
@@ -68,14 +71,17 @@ export async function PUT(
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    // 3. Parse request body
+    // 3. Await params
+    const { id } = await params
+
+    // 4. Parse request body
     const body = await request.json()
     const { title, content } = body
 
-    // 4. Verify post belongs to user
+    // 5. Verify post belongs to user
     const existingPost = await prisma.linkedInPost.findFirst({
       where: {
-        id: params.id,
+        id,
         workMeId,
       },
     })
@@ -87,7 +93,7 @@ export async function PUT(
       )
     }
 
-    // 5. Only allow updates to drafts or failed posts
+    // 6. Only allow updates to drafts or failed posts
     if (existingPost.status === 'POSTED') {
       return NextResponse.json(
         { success: false, error: 'Cannot edit posted content' },
@@ -95,9 +101,9 @@ export async function PUT(
       )
     }
 
-    // 6. Update post
+    // 7. Update post
     const linkedInPost = await prisma.linkedInPost.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title: title !== undefined ? (title?.trim() || null) : existingPost.title,
         content: content?.trim() || existingPost.content,
@@ -127,7 +133,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 1. Auth
@@ -137,10 +143,13 @@ export async function DELETE(
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    // 3. Verify post belongs to user
+    // 3. Await params
+    const { id } = await params
+
+    // 4. Verify post belongs to user
     const existingPost = await prisma.linkedInPost.findFirst({
       where: {
-        id: params.id,
+        id,
         workMeId,
       },
     })
@@ -152,7 +161,7 @@ export async function DELETE(
       )
     }
 
-    // 4. Only allow deletion of drafts
+    // 5. Only allow deletion of drafts
     if (existingPost.status === 'POSTED') {
       return NextResponse.json(
         { success: false, error: 'Cannot delete posted content' },
@@ -160,9 +169,9 @@ export async function DELETE(
       )
     }
 
-    // 5. Delete post
+    // 6. Delete post
     await prisma.linkedInPost.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     return NextResponse.json({

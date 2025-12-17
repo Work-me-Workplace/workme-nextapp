@@ -13,7 +13,7 @@ import { prisma } from '@/lib/prisma'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 1. Auth
@@ -23,10 +23,13 @@ export async function POST(
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    // 3. Verify post belongs to user
+    // 3. Await params
+    const { id } = await params
+
+    // 4. Verify post belongs to user
     const existingPost = await prisma.linkedInPost.findFirst({
       where: {
-        id: params.id,
+        id,
         workMeId,
       },
     })
@@ -38,7 +41,7 @@ export async function POST(
       )
     }
 
-    // 4. Verify post is a draft
+    // 5. Verify post is a draft
     if (existingPost.status !== 'DRAFT' && existingPost.status !== 'FAILED') {
       return NextResponse.json(
         { success: false, error: 'Post has already been posted' },
@@ -46,7 +49,7 @@ export async function POST(
       )
     }
 
-    // 5. TODO: Implement actual LinkedIn API call
+    // 6. TODO: Implement actual LinkedIn API call
     // For now, this is a placeholder that simulates success
     
     // Simulated LinkedIn API call
@@ -55,7 +58,7 @@ export async function POST(
     if (linkedInApiSuccess) {
       // Update post as POSTED
       const linkedInPost = await prisma.linkedInPost.update({
-        where: { id: params.id },
+        where: { id },
         data: {
           status: 'POSTED',
           postedAt: new Date(),
@@ -75,7 +78,7 @@ export async function POST(
     } else {
       // Mark as FAILED with error message
       const linkedInPost = await prisma.linkedInPost.update({
-        where: { id: params.id },
+        where: { id },
         data: {
           status: 'FAILED',
           errorMessage: 'Failed to post to LinkedIn',
@@ -96,8 +99,9 @@ export async function POST(
     
     // Update post as FAILED
     try {
+      const { id } = await params
       await prisma.linkedInPost.update({
-        where: { id: params.id },
+        where: { id },
         data: {
           status: 'FAILED',
           errorMessage: error.message || 'Unknown error',
