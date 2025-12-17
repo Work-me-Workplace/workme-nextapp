@@ -6,7 +6,7 @@
  * Flow:
  * 1. Accept a URL in request body
  * 2. Fetch HTML with fetch()
- * 3. Parse with jsdom
+ * 3. Parse with linkedom (serverless-compatible DOM)
  * 4. Attempt extraction with @mozilla/readability
  * 5. If content is too short or fails, fallback to unfluff
  * 6. If both fail, return error telling UI to ask user to paste manually
@@ -15,7 +15,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { JSDOM } from 'jsdom'
+import { parseHTML } from 'linkedom'
 import { Readability } from '@mozilla/readability'
 import unfluff from 'unfluff'
 
@@ -80,9 +80,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse with jsdom
-    const dom = new JSDOM(html, { url: urlObj.href })
-    const document = dom.window.document
+    // Parse with linkedom (serverless-compatible)
+    const { document } = parseHTML(html)
 
     let extractedContent: {
       title: string
