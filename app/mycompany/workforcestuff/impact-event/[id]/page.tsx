@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { Calendar, AlertCircle, Users, Mail, Phone } from 'lucide-react'
-import { prisma } from '@/lib/prisma'
 
 interface ImpactEvent {
   id: string

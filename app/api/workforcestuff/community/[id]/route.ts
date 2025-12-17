@@ -9,7 +9,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { firebaseId } = await verifyAuth()
@@ -23,8 +23,9 @@ export async function GET(
       )
     }
 
+    const { id } = await params
     const item = await prisma.companyCommunity.findFirst({
-      where: { id: params.id, companyId },
+      where: { id, companyId },
     })
 
     if (!item) {
