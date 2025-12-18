@@ -5,15 +5,30 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { TrendingUp, Plus, Sparkles, FileText, Calendar } from 'lucide-react'
+import { TrendingUp, Plus, Sparkles, FileText, Calendar, ExternalLink, MapPin } from 'lucide-react'
+import api from '@/lib/api'
 
 interface Milestone {
   id: string
   title: string
-  description?: string
-  date: string
-  sourceUrl?: string
+  category: string | null
+  milestoneType: string | null
+  date: string | null
+  description?: string | null
+  sourceUrl?: string | null
   createdAt: string
+  newsArtifact?: {
+    headline: string | null
+    sourceName: string | null
+    sourceUrl: string | null
+  } | null
+  platformUnit?: {
+    name: string | null
+    hullNumber: string
+    platformProduct?: {
+      name: string
+    }
+  } | null
 }
 
 export default function CompanyMilestonesPage() {
@@ -37,8 +52,11 @@ export default function CompanyMilestonesPage() {
   async function loadMilestones() {
     try {
       setLoading(true)
-      // TODO: Implement API call to fetch company milestones
-      setMilestones([])
+      const response = await api.get('/api/company/milestones/list')
+      
+      if (response.data.success) {
+        setMilestones(response.data.milestones)
+      }
     } catch (error) {
       console.error('Failed to load milestones:', error)
     } finally {
@@ -109,20 +127,40 @@ export default function CompanyMilestonesPage() {
                     href={`/mycompany/milestones/${milestone.id}`}
                     className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition"
                   >
-                    <div className="flex items-center mb-3">
-                      <TrendingUp className="h-5 w-5 text-blue-600 mr-2" />
-                      <span className="text-xs font-medium text-gray-500">
-                        {new Date(milestone.date).toLocaleDateString()}
-                      </span>
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      {milestone.category && (
+                        <span className="inline-block px-2 py-1 text-xs font-semibold text-blue-600 bg-blue-50 rounded">
+                          {milestone.category}
+                        </span>
+                      )}
+                      {milestone.milestoneType && (
+                        <span className="inline-block px-2 py-1 text-xs font-semibold text-purple-600 bg-purple-50 rounded">
+                          {milestone.milestoneType}
+                        </span>
+                      )}
                     </div>
+                    {milestone.date && (
+                      <div className="flex items-center mb-2">
+                        <Calendar className="h-4 w-4 text-gray-500 mr-2" />
+                        <span className="text-xs font-medium text-gray-500">
+                          {new Date(milestone.date).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{milestone.title}</h3>
                     {milestone.description && (
                       <p className="text-sm text-gray-600 line-clamp-2 mb-3">{milestone.description}</p>
                     )}
-                    {milestone.sourceUrl && (
-                      <div className="flex items-center text-xs text-blue-600">
-                        <FileText className="h-4 w-4 mr-1" />
-                        View Source
+                    {milestone.platformUnit && (
+                      <div className="flex items-center text-xs text-gray-500 mb-2">
+                        <MapPin className="h-3 w-3 mr-1" />
+                        {milestone.platformUnit.name || milestone.platformUnit.hullNumber}
+                      </div>
+                    )}
+                    {milestone.newsArtifact && (
+                      <div className="flex items-center text-xs text-gray-400">
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        {milestone.newsArtifact.sourceName || 'News Article'}
                       </div>
                     )}
                   </Link>

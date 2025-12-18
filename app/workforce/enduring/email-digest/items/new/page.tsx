@@ -221,28 +221,66 @@ export default function CreateItemPage() {
               {selectedItem && (
                 <div className="mt-4 bg-gray-50 rounded-lg border border-gray-200 p-4">
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">📋 Source Data (What AI Will Use)</h3>
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-3 text-sm">
                     <div><span className="font-medium">Title:</span> {selectedItem.title || 'N/A'}</div>
+                    
                     {selectedItem.summary && (
-                      <div><span className="font-medium">Summary:</span> {selectedItem.summary.substring(0, 150)}{selectedItem.summary.length > 150 ? '...' : ''}</div>
+                      <details>
+                        <summary className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium">
+                          Summary: {selectedItem.summary.substring(0, 80)}...
+                        </summary>
+                        <div className="mt-2 bg-white p-3 rounded border border-gray-300 whitespace-pre-wrap">
+                          {selectedItem.summary}
+                        </div>
+                      </details>
                     )}
+                    
                     {selectedItem.description && (
-                      <div><span className="font-medium">Description:</span> {selectedItem.description.substring(0, 150)}{selectedItem.description.length > 150 ? '...' : ''}</div>
+                      <details>
+                        <summary className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium">
+                          Description: {selectedItem.description.substring(0, 80)}...
+                        </summary>
+                        <div className="mt-2 bg-white p-3 rounded border border-gray-300 whitespace-pre-wrap">
+                          {selectedItem.description}
+                        </div>
+                      </details>
                     )}
+                    
                     {(selectedItem.pocFirstName || selectedItem.pocLastName || selectedItem.pocEmail) && (
                       <div>
                         <span className="font-medium">POC:</span> {[selectedItem.pocFirstName, selectedItem.pocLastName].filter(Boolean).join(' ')} {selectedItem.pocEmail && `(${selectedItem.pocEmail})`}
                       </div>
                     )}
-                    {selectedItem.ingestRawText && (
-                      <details className="mt-2">
-                        <summary className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium">
-                          📄 View Full Raw Text
-                        </summary>
-                        <pre className="mt-2 text-xs bg-white p-3 rounded border border-gray-300 overflow-auto max-h-48 whitespace-pre-wrap">
+                    
+                    {selectedItem.effectiveDate && (
+                      <div><span className="font-medium">Effective Date:</span> {new Date(selectedItem.effectiveDate).toLocaleDateString()}</div>
+                    )}
+                    
+                    {selectedItem.urgency && (
+                      <div><span className="font-medium text-red-600">⚠️ Urgency:</span> {selectedItem.urgency}</div>
+                    )}
+                    
+                    {selectedItem.impactedPopulation && (
+                      <div><span className="font-medium">Impacted:</span> {selectedItem.impactedPopulation}</div>
+                    )}
+                    
+                    {selectedItem.ingestRawText ? (
+                      <div className="mt-3 p-3 bg-purple-50 border-2 border-purple-300 rounded-lg">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-bold text-purple-900">📄 FULL RAW TEXT (All Details, Deadlines, Codes)</span>
+                          <span className="text-xs text-purple-700">← AI uses this!</span>
+                        </div>
+                        <pre className="text-xs bg-white p-3 rounded border border-purple-200 overflow-auto max-h-64 whitespace-pre-wrap">
                           {selectedItem.ingestRawText}
                         </pre>
-                      </details>
+                        <p className="text-xs text-purple-700 mt-2">
+                          ⚠️ Summary/description above are simplified - THIS has the deadlines, codes, and all critical info
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="mt-3 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-sm text-yellow-800">
+                        ⚠️ No raw text available - parser may have left out deadlines and codes!
+                      </div>
                     )}
                   </div>
                 </div>

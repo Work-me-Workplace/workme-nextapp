@@ -1976,11 +1976,16 @@ model CompanyMilestone {
   updateId String?                    @unique
   update   CompanyPlatformUnitUpdate? @relation(fields: [updateId], references: [id], onDelete: SetNull)
 
+  // Optional news artifact linkage (press releases, articles, etc.)
+  newsArtifactId String?
+  newsArtifact   CompanyNewsArtifact? @relation(fields: [newsArtifactId], references: [id], onDelete: SetNull)
+
   @@index([companyId])
   @@index([platformUnitId])
   @@index([category])
   @@index([milestoneType])
   @@index([date])
+  @@index([newsArtifactId])
 }
 
 // ============================================
@@ -2054,6 +2059,7 @@ model CompanyNewsArtifact {
   // Relations - can be used by multiple entities
   platformStatements     CompanyPlatformStatement[]
   platformUnitStatements CompanyPlatformUnitStatement[]
+  milestones             CompanyMilestone[]
 
   @@index([companyId])
   @@index([sourceName])

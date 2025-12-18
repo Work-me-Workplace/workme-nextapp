@@ -66,6 +66,19 @@ export async function digitalProductFromCompanyMilestoneDeliveryService(
           },
         },
       },
+      newsArtifact: {
+        select: {
+          id: true,
+          headline: true,
+          sourceName: true,
+          sourceUrl: true,
+          rawText: true,
+          aiSummary: true,
+          humanElements: true,
+          noteworthyItems: true,
+          leaderStatement: true,
+        },
+      },
     },
   })
 
@@ -153,6 +166,7 @@ export async function digitalProductFromCompanyMilestoneDeliveryService(
   // Step 8: Build subhead (workforce-facing, emphasizing partnership and production)
   // Reference General Dynamics Electric Boat and NAVSEA
   // Identify the unit as a platform class submarine named for the state
+  // If news artifact has AI summary or noteworthy items, prefer that context
   let shipyardName = shipyard
   if (shipyard.includes('Electric Boat') || shipyard.includes('General Dynamics')) {
     shipyardName = 'General Dynamics Electric Boat'
@@ -166,7 +180,19 @@ export async function digitalProductFromCompanyMilestoneDeliveryService(
   }
 
   // Step 9: Build additional line (one sentence describing increase in fleet capability and collaboration)
-  const additionalLine = `This delivery strengthens our fleet's capabilities and demonstrates the continued partnership between our workforce, ${shipyard}, and the Navy in advancing undersea warfare capabilities.`
+  // Prefer AI summary from news artifact if available
+  let additionalLine = `This delivery strengthens our fleet's capabilities and demonstrates the continued partnership between our workforce, ${shipyard}, and the Navy in advancing undersea warfare capabilities.`
+  
+  if (milestone.newsArtifact?.aiSummary) {
+    // Use AI summary as the body text if available
+    additionalLine = milestone.newsArtifact.aiSummary
+  } else if (milestone.newsArtifact?.noteworthyItems && typeof milestone.newsArtifact.noteworthyItems === 'object') {
+    // Extract key facts from noteworthy items if available
+    const noteworthyItems = milestone.newsArtifact.noteworthyItems as any
+    if (noteworthyItems.key_facts && Array.isArray(noteworthyItems.key_facts) && noteworthyItems.key_facts.length > 0) {
+      additionalLine = noteworthyItems.key_facts.slice(0, 2).join(' ')
+    }
+  }
 
   // Step 10: Build tag (flush-right metadata)
   // Note: The tag should be displayed as flush-right metadata in the UI
