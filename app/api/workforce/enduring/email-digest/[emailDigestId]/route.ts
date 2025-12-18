@@ -35,11 +35,6 @@ export async function GET(
         id: emailDigestId,
         companyId,
       },
-      include: {
-        editions: {
-          orderBy: { generatedAt: 'desc' },
-        },
-      },
     })
 
     if (!product) {

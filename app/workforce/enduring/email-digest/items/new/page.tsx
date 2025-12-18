@@ -30,11 +30,16 @@ export default function CreateItemPage() {
       if (sourceMode !== 'workforce' || !session.firebaseId) return
 
       try {
-        // TODO: Fetch CompanyX items based on sourceType
-        // For now, placeholder
-        setSourceItems([])
+        const response = await api.get('/api/workforce/companyx/items', {
+          params: { type: sourceType }
+        })
+        if (response.data.success) {
+          const items = response.data.items[sourceType] || []
+          setSourceItems(items)
+        }
       } catch (error) {
         console.error('Error fetching WorkForce items:', error)
+        setSourceItems([])
       }
     }
     fetchWorkForceItems()
@@ -58,22 +63,46 @@ export default function CreateItemPage() {
   const handleGenerate = async () => {
     setLoading(true)
     try {
-      // TODO: Call AI generator service
-      // For now, create example format based on your template
       if (sourceMode === 'workforce' && selectedSourceId) {
-        // Mock generation from WorkForce item
+        // Find the selected item
+        const selectedItem = sourceItems.find(item => item.id === selectedSourceId)
+        if (!selectedItem) {
+          alert('Please select an item first')
+          setLoading(false)
+          return
+        }
+
+        // Generate formatted content from the selected item
+        const title = selectedItem.title || 'Untitled'
+        const description = selectedItem.description || selectedItem.summary || ''
+        
+        // Build POC line
+        let poc = 'POC: '
+        if (selectedItem.pocFirstName || selectedItem.pocLastName) {
+          poc += `${selectedItem.pocFirstName || ''} ${selectedItem.pocLastName || ''}`.trim()
+        }
+        if (selectedItem.pocEmail) {
+          poc += ` at ${selectedItem.pocEmail}`
+        } else {
+          poc = ''
+        }
+
+        // Get date for title prefix
+        const itemDate = selectedItem.eventDate || selectedItem.trainingDate || selectedItem.windowStart || selectedItem.date
+        const dateStr = itemDate ? new Date(itemDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''
+
         setFormattedContent({
-          title: '*REMINDER*: SAMPLE EVENT – DEC. 11',
-          poc: 'POC: Sample Contact at sample@example.com',
-          body: 'This is a sample generated body text. It would contain details about the event, training, campaign, etc. The AI would format this nicely based on the source data.',
-          cta: 'Register here by Dec. 8',
-          ctaUrl: '/events/sample',
+          title: `*REMINDER*: ${title.toUpperCase()}${dateStr ? ' – ' + dateStr.toUpperCase() : ''}`,
+          poc,
+          body: description,
+          cta: selectedItem.registrationLink ? 'Register Now' : (selectedItem.link ? 'Learn More' : ''),
+          ctaUrl: selectedItem.registrationLink || selectedItem.link || '',
         })
       } else if (sourceMode === 'manual' && manualInput) {
-        // Mock generation from manual input
+        // Basic formatting for manual input
         setFormattedContent({
-          title: '*REMINDER*: ' + manualInput.substring(0, 50).toUpperCase(),
-          poc: 'POC: TBD at contact@example.com',
+          title: manualInput.substring(0, 60).toUpperCase(),
+          poc: '',
           body: manualInput,
           cta: 'Learn More',
           ctaUrl: '',
@@ -204,12 +233,31 @@ export default function CreateItemPage() {
                 </select>
 
                 <div className="mt-4">
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Available Items:</h3>
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <p className="text-sm text-yellow-800">
-                      🚧 WorkForce item selection coming soon. For now, use manual entry below.
-                    </p>
-                  </div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Select Specific Item:</h3>
+                  {sourceItems.length === 0 ? (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <p className="text-sm text-gray-600">
+                        No {sourceType.replace('Company', '')} items found. Try another type or use manual entry.
+                      </p>
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedSourceId}
+                      onChange={(e) => setSelectedSourceId(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">-- Select an item --</option>
+                      {sourceItems.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.title || 'Untitled'} 
+                          {item.eventDate && ` (${new Date(item.eventDate).toLocaleDateString()})`}
+                          {item.trainingDate && ` (${new Date(item.trainingDate).toLocaleDateString()})`}
+                          {item.windowStart && ` (${new Date(item.windowStart).toLocaleDateString()})`}
+                          {item.date && ` (${new Date(item.date).toLocaleDateString()})`}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               </div>
             )}
@@ -228,7 +276,7 @@ export default function CreateItemPage() {
 
             <button
               onClick={handleGenerate}
-              disabled={loading || (sourceMode === 'manual' && !manualInput)}
+              disabled={loading || (sourceMode === 'manual' && !manualInput) || (sourceMode === 'workforce' && !selectedSourceId)}
               className="w-full bg-purple-600 text-white px-6 py-4 rounded-lg font-semibold hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {loading ? (

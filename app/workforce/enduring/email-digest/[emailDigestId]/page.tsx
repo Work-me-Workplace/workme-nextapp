@@ -142,39 +142,34 @@ export default function EmailDigestProductPage({ params }: { params: Promise<{ e
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Editions</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link
               href={`/workforce/enduring/email-digest/${emailDigestId}/editions`}
-              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition group"
             >
-              View All →
+              <div className="flex items-center space-x-3">
+                <svg className="h-8 w-8 text-blue-600 group-hover:text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <div>
+                  <div className="font-semibold text-gray-900 group-hover:text-blue-700">View All Editions</div>
+                  <div className="text-sm text-gray-600">Browse and manage editions</div>
+                </div>
+              </div>
             </Link>
-          </div>
-          {product.editions && product.editions.length > 0 ? (
-            <div className="space-y-4">
-              {product.editions.slice(0, 5).map((edition: any) => (
-                <Link
-                  key={edition.id}
-                  href={`/workforce/enduring/email-digest/${emailDigestId}/editions/${edition.id}`}
-                  className="block p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">
-                        Edition from {new Date(edition.generatedAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <span className="text-xs text-gray-400">
-                      {new Date(edition.generatedAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                </Link>
-              ))}
+            <div className="p-6 border-2 border-gray-200 rounded-lg bg-gray-50">
+              <div className="flex items-center space-x-3">
+                <svg className="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <div>
+                  <div className="font-semibold text-gray-700">Series Settings</div>
+                  <div className="text-sm text-gray-500">Coming soon</div>
+                </div>
+              </div>
             </div>
-          ) : (
-            <p className="text-gray-500 text-sm">No editions yet. Generate your first edition.</p>
-          )}
+          </div>
         </div>
       </div>
     </div>
