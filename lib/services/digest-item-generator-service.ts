@@ -25,6 +25,15 @@ export const GENERATOR_RULES = {
     ctaStrength: 'STRONG', // "Complete by X" vs "Learn more"
   },
   
+  TIMEKEEPING_ACTION: {
+    titlePrefix: '*ACTION REQUIRED*:',
+    urgencyLevel: 'HIGH',
+    emphasizePOC: true,
+    emphasizeDeadline: true,
+    ctaStrength: 'STRONG',
+    format: 'timekeeping', // Special formatting for time & attendance
+  },
+  
   HIGH_URGENCY_IMPACT: {
     titlePrefix: '*IMPORTANT*:',
     urgencyLevel: 'HIGH',
@@ -101,6 +110,15 @@ export interface GeneratedItemOutput {
 // ============================================
 
 function determineRule(sourceType: CompanyXType, sourceData: any): keyof typeof GENERATOR_RULES {
+  // Check title/description for timekeeping keywords
+  const titleLower = (sourceData.title || '').toLowerCase()
+  const descLower = (sourceData.description || '').toLowerCase()
+  const timekeepingKeywords = ['timekeeping', 'time and attendance', 'time & attendance', 'timesheet', 'payroll']
+  
+  if (timekeepingKeywords.some(kw => titleLower.includes(kw) || descLower.includes(kw))) {
+    return 'TIMEKEEPING_ACTION'
+  }
+  
   // Training rules
   if (sourceType === 'CompanyTraining') {
     if (sourceData.mandatory === true) {
@@ -110,6 +128,11 @@ function determineRule(sourceType: CompanyXType, sourceData: any): keyof typeof 
   
   // Impact Event rules
   if (sourceType === 'CompanyImpactEvent') {
+    // Check for timekeeping in impact events too
+    if (timekeepingKeywords.some(kw => titleLower.includes(kw) || descLower.includes(kw))) {
+      return 'TIMEKEEPING_ACTION'
+    }
+    
     if (sourceData.urgency === 'HIGH' || sourceData.urgency === 'URGENT') {
       return 'HIGH_URGENCY_IMPACT'
     }
@@ -138,6 +161,31 @@ function determineRule(sourceType: CompanyXType, sourceData: any): keyof typeof 
 
 function buildSystemPrompt(rule: keyof typeof GENERATOR_RULES): string {
   const ruleConfig = GENERATOR_RULES[rule]
+  
+  // Special timekeeping format
+  if (rule === 'TIMEKEEPING_ACTION') {
+    return `You are a workforce communications expert formatting timekeeping/payroll guidance.
+
+FOLLOW THIS EXACT FORMAT (learn from past examples):
+- Title: "*ACTION REQUIRED*: [TOPIC] GUIDANCE" (e.g., "THANKSGIVING TIME & ATTENDANCE GUIDANCE")
+- POC: "POC: [Name], [Unit], at [email]" (e.g., "POC: Wesley Davis, SEA 10, at wesley.r.davis4.civ@us.navy.mil")
+- Body: Clear, actionable paragraphs with specific deadlines
+  * First paragraph: What employees need to do + deadline
+  * Second paragraph: Additional instructions (timecodes, holidays, etc.)
+  * Keep it concise and scannable
+- CTA: Link to resources if available (e.g., "join their Microsoft Teams channel here")
+
+⚠️ CRITICAL: Include ALL deadlines prominently!
+
+Return ONLY valid JSON:
+{
+  "title": "string",
+  "poc": "string",
+  "body": "string (use \\n\\n for paragraph breaks)",
+  "cta": "string (optional)",
+  "ctaUrl": "string (optional)"
+}`
+  }
   
   return `You are a workforce communications expert creating engaging email digest items.
 
