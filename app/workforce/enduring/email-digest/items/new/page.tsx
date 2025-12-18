@@ -114,7 +114,8 @@ export default function CreateItemPage() {
       }
     } catch (error: any) {
       console.error('Error generating item:', error)
-      alert('Error generating item: ' + (error.response?.data?.error || error.message))
+      const errorMsg = error.response?.data?.error || error.response?.data?.details || error.message
+      alert('❌ AI Generation Failed\n\n' + errorMsg + '\n\nAI features may not be available. Check configuration.')
     } finally {
       setLoading(false)
     }

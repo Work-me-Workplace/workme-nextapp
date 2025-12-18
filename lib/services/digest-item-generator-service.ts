@@ -330,10 +330,9 @@ export async function generateDigestItem(
   // Get OpenAI client (checks env var at runtime)
   const openai = getOpenAIClient()
   
-  // If no OpenAI, return formatted template
+  // If no OpenAI, FAIL - don't silently fall back
   if (!openai) {
-    console.warn('OpenAI not configured, using template fallback')
-    return generateTemplateItem(sourceType, sourceData, ruleKey, humanContext)
+    throw new Error('AI features not available: OPENAI_API_KEY not configured. Cannot generate formatted item.')
   }
   
   try {
@@ -375,8 +374,8 @@ export async function generateDigestItem(
     }
   } catch (error) {
     console.error('Error generating with OpenAI:', error)
-    // Fallback to template
-    return generateTemplateItem(sourceType, sourceData, ruleKey, humanContext)
+    // Re-throw with better message
+    throw new Error(`AI generation failed: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
