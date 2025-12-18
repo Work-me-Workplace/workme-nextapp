@@ -194,13 +194,13 @@ Your task:
 - Maintain a clear, actionable tone
 - Use the following structure strictly:
   * Title: ${ruleConfig.titlePrefix ? `Start with "${ruleConfig.titlePrefix}"` : 'Clear headline'}
-  * POC Line: Format as "POC: Name at email@example.com" ${ruleConfig.emphasizePOC ? '(EMPHASIZE THIS)' : ''}
+  * POC Line: Format as "POC: Name at email@example.com" ${'emphasizePOC' in ruleConfig && ruleConfig.emphasizePOC ? '(EMPHASIZE THIS)' : ''}
   * Body: 2-3 sentences, ${ruleConfig.urgencyLevel === 'HIGH' ? 'urgent and direct' : 'informative'}
   * CTA: ${ruleConfig.ctaStrength === 'STRONG' ? 'Strong action verb (Complete, Register, Respond)' : 'Soft invitation (Learn more, Explore)'}
 
-${ruleConfig.emphasizeDeadline ? '⚠️ CRITICAL: Emphasize deadlines prominently!' : ''}
-${ruleConfig.emphasizeDate ? '📅 Include date/time information clearly.' : ''}
-${ruleConfig.emphasizeWindow ? '📅 Mention window/timeframe (e.g., "ends Dec 22").' : ''}
+${'emphasizeDeadline' in ruleConfig && ruleConfig.emphasizeDeadline ? '⚠️ CRITICAL: Emphasize deadlines prominently!' : ''}
+${'emphasizeDate' in ruleConfig && ruleConfig.emphasizeDate ? '📅 Include date/time information clearly.' : ''}
+${'emphasizeWindow' in ruleConfig && ruleConfig.emphasizeWindow ? '📅 Mention window/timeframe (e.g., "ends Dec 22").' : ''}
 
 Return ONLY valid JSON with this structure:
 {
