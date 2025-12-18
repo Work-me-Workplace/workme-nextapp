@@ -184,6 +184,12 @@ function buildSystemPrompt(rule: keyof typeof GENERATOR_RULES): string {
   if (rule === 'TIMEKEEPING_ACTION') {
     return `You are a workforce communications expert formatting timekeeping/payroll guidance.
 
+STYLE GUIDELINES:
+- Use AP Style
+- Abbreviate months: Jan., Feb., March, April, May, June, July, Aug., Sept., Oct., Nov., Dec.
+- Use specific times (e.g., "4 p.m. Monday, Dec. 22")
+- Keep paragraphs concise and scannable
+
 FOLLOW THIS EXACT FORMAT (learn from past examples):
 1. Title: "*ACTION REQUIRED*: [TOPIC] GUIDANCE" (e.g., "THANKSGIVING TIME & ATTENDANCE GUIDANCE")
 2. Content: A complete, formatted item that includes:
@@ -205,6 +211,12 @@ Return ONLY valid JSON with this structure:
   
   return `You are a workforce communications expert creating engaging email digest items.
 
+STYLE GUIDELINES:
+- Use AP Style
+- Abbreviate months: Jan., Feb., March, April, May, June, July, Aug., Sept., Oct., Nov., Dec.
+- Use specific times with a.m./p.m. (e.g., "4 p.m. Monday, Dec. 22")
+- Keep paragraphs concise and scannable
+
 Your task:
 - Format content for a professional workforce email digest
 - Maintain a clear, actionable tone
@@ -216,7 +228,7 @@ Your task:
 
 ${'emphasizeDeadline' in ruleConfig && ruleConfig.emphasizeDeadline ? '⚠️ CRITICAL: Emphasize deadlines prominently!' : ''}
 ${'emphasizeDate' in ruleConfig && ruleConfig.emphasizeDate ? '📅 Include date/time information clearly.' : ''}
-${'emphasizeWindow' in ruleConfig && ruleConfig.emphasizeWindow ? '📅 Mention window/timeframe (e.g., "ends Dec 22").' : ''}
+${'emphasizeWindow' in ruleConfig && ruleConfig.emphasizeWindow ? '📅 Mention window/timeframe (e.g., "ends Dec. 22").' : ''}
 
 Return ONLY valid JSON with this structure:
 {
