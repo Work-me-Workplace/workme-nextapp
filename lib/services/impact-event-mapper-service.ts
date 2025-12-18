@@ -99,6 +99,7 @@ ${rawText.substring(0, 3000)}`
     return {
       title: null,
       description: rawText.substring(0, 500),
+      summary: rawText.substring(0, 500), // Fallback - keep raw text
       effectiveDate: null,
       impactedPopulation: null,
       urgency: null,
