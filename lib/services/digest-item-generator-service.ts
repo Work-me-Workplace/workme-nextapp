@@ -7,10 +7,15 @@
 
 import OpenAI from 'openai'
 
-// Initialize OpenAI (will use env var OPENAI_API_KEY)
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  : null
+// Initialize OpenAI client (lazy - picks up env var at runtime)
+function getOpenAIClient() {
+  if (!process.env.OPENAI_API_KEY) {
+    return null
+  }
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  })
+}
 
 // ============================================
 // RULE SET - How different items get treated
@@ -322,10 +327,13 @@ export async function generateDigestItem(
   const ruleKey = determineRule(sourceType, sourceData)
   const rule = GENERATOR_RULES[ruleKey]
   
+  // Get OpenAI client (checks env var at runtime)
+  const openai = getOpenAIClient()
+  
   // If no OpenAI, return formatted template
   if (!openai) {
     console.warn('OpenAI not configured, using template fallback')
-    return generateTemplateItem(sourceType, sourceData, ruleKey)
+    return generateTemplateItem(sourceType, sourceData, ruleKey, humanContext)
   }
   
   try {
@@ -368,7 +376,7 @@ export async function generateDigestItem(
   } catch (error) {
     console.error('Error generating with OpenAI:', error)
     // Fallback to template
-    return generateTemplateItem(sourceType, sourceData, ruleKey)
+    return generateTemplateItem(sourceType, sourceData, ruleKey, humanContext)
   }
 }
 
@@ -379,7 +387,8 @@ export async function generateDigestItem(
 function generateTemplateItem(
   sourceType: CompanyXType,
   sourceData: any,
-  ruleKey: keyof typeof GENERATOR_RULES
+  ruleKey: keyof typeof GENERATOR_RULES,
+  humanContext?: string
 ): GeneratedItemOutput {
   const rule = GENERATOR_RULES[ruleKey]
   
@@ -433,6 +442,12 @@ function generateTemplateItem(
   }
   
   contentParts.push(body)
+  
+  // ADD HUMAN CONTEXT NOTE if provided
+  if (humanContext) {
+    contentParts.push('') // blank line
+    contentParts.push(`[Note: ${humanContext}]`)
+  }
   
   if (cta && ctaUrl) {
     contentParts.push('') // blank line

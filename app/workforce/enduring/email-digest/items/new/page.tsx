@@ -217,7 +217,58 @@ export default function CreateItemPage() {
                 </label>
               </div>
 
-              {/* HYDRATED DATA PREVIEW */}
+              {/* MOVE DROPDOWNS HERE - BEFORE HYDRATION */}
+              {sourceMode === 'workforce' && (
+                <>
+                  <div className="mt-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">2. Select Item Type</h2>
+                    <select
+                      value={sourceType}
+                      onChange={(e) => setSourceType(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="CompanyEvent">Events</option>
+                      <option value="CompanyCampaign">Campaigns</option>
+                      <option value="CompanyTraining">Training</option>
+                      <option value="CompanyBenefits">Benefits</option>
+                      <option value="CompanyImpactEvent">Impact Events</option>
+                      <option value="CompanyCommunity">Community</option>
+                      <option value="CompanyCareer">Careers</option>
+                      <option value="CompanyEmployeeCause">Employee Causes</option>
+                    </select>
+                  </div>
+
+                  <div className="mt-4">
+                    <h3 className="text-sm font-medium text-gray-700 mb-2">Select Specific Item:</h3>
+                    {sourceItems.length === 0 ? (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <p className="text-sm text-gray-600">
+                          No {sourceType.replace('Company', '')} items found. Try another type or use manual entry.
+                        </p>
+                      </div>
+                    ) : (
+                      <select
+                        value={selectedSourceId}
+                        onChange={(e) => setSelectedSourceId(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">-- Select an item --</option>
+                        {sourceItems.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.title || 'Untitled'} 
+                            {item.eventDate && ` (${new Date(item.eventDate).toLocaleDateString()})`}
+                            {item.trainingDate && ` (${new Date(item.trainingDate).toLocaleDateString()})`}
+                            {item.windowStart && ` (${new Date(item.windowStart).toLocaleDateString()})`}
+                            {item.date && ` (${new Date(item.date).toLocaleDateString()})`}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* HYDRATED DATA PREVIEW - NOW APPEARS BELOW DROPDOWNS */}
               {selectedItem && (
                 <div className="mt-4 bg-gray-50 rounded-lg border border-gray-200 p-4">
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">📋 Source Data (What AI Will Use)</h3>
