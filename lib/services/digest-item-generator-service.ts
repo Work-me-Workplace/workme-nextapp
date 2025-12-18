@@ -185,23 +185,21 @@ function buildSystemPrompt(rule: keyof typeof GENERATOR_RULES): string {
     return `You are a workforce communications expert formatting timekeeping/payroll guidance.
 
 FOLLOW THIS EXACT FORMAT (learn from past examples):
-- Title: "*ACTION REQUIRED*: [TOPIC] GUIDANCE" (e.g., "THANKSGIVING TIME & ATTENDANCE GUIDANCE")
-- POC: "POC: [Name], [Unit], at [email]" (e.g., "POC: Wesley Davis, SEA 10, at wesley.r.davis4.civ@us.navy.mil")
-- Body: Clear, actionable paragraphs with specific deadlines
-  * First paragraph: What employees need to do + deadline
-  * Second paragraph: Additional instructions (timecodes, holidays, etc.)
-  * Keep it concise and scannable
-- CTA: Link to resources if available (e.g., "join their Microsoft Teams channel here")
+1. Title: "*ACTION REQUIRED*: [TOPIC] GUIDANCE" (e.g., "THANKSGIVING TIME & ATTENDANCE GUIDANCE")
+2. Content: A complete, formatted item that includes:
+   - POC Line: "POC: [Name], [Unit], at [email]" (e.g., "POC: Wesley Davis, SEA 10, at wesley.r.davis4.civ@us.navy.mil")
+   - Body: Clear, actionable paragraphs with specific deadlines
+     * First paragraph: What employees need to do + deadline
+     * Second paragraph: Additional instructions (timecodes, holidays, etc.)
+     * Keep it concise and scannable
+   - CTA: Link to resources if available (e.g., "join their Microsoft Teams channel here")
 
-⚠️ CRITICAL: Include ALL deadlines prominently!
+⚠️ CRITICAL: Include ALL deadlines prominently in the body paragraphs!
 
-Return ONLY valid JSON:
+Return ONLY valid JSON with this structure:
 {
-  "title": "string",
-  "poc": "string",
-  "body": "string (use \\n\\n for paragraph breaks)",
-  "cta": "string (optional)",
-  "ctaUrl": "string (optional)"
+  "title": "string (for searchability, e.g., '*ACTION REQUIRED*: TIMEKEEPING GUIDANCE FOR HOLIDAY PERIOD')",
+  "content": "string (the COMPLETE formatted item - POC line + body paragraphs + CTA all together as one piece of content ready to publish. Use \\n\\n for paragraph breaks)"
 }`
   }
   
