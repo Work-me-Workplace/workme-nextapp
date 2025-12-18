@@ -341,7 +341,7 @@ export async function generateDigestItem(
     
     // Call OpenAI
     const response = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini', // gpt-4o-mini supports JSON mode
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
