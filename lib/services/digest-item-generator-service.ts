@@ -7,10 +7,10 @@
 
 import OpenAI from 'openai'
 
-// Initialize OpenAI client (lazy - picks up env var at runtime)
-function getOpenAIClient() {
+// Initialize OpenAI client - THROWS if not configured (matches pattern in app)
+function getOpenAI() {
   if (!process.env.OPENAI_API_KEY) {
-    return null
+    throw new Error('OPENAI_API_KEY environment variable is not set')
   }
   return new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -327,15 +327,9 @@ export async function generateDigestItem(
   const ruleKey = determineRule(sourceType, sourceData)
   const rule = GENERATOR_RULES[ruleKey]
   
-  // Get OpenAI client (checks env var at runtime)
-  const openai = getOpenAIClient()
-  
-  // If no OpenAI, FAIL - don't silently fall back
-  if (!openai) {
-    throw new Error('AI features not available: OPENAI_API_KEY not configured. Cannot generate formatted item.')
-  }
-  
   try {
+    // Get OpenAI client - throws if not configured
+    const openai = getOpenAI()
     // Build prompts based on rule
     const systemPrompt = buildSystemPrompt(ruleKey)
     let userPrompt = buildUserPrompt(sourceType, sourceData)
