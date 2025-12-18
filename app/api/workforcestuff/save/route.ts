@@ -195,7 +195,8 @@ export async function POST(request: NextRequest) {
             pocLastName: data.pocLastName,
             pocEmail: data.pocEmail,
             pocPhone: data.pocPhone,
-            summary: data.description || data.title || null,
+            ingestRawText: data.rawText || data.ingestRawText || null, // SAVE THE RAW TEXT!
+            summary: data.summary || data.description || data.title || null,
             companyId,
             createdByWorkMeId: workMeId,
           },

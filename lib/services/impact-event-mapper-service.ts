@@ -19,6 +19,7 @@ function getOpenAI() {
 export interface ImpactEventModel {
   title: string | null
   description: string | null
+  summary: string | null // COMPREHENSIVE summary - KEEP KEY DETAILS!
   effectiveDate: string | null // ISO date string
   impactedPopulation: string | null
   urgency: string | null
@@ -38,10 +39,18 @@ export async function parseImpactEvent(rawText: string): Promise<ImpactEventMode
   const prompt = `Extract structured impact event information from this NAVSEA workforce communication text.
 Impact events are disruptions, changes, or announcements that affect the workforce.
 
+CRITICAL FOR SUMMARY:
+- DO NOT abbreviate or lose key details
+- KEEP all deadlines (dates, times, pay periods)
+- KEEP all codes (leave codes, reference numbers)
+- KEEP all specific requirements (what employees must do, what supervisors must do)
+- The summary should be COMPREHENSIVE enough that someone can act on it
+
 Return JSON with these exact fields:
 {
   "title": "Impact event title (or null)",
   "description": "Full description (or null)",
+  "summary": "COMPREHENSIVE summary that KEEPS all critical details: deadlines, codes, requirements, dates, times, pay periods, leave codes, etc. Do NOT abbreviate! (or null)",
   "effectiveDate": "ISO date string (YYYY-MM-DD) or null",
   "impactedPopulation": "Who is affected (or null)",
   "urgency": "Urgency level (or null)",
