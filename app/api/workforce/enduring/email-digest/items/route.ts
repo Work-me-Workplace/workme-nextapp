@@ -40,6 +40,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { sourceType, sourceId, formattedContent, status } = body
 
+    console.log('📥 Saving digest item:', { 
+      sourceType, 
+      sourceId, 
+      status,
+      formattedContent: formattedContent ? {
+        keys: Object.keys(formattedContent),
+        hasTitle: !!formattedContent.title,
+        hasContent: !!formattedContent.content,
+      } : 'MISSING'
+    })
+
     if (!formattedContent) {
       return NextResponse.json({ success: false, error: 'formattedContent is required' }, { status: 400 })
     }
@@ -55,9 +66,15 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    console.log('✅ Item saved:', item.id)
+
     return NextResponse.json({ success: true, item })
   } catch (error) {
-    console.error('Error creating item:', error)
-    return NextResponse.json({ success: false, error: 'Failed to create item' }, { status: 500 })
+    console.error('❌ Error creating item:', error)
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Failed to create item',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 })
   }
 }
