@@ -229,12 +229,14 @@ function buildUserPrompt(sourceType: CompanyXType, sourceData: any): string {
   lines.push(`Format this ${sourceType} into a digest item:\n`)
   lines.push(`Title: ${sourceData.title || 'Untitled'}`)
   
-  if (sourceData.description) {
-    lines.push(`Description: ${sourceData.description}`)
-  }
-  
+  // SUMMARY FIRST (it's the distilled version!)
   if (sourceData.summary) {
     lines.push(`Summary: ${sourceData.summary}`)
+  }
+  
+  // Then description if available
+  if (sourceData.description) {
+    lines.push(`Description: ${sourceData.description}`)
   }
   
   // Type-specific fields
@@ -401,8 +403,8 @@ function generateTemplateItem(
     poc = `POC: ${pocName} at ${pocEmail}`
   }
   
-  // Build body
-  let body = sourceData.description || sourceData.summary || 'No description available.'
+  // Build body (SUMMARY FIRST!)
+  let body = sourceData.summary || sourceData.description || 'No description available.'
   if (body.length > 300) {
     body = body.substring(0, 297) + '...'
   }

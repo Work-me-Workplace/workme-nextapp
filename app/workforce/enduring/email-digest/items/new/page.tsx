@@ -14,6 +14,7 @@ export default function CreateItemPage() {
   const [sourceType, setSourceType] = useState('CompanyEvent')
   const [sourceItems, setSourceItems] = useState<any[]>([])
   const [selectedSourceId, setSelectedSourceId] = useState('')
+  const [selectedItem, setSelectedItem] = useState<any>(null) // The actual selected item data
   const [manualInput, setManualInput] = useState('')
   
   // Human context for AI
@@ -44,6 +45,16 @@ export default function CreateItemPage() {
     }
     fetchWorkForceItems()
   }, [sourceMode, sourceType, session.firebaseId])
+
+  // Hydrate selected item data when selection changes
+  useEffect(() => {
+    if (selectedSourceId) {
+      const item = sourceItems.find(i => i.id === selectedSourceId)
+      setSelectedItem(item || null)
+    } else {
+      setSelectedItem(null)
+    }
+  }, [selectedSourceId, sourceItems])
 
   if (authLoading) {
     return (
@@ -205,6 +216,37 @@ export default function CreateItemPage() {
                   </div>
                 </label>
               </div>
+
+              {/* HYDRATED DATA PREVIEW */}
+              {selectedItem && (
+                <div className="mt-4 bg-gray-50 rounded-lg border border-gray-200 p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">📋 Source Data (What AI Will Use)</h3>
+                  <div className="space-y-2 text-sm">
+                    <div><span className="font-medium">Title:</span> {selectedItem.title || 'N/A'}</div>
+                    {selectedItem.summary && (
+                      <div><span className="font-medium">Summary:</span> {selectedItem.summary.substring(0, 150)}{selectedItem.summary.length > 150 ? '...' : ''}</div>
+                    )}
+                    {selectedItem.description && (
+                      <div><span className="font-medium">Description:</span> {selectedItem.description.substring(0, 150)}{selectedItem.description.length > 150 ? '...' : ''}</div>
+                    )}
+                    {(selectedItem.pocFirstName || selectedItem.pocLastName || selectedItem.pocEmail) && (
+                      <div>
+                        <span className="font-medium">POC:</span> {[selectedItem.pocFirstName, selectedItem.pocLastName].filter(Boolean).join(' ')} {selectedItem.pocEmail && `(${selectedItem.pocEmail})`}
+                      </div>
+                    )}
+                    {selectedItem.ingestRawText && (
+                      <details className="mt-2">
+                        <summary className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium">
+                          📄 View Full Raw Text
+                        </summary>
+                        <pre className="mt-2 text-xs bg-white p-3 rounded border border-gray-300 overflow-auto max-h-48 whitespace-pre-wrap">
+                          {selectedItem.ingestRawText}
+                        </pre>
+                      </details>
+                    )}
+                  </div>
+                </div>
+              )}
               
               {/* Human Context - Instructions for AI */}
               <div className="mt-4">
