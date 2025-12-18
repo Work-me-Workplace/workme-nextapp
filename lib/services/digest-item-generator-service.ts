@@ -99,7 +99,8 @@ export type CompanyXType =
 
 export interface GenerateItemInput {
   sourceType: CompanyXType
-  sourceData: any
+  sourceData: any // ALREADY PARSED from CompanyX models (title, description, pocEmail, etc.)
+  humanContext?: string // User's instructions: "emphasize deadline", "urgent", "casual tone"
   context?: {
     pastItems?: any[] // Learn from past formatting
     companyStyle?: 'formal' | 'casual' // Company communication style
@@ -107,14 +108,13 @@ export interface GenerateItemInput {
 }
 
 export interface GeneratedItemOutput {
-  title: string
-  poc?: string
-  body: string
-  cta?: string
-  ctaUrl?: string
+  title: string // For searchability
+  content: string // The ENTIRE formatted item (ready to drop into an edition)
   metadata?: {
     urgency: 'HIGH' | 'MEDIUM' | 'LOW'
     ruleApplied: string
+    sourceType?: string
+    sourceId?: string
   }
 }
 
@@ -217,11 +217,8 @@ ${'emphasizeWindow' in ruleConfig && ruleConfig.emphasizeWindow ? '📅 Mention 
 
 Return ONLY valid JSON with this structure:
 {
-  "title": "string",
-  "poc": "string (optional)",
-  "body": "string",
-  "cta": "string (optional)",
-  "ctaUrl": "string (optional)"
+  "title": "string (for searchability)",
+  "content": "string (the COMPLETE formatted item - title, POC, body, CTA all together as one piece of content ready to publish)"
 }`
 }
 
@@ -317,7 +314,7 @@ function buildUserPrompt(sourceType: CompanyXType, sourceData: any): string {
 export async function generateDigestItem(
   input: GenerateItemInput
 ): Promise<GeneratedItemOutput> {
-  const { sourceType, sourceData, context } = input
+  const { sourceType, sourceData, humanContext, context } = input
   
   // Determine which rule to apply
   const ruleKey = determineRule(sourceType, sourceData)
@@ -332,7 +329,12 @@ export async function generateDigestItem(
   try {
     // Build prompts based on rule
     const systemPrompt = buildSystemPrompt(ruleKey)
-    const userPrompt = buildUserPrompt(sourceType, sourceData)
+    let userPrompt = buildUserPrompt(sourceType, sourceData)
+    
+    // Add human context if provided
+    if (humanContext) {
+      userPrompt += `\n\n🎯 HUMAN INSTRUCTIONS: ${humanContext}\n(Follow these instructions when formatting the item)`
+    }
     
     // Call OpenAI
     const response = await openai.chat.completions.create({
@@ -355,10 +357,7 @@ export async function generateDigestItem(
     
     return {
       title: generated.title,
-      poc: generated.poc,
-      body: generated.body,
-      cta: generated.cta,
-      ctaUrl: generated.ctaUrl,
+      content: generated.content, // The whole formatted thing!
       metadata: {
         urgency: rule.urgencyLevel as 'HIGH' | 'MEDIUM' | 'LOW',
         ruleApplied: ruleKey,
@@ -410,6 +409,7 @@ function generateTemplateItem(
   
   // Build CTA
   let cta = ''
+  let ctaUrl = sourceData.registrationLink || sourceData.link || ''
   if (rule.ctaStrength === 'STRONG') {
     if (sourceType === 'CompanyTraining' && sourceData.dueDate) {
       cta = `Complete by ${new Date(sourceData.dueDate).toLocaleDateString()}`
@@ -420,12 +420,26 @@ function generateTemplateItem(
     cta = 'Learn more'
   }
   
+  // BUILD THE ENTIRE CONTENT AS ONE PIECE
+  const contentParts: string[] = []
+  contentParts.push(title) // Title with prefix
+  contentParts.push('') // blank line
+  
+  if (poc) {
+    contentParts.push(poc)
+    contentParts.push('') // blank line
+  }
+  
+  contentParts.push(body)
+  
+  if (cta && ctaUrl) {
+    contentParts.push('') // blank line
+    contentParts.push(`${cta}: ${ctaUrl}`)
+  }
+  
   return {
-    title,
-    poc,
-    body,
-    cta,
-    ctaUrl: sourceData.registrationLink || '',
+    title, // For searchability
+    content: contentParts.join('\n'), // The whole formatted item!
     metadata: {
       urgency: rule.urgencyLevel as 'HIGH' | 'MEDIUM' | 'LOW',
       ruleApplied: ruleKey,

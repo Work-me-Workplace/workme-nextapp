@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     await verifyAuth(req)
 
     const body = await req.json()
-    const { sourceType, sourceId, sourceData } = body
+    const { sourceType, sourceId, sourceData, humanContext } = body
 
     if (!sourceType || !sourceData) {
       return NextResponse.json(
@@ -21,9 +21,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Call the AI generator service
+    // sourceData is ALREADY PARSED from CompanyX models
     const formattedContent = await generateDigestItem({
       sourceType,
-      sourceData,
+      sourceData, // Already has title, description, pocEmail, eventDate, etc.
+      humanContext, // User's custom instructions
     })
 
     return NextResponse.json({

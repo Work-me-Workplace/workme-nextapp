@@ -16,13 +16,13 @@ export default function CreateItemPage() {
   const [selectedSourceId, setSelectedSourceId] = useState('')
   const [manualInput, setManualInput] = useState('')
   
-  // Formatted content (what the AI would generate)
+  // Human context for AI
+  const [humanContext, setHumanContext] = useState('')
+  
+  // Formatted content (what the AI generates)
   const [formattedContent, setFormattedContent] = useState({
-    title: '',
-    poc: '',
-    body: '',
-    cta: '',
-    ctaUrl: '',
+    title: '', // For searchability
+    content: '', // The ENTIRE formatted item
   })
 
   useEffect(() => {
@@ -73,10 +73,12 @@ export default function CreateItemPage() {
         }
 
         // Call the REAL AI generator service
+        // sourceData is ALREADY PARSED (title, description, pocEmail, etc.)
         const response = await api.post('/api/workforce/enduring/email-digest/items/generate', {
           sourceType,
           sourceId: selectedSourceId,
-          sourceData: selectedItem,
+          sourceData: selectedItem, // Already has title, description, POC fields!
+          humanContext, // User's instructions to AI
         })
 
         if (response.data.success && response.data.formattedContent) {
@@ -85,11 +87,12 @@ export default function CreateItemPage() {
           alert('Error generating item: ' + (response.data.error || 'Unknown error'))
         }
       } else if (sourceMode === 'manual' && manualInput) {
-        // Call AI generator with manual input
+        // Call AI generator with manual input (raw blob - needs parsing)
         const response = await api.post('/api/workforce/enduring/email-digest/items/generate', {
           sourceType: 'manual',
           sourceId: null,
-          sourceData: { rawText: manualInput },
+          sourceData: { rawText: manualInput }, // Raw text blob
+          humanContext, // User's instructions
         })
 
         if (response.data.success && response.data.formattedContent) {
@@ -202,6 +205,22 @@ export default function CreateItemPage() {
                   </div>
                 </label>
               </div>
+              
+              {/* Human Context - Instructions for AI */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Instructions for AI <span className="text-gray-500">(optional)</span>
+                </label>
+                <textarea
+                  value={humanContext}
+                  onChange={(e) => setHumanContext(e.target.value)}
+                  placeholder="e.g., 'Emphasize the deadline', 'This is urgent', 'Keep it casual', etc."
+                  className="w-full h-24 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Give the AI context about tone, urgency, or what to emphasize
+                </p>
+              </div>
             </div>
 
             {sourceMode === 'workforce' && (
@@ -297,72 +316,43 @@ export default function CreateItemPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Title/Headline</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Title <span className="text-gray-500 text-xs">(for searchability)</span>
+                  </label>
                   <input
                     type="text"
                     value={formattedContent.title}
                     onChange={(e) => setFormattedContent({ ...formattedContent, title: e.target.value })}
-                    placeholder="*REMINDER*: EVENT NAME – DEC. 11"
+                    placeholder="*ACTION REQUIRED*: TIMEKEEPING GUIDANCE..."
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">POC Line</label>
-                  <input
-                    type="text"
-                    value={formattedContent.poc}
-                    onChange={(e) => setFormattedContent({ ...formattedContent, poc: e.target.value })}
-                    placeholder="POC: Name at email@example.com"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Body Content</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Content <span className="text-gray-500 text-xs">(the complete formatted item)</span>
+                  </label>
                   <textarea
-                    value={formattedContent.body}
-                    onChange={(e) => setFormattedContent({ ...formattedContent, body: e.target.value })}
-                    placeholder="Main content goes here..."
-                    className="w-full h-48 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                    value={formattedContent.content}
+                    onChange={(e) => setFormattedContent({ ...formattedContent, content: e.target.value })}
+                    placeholder="The entire formatted item with title, POC, body, CTA all together..."
+                    className="w-full h-96 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none font-mono text-sm"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Call to Action</label>
-                  <input
-                    type="text"
-                    value={formattedContent.cta}
-                    onChange={(e) => setFormattedContent({ ...formattedContent, cta: e.target.value })}
-                    placeholder="Register here by Dec. 8"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">CTA URL (optional)</label>
-                  <input
-                    type="text"
-                    value={formattedContent.ctaUrl}
-                    onChange={(e) => setFormattedContent({ ...formattedContent, ctaUrl: e.target.value })}
-                    placeholder="/events/register"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    This is what will appear in the final digest. Edit as needed.
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* Preview */}
-            {formattedContent.title && (
+            {formattedContent.content && (
               <div className="bg-blue-50 rounded-lg border-2 border-blue-200 p-6">
                 <h3 className="text-sm font-semibold text-blue-900 mb-4 uppercase">Preview</h3>
-                <div className="bg-white rounded p-4 text-sm space-y-3">
-                  <p className="font-bold">{formattedContent.title}</p>
-                  {formattedContent.poc && <p className="text-gray-700">{formattedContent.poc}</p>}
-                  {formattedContent.body && <p className="text-gray-900 leading-relaxed whitespace-pre-wrap">{formattedContent.body}</p>}
-                  {formattedContent.cta && (
-                    <p className="text-blue-600 underline cursor-pointer">{formattedContent.cta}</p>
-                  )}
+                <div className="bg-white rounded p-4 text-sm">
+                  <pre className="whitespace-pre-wrap font-sans leading-relaxed text-gray-900">
+                    {formattedContent.content}
+                  </pre>
                 </div>
               </div>
             )}
