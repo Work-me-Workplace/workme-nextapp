@@ -32,6 +32,19 @@ export const GENERATOR_RULES = {
     emphasizeDeadline: true,
     ctaStrength: 'STRONG',
     format: 'timekeeping', // Special formatting for time & attendance
+    // Extract from raw text:
+    // 1. Leave codes (e.g., "LH" for holiday leave)
+    // 2. Employee deadline (e.g., "1600 Monday, Dec 22")
+    // 3. Supervisor deadline (e.g., "1500 Tuesday Dec 23")
+    // 4. Pay period info (e.g., "PP Dec 16 - Dec 27")
+    // 5. Holiday dates
+    extractFields: ['leaveCodes', 'employeeDeadline', 'supervisorDeadline', 'payPeriod', 'holidayDate'],
+    bodyStructure: [
+      'PARAGRAPH 1: What holiday/event and directing action (early submission)',
+      'PARAGRAPH 2: Employee deadline with specific date/time',
+      'PARAGRAPH 3: Supervisor deadline with specific date/time',
+      'PARAGRAPH 4 (if applicable): Secondary guidance for following pay period',
+    ],
   },
   
   HIGH_URGENCY_IMPACT: {
@@ -249,6 +262,23 @@ function buildUserPrompt(sourceType: CompanyXType, sourceData: any): string {
     }
     if (sourceData.impactedPopulation) {
       lines.push(`Impacted: ${sourceData.impactedPopulation}`)
+    }
+    
+    // SPECIAL: Timekeeping gets full raw text
+    if (sourceData.ingestRawText && (sourceData.title?.toLowerCase().includes('timekeeping') || sourceData.description?.toLowerCase().includes('timekeeping'))) {
+      lines.push(`\n📋 FULL TIMEKEEPING GUIDANCE (extract deadlines, leave codes, pay periods):`)
+      lines.push(sourceData.ingestRawText)
+      lines.push(`\n🎯 EXTRACT AND FORMAT:`)
+      lines.push(`1. Leave codes (e.g., LH for holiday)`)
+      lines.push(`2. Employee deadline (date + time)`)
+      lines.push(`3. Supervisor deadline (date + time)`)
+      lines.push(`4. Pay period(s) affected`)
+      lines.push(`5. Holiday date(s)`)
+      lines.push(`\n📝 BODY STRUCTURE:`)
+      lines.push(`Paragraph 1: What holiday and why early submission is required`)
+      lines.push(`Paragraph 2: Employee must enter time by [DATE/TIME]`)
+      lines.push(`Paragraph 3: Supervisors must approve by [DATE/TIME]`)
+      lines.push(`Paragraph 4 (if applicable): Guidance for next pay period`)
     }
   }
   

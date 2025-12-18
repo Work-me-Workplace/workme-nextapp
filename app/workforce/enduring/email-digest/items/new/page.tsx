@@ -72,45 +72,35 @@ export default function CreateItemPage() {
           return
         }
 
-        // Generate formatted content from the selected item
-        const title = selectedItem.title || 'Untitled'
-        const description = selectedItem.description || selectedItem.summary || ''
-        
-        // Build POC line
-        let poc = 'POC: '
-        if (selectedItem.pocFirstName || selectedItem.pocLastName) {
-          poc += `${selectedItem.pocFirstName || ''} ${selectedItem.pocLastName || ''}`.trim()
-        }
-        if (selectedItem.pocEmail) {
-          poc += ` at ${selectedItem.pocEmail}`
+        // Call the REAL AI generator service
+        const response = await api.post('/api/workforce/enduring/email-digest/items/generate', {
+          sourceType,
+          sourceId: selectedSourceId,
+          sourceData: selectedItem,
+        })
+
+        if (response.data.success && response.data.formattedContent) {
+          setFormattedContent(response.data.formattedContent)
         } else {
-          poc = ''
+          alert('Error generating item: ' + (response.data.error || 'Unknown error'))
         }
-
-        // Get date for title prefix
-        const itemDate = selectedItem.eventDate || selectedItem.trainingDate || selectedItem.windowStart || selectedItem.date
-        const dateStr = itemDate ? new Date(itemDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''
-
-        setFormattedContent({
-          title: `*REMINDER*: ${title.toUpperCase()}${dateStr ? ' – ' + dateStr.toUpperCase() : ''}`,
-          poc,
-          body: description,
-          cta: selectedItem.registrationLink ? 'Register Now' : (selectedItem.link ? 'Learn More' : ''),
-          ctaUrl: selectedItem.registrationLink || selectedItem.link || '',
-        })
       } else if (sourceMode === 'manual' && manualInput) {
-        // Basic formatting for manual input
-        setFormattedContent({
-          title: manualInput.substring(0, 60).toUpperCase(),
-          poc: '',
-          body: manualInput,
-          cta: 'Learn More',
-          ctaUrl: '',
+        // Call AI generator with manual input
+        const response = await api.post('/api/workforce/enduring/email-digest/items/generate', {
+          sourceType: 'manual',
+          sourceId: null,
+          sourceData: { rawText: manualInput },
         })
+
+        if (response.data.success && response.data.formattedContent) {
+          setFormattedContent(response.data.formattedContent)
+        } else {
+          alert('Error generating item: ' + (response.data.error || 'Unknown error'))
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating item:', error)
-      alert('Error generating item')
+      alert('Error generating item: ' + (error.response?.data?.error || error.message))
     } finally {
       setLoading(false)
     }

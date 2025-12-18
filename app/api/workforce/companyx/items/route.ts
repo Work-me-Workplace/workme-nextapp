@@ -123,6 +123,7 @@ export async function GET(req: NextRequest) {
               effectiveDate: true,
               urgency: true,
               impactedPopulation: true,
+              ingestRawText: true, // CRITICAL for timekeeping - full blob
               pocFirstName: true,
               pocLastName: true,
               pocEmail: true,
