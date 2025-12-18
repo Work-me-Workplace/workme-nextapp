@@ -19,6 +19,7 @@ export default function CreateItemPage() {
   
   // Human context for AI
   const [humanContext, setHumanContext] = useState('')
+  const [rawTextOverride, setRawTextOverride] = useState('') // Paste missing raw text here!
   
   // Formatted content (what the AI generates)
   const [formattedContent, setFormattedContent] = useState({
@@ -85,10 +86,15 @@ export default function CreateItemPage() {
 
         // Call the REAL AI generator service
         // sourceData is ALREADY PARSED (title, description, pocEmail, etc.)
+        // If rawTextOverride provided, merge it in!
+        const dataToSend = rawTextOverride 
+          ? { ...selectedItem, ingestRawText: rawTextOverride }
+          : selectedItem
+        
         const response = await api.post('/api/workforce/enduring/email-digest/items/generate', {
           sourceType,
           sourceId: selectedSourceId,
-          sourceData: selectedItem, // Already has title, description, POC fields!
+          sourceData: dataToSend, // Already has title, description, POC fields!
           humanContext, // User's instructions to AI
         })
 
@@ -351,6 +357,22 @@ export default function CreateItemPage() {
                 />
                 <p className="mt-1 text-xs text-gray-500">
                   Give the AI context about tone, urgency, or what to emphasize
+                </p>
+              </div>
+
+              {/* Raw Text Override - For missing data */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  📄 Raw Text Override <span className="text-gray-500">(if source is missing details)</span>
+                </label>
+                <textarea
+                  value={rawTextOverride}
+                  onChange={(e) => setRawTextOverride(e.target.value)}
+                  placeholder="Paste the full raw text here if the source is missing deadlines, codes, or other critical details..."
+                  className="w-full h-32 px-4 py-2 border-2 border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none text-xs font-mono bg-purple-50"
+                />
+                <p className="mt-1 text-xs text-purple-700">
+                  ⚡ This overrides the source's raw text - AI will use THIS instead
                 </p>
               </div>
             </div>
