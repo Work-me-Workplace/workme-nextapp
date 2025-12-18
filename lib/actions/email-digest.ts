@@ -193,6 +193,7 @@ export async function getAvailableCompanyXItems() {
 
 /**
  * Update edition items (curation)
+ * TODO: Reimplement with new schema (junction table + item catalogue)
  */
 export async function updateEditionItems(data: z.infer<typeof updateEditionItemsSchema>) {
   try {
@@ -217,33 +218,11 @@ export async function updateEditionItems(data: z.infer<typeof updateEditionItems
       return { success: false, error: 'Email digest edition not found' }
     }
 
-    // Delete existing items
-    await prisma.emailDigestItem.deleteMany({
-      where: { editionId: validated.editionId },
-    })
-
-    // Create new items
-    const items = await Promise.all(
-      validated.items.map((item, index) =>
-        prisma.emailDigestItem.create({
-          data: {
-            editionId: validated.editionId,
-            companyEventId: item.companyEventId,
-            companyCampaignId: item.companyCampaignId,
-            companyTrainingId: item.companyTrainingId,
-            companyBenefitsId: item.companyBenefitsId,
-            companyImpactEventId: item.companyImpactEventId,
-            companyCommunityId: item.companyCommunityId,
-            companyCareerId: item.companyCareerId,
-            companyEmployeeCauseId: item.companyEmployeeCauseId,
-            notes: item.notes ?? undefined,
-            order: index,
-          },
-        })
-      )
-    )
-
-    return { success: true, items }
+    // TODO: With new schema, this should:
+    // 1. Delete existing EmailDigestEditionItem junction records
+    // 2. Create new junction records linking to existing EmailDigestItem IDs
+    // For now, return stub
+    return { success: false, error: 'Function needs reimplementation for new schema (junction table)' }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -255,6 +234,7 @@ export async function updateEditionItems(data: z.infer<typeof updateEditionItems
 
 /**
  * Get edition with items for curation/editing
+ * TODO: Reimplement with new schema (junction table)
  */
 export async function getEditionWithItems(editionId: string) {
   try {
@@ -273,16 +253,9 @@ export async function getEditionWithItems(editionId: string) {
       },
       include: {
         product: true,
-        items: {
+        editionItems: {
           include: {
-            companyEvent: true,
-            companyCampaign: true,
-            companyTraining: true,
-            companyBenefits: true,
-            companyImpactEvent: true,
-            companyCommunity: true,
-            companyCareer: true,
-            companyEmployeeCause: true,
+            item: true, // Get the actual EmailDigestItem with formattedContent
           },
           orderBy: { order: 'asc' },
         },
@@ -321,16 +294,9 @@ export async function generateEditionContent(editionId: string) {
       },
       include: {
         product: true,
-        items: {
+        editionItems: {
           include: {
-            companyEvent: true,
-            companyCampaign: true,
-            companyTraining: true,
-            companyBenefits: true,
-            companyImpactEvent: true,
-            companyCommunity: true,
-            companyCareer: true,
-            companyEmployeeCause: true,
+            item: true, // Get the EmailDigestItem with formattedContent
           },
           orderBy: { order: 'asc' },
         },
@@ -341,7 +307,7 @@ export async function generateEditionContent(editionId: string) {
       return { success: false, error: 'Email digest edition not found' }
     }
 
-    if (edition.items.length === 0) {
+    if (edition.editionItems.length === 0) {
       return { success: false, error: 'No items selected for this edition. Please add items first.' }
     }
 
@@ -351,8 +317,8 @@ export async function generateEditionContent(editionId: string) {
       data: { status: 'GENERATING' },
     })
 
-    // Build prompt from selected items
-    const promptText = buildPromptFromItems(edition.items)
+    // Build prompt from selected items (now uses formattedContent)
+    const promptText = buildPromptFromItems(edition.editionItems.map(ei => ei.item))
 
     // TODO: Replace with actual OpenAI API call
     const generatedContent = await generateEmailDigestContent(promptText, edition.product.title)
@@ -381,45 +347,24 @@ export async function generateEditionContent(editionId: string) {
 }
 
 // Helper function to build prompt from selected items
+// TODO: With new schema, items have formattedContent - this should just concatenate them
 function buildPromptFromItems(items: any[]): string {
   const summaries: string[] = []
 
   items.forEach((item) => {
-    const source =
-      item.companyEvent ||
-      item.companyCampaign ||
-      item.companyTraining ||
-      item.companyBenefits ||
-      item.companyImpactEvent ||
-      item.companyCommunity ||
-      item.companyCareer ||
-      item.companyEmployeeCause
-
-    if (source) {
-      const type = item.companyEvent
-        ? 'EVENT'
-        : item.companyCampaign
-        ? 'CAMPAIGN'
-        : item.companyTraining
-        ? 'TRAINING'
-        : item.companyBenefits
-        ? 'BENEFITS'
-        : item.companyImpactEvent
-        ? 'IMPACT EVENT'
-        : item.companyCommunity
-        ? 'COMMUNITY'
-        : item.companyCareer
-        ? 'CAREER'
-        : 'EMPLOYEE CAUSE'
-
-      summaries.push(`[${type}] ${source.title}: ${source.summary || source.description || 'No description'}`)
-      if (item.notes) {
-        summaries.push(`  Note: ${item.notes}`)
+    if (item.formattedContent) {
+      // New schema: items have pre-formatted content
+      const content = item.formattedContent as any
+      summaries.push(`${content.title || 'Untitled'}`)
+      if (content.body) {
+        // Strip HTML tags for prompt
+        const plainText = content.body.replace(/<[^>]*>/g, '')
+        summaries.push(plainText.substring(0, 200))
       }
     }
   })
 
-  return summaries.join('\n')
+  return summaries.join('\n\n')
 }
 
 /**
