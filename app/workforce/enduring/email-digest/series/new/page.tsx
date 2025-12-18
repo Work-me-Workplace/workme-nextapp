@@ -39,7 +39,16 @@ export default function NewEmailDigestPage() {
       const response = await api.post('/api/workforce/enduring/email-digest', formData)
       const result = response.data
       if (result.success && result.product) {
-        router.push(`/workforce/enduring/email-digest/${result.product.id}`)
+        // A3: Auto-redirect to first edition creation
+        // Create a draft edition and redirect to curation
+        const editionResponse = await api.post(`/api/workforce/enduring/email-digest/${result.product.id}/editions`)
+        const editionResult = editionResponse.data
+        if (editionResult.success && editionResult.edition) {
+          router.push(`/workforce/enduring/email-digest/${result.product.id}/editions/${editionResult.edition.id}/curate?isFirst=true`)
+        } else {
+          // Fallback to series page if edition creation fails
+          router.push(`/workforce/enduring/email-digest/${result.product.id}`)
+        }
       } else {
         alert('Failed to create product: ' + (result.error || 'Unknown error'))
         setLoading(false)
@@ -130,7 +139,7 @@ export default function NewEmailDigestPage() {
                 disabled={loading}
                 className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
               >
-                {loading ? 'Creating Series...' : 'Create Email Digest Series'}
+                {loading ? 'Creating Series & First Edition...' : 'Create Series & Set Up First Edition'}
               </button>
               <Link
                 href="/workforce/enduring/email-digest"

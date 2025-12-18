@@ -66,44 +66,148 @@ export default function EmailDigestListPage() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Email Digest Series</h1>
-          <p className="text-gray-600">Manage your recurring email digest series and editions</p>
-          <p className="text-xs text-blue-600 mt-1">📍 Direct URL: /workforce/enduring/email-digest</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">📧 Email Digest Builder</h1>
+          <p className="text-gray-600">Create recurring email series or one-off digest emails</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
-            <Link
-              key={product.id}
-              href={`/workforce/enduring/email-digest/${product.id}`}
-              className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-2 border-transparent hover:border-blue-500"
-            >
-              <div className="mb-4">
-                <h3 className="text-xl font-bold text-gray-900">{product.title}</h3>
-                {product.description && (
-                  <p className="text-sm text-gray-500 mt-1">{product.description}</p>
-                )}
-              </div>
-              <div className="flex justify-between text-sm text-gray-500">
-                <span>{product._count.editions} editions</span>
-              </div>
-            </Link>
-          ))}
-
-          {/* Create New Product Card */}
+        {/* Choice Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+          {/* Recurring Series Card */}
           <Link
-            href="/workforce/enduring/email-digest/new"
-            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-2 border-dashed border-gray-300 hover:border-blue-500 flex items-center justify-center min-h-[200px]"
+            href="/workforce/enduring/email-digest/series/new"
+            className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg p-8 hover:shadow-xl transition border-2 border-blue-200 hover:border-blue-400"
           >
-            <div className="text-center">
-              <svg className="h-12 w-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <p className="text-gray-600 font-medium">Create New Series</p>
+            <div className="flex items-start mb-4">
+              <div className="bg-blue-600 rounded-lg p-3 mr-4">
+                <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Recurring Series</h3>
+                <p className="text-gray-700 mb-4">
+                  Create a recurring email digest series that you'll send regularly (weekly, monthly, etc.)
+                </p>
+                <ul className="text-sm text-gray-600 space-y-1 mb-4">
+                  <li className="flex items-center">
+                    <svg className="h-4 w-4 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Generate multiple editions over time
+                  </li>
+                  <li className="flex items-center">
+                    <svg className="h-4 w-4 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Curate content from company events & more
+                  </li>
+                  <li className="flex items-center">
+                    <svg className="h-4 w-4 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    AI-powered content generation
+                  </li>
+                </ul>
+                <div className="inline-flex items-center text-blue-700 font-semibold">
+                  <span>Create Recurring Series</span>
+                  <svg className="h-5 w-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          {/* One-Off Email Card */}
+          <Link
+            href="/workforce/enduring/email-digest/one-off/new"
+            className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-lg p-8 hover:shadow-xl transition border-2 border-purple-200 hover:border-purple-400"
+          >
+            <div className="flex items-start mb-4">
+              <div className="bg-purple-600 rounded-lg p-3 mr-4">
+                <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">One-Off Email</h3>
+                <p className="text-gray-700 mb-4">
+                  Create a single standalone email digest (not part of a recurring series)
+                </p>
+                <ul className="text-sm text-gray-600 space-y-1 mb-4">
+                  <li className="flex items-center">
+                    <svg className="h-4 w-4 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Quick single email creation
+                  </li>
+                  <li className="flex items-center">
+                    <svg className="h-4 w-4 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Select content items to include
+                  </li>
+                  <li className="flex items-center">
+                    <svg className="h-4 w-4 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    AI-powered content generation
+                  </li>
+                </ul>
+                <div className="inline-flex items-center text-purple-700 font-semibold">
+                  <span>Create One-Off Email</span>
+                  <svg className="h-5 w-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
             </div>
           </Link>
         </div>
+
+        {/* Existing Series Section */}
+        {products.length > 0 && (
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">Your Recurring Series ({products.length})</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {products.map((product) => (
+                <Link
+                  key={product.id}
+                  href={`/workforce/enduring/email-digest/${product.id}`}
+                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-2 border-transparent hover:border-blue-500"
+                >
+                  <div className="mb-4">
+                    <div className="flex items-center mb-2">
+                      <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">SERIES</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">{product.title}</h3>
+                    {product.description && (
+                      <p className="text-sm text-gray-500 mt-1">{product.description}</p>
+                    )}
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-500">
+                    <span>{product._count.editions} editions</span>
+                    <span className="text-gray-400">{new Date(product.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {products.length === 0 && (
+          <div className="text-center py-12">
+            <svg className="h-16 w-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <p className="text-gray-500 text-lg">No email series yet. Create your first one above!</p>
+          </div>
+        )}
       </div>
     </div>
   )
