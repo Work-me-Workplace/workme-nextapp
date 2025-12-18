@@ -194,8 +194,8 @@ export default function WorkforceStuffPage() {
         setLoading(true)
       }
       
-      // Pass companyId as companyUnitId query parameter (API expects companyUnitId param name)
-      const response = await api.get(`/api/workforcestuff?companyUnitId=${encodeURIComponent(companyId)}`)
+      // Pass companyId as query parameter
+      const response = await api.get(`/api/workforcestuff?companyId=${encodeURIComponent(companyId)}`)
       
       if (response.data.success && response.data.items) {
         setItems(response.data.items)

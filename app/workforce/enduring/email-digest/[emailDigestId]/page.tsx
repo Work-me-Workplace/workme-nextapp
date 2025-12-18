@@ -2,29 +2,43 @@
 
 import Link from 'next/link'
 import { use, useState, useEffect } from 'react'
-import { getEmailDigestProduct, createEmailDigestEdition } from '@/lib/actions/email-digest'
+import api from '@/lib/api'
+import { useAuth } from '@/lib/providers/AuthProvider'
 
 export default function EmailDigestProductPage({ params }: { params: Promise<{ emailDigestId: string }> }) {
   const { emailDigestId } = use(params)
+  const { session, loading: authLoading } = useAuth()
   const [product, setProduct] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
     async function fetchProduct() {
-      const result = await getEmailDigestProduct(emailDigestId)
-      if (result.success && result.product) {
-        setProduct(result.product)
+      // Wait for auth to be ready
+      if (authLoading || !session.firebaseId) {
+        return
       }
-      setLoading(false)
+
+      try {
+        const response = await api.get(`/api/workforce/enduring/email-digest/${emailDigestId}`)
+        const result = response.data
+        if (result.success && result.product) {
+          setProduct(result.product)
+        }
+      } catch (error) {
+        console.error('Error fetching product:', error)
+      } finally {
+        setLoading(false)
+      }
     }
     fetchProduct()
-  }, [emailDigestId])
+  }, [emailDigestId, authLoading, session.firebaseId])
 
   const handleGenerateEdition = async () => {
     setGenerating(true)
     try {
-      const result = await createEmailDigestEdition({ emailDigestId })
+      const response = await api.post(`/api/workforce/enduring/email-digest/${emailDigestId}/editions`)
+      const result = response.data
       if (result.success && result.edition) {
         // Redirect to edition detail page (curation will happen there)
         window.location.href = `/workforce/enduring/email-digest/${emailDigestId}/editions/${result.edition.id}`
@@ -32,19 +46,27 @@ export default function EmailDigestProductPage({ params }: { params: Promise<{ e
         alert('Failed to create edition: ' + (result.error || 'Unknown error'))
         setGenerating(false)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating edition:', error)
-      alert('Failed to create edition')
+      alert('Failed to create edition: ' + (error.response?.data?.error || error.message))
       setGenerating(false)
     }
   }
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     )
+  }
+
+  // Redirect if not authenticated
+  if (!session.firebaseId) {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login'
+    }
+    return null
   }
 
   if (!product) {

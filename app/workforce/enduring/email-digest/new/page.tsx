@@ -3,30 +3,50 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { createEmailDigestProduct } from '@/lib/actions/email-digest'
+import api from '@/lib/api'
+import { useAuth } from '@/lib/providers/AuthProvider'
 
 export default function NewEmailDigestPage() {
   const router = useRouter()
+  const { session, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
   })
 
+  // Show loading while auth initializes
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  // Redirect if not authenticated
+  if (!session.firebaseId) {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login'
+    }
+    return null
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     try {
-      const result = await createEmailDigestProduct(formData)
+      const response = await api.post('/api/workforce/enduring/email-digest', formData)
+      const result = response.data
       if (result.success && result.product) {
         router.push(`/workforce/enduring/email-digest/${result.product.id}`)
       } else {
         alert('Failed to create product: ' + (result.error || 'Unknown error'))
         setLoading(false)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating product:', error)
-      alert('Failed to create product')
+      alert('Failed to create product: ' + (error.response?.data?.error || error.message))
       setLoading(false)
     }
   }

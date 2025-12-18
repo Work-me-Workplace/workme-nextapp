@@ -377,7 +377,7 @@ export async function generateEditionContent(editionId: string) {
       })
     } catch {}
     return { success: false, error: 'Failed to generate edition content' }
-  }
+    }
 }
 
 // Helper function to build prompt from selected items

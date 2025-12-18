@@ -233,3 +233,5 @@ Replace `generateEmailDigestContent()` placeholder
 
 **Refactor Date:** 2025-12-17  
 **Next Session:** Build curation UI and integrate OpenAI
+
+

@@ -2,29 +2,50 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { getEmailDigestProducts } from '@/lib/actions/email-digest'
+import api from '@/lib/api'
+import { useAuth } from '@/lib/providers/AuthProvider'
 
 export default function EmailDigestListPage() {
+  const { session, loading: authLoading } = useAuth()
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchProducts() {
-      const result = await getEmailDigestProducts()
-      if (result.success) {
-        setProducts(result.products)
+      // Wait for auth to be ready
+      if (authLoading || !session.firebaseId) {
+        return
       }
-      setLoading(false)
+
+      try {
+        const response = await api.get('/api/workforce/enduring/email-digest')
+        const result = response.data
+        if (result.success) {
+          setProducts(result.products)
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error)
+      } finally {
+        setLoading(false)
+      }
     }
     fetchProducts()
-  }, [])
+  }, [authLoading, session.firebaseId])
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     )
+  }
+
+  // Redirect if not authenticated
+  if (!session.firebaseId) {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login'
+    }
+    return null
   }
 
   return (
