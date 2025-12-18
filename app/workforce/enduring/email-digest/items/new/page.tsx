@@ -91,6 +91,8 @@ export default function CreateItemPage() {
           ? { ...selectedItem, ingestRawText: rawTextOverride }
           : selectedItem
         
+        console.log('🚀 Calling generate API with:', { sourceType, selectedSourceId, humanContext })
+        
         const response = await api.post('/api/workforce/enduring/email-digest/items/generate', {
           sourceType,
           sourceId: selectedSourceId,
@@ -98,10 +100,18 @@ export default function CreateItemPage() {
           humanContext, // User's instructions to AI
         })
 
+        console.log('📥 Generate API response:', {
+          success: response.data.success,
+          hasFormattedContent: !!response.data.formattedContent,
+          formattedContent: response.data.formattedContent,
+        })
+
         if (response.data.success && response.data.formattedContent) {
+          console.log('✅ Setting formatted content:', response.data.formattedContent)
           setFormattedContent(response.data.formattedContent)
         } else {
-          alert('Error generating item: ' + (response.data.error || 'Unknown error'))
+          console.error('❌ Generate failed:', response.data)
+          alert('❌ AI Generation Failed\n\n' + (response.data.error || 'Unknown error') + '\n\n' + (response.data.details || ''))
         }
       } else if (sourceMode === 'manual' && manualInput) {
         // Call AI generator with manual input (raw blob - needs parsing)
