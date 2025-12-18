@@ -85,6 +85,7 @@ ${rawText.substring(0, 3000)}`
     return {
       title: parsed.title || null,
       description: parsed.description || null,
+      summary: parsed.summary || null, // COMPREHENSIVE summary with all key details
       effectiveDate: parsed.effectiveDate || null,
       impactedPopulation: parsed.impactedPopulation || null,
       urgency: parsed.urgency || null,
