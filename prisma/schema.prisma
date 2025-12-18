@@ -445,7 +445,6 @@ model CompanyCampaign {
   createdByWorkMeId String   @db.Uuid
   createdBy         WorkMe   @relation("CompanyCampaignCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  emailDigestItems EmailDigestItem[] @relation("EmailDigestItemCampaign")
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemCampaign")
 
   @@index([companyId])
@@ -474,7 +473,6 @@ model CompanyImpactEvent {
   createdByWorkMeId String   @db.Uuid
   createdBy         WorkMe   @relation("CompanyImpactEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  emailDigestItems EmailDigestItem[] @relation("EmailDigestItemImpactEvent")
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemImpactEvent")
 
   @@index([companyId])
@@ -517,7 +515,6 @@ model CompanyTraining {
   createdByWorkMeId String   @db.Uuid
   createdBy         WorkMe   @relation("CompanyTrainingCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  emailDigestItems EmailDigestItem[] @relation("EmailDigestItemTraining")
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemTraining")
 
   @@index([companyId])
@@ -564,7 +561,6 @@ model CompanyEvent {
   createdBy         WorkMe   @relation("CompanyEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
   eventItems       EventItem[]       @relation
-  emailDigestItems EmailDigestItem[] @relation("EmailDigestItemEvent")
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemEvent")
 
   @@index([companyId])
@@ -609,7 +605,6 @@ model CompanyCommunity {
   createdByWorkMeId String   @db.Uuid
   createdBy         WorkMe   @relation("CompanyCommunityCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  emailDigestItems EmailDigestItem[] @relation("EmailDigestItemCommunity")
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemCommunity")
 
   @@index([companyId])
@@ -645,7 +640,6 @@ model CompanyBenefits {
   createdByWorkMeId String   @db.Uuid
   createdBy         WorkMe   @relation("CompanyBenefitsCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  emailDigestItems EmailDigestItem[] @relation("EmailDigestItemBenefits")
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemBenefits")
 
   @@index([companyId])
@@ -689,7 +683,6 @@ model CompanyCareer {
   createdByWorkMeId String   @db.Uuid
   createdBy         WorkMe   @relation("CompanyCareerCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  emailDigestItems EmailDigestItem[] @relation("EmailDigestItemCareer")
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemCareer")
 
   @@index([companyId])
@@ -727,7 +720,6 @@ model CompanyEmployeeCause {
   createdByWorkMeId String   @db.Uuid
   createdBy         WorkMe   @relation("CompanyEmployeeCauseCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
-  emailDigestItems EmailDigestItem[] @relation("EmailDigestItemEmployeeCause")
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemEmployeeCause")
 
   @@index([companyId])
@@ -865,7 +857,7 @@ model EmailDigestEdition {
   originatorId String
   companyId    String
 
-  items EmailDigestItem[] // Items selected for this edition
+  editionItems EmailDigestEditionItem[] // Many-to-many with items via junction table
 
   @@index([emailDigestId])
   @@index([companyId])
@@ -874,43 +866,46 @@ model EmailDigestEdition {
 }
 
 model EmailDigestItem {
-  id        String             @id @default(cuid())
+  id String @id @default(cuid())
+
+  // The morphed, formatted content (what matters!)
+  formattedContent Json // { title, body, cta, ctaUrl, imageUrl, ... }
+
+  // Source reference (NOT foreign keys, just for tracking)
+  sourceType String? // "CompanyEvent" | "CompanyCampaign" | "CompanyTraining" | "manual" | etc
+  sourceId   String? // UUID of source (for reference only)
+
+  // Status lifecycle
+  status String @default("DRAFT") // DRAFT | READY | ARCHIVED
+
+  // Ownership
+  companyId         String
+  createdByWorkMeId String   @db.Uuid
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Many-to-many with editions via junction table
+  editionItems EmailDigestEditionItem[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([sourceType])
+  @@index([createdByWorkMeId])
+}
+
+// Junction table for many-to-many relationship between editions and items
+model EmailDigestEditionItem {
+  id        String @id @default(cuid())
   editionId String
-  edition   EmailDigestEdition @relation(fields: [editionId], references: [id], onDelete: Cascade)
+  itemId    String
+  order     Int // Display order in this edition
 
-  // Link to one CompanyX model (one of these will be set)
-  companyEventId         String?
-  companyCampaignId      String?
-  companyTrainingId      String?
-  companyBenefitsId      String?
-  companyImpactEventId   String?
-  companyCommunityId     String?
-  companyCareerId        String?
-  companyEmployeeCauseId String?
+  edition EmailDigestEdition @relation(fields: [editionId], references: [id], onDelete: Cascade)
+  item    EmailDigestItem    @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
-  // Relations (nullable)
-  companyEvent         CompanyEvent?         @relation("EmailDigestItemEvent", fields: [companyEventId], references: [id], onDelete: Cascade)
-  companyCampaign      CompanyCampaign?      @relation("EmailDigestItemCampaign", fields: [companyCampaignId], references: [id], onDelete: Cascade)
-  companyTraining      CompanyTraining?      @relation("EmailDigestItemTraining", fields: [companyTrainingId], references: [id], onDelete: Cascade)
-  companyBenefits      CompanyBenefits?      @relation("EmailDigestItemBenefits", fields: [companyBenefitsId], references: [id], onDelete: Cascade)
-  companyImpactEvent   CompanyImpactEvent?   @relation("EmailDigestItemImpactEvent", fields: [companyImpactEventId], references: [id], onDelete: Cascade)
-  companyCommunity     CompanyCommunity?     @relation("EmailDigestItemCommunity", fields: [companyCommunityId], references: [id], onDelete: Cascade)
-  companyCareer        CompanyCareer?        @relation("EmailDigestItemCareer", fields: [companyCareerId], references: [id], onDelete: Cascade)
-  companyEmployeeCause CompanyEmployeeCause? @relation("EmailDigestItemEmployeeCause", fields: [companyEmployeeCauseId], references: [id], onDelete: Cascade)
-
-  order     Int // Display order in digest
-  notes     String? // User notes for this item
-  createdAt DateTime @default(now())
-
+  @@unique([editionId, itemId]) // Can't add same item twice to one edition
   @@index([editionId])
-  @@index([companyEventId])
-  @@index([companyCampaignId])
-  @@index([companyTrainingId])
-  @@index([companyBenefitsId])
-  @@index([companyImpactEventId])
-  @@index([companyCommunityId])
-  @@index([companyCareerId])
-  @@index([companyEmployeeCauseId])
+  @@index([itemId])
   @@index([order])
 }
 
