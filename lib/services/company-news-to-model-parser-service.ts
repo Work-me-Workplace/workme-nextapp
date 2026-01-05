@@ -15,6 +15,7 @@ export type ParseableModelType =
   | 'platform_product'
   | 'milestone'
   | 'external_pressure'
+  | 'external_env'
   | 'training'
   | 'event'
   | 'career'
@@ -108,6 +109,18 @@ export async function parseNewsArtifactToModel(
       // Basic external pressure structure
       return {
         modelType: 'external_pressure',
+        data: {
+          source: null,
+          summary: null,
+          category: null,
+          impact: null,
+        },
+      }
+
+    case 'external_env':
+      // Basic external environment structure (same as external_pressure but company-wide)
+      return {
+        modelType: 'external_env',
         data: {
           source: null,
           summary: null,

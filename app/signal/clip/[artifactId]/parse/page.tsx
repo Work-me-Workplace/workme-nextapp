@@ -17,6 +17,7 @@ type ParseableModelType =
   | 'platform_product'
   | 'milestone'
   | 'external_pressure'
+  | 'external_env'
   | 'training'
   | 'event'
   | 'career'
@@ -189,6 +190,12 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
         // TODO: Create API endpoint for platform statement
         setError('Platform statement save not yet implemented')
         return
+      } else if (modelType === 'external_env') {
+        // Create CompanyExternalEnv
+        response = await api.post('/api/company/external-env/create', {
+          ...reviewData,
+          newsArtifactId: artifact?.id,
+        })
       } else {
         // For CompanyX types, use the existing workstuff/add endpoint
         response = await api.post('/api/workforcestuff/add', {
@@ -312,6 +319,7 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                       <optgroup label="Company Models">
                         <option value="milestone">Milestone</option>
                         <option value="external_pressure">External Pressure</option>
+                        <option value="external_env">External Environment</option>
                       </optgroup>
                       <optgroup label="CompanyX Models">
                         <option value="training">Training</option>
@@ -425,6 +433,133 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                   )}
 
                   {/* Parsed Data Fields - Show different fields based on model type */}
+                  {modelType === 'external_env' && (
+                    <div className="space-y-6">
+                      {/* Signal Basics */}
+                      <div className="border-b border-gray-200 pb-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Signal Basics</h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Source <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={reviewData.source || ''}
+                              onChange={(e) => setReviewData({ ...reviewData, source: e.target.value })}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                              placeholder="e.g., GAO, Congress, Industry, DoD, Navy"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                            <input
+                              type="text"
+                              value={reviewData.category || ''}
+                              onChange={(e) => setReviewData({ ...reviewData, category: e.target.value || null })}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                              placeholder="e.g., Budget, Legislation, Testing, Ops, Regulatory"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Summary <span className="text-red-500">*</span>
+                            </label>
+                            <textarea
+                              rows={4}
+                              value={reviewData.summary || ''}
+                              onChange={(e) => setReviewData({ ...reviewData, summary: e.target.value })}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                              placeholder="Description of the external signal/development..."
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Impact</label>
+                            <textarea
+                              rows={3}
+                              value={reviewData.impact || ''}
+                              onChange={(e) => setReviewData({ ...reviewData, impact: e.target.value || null })}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                              placeholder="Why this matters, what it means, significance..."
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Change Intelligence */}
+                      <div className="border-b border-gray-200 pb-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">🔍 Change Intelligence</h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Delta Summary</label>
+                            <textarea
+                              rows={3}
+                              value={reviewData.deltaSummary || ''}
+                              onChange={(e) => setReviewData({ ...reviewData, deltaSummary: e.target.value || null })}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                              placeholder="What materially changed vs prior state (e.g., 'New requirement for 12 additional submarines', 'Budget cut of $2B')"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Implementation Timeline</label>
+                            <input
+                              type="text"
+                              value={reviewData.implementationTimeline || ''}
+                              onChange={(e) => setReviewData({ ...reviewData, implementationTimeline: e.target.value || null })}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                              placeholder="When this starts to matter (e.g., 'Effective Q2 2026', 'Rolls out over next 18 months', 'Immediate')"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Lead Authority</label>
+                            <input
+                              type="text"
+                              value={reviewData.leadAuthority || ''}
+                              onChange={(e) => setReviewData({ ...reviewData, leadAuthority: e.target.value || null })}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                              placeholder="Who owns/drives this change (e.g., 'Navy Acquisition Office', 'House Armed Services Committee', 'GAO')"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Metadata */}
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Metadata</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Confidence Level</label>
+                            <select
+                              value={reviewData.confidenceLevel || ''}
+                              onChange={(e) => setReviewData({ ...reviewData, confidenceLevel: e.target.value || null })}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                            >
+                              <option value="">Select...</option>
+                              <option value="low">Low</option>
+                              <option value="medium">Medium</option>
+                              <option value="high">High</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Time Horizon</label>
+                            <select
+                              value={reviewData.timeHorizon || ''}
+                              onChange={(e) => setReviewData({ ...reviewData, timeHorizon: e.target.value || null })}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                            >
+                              <option value="">Select...</option>
+                              <option value="immediate">Immediate</option>
+                              <option value="near-term">Near-term</option>
+                              <option value="long-term">Long-term</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {modelType === 'platform_unit_update' && (
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
@@ -546,7 +681,7 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                   )}
 
                   {/* For other model types, show generic JSON editor or specific forms */}
-                  {modelType !== 'platform_unit_update' && (
+                  {modelType !== 'platform_unit_update' && modelType !== 'external_env' && (
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Parsed Data</label>
@@ -587,7 +722,13 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                     </Link>
                     <button
                       onClick={handleSubmit}
-                      disabled={loading || (modelType === 'platform_unit_update' && !unitId.trim()) || (modelType === 'platform_unit_statement' && !unitId.trim()) || (modelType === 'platform_statement' && !platformProductId.trim())}
+                      disabled={
+                        loading ||
+                        (modelType === 'platform_unit_update' && !unitId.trim()) ||
+                        (modelType === 'platform_unit_statement' && !unitId.trim()) ||
+                        (modelType === 'platform_statement' && !platformProductId.trim()) ||
+                        (modelType === 'external_env' && (!reviewData?.source?.trim() || !reviewData?.summary?.trim()))
+                      }
                       className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                     >
                       {loading ? (

@@ -22,6 +22,7 @@ type ParseableModelType =
   | 'platform_product'
   | 'milestone'
   | 'external_pressure'
+  | 'external_env'
   | 'training'
   | 'event'
   | 'career'
@@ -200,6 +201,108 @@ ${rawText.substring(0, 4000)}`
         // Basic structures for now - can enhance later
         parsedData = { rawText }
         break
+
+      case 'external_env': {
+        const openai = getOpenAI()
+        const systemPrompt = `You are implementing ai-company-external-env-service.
+
+This service EXTRACTS structured external environment intelligence from articles, reports, or announcements about external signals, factors, and developments affecting a company.
+
+Input:
+- Freeform text describing external signals (GAO reports, congressional actions, industry trends, regulatory changes, etc.)
+
+Output:
+- A single JSON object matching CompanyExternalEnv fields
+- Null values are allowed when information is not present or cannot be inferred
+- Do not invent facts`
+
+        const userPrompt = `Extract structured external environment information from this text.
+
+----------------------------------------
+FIELDS TO INFER
+----------------------------------------
+
+SIGNAL BASICS
+- source              // String, required - Where the signal comes from: "GAO", "Congress", "Industry", "DoD", "Navy", etc.
+- category            // String, optional - Type of signal: "Budget", "Legislation", "Testing", "Ops", "Regulatory", etc.
+- summary             // String, required - Description of the external signal/development (2-4 sentences)
+- impact              // String, optional - Why this matters, what it means, significance (1-3 sentences)
+
+CHANGE INTELLIGENCE
+- deltaSummary            // String, optional - What materially changed vs prior state (e.g., "New requirement for 12 additional submarines", "Budget cut of $2B")
+- implementationTimeline  // String, optional - When this starts to matter (plain language, e.g., "Effective Q2 2026", "Rolls out over next 18 months", "Immediate")
+- leadAuthority           // String, optional - Who owns/drives this change (e.g., "Navy Acquisition Office", "House Armed Services Committee", "GAO")
+
+METADATA
+- confidenceLevel     // String, optional - One of: "low", "medium", "high" (based on source reliability and specificity)
+- timeHorizon         // String, optional - One of: "immediate", "near-term", "long-term" (when this will affect the company)
+
+----------------------------------------
+EXTRACTION RULES
+----------------------------------------
+- Extract ONLY information explicitly stated or clearly inferable from the text
+- For deltaSummary: Focus on what changed (new requirements, budget changes, policy shifts, etc.)
+- For implementationTimeline: Extract timing information if mentioned (dates, quarters, "immediate", "phased rollout", etc.)
+- For leadAuthority: Identify the organization/entity driving this change
+- For confidenceLevel: Assess based on source (official releases = "high", industry rumors = "low", etc.)
+- For timeHorizon: Infer from timeline information ("immediate" = within 3 months, "near-term" = 3-12 months, "long-term" = 12+ months)
+- Do NOT invent facts or dates
+- Use null when information is not present
+
+----------------------------------------
+OUTPUT FORMAT
+----------------------------------------
+Return ONLY valid JSON.
+
+Example output structure:
+{
+  "source": "GAO",
+  "category": "Budget",
+  "summary": "GAO report recommends increased funding for submarine programs, citing industrial base concerns and strategic requirements.",
+  "impact": "Could create opportunities for additional contracts and program expansion.",
+  "deltaSummary": "New recommendation for $500M additional funding above current budget request",
+  "implementationTimeline": "If approved, would take effect in FY2027 budget cycle",
+  "leadAuthority": "GAO Defense Capabilities and Management team",
+  "confidenceLevel": "high",
+  "timeHorizon": "near-term"
+}
+
+Text:
+${rawText.substring(0, 4000)}`
+
+        const response = await openai.chat.completions.create({
+          model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.2,
+        })
+
+        const parsed = JSON.parse(response.choices[0].message.content || '{}')
+        
+        // Validate confidenceLevel and timeHorizon enums
+        const validConfidenceLevels = ['low', 'medium', 'high']
+        const validTimeHorizons = ['immediate', 'near-term', 'long-term']
+        
+        parsedData = {
+          source: parsed.source || 'Unknown',
+          category: parsed.category || null,
+          summary: parsed.summary || rawText.substring(0, 500), // Fallback to first 500 chars
+          impact: parsed.impact || null,
+          deltaSummary: parsed.deltaSummary || null,
+          implementationTimeline: parsed.implementationTimeline || null,
+          leadAuthority: parsed.leadAuthority || null,
+          confidenceLevel: parsed.confidenceLevel && validConfidenceLevels.includes(parsed.confidenceLevel.toLowerCase()) 
+            ? parsed.confidenceLevel.toLowerCase() 
+            : null,
+          timeHorizon: parsed.timeHorizon && validTimeHorizons.includes(parsed.timeHorizon.toLowerCase())
+            ? parsed.timeHorizon.toLowerCase()
+            : null,
+        }
+        break
+      }
 
       // CompanyX types
       case 'training':
