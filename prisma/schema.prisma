@@ -2575,7 +2575,7 @@ model SkillTopic {
   marketValues     SkillTopicMarketValue[] // Market relevance
   pivotFrom        SkillTopicPivot[]       @relation("SkillTopicPivotFrom")
   pivotTo          SkillTopicPivot[]       @relation("SkillTopicPivotTo")
-  contributionSummaries ContributionSummary[]
+  // Note: ContributionSummary uses skillTopicIds array, not a direct relation
   brandNarratives  BrandNarrative[]
   
   @@index([workMeId])
@@ -2613,6 +2613,7 @@ model SkillItem {
   companyCommunityId     String?
   companyEmployeeCauseId String?
   memoId                 String?
+  memo                   Memo?   @relation(fields: [memoId], references: [id], onDelete: SetNull)
   
   // Relations
   skillTopic SkillTopic @relation(fields: [skillTopicId], references: [id], onDelete: Cascade)
@@ -2625,6 +2626,7 @@ model SkillItem {
   @@index([occurredAt])
   @@index([companyWorkId])
   @@index([evidenceType])
+  @@index([memoId])
 }
 
 // ============================================
@@ -2756,6 +2758,9 @@ model CompanyWork {
   
   // SkillItems that reference this work
   skillItems SkillItem[]
+  
+  // ContributionSummaries that reference this work
+  contributionSummaries ContributionSummary[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

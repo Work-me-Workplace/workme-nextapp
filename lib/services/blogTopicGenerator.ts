@@ -1,16 +1,31 @@
 /**
  * Blog Topic Generator Service
  * 
- * Generates reflection-based blog topics from SkillTopics, Market Value Intelligence,
- * Recent SkillItems, and CompanyWork references.
+ * ⚠️ COMMENTED OUT - Service not integrated, causes Prisma validation errors
+ * 
+ * This service was designed to generate reflection-based blog topics from SkillTopics,
+ * Market Value Intelligence, Recent SkillItems, and CompanyWork references.
+ * 
+ * STATUS: Not integrated into any API routes. Commented out to prevent build errors.
+ * 
+ * See: docs/SKILL_MODEL_STATUS.md for full documentation
  * 
  * Constraints:
  * - No "tips" or listicles
  * - Content must be experiential
  * - Blogs explain value, they do not create it
+ * 
+ * TO RE-ENABLE:
+ * 1. Uncomment this file
+ * 2. Ensure all Prisma relations are valid
+ * 3. Create API routes that use this service
+ * 4. Test thoroughly
  */
 
-import { prisma } from "@/lib/prisma";
+// import { prisma } from "@/lib/prisma";
+
+// ⚠️ COMMENTED OUT - Service not integrated, causes Prisma validation errors
+// See: docs/SKILL_MODEL_STATUS.md for full documentation
 
 export interface BlogTopicInput {
   skillTopicId: string;
@@ -30,12 +45,19 @@ export interface BlogTopic {
 /**
  * Generate 5 reflection-based blog topic options
  * 
+ * ⚠️ COMMENTED OUT - Not integrated, causes Prisma validation errors
+ * 
  * @param input - SkillTopic, CompanyWork, and context information
  * @returns Array of 5 blog topic options
  */
 export async function generateBlogTopics(
   input: BlogTopicInput
 ): Promise<BlogTopic[]> {
+  throw new Error(
+    "blogTopicGenerator service is commented out. See docs/SKILL_MODEL_STATUS.md"
+  );
+  
+  /* COMMENTED OUT - Uncomment when ready to integrate
   // Fetch SkillTopic with related data
   const skillTopic = await prisma.skillTopic.findUnique({
     where: { id: input.skillTopicId },
@@ -84,12 +106,16 @@ export async function generateBlogTopics(
   const topics = await generateTopicsWithAI(context);
 
   return topics;
+  */
 }
 
 /**
  * Build context for blog topic generation
+ * 
+ * ⚠️ COMMENTED OUT - Not integrated
  */
 function buildContext(skillTopic: any, companyWork: any | null) {
+  /* COMMENTED OUT
   const recentItems = skillTopic.skillItems.slice(0, 5);
   const marketContexts = skillTopic.marketValues.map((mv: any) => ({
     need: mv.marketNeed.name,
@@ -126,15 +152,20 @@ function buildContext(skillTopic: any, companyWork: any | null) {
         }
       : null,
   };
+  */
+  return {} as any;
 }
 
 /**
  * Generate blog topics using AI
  * 
+ * ⚠️ COMMENTED OUT - Not integrated
+ * 
  * In production, this would call OpenAI with a carefully crafted prompt.
  * For now, this is a placeholder that returns example topics.
  */
 async function generateTopicsWithAI(context: any): Promise<BlogTopic[]> {
+  /* COMMENTED OUT
   // TODO: Implement OpenAI integration
   // For now, return example topics based on context
 
@@ -202,6 +233,8 @@ async function generateTopicsWithAI(context: any): Promise<BlogTopic[]> {
   }
 
   return topics.slice(0, 5);
+  */
+  return [];
 }
 
 /**
