@@ -77,8 +77,8 @@ model WorkMe {
 
   // Company Products Relations
   externalCompanyPressures ExternalCompanyPressure[]
-  companyExternalEnv        CompanyExternalEnv[]    @relation("CompanyExternalEnvWorkMe")
-  Company                   Company?                @relation(fields: [companyId], references: [id])
+  companyExternalEnv       CompanyExternalEnv[]      @relation("CompanyExternalEnvWorkMe")
+  Company                  Company?                  @relation(fields: [companyId], references: [id])
 
   // Product Relations
   createdSeniorLeaderEmailProducts ProductSeniorLeaderEmail[] @relation("ProductSeniorLeaderEmailCreator")
@@ -91,11 +91,14 @@ model WorkMe {
   linkedInPosts LinkedInPost[] @relation("WorkMeLinkedInPosts")
 
   // Work Value Model Relations
-  skillTopics        SkillTopic[]
-  myContributions    MyContribution[]
+  skillTopics           SkillTopic[]
+  myContributions       MyContribution[]
   contributionSummaries ContributionSummary[]
-  brandNarratives    BrandNarrative[]
-  brandPositionings  BrandPositioning[]
+  brandNarratives       BrandNarrative[]
+  brandPositionings     BrandPositioning[]
+
+  // Concept Draft Relations
+  conceptDrafts ConceptDraft[] @relation("WorkMeConceptDrafts")
 
   @@index([handle])
   @@index([companyId])
@@ -258,6 +261,7 @@ model Company {
   newsArtifacts   CompanyNewsArtifact[]
   externalEnv     CompanyExternalEnv[]
   companyWork     CompanyWork[]
+  conceptDrafts   ConceptDraft[]
 
   @@index([name])
 }
@@ -1652,11 +1656,11 @@ model CompanyPlatformProduct {
   // When the platform class began (lead ship laid down)
   classStartDate DateTime?
 
-  units      CompanyPlatformUnit[]
-  statements CompanyPlatformStatement[]
-  updates    CompanyPlatformUpdate[]
-  evidence   ExternalEvidence[]
-  externalEnv CompanyExternalEnv[] @relation("CompanyExternalEnvPlatformProduct")
+  units       CompanyPlatformUnit[]
+  statements  CompanyPlatformStatement[]
+  updates     CompanyPlatformUpdate[]
+  evidence    ExternalEvidence[]
+  externalEnv CompanyExternalEnv[]       @relation("CompanyExternalEnvPlatformProduct")
 
   @@index([name])
   @@index([platformSeries])
@@ -1702,10 +1706,10 @@ model CompanyPlatformUnit {
   description String?
 
   // Raw signals & updates
-  statements CompanyPlatformUnitStatement[]
-  updates    CompanyPlatformUnitUpdate[]
-  milestones CompanyMilestone[]
-  externalEnv CompanyExternalEnv[] @relation("CompanyExternalEnvPlatformUnit")
+  statements  CompanyPlatformUnitStatement[]
+  updates     CompanyPlatformUnitUpdate[]
+  milestones  CompanyMilestone[]
+  externalEnv CompanyExternalEnv[]           @relation("CompanyExternalEnvPlatformUnit")
 
   // Stakeholders with meaning (not employees, not org chart)
   namesake     CompanyPlatformUnitNamesake?
@@ -2083,7 +2087,7 @@ model CompanyNewsArtifact {
   platformStatements     CompanyPlatformStatement[]
   platformUnitStatements CompanyPlatformUnitStatement[]
   milestones             CompanyMilestone[]
-  externalEnv            CompanyExternalEnv[] @relation("CompanyExternalEnvNewsArtifact")
+  externalEnv            CompanyExternalEnv[]           @relation("CompanyExternalEnvNewsArtifact")
 
   @@index([companyId])
   @@index([sourceName])
@@ -2108,19 +2112,19 @@ model CompanyExternalEnv {
   // Ownership
   companyId String
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  workMeId  String   @db.Uuid
-  workMe    WorkMe   @relation("CompanyExternalEnvWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
+  workMeId  String  @db.Uuid
+  workMe    WorkMe  @relation("CompanyExternalEnvWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
   // Signal basics
-  source    String  // e.g., "GAO", "Congress", "Industry", "DoD", "Navy"
-  category  String? // e.g., "Budget", "Legislation", "Testing", "Ops", "Regulatory"
-  summary   String  // Description of the external signal/development
-  impact    String? // Why this matters, what it means, significance
+  source   String // e.g., "GAO", "Congress", "Industry", "DoD", "Navy"
+  category String? // e.g., "Budget", "Legislation", "Testing", "Ops", "Regulatory"
+  summary  String // Description of the external signal/development
+  impact   String? // Why this matters, what it means, significance
 
   // 🔍 Change Intelligence
-  deltaSummary            String? // What materially changed vs prior state
-  implementationTimeline  String? // When this starts to matter (plain language)
-  leadAuthority           String? // Who owns/drives this change
+  deltaSummary           String? // What materially changed vs prior state
+  implementationTimeline String? // When this starts to matter (plain language)
+  leadAuthority          String? // Who owns/drives this change
 
   // Metadata
   confidenceLevel String? // "low" | "medium" | "high" (optional, future-safe)
@@ -2555,29 +2559,29 @@ model LinkedInPost {
 // Represents a durable capability (e.g. Narrative Development, Trust Preservation)
 // Stable across roles, orgs, and time. Used for growth reflection and portability assessment.
 model SkillTopic {
-  id          String   @id @default(uuid())
-  workMeId    String   @db.Uuid
-  title       String   // e.g. "Narrative Development", "Trust Preservation"
-  description String?  // Human-readable explanation of what this capability means
-  category    String?  // Optional categorization (e.g. "Communication", "Leadership", "Technical")
-  
+  id          String  @id @default(uuid())
+  workMeId    String  @db.Uuid
+  title       String // e.g. "Narrative Development", "Trust Preservation"
+  description String? // Human-readable explanation of what this capability means
+  category    String? // Optional categorization (e.g. "Communication", "Leadership", "Technical")
+
   // Growth tracking
   firstDemonstratedAt DateTime? // When was the first SkillItem attached?
   lastDemonstratedAt  DateTime? // When was the most recent SkillItem attached?
-  
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
-  workMe           WorkMe                  @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-  skillItems       SkillItem[]             // Evidence-level executions
-  marketValues     SkillTopicMarketValue[] // Market relevance
-  pivotFrom        SkillTopicPivot[]       @relation("SkillTopicPivotFrom")
-  pivotTo          SkillTopicPivot[]       @relation("SkillTopicPivotTo")
+  workMe          WorkMe                  @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  skillItems      SkillItem[] // Evidence-level executions
+  marketValues    SkillTopicMarketValue[] // Market relevance
+  pivotFrom       SkillTopicPivot[]       @relation("SkillTopicPivotFrom")
+  pivotTo         SkillTopicPivot[]       @relation("SkillTopicPivotTo")
   // Note: ContributionSummary uses skillTopicIds array, not a direct relation
-  brandNarratives  BrandNarrative[]
-  
+  brandNarratives BrandNarrative[]
+
   @@index([workMeId])
   @@index([title])
   @@index([category])
@@ -2590,21 +2594,21 @@ model SkillTopic {
 // Always attached to exactly one SkillTopic
 // No naked skills without evidence
 model SkillItem {
-  id          String   @id @default(uuid())
-  skillTopicId String  @db.Uuid
-  
+  id           String @id @default(uuid())
+  skillTopicId String @db.Uuid
+
   // Evidence description
-  title       String   // Brief description of the evidence
-  description String?  // Detailed description of what was done
-  evidenceType String?  // "email", "event", "artifact", "meeting", "delivery", etc.
-  
+  title        String // Brief description of the evidence
+  description  String? // Detailed description of what was done
+  evidenceType String? // "email", "event", "artifact", "meeting", "delivery", etc.
+
   // When this evidence occurred
-  occurredAt  DateTime @default(now())
-  
+  occurredAt DateTime @default(now())
+
   // Optional reference to company work (doesn't claim ownership, just references)
   companyWorkId String?
   companyWork   CompanyWork? @relation(fields: [companyWorkId], references: [id], onDelete: SetNull)
-  
+
   // Optional reference to specific company work types (polymorphic)
   companyEventId         String?
   companyCampaignId      String?
@@ -2614,14 +2618,14 @@ model SkillItem {
   companyEmployeeCauseId String?
   memoId                 String?
   memo                   Memo?   @relation(fields: [memoId], references: [id], onDelete: SetNull)
-  
+
   // Relations
   skillTopic SkillTopic @relation(fields: [skillTopicId], references: [id], onDelete: Cascade)
-  
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([skillTopicId])
   @@index([occurredAt])
   @@index([companyWorkId])
@@ -2638,17 +2642,17 @@ model SkillItem {
 // MarketNeed = Market contexts where skills matter
 // e.g. "Change Enablement", "Tech Adoption", "Crisis Communication"
 model MarketNeed {
-  id          String   @id @default(uuid())
-  name        String   @unique // e.g. "Change Enablement"
-  description String?  // What this market need represents
-  category    String?  // Optional categorization
-  
+  id          String  @id @default(uuid())
+  name        String  @unique // e.g. "Change Enablement"
+  description String? // What this market need represents
+  category    String? // Optional categorization
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   skillTopicValues SkillTopicMarketValue[]
-  
+
   @@index([name])
   @@index([category])
 }
@@ -2656,23 +2660,23 @@ model MarketNeed {
 // SkillTopicMarketValue = Join model connecting SkillTopics to MarketNeeds
 // Qualitative relevance, not scored rankings
 model SkillTopicMarketValue {
-  id            String   @id @default(uuid())
-  skillTopicId  String   @db.Uuid
-  marketNeedId  String
-  
+  id           String @id @default(uuid())
+  skillTopicId String @db.Uuid
+  marketNeedId String
+
   // Qualitative relevance (NOT a score)
-  relevanceLevel String?  // "high", "medium", "emerging", "declining" - qualitative only
+  relevanceLevel String? // "high", "medium", "emerging", "declining" - qualitative only
   useCases       String[] @default([]) // Array of specific use cases where this skill matters
-  rationale      String?  // WHY the skill matters in this market context
-  
+  rationale      String? // WHY the skill matters in this market context
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   skillTopic SkillTopic @relation(fields: [skillTopicId], references: [id], onDelete: Cascade)
   marketNeed MarketNeed @relation(fields: [marketNeedId], references: [id], onDelete: Cascade)
-  
+
   @@unique([skillTopicId, marketNeedId])
   @@index([skillTopicId])
   @@index([marketNeedId])
@@ -2686,27 +2690,27 @@ model SkillTopicMarketValue {
 // They should be suggestible by AI and confirmed by the user.
 
 model SkillTopicPivot {
-  id        String   @id @default(uuid())
+  id          String @id @default(uuid())
   fromTopicId String @db.Uuid
   toTopicId   String @db.Uuid
-  
+
   // Pivot metadata
-  pivotType String?  // "adjacent", "cross-domain", "up-level"
+  pivotType  String? // "adjacent", "cross-domain", "up-level"
   rationale  String? // Why this pivot makes sense (e.g. "Both require narrative skills")
   confidence String? // "high", "medium", "low" - user or AI assessment
-  
+
   // User confirmation
   confirmedByUser Boolean @default(false)
   suggestedByAI   Boolean @default(false)
-  
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   fromTopic SkillTopic @relation("SkillTopicPivotFrom", fields: [fromTopicId], references: [id], onDelete: Cascade)
   toTopic   SkillTopic @relation("SkillTopicPivotTo", fields: [toTopicId], references: [id], onDelete: Cascade)
-  
+
   @@unique([fromTopicId, toTopicId])
   @@index([fromTopicId])
   @@index([toTopicId])
@@ -2724,47 +2728,47 @@ model SkillTopicPivot {
 // CompanyWork = Generic container for company-owned work
 // This is a polymorphic reference point that can link to specific CompanyX models
 model CompanyWork {
-  id        String   @id @default(uuid())
+  id        String @id @default(uuid())
   companyId String
-  
+
   // Polymorphic reference (one of these will be set)
   companyEventId         String?
-  companyCampaignId       String?
-  companyTrainingId       String?
-  companyImpactEventId    String?
+  companyCampaignId      String?
+  companyTrainingId      String?
+  companyImpactEventId   String?
   companyCommunityId     String?
   companyEmployeeCauseId String?
   companyBenefitsId      String?
   companyCareerId        String?
-  
+
   // Generic metadata
   title       String
   description String?
   workType    String? // "event", "campaign", "training", etc.
-  
+
   // Relations to specific company work types
   companyEvent         CompanyEvent?         @relation(fields: [companyEventId], references: [id], onDelete: SetNull)
   companyCampaign      CompanyCampaign?      @relation(fields: [companyCampaignId], references: [id], onDelete: SetNull)
-  companyTraining       CompanyTraining?      @relation(fields: [companyTrainingId], references: [id], onDelete: SetNull)
+  companyTraining      CompanyTraining?      @relation(fields: [companyTrainingId], references: [id], onDelete: SetNull)
   companyImpactEvent   CompanyImpactEvent?   @relation(fields: [companyImpactEventId], references: [id], onDelete: SetNull)
   companyCommunity     CompanyCommunity?     @relation(fields: [companyCommunityId], references: [id], onDelete: SetNull)
   companyEmployeeCause CompanyEmployeeCause? @relation(fields: [companyEmployeeCauseId], references: [id], onDelete: SetNull)
   companyBenefits      CompanyBenefits?      @relation(fields: [companyBenefitsId], references: [id], onDelete: SetNull)
   companyCareer        CompanyCareer?        @relation(fields: [companyCareerId], references: [id], onDelete: SetNull)
-  company              Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
+  company              Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
   // Personal contributions (user-specific views)
   contributions MyContribution[]
-  
+
   // SkillItems that reference this work
   skillItems SkillItem[]
-  
+
   // ContributionSummaries that reference this work
   contributionSummaries ContributionSummary[]
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([companyId])
   @@index([workType])
   @@index([companyEventId])
@@ -2774,26 +2778,26 @@ model CompanyWork {
 // MyContribution = User-specific view of their contribution to CompanyWork
 // Extracts personal value without claiming ownership
 model MyContribution {
-  id            String   @id @default(uuid())
-  workMeId      String   @db.Uuid
+  id            String @id @default(uuid())
+  workMeId      String @db.Uuid
   companyWorkId String
-  
+
   // Contribution description
-  role          String?  // e.g. "Planning", "Messaging", "Execution"
-  description   String?  // What the user specifically contributed
+  role             String? // e.g. "Planning", "Messaging", "Execution"
+  description      String? // What the user specifically contributed
   contributionType String? // "lead", "support", "collaboration", etc.
-  
+
   // Time bounds
-  startedAt     DateTime?
-  completedAt   DateTime?
-  
+  startedAt   DateTime?
+  completedAt DateTime?
+
   // Relations
   workMe      WorkMe      @relation(fields: [workMeId], references: [id], onDelete: Cascade)
   companyWork CompanyWork @relation(fields: [companyWorkId], references: [id], onDelete: Cascade)
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@unique([workMeId, companyWorkId])
   @@index([workMeId])
   @@index([companyWorkId])
@@ -2807,31 +2811,31 @@ model MyContribution {
 // No pre-scoring, no performance ratings, no manager-required inputs.
 
 model ContributionSummary {
-  id        String   @id @default(uuid())
-  workMeId  String   @db.Uuid
-  
+  id       String @id @default(uuid())
+  workMeId String @db.Uuid
+
   // Time bounds for this summary
   periodStart DateTime
   periodEnd   DateTime
-  periodType  String?  // "annual", "project", "quarterly", etc.
-  
+  periodType  String? // "annual", "project", "quarterly", etc.
+
   // Summary content
-  title       String?  // e.g. "2025 Annual Contribution Summary"
-  summary     String?  // AI-generated or user-written summary of contributions
-  
+  title   String? // e.g. "2025 Annual Contribution Summary"
+  summary String? // AI-generated or user-written summary of contributions
+
   // Attached SkillTopics (what capabilities were demonstrated)
   skillTopicIds String[] @default([]) // Array of SkillTopic IDs
-  
+
   // Optional project/work context
   companyWorkId String?
   companyWork   CompanyWork? @relation(fields: [companyWorkId], references: [id], onDelete: SetNull)
-  
+
   // Relations
   workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([workMeId])
   @@index([periodStart])
   @@index([periodEnd])
@@ -2847,45 +2851,89 @@ model ContributionSummary {
 // Supports different surfaces (LinkedIn, bio, about section).
 
 model BrandNarrative {
-  id          String   @id @default(uuid())
-  workMeId    String   @db.Uuid
-  skillTopicId String   @db.Uuid
-  
+  id           String @id @default(uuid())
+  workMeId     String @db.Uuid
+  skillTopicId String @db.Uuid
+
   // Narrative content
-  narrative   String   // How this SkillTopic translates to a brand narrative
-  surface     String?  // "linkedin", "bio", "about", "portfolio", etc.
-  
+  narrative String // How this SkillTopic translates to a brand narrative
+  surface   String? // "linkedin", "bio", "about", "portfolio", etc.
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
-  workMe    WorkMe    @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  workMe     WorkMe     @relation(fields: [workMeId], references: [id], onDelete: Cascade)
   skillTopic SkillTopic @relation(fields: [skillTopicId], references: [id], onDelete: Cascade)
-  
+
   @@index([workMeId])
   @@index([skillTopicId])
   @@index([surface])
 }
 
 model BrandPositioning {
-  id        String   @id @default(uuid())
-  workMeId  String   @db.Uuid
-  
+  id       String @id @default(uuid())
+  workMeId String @db.Uuid
+
   // Positioning statement
   positioning String // Overall brand positioning statement
   surface     String? // "linkedin", "bio", "about", etc.
-  
+
   // Derived from SkillTopics (read-only consumer)
   primarySkillTopicIds String[] @default([]) // Array of SkillTopic IDs that inform this positioning
-  
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-  
+
   @@index([workMeId])
   @@index([surface])
+}
+
+// ============================================
+// CONCEPT DRAFT MODEL
+// ============================================
+// ConceptDraft captures early-stage ideas before they become formal plans
+// Minimal, intentional shape - designed to pass the "can I agree with this before any plan exists?" test
+
+enum ConceptDraftStatus {
+  DRAFT
+  CONFIRMED
+  ARCHIVED
+}
+
+model ConceptDraft {
+  id        String  @id @default(uuid())
+  workMeId  String  @db.Uuid
+  companyId String? // Optional - can be personal or company-scoped
+
+  // Core fields (minimal, intentional)
+  title       String
+  summary     String? // Text field
+  howItWorks  String? // Text field
+  whoImpacted String[] @default([]) // Array of strings or enum values
+  example     String? // Text field
+
+  // Timing fields (soft, flexible - not hard dates)
+  timeframe      String? // e.g. "FY25", "CY26", "Next 6–12 months"
+  potentialStart String? // e.g. "Post-town hall", "Q2", "After reorg"
+
+  // Status
+  status ConceptDraftStatus @default(DRAFT)
+
+  // Relations
+  workMe  WorkMe   @relation("WorkMeConceptDrafts", fields: [workMeId], references: [id], onDelete: Cascade)
+  company Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workMeId])
+  @@index([companyId])
+  @@index([status])
+  @@index([createdAt])
 }

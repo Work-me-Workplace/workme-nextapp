@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Search, FileText, Mail, Twitter, Newspaper, Radio, Plus } from 'lucide-react'
+import { Search, FileText, Mail, Twitter, Newspaper, Radio, Plus, Archive } from 'lucide-react'
 import api from '@/lib/api'
 
 interface SignalArtifact {
@@ -103,6 +103,14 @@ export default function SignalLandingPage() {
       path: '/signal/clip',
       icon: Newspaper,
       color: 'indigo',
+      available: true,
+    },
+    {
+      name: 'News Artifacts',
+      description: 'Browse and manage all saved news articles',
+      path: '/signal/news-artifacts',
+      icon: Archive,
+      color: 'blue',
       available: true,
     },
   ]

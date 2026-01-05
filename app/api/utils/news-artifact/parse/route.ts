@@ -197,10 +197,16 @@ ${rawText.substring(0, 4000)}`
       case 'platform_statement':
       case 'platform_product':
       case 'milestone':
-      case 'external_pressure':
         // Basic structures for now - can enhance later
         parsedData = { rawText }
         break
+
+      // external_pressure is deprecated - use external_env instead
+      case 'external_pressure':
+        return NextResponse.json(
+          { success: false, error: 'external_pressure is deprecated. Please use external_env instead.' },
+          { status: 400 }
+        )
 
       case 'external_env': {
         const openai = getOpenAI()

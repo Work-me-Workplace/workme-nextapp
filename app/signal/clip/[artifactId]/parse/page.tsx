@@ -8,7 +8,7 @@ import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { refreshWorkMe } from '@/lib/workme.client'
 import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Wand2, Loader2, CheckCircle, ArrowLeft, AlertCircle } from 'lucide-react'
+import { Wand2, Loader2, CheckCircle, ArrowLeft, AlertCircle, Edit2, X } from 'lucide-react'
 
 type ParseableModelType =
   | 'platform_unit_update'
@@ -16,7 +16,6 @@ type ParseableModelType =
   | 'platform_statement'
   | 'platform_product'
   | 'milestone'
-  | 'external_pressure'
   | 'external_env'
   | 'training'
   | 'event'
@@ -63,6 +62,8 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
   const [platformProductId, setPlatformProductId] = useState('')
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [editableText, setEditableText] = useState<string>('')
+  const [isEditingText, setIsEditingText] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -106,6 +107,7 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
 
       if (response.data.success && response.data.data) {
         setArtifact(response.data.data)
+        setEditableText(response.data.data.rawText)
       } else {
         setError(response.data.error || 'Failed to load article')
       }
@@ -118,7 +120,8 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
   }
 
   async function handleAIParse() {
-    if (!artifact?.rawText) {
+    const textToParse = editableText.trim() || artifact?.rawText
+    if (!textToParse) {
       setError('No article text available')
       return
     }
@@ -131,10 +134,11 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
     try {
       setParsing(true)
       setError(null)
+      setIsEditingText(false)
       const response = await api.post('/api/utils/news-artifact/parse', {
-        artifactId: artifact.id,
+        artifactId: artifact?.id,
         modelType,
-        text: artifact.rawText,
+        text: textToParse,
       })
 
       if (response.data.success && response.data.data) {
@@ -318,7 +322,6 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                       </optgroup>
                       <optgroup label="Company Models">
                         <option value="milestone">Milestone</option>
-                        <option value="external_pressure">External Pressure</option>
                         <option value="external_env">External Environment</option>
                       </optgroup>
                       <optgroup label="CompanyX Models">
@@ -339,10 +342,50 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
 
                   {artifact && (
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Article Preview</p>
-                      <p className="text-sm text-gray-600 line-clamp-3">
-                        {artifact.headline || artifact.rawText.substring(0, 200)}...
-                      </p>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium text-gray-700">Article Text</p>
+                        {!isEditingText ? (
+                          <button
+                            onClick={() => setIsEditingText(true)}
+                            className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                          >
+                            <Edit2 className="w-4 h-4 mr-1" />
+                            Edit
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setIsEditingText(false)
+                              setEditableText(artifact.rawText)
+                            }}
+                            className="text-sm text-gray-600 hover:text-gray-700 flex items-center"
+                          >
+                            <X className="w-4 h-4 mr-1" />
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                      {isEditingText ? (
+                        <textarea
+                          value={editableText}
+                          onChange={(e) => setEditableText(e.target.value)}
+                          rows={8}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                          placeholder="Article text..."
+                        />
+                      ) : (
+                        <div className="space-y-2">
+                          {artifact.headline && (
+                            <p className="text-sm font-semibold text-gray-900">{artifact.headline}</p>
+                          )}
+                          <p className="text-sm text-gray-600 line-clamp-3">
+                            {editableText || artifact.rawText}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {(editableText || artifact.rawText).length} characters
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -376,6 +419,9 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                       <AlertCircle className="w-5 h-5 text-red-600 mr-2 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm text-red-800">{error}</p>
+                        <p className="text-xs text-red-700 mt-1">
+                          You can edit the article text above and try parsing again, or go back to start over.
+                        </p>
                       </div>
                     </div>
                   )}

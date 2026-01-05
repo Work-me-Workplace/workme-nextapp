@@ -6,7 +6,6 @@
  * - Digital Signage Products
  * - Flyer/Poster (if exists)
  * - Senior Leader Email (if exists)
- * - Comms Plan (if exists)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
