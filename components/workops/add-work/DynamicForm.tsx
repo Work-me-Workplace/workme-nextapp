@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import api from '@/lib/api'
 import type { WorkOpsSourceType } from './AddWorkModal'
 import { WorkOpsItemType, WorkOpsUrgency, WorkOpsSource } from '@prisma/client'
+import SmartWorkForm from './SmartWorkForm'
 import BossTaskingForm from './forms/BossTaskingForm'
 import CaptureForm from './forms/CaptureForm'
 import ManualEntryForm from './forms/ManualEntryForm'
@@ -64,17 +65,35 @@ export default function DynamicForm({ source, outlookId, onBack, onSuccess }: Dy
         </div>
       )}
 
-      {source === 'boss_tasking' && (
-        <BossTaskingForm onSubmit={handleSubmit} loading={loading} />
-      )}
+      {/* New 3-pronged approach with AI */}
       {source === 'capture' && (
-        <CaptureForm onSubmit={handleSubmit} loading={loading} />
+        <SmartWorkForm 
+          category="my_thoughts" 
+          outlookId={outlookId} 
+          onBack={onBack} 
+          onSuccess={onSuccess} 
+        />
       )}
-      {source === 'manual' && (
-        <ManualEntryForm onSubmit={handleSubmit} loading={loading} />
+      {source === 'boss_tasking' && (
+        <SmartWorkForm 
+          category="boss" 
+          outlookId={outlookId} 
+          onBack={onBack} 
+          onSuccess={onSuccess} 
+        />
       )}
       {source === 'workforce_stuff' && (
-        <WorkforceStuffForm onSubmit={handleSubmit} loading={loading} />
+        <SmartWorkForm 
+          category="company_stuff" 
+          outlookId={outlookId} 
+          onBack={onBack} 
+          onSuccess={onSuccess} 
+        />
+      )}
+
+      {/* Legacy forms (keeping for backward compatibility) */}
+      {source === 'manual' && (
+        <ManualEntryForm onSubmit={handleSubmit} loading={loading} />
       )}
       {source === 'company_milestones' && (
         <CompanyMilestonesForm onSubmit={handleSubmit} loading={loading} />

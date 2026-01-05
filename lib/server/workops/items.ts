@@ -77,3 +77,42 @@ export async function listWorkOpsItems(outlookId: string) {
   return items
 }
 
+/**
+ * Update a WorkOpsItem
+ */
+export async function updateWorkOpsItem(id: string, data: Partial<{
+  title: string
+  body: string | null
+  itemType: WorkOpsItemType
+  urgency: WorkOpsUrgency | null
+  status: any // WorkOpsStatus
+  source: WorkOpsSource | null
+  priority: number | null
+  dueDate: Date | null
+  assignedBy: string | null
+  // Whiteboard fields (will be added to schema)
+  positionX: number | null
+  positionY: number | null
+  groupId: string | null
+  targetQuarter: string | null
+}>) {
+  console.log('[updateWorkOpsItem]', { id, updates: Object.keys(data) })
+
+  // Filter out undefined values
+  const updateData: any = {}
+  Object.entries(data).forEach(([key, value]) => {
+    if (value !== undefined) {
+      updateData[key] = value
+    }
+  })
+
+  const item = await prisma.workOpsItem.update({
+    where: { id },
+    data: updateData,
+  })
+
+  console.log('[updateWorkOpsItem] SUCCESS', { itemId: item.id })
+
+  return item
+}
+
