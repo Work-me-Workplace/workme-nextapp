@@ -120,15 +120,15 @@ export default function MemosPage() {
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Work Memos</h1>
-                <p className="text-gray-600 mt-2">Capture and preserve meaningful work moments</p>
+                <h1 className="text-3xl font-bold text-gray-900">Personal Branding</h1>
+                <p className="text-gray-600 mt-2">Capture work moments and build your professional brand</p>
               </div>
               <Link
                 href="/mywork/memos/new"
                 className="flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
               >
                 <Plus className="w-5 h-5" />
-                <span>Capture Work Moment</span>
+                <span>New Reflection</span>
               </Link>
             </div>
 
@@ -142,14 +142,14 @@ export default function MemosPage() {
             {memos.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
                 <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No memos yet</h3>
-                <p className="text-gray-600 mb-6">Start capturing meaningful work moments</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No reflections yet</h3>
+                <p className="text-gray-600 mb-6">Start capturing meaningful work moments to build your personal brand</p>
                 <Link
                   href="/mywork/memos/new"
                   className="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                 >
                   <Plus className="w-5 h-5" />
-                  <span>Create Your First Memo</span>
+                  <span>Create Your First Reflection</span>
                 </Link>
               </div>
             ) : (

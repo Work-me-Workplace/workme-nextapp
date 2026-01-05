@@ -7,7 +7,7 @@ import SidebarNav from '@/components/mywork/SidebarNav'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { getDashboard, refreshDashboard, type WorkProduct } from '@/lib/dashboard.client'
 import api from '@/lib/api'
-import { Mail, Image, Monitor, FileText, Plus, Eye } from 'lucide-react'
+import { Mail, Image, Monitor, FileText, Plus, Eye, MessageSquare } from 'lucide-react'
 
 // Normalize text - convert all caps to title case, handle underscores (fallback for edge cases)
 function normalizeTitle(text: string | null | undefined): string {
@@ -65,6 +65,14 @@ const productTypeConfig = {
     colorClass: 'text-orange-600',
     createPath: '/mywork/seniorleader/build',
     viewPath: (id: string) => `/signal/${id}`,
+  },
+  comms_plan: {
+    name: 'Comms Plan',
+    icon: MessageSquare,
+    color: 'green',
+    colorClass: 'text-green-600',
+    createPath: '/mywork/products/comms-plan/new',
+    viewPath: (id: string) => `/mywork/products/comms-plan/${id}`,
   },
 }
 

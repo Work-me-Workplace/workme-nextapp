@@ -104,11 +104,11 @@ export default function NewMemoPage() {
                 className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-4"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Memos
+                Back to Personal Branding
               </Link>
-              <h1 className="text-3xl font-bold text-gray-900">Capture a Work Moment</h1>
+              <h1 className="text-3xl font-bold text-gray-900">New Reflection</h1>
               <p className="text-gray-600 mt-2">
-                Record what happened, why it matters, and what you contributed
+                Capture a meaningful work moment to build your personal brand
               </p>
             </div>
 
@@ -242,7 +242,7 @@ export default function NewMemoPage() {
                   className="flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
                 >
                   <Save className="w-5 h-5" />
-                  <span>{loading ? 'Saving...' : 'Save Memo'}</span>
+                  <span>{loading ? 'Saving...' : 'Save Reflection'}</span>
                 </button>
               </div>
             </form>

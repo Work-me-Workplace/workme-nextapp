@@ -40,7 +40,7 @@ export default function SidebarNav() {
     if (path === '/mycompany/senior-leaders') return pathname?.startsWith(path)
     if (path === '/mycompany/products') return pathname?.startsWith(path) || pathname?.startsWith('/mycompany/platforms')
     if (path === '/mycompany/external-pressures') return pathname?.startsWith(path)
-    if (path === '/mywork/memos') return pathname?.startsWith(path)
+    if (path === '/mywork/memos') return pathname?.startsWith(path) || pathname?.startsWith('/mywork/linkedin')
     if (path === '/mywork/products') return pathname === path || pathname?.startsWith('/mywork/digital-signage')
     if (path === '/mywork/active') return pathname === path
     if (path === '/mywork/team') return pathname === path
@@ -75,7 +75,7 @@ export default function SidebarNav() {
     {
       name: 'Mywork',
       items: [
-        { name: 'Work Memos', path: '/mywork/memos', icon: BookOpen },
+        { name: 'Personal Branding', path: '/mywork/memos', icon: BookOpen },
         { name: 'Work Products', path: '/mywork/products', icon: Package },
         { name: "Stuff I'm Working On", path: '/mywork/active', icon: CheckSquare },
         { name: 'Team Members', path: '/mywork/team', icon: Users },

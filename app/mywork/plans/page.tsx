@@ -3,11 +3,11 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Package, Eye, Calendar, Plus, CheckSquare, Monitor, ClipboardList, Lightbulb } from 'lucide-react'
+import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
+import { Calendar, Lightbulb } from 'lucide-react'
 
-export default function MyWorkHubPage() {
+export default function PlansPage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -32,33 +32,19 @@ export default function MyWorkHubPage() {
     )
   }
 
-  const workCards = [
+  const planCards = [
     {
-      title: 'Products',
-      description: 'View and manage all your work products',
-      icon: Package,
-      href: '/mywork/products',
+      title: 'Event Planner',
+      description: 'Plan and organize your events',
+      icon: Calendar,
+      href: '/mywork/plans/event-planner',
       color: 'blue',
     },
     {
-      title: 'Plans',
-      description: 'Event Planner and Concept Drafter',
-      icon: ClipboardList,
-      href: '/mywork/plans',
-      color: 'green',
-    },
-    {
-      title: 'Active Work',
-      description: 'See what you\'re currently working on',
-      icon: CheckSquare,
-      href: '/mywork/active',
-      color: 'purple',
-    },
-    {
-      title: 'Events',
-      description: 'View and manage events',
-      icon: Calendar,
-      href: '/mywork/events',
+      title: 'Concept Drafter',
+      description: 'Draft and develop concepts',
+      icon: Lightbulb,
+      href: '/mywork/plans/concept-drafter',
       color: 'orange',
     },
   ]
@@ -87,13 +73,21 @@ export default function MyWorkHubPage() {
         <main className="flex-1">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">My Work</h1>
-              <p className="text-gray-600 mt-2">Your hub for building, viewing, and planning work products</p>
+              <Link
+                href="/mywork"
+                className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm"
+              >
+                ← Back to MyWork
+              </Link>
+              <div className="mb-6">
+                <h1 className="text-3xl font-bold text-gray-900">Plans</h1>
+                <p className="text-gray-600 mt-2">Event Planner and Concept Drafter</p>
+              </div>
             </div>
 
-            {/* Work Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {workCards.map((card) => {
+            {/* Plan Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+              {planCards.map((card) => {
                 const Icon = card.icon
                 const colorClasses = {
                   blue: 'border-blue-500 hover:border-blue-600 bg-blue-50',
@@ -128,7 +122,7 @@ export default function MyWorkHubPage() {
                       </div>
                     </div>
                     <div className="mt-4 flex items-center text-sm font-medium text-gray-500 group-hover:text-gray-700 transition">
-                      <span>View →</span>
+                      <span>Open →</span>
                     </div>
                   </Link>
                 )
@@ -140,3 +134,4 @@ export default function MyWorkHubPage() {
     </div>
   )
 }
+
