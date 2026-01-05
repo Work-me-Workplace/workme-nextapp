@@ -10,9 +10,30 @@ export async function GET(request: Request) {
     // Auth - Verify Firebase token
     const { firebaseId } = await verifyAuth(request)
     
-    // Load WorkMe identity
-    await loadWorkMe(firebaseId)
+    // Load WorkMe identity to get companyId
+    const workMe = await loadWorkMe(firebaseId)
+    
+    // Get companyId from URL params or use WorkMe's companyId
+    const { searchParams } = new URL(request.url)
+    const companyId = searchParams.get('companyId') || workMe.companyId
+    
+    if (!companyId) {
+      return NextResponse.json(
+        { success: false, error: 'companyId is required' },
+        { status: 400 }
+      )
+    }
+    
+    // Validate that the requested companyId matches the user's companyId for security
+    if (companyId !== workMe.companyId) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: companyId does not match user\'s company' },
+        { status: 403 }
+      )
+    }
 
+    // TODO: Add companyId field to CompanyPlatformProduct schema and filter by it
+    // For now, we validate companyId but return all products (schema update needed)
     const products = await prisma.companyPlatformProduct.findMany({
       select: {
         id: true,
@@ -22,6 +43,8 @@ export async function GET(request: Request) {
       },
       orderBy: { name: 'asc' },
     })
+
+    console.log(`[API GET /api/company/products/platform/list] Returning ${products.length} products for companyId: ${companyId}`)
 
     return NextResponse.json({
       success: true,

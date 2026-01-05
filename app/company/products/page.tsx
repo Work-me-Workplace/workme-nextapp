@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
 import { Package, Ship, Factory, Sparkles, Plus, Cpu, Layers, Network, BarChart3 } from 'lucide-react'
@@ -28,40 +28,88 @@ interface InnovationProduct {
   maturityLevel: string | null
 }
 
-export default function ProductsPage() {
+function ProductsPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
+  const [companyId, setCompanyId] = useState<string | null>(null)
   const [platformProducts, setPlatformProducts] = useState<PlatformProduct[]>([])
   const [capacityProducts, setCapacityProducts] = useState<CapacityProduct[]>([])
   const [innovationProducts, setInnovationProducts] = useState<InnovationProduct[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Get companyId from URL params or load from WorkMe API
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const id = getWorkMeIdFromStorage()
-      if (!id) {
-        router.push('/signin')
-        return
-      }
-      
-      setWorkMeId(id)
-      loadProducts()
-    }
-  }, [router])
+    if (typeof window === 'undefined') return
 
-  async function loadProducts() {
+    const id = getWorkMeIdFromStorage()
+    if (!id) {
+      router.push('/signin')
+      return
+    }
+    
+    setWorkMeId(id)
+    
+    // Check URL params first
+    const urlCompanyId = searchParams?.get('companyId')
+    
+    if (urlCompanyId) {
+      console.log('🏢 Company context from URL params:', { companyId: urlCompanyId })
+      setCompanyId(urlCompanyId)
+    } else {
+      // Fallback: Get from WorkMe API
+      loadCompanyIdFromWorkMe(id)
+    }
+  }, [router, searchParams])
+
+  async function loadCompanyIdFromWorkMe(workMeId: string) {
+    try {
+      const response = await api.get('/api/workme/me')
+      const workMe = response.data.workMe || response.data?.data?.workMe
+      
+      if (workMe?.companyId) {
+        console.log('🏢 Company context from WorkMe API:', { companyId: workMe.companyId })
+        // Redirect to same page with companyId in URL
+        router.replace(`/company/products?companyId=${workMe.companyId}`)
+        setCompanyId(workMe.companyId)
+      } else {
+        console.warn('⚠️ No companyId found for user')
+        setLoading(false)
+      }
+    } catch (error) {
+      console.error('Failed to load WorkMe:', error)
+      setLoading(false)
+    }
+  }
+
+  // Load products when companyId is available
+  useEffect(() => {
+    if (companyId) {
+      loadProducts(companyId)
+    }
+  }, [companyId])
+
+  async function loadProducts(companyId: string) {
     try {
       setLoading(true)
       
+      console.log('📞 Fetching company products from API:', { companyId })
+      
       const [platformRes, capacityRes, innovationRes] = await Promise.all([
-        api.get('/api/company/products/platform/list').catch(() => ({ data: { products: [] } })),
-        api.get('/api/company/products/capacity/list').catch(() => ({ data: { products: [] } })),
-        api.get('/api/company/products/innovation/list').catch(() => ({ data: { products: [] } }))
+        api.get(`/api/company/products/platform/list?companyId=${companyId}`).catch(() => ({ data: { products: [] } })),
+        api.get(`/api/company/products/capacity/list?companyId=${companyId}`).catch(() => ({ data: { products: [] } })),
+        api.get(`/api/company/products/innovation/list?companyId=${companyId}`).catch(() => ({ data: { products: [] } }))
       ])
 
       setPlatformProducts(platformRes.data.products || [])
       setCapacityProducts(capacityRes.data.products || [])
       setInnovationProducts(innovationRes.data.products || [])
+      
+      console.log('✅ Loaded products:', {
+        platform: platformRes.data.products?.length || 0,
+        capacity: capacityRes.data.products?.length || 0,
+        innovation: innovationRes.data.products?.length || 0,
+      })
     } catch (error) {
       console.error('Failed to load products:', error)
     } finally {
@@ -69,7 +117,7 @@ export default function ProductsPage() {
     }
   }
 
-  if (!workMeId || loading) {
+  if (!workMeId || !companyId || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -112,7 +160,7 @@ export default function ProductsPage() {
               )}
             </div>
             <Link
-              href="/company/products/platform/new"
+              href={`/company/products/platform/new${companyId ? `?companyId=${companyId}` : ''}`}
               className="flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
               <Plus className="h-4 w-4 mr-1" />
@@ -125,7 +173,7 @@ export default function ProductsPage() {
               {platformProducts.map(product => (
                 <Link
                   key={product.id}
-                  href={`/company/products/platform/${product.id}`}
+                  href={`/company/products/platform/${product.id}${companyId ? `?companyId=${companyId}` : ''}`}
                   className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-all border border-gray-200 hover:border-blue-300"
                 >
                   <div className="flex items-center mb-3">
@@ -147,7 +195,7 @@ export default function ProductsPage() {
               <Ship className="h-12 w-12 text-gray-400 mx-auto mb-3" />
               <p className="text-gray-600 mb-4">No platform products yet</p>
               <Link
-                href="/company/products/platform/new"
+                href={`/company/products/platform/new${companyId ? `?companyId=${companyId}` : ''}`}
                 className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
               >
                 Create Platform Product
@@ -167,7 +215,7 @@ export default function ProductsPage() {
               )}
             </div>
             <Link
-              href="/company/products/capacity/new"
+              href={`/company/products/capacity/new${companyId ? `?companyId=${companyId}` : ''}`}
               className="flex items-center text-sm text-green-600 hover:text-green-700 font-medium"
             >
               <Plus className="h-4 w-4 mr-1" />
@@ -180,7 +228,7 @@ export default function ProductsPage() {
               {capacityProducts.map(product => (
                 <Link
                   key={product.id}
-                  href={`/company/products/capacity/${product.id}`}
+                  href={`/company/products/capacity/${product.id}${companyId ? `?companyId=${companyId}` : ''}`}
                   className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-all border border-gray-200 hover:border-green-300"
                 >
                   <div className="flex items-center mb-3">
@@ -202,7 +250,7 @@ export default function ProductsPage() {
               <Factory className="h-12 w-12 text-gray-400 mx-auto mb-3" />
               <p className="text-gray-600 mb-4">No capacity products yet</p>
               <Link
-                href="/company/products/capacity/new"
+                href={`/company/products/capacity/new${companyId ? `?companyId=${companyId}` : ''}`}
                 className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
               >
                 Create Capacity Product
@@ -222,7 +270,7 @@ export default function ProductsPage() {
               )}
             </div>
             <Link
-              href="/company/products/innovation/new"
+              href={`/company/products/innovation/new${companyId ? `?companyId=${companyId}` : ''}`}
               className="flex items-center text-sm text-purple-600 hover:text-purple-700 font-medium"
             >
               <Plus className="h-4 w-4 mr-1" />
@@ -235,7 +283,7 @@ export default function ProductsPage() {
               {innovationProducts.map(product => (
                 <Link
                   key={product.id}
-                  href={`/company/products/innovation/${product.id}`}
+                  href={`/company/products/innovation/${product.id}${companyId ? `?companyId=${companyId}` : ''}`}
                   className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-all border border-gray-200 hover:border-purple-300"
                 >
                   <div className="flex items-center mb-3">
@@ -257,7 +305,7 @@ export default function ProductsPage() {
               <Sparkles className="h-12 w-12 text-gray-400 mx-auto mb-3" />
               <p className="text-gray-600 mb-4">No innovation products yet</p>
               <Link
-                href="/company/products/innovation/new"
+                href={`/company/products/innovation/new${companyId ? `?companyId=${companyId}` : ''}`}
                 className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
               >
                 Create Innovation Product
@@ -309,5 +357,17 @@ export default function ProductsPage() {
         </section>
       </main>
     </div>
+  )
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <ProductsPageContent />
+    </Suspense>
   )
 }
