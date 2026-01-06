@@ -11,6 +11,13 @@ export default function AddWorkforceStuffPage() {
   const [rawText, setRawText] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [step, setStep] = useState<'input' | 'confirm' | 'success'>('input')
+  const [inference, setInference] = useState<{
+    type: string
+    confidence: number
+    explanation: string
+  } | null>(null)
+  const [selectedType, setSelectedType] = useState<string>('')
   const [result, setResult] = useState<{
     type: string
     confidence: number
@@ -18,7 +25,7 @@ export default function AddWorkforceStuffPage() {
     redirectTo: string
   } | null>(null)
 
-  async function handleAdd() {
+  async function handleInfer() {
     if (!rawText.trim()) {
       setError('Please paste some content first')
       return
@@ -26,31 +33,79 @@ export default function AddWorkforceStuffPage() {
 
     setLoading(true)
     setError(null)
-    setResult(null)
 
     try {
-      const response = await api.post('/api/workforcestuff/add', {
+      // Step 1: Infer type only (no parsing yet)
+      const inferResponse = await api.post('/api/workforcestuff/add', {
         rawText: rawText.trim(),
       })
 
-      if (response.data.success) {
+      if (!inferResponse.data.success) {
+        setError(inferResponse.data.error || 'Failed to infer type')
+        return
+      }
+
+      const { inference: inferred } = inferResponse.data
+      setInference(inferred)
+      setSelectedType(inferred.type)
+      setStep('confirm')
+    } catch (err: any) {
+      console.error('Infer error:', err)
+      setError(err.response?.data?.error || err.message || 'Failed to infer type')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleConfirmAndSave() {
+    if (!selectedType) {
+      setError('Please select a type')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      // Step 2: Parse with confirmed type
+      const parseResponse = await api.post('/api/workforcestuff/add', {
+        rawText: rawText.trim(),
+        type: selectedType,
+      })
+
+      if (!parseResponse.data.success) {
+        setError(parseResponse.data.error || 'Failed to parse content')
+        return
+      }
+
+      const { parsedData } = parseResponse.data
+
+      // Step 3: Save to database
+      const saveResponse = await api.post('/api/workforcestuff/save', {
+        type: selectedType,
+        data: parsedData,
+        rawText: rawText.trim(),
+      })
+
+      if (saveResponse.data.success) {
         setResult({
-          type: response.data.type,
-          confidence: response.data.confidence,
-          explanation: response.data.explanation,
-          redirectTo: response.data.redirectTo,
+          type: selectedType,
+          confidence: inference?.confidence || 0,
+          explanation: inference?.explanation || '',
+          redirectTo: saveResponse.data.redirectTo,
         })
+        setStep('success')
 
         // Auto-redirect after 2 seconds
         setTimeout(() => {
-          router.push(response.data.redirectTo)
+          router.push(saveResponse.data.redirectTo)
         }, 2000)
       } else {
-        setError(response.data.error || 'Failed to add item')
+        setError(saveResponse.data.error || 'Failed to save item')
       }
     } catch (err: any) {
-      console.error('Add error:', err)
-      setError(err.response?.data?.error || err.message || 'Failed to add item')
+      console.error('Save error:', err)
+      setError(err.response?.data?.error || err.message || 'Failed to save item')
     } finally {
       setLoading(false)
     }
@@ -76,7 +131,7 @@ export default function AddWorkforceStuffPage() {
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-8">
-          {!result ? (
+          {step === 'input' && (
             <>
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -106,19 +161,19 @@ export default function AddWorkforceStuffPage() {
 
               <div className="flex gap-4">
                 <button
-                  onClick={handleAdd}
+                  onClick={handleInfer}
                   disabled={!rawText.trim() || loading}
                   className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      Processing with AI...
+                      Analyzing with AI...
                     </>
                   ) : (
                     <>
                       <Sparkles className="h-5 w-5" />
-                      Add Item
+                      Analyze Content
                     </>
                   )}
                 </button>
@@ -130,7 +185,82 @@ export default function AddWorkforceStuffPage() {
                 </Link>
               </div>
             </>
-          ) : (
+          )}
+
+          {step === 'confirm' && inference && (
+            <>
+              <div className="mb-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Confirm Type</h2>
+                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>AI detected:</strong> <span className="capitalize">{inference.type.replace('_', ' ')}</span> (Confidence: {Math.round(inference.confidence * 100)}%)
+                  </p>
+                  <p className="text-sm text-gray-600 italic">{inference.explanation}</p>
+                </div>
+                
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Content Type
+                </label>
+                <select
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                  className="border border-gray-300 rounded-md px-3 py-2 bg-white w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="training">Training</option>
+                  <option value="career">Career Opportunity</option>
+                  <option value="event">Event</option>
+                  <option value="campaign">Campaign</option>
+                  <option value="impact_event">Impact Event</option>
+                  <option value="community">Community Engagement</option>
+                  <option value="benefits">Benefits</option>
+                  <option value="employee_cause">Employee Cause</option>
+                </select>
+              </div>
+
+              {error && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-red-800">Error</p>
+                    <p className="text-sm text-red-700 mt-1">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    setStep('input')
+                    setInference(null)
+                    setSelectedType('')
+                    setError(null)
+                  }}
+                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+                >
+                  ← Back
+                </button>
+                <button
+                  onClick={handleConfirmAndSave}
+                  disabled={!selectedType || loading}
+                  className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Parsing & Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-5 w-5" />
+                      Confirm & Add Item
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          )}
+
+          {step === 'success' && result && (
             <div className="text-center py-8">
               <CheckCircle2 className="h-16 w-16 text-green-600 mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Item Added Successfully!</h2>
