@@ -149,7 +149,7 @@ export async function POST(request: Request) {
             ingestRawText: rawText,
             summary: data.description || data.title || title || null,
             companyId,
-            createdByWorkMeId: workMeId,
+            workMeId: workMeId,
           },
         })
         break
@@ -180,7 +180,7 @@ export async function POST(request: Request) {
             ingestRawText: rawText,
             summary: data.description || data.title || title || null,
             companyId,
-            createdByWorkMeId: workMeId,
+            workMeId: workMeId,
           },
         })
         break
@@ -211,7 +211,7 @@ export async function POST(request: Request) {
             ingestRawText: rawText,
             summary: data.description || data.theme || data.title || title || null,
             companyId,
-            createdByWorkMeId: workMeId,
+            workMeId: workMeId,
           },
         })
         break
@@ -229,7 +229,7 @@ export async function POST(request: Request) {
             ingestRawText: rawText,
             summary: data.description || data.title || title || null,
             companyId,
-            createdByWorkMeId: workMeId,
+            workMeId: workMeId,
           },
         })
         break
@@ -245,7 +245,7 @@ export async function POST(request: Request) {
             ingestRawText: rawText,
             summary: data.description || data.title || title || null,
             companyId,
-            createdByWorkMeId: workMeId,
+            workMeId: workMeId,
           },
         })
         break
@@ -261,7 +261,7 @@ export async function POST(request: Request) {
             ingestRawText: rawText,
             summary: data.description || data.title || title || null,
             companyId,
-            createdByWorkMeId: workMeId,
+            workMeId: workMeId,
           },
         })
         break
@@ -277,7 +277,7 @@ export async function POST(request: Request) {
             ingestRawText: rawText,
             summary: data.description || data.title || title || null,
             companyId,
-            createdByWorkMeId: workMeId,
+            workMeId: workMeId,
           },
         })
         break
@@ -293,7 +293,7 @@ export async function POST(request: Request) {
             ingestRawText: rawText,
             summary: data.description || data.title || title || null,
             companyId,
-            createdByWorkMeId: workMeId,
+            workMeId: workMeId,
           },
         })
         break
