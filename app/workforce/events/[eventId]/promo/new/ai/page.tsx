@@ -3,7 +3,8 @@
 import { useRouter, useParams } from 'next/navigation'
 import { useState } from 'react'
 import Link from 'next/link'
-import { createPromotionalWorkItem } from '@/lib/actions/promotional-work-item'
+// TODO: Migrate to product creation system (ProductDigitalSign or appropriate product type)
+// import { createPromotionalWorkItem } from '@/lib/actions/promotional-work-item' // DEPRECATED - EventItem removed
 import api from '@/lib/api'
 
 export default function PromotionalProductAIPage() {
@@ -49,6 +50,12 @@ export default function PromotionalProductAIPage() {
   }
 
   const handleSave = async () => {
+    // TODO: Migrate to product creation system
+    alert('This feature is being migrated to the new product system. Please use the product creation flow instead.')
+    setSaving(false)
+    return
+    
+    /* DEPRECATED - EventItem removed
     const dataToSave = editing ? editedData : parsedData
     if (!dataToSave) return
 
@@ -84,6 +91,7 @@ export default function PromotionalProductAIPage() {
       alert('Failed to save')
       setSaving(false)
     }
+    */
   }
 
   const renderPreview = (data: any) => {

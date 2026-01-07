@@ -21,6 +21,7 @@ export const ROUTE_TO_TYPE: Record<string, ContextType> = {
   'benefits': 'benefits',
   'cause': 'employee_cause',
   'employee-cause': 'employee_cause',
+  'leader-engagement': 'leader_engagement',
 }
 
 /**
@@ -32,6 +33,7 @@ export const TYPE_TO_ROUTE: Record<ContextType, string> = {
   event: 'events',
   campaign: 'campaign',
   impact_event: 'impact-event',
+  leader_engagement: 'leader-engagement',
   community: 'community',
   benefits: 'benefits',
   employee_cause: 'cause',

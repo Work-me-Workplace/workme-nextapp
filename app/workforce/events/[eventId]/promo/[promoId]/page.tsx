@@ -3,7 +3,8 @@
 import { useRouter, useParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { getPromotionalWorkItem } from '@/lib/actions/promotional-work-item'
+// TODO: Migrate to product creation system
+// import { getPromotionalWorkItem } from '@/lib/actions/promotional-work-item' // DEPRECATED - EventItem removed
 
 export default function PromotionalProductViewPage() {
   const router = useRouter()
@@ -15,6 +16,11 @@ export default function PromotionalProductViewPage() {
   const [copied, setCopied] = useState<string | null>(null)
 
   useEffect(() => {
+    // TODO: Migrate to product system - this feature is deprecated
+    setLoading(false)
+    // Note: This page needs to be migrated to use product system
+    
+    /* DEPRECATED - EventItem removed
     const loadItem = async () => {
       setLoading(true)
       try {
@@ -31,6 +37,7 @@ export default function PromotionalProductViewPage() {
       }
     }
     loadItem()
+    */
   }, [promoId])
 
   const copyToClipboard = (text: string, type: string) => {

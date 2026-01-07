@@ -106,7 +106,7 @@ async function exportAllData() {
       safeQuery('CompanyCampaigns', () => prisma.companyCampaign.findMany()),
       safeQuery('CompanyImpactEvents', () => prisma.companyImpactEvent.findMany()),
       safeQuery('CompanyTrainings', () => prisma.companyTraining.findMany()),
-      safeQuery('CompanyEvents', () => prisma.companyEvent.findMany({ include: { eventItems: true } })),
+      safeQuery('CompanyEvents', () => prisma.companyEvent.findMany()), // EventItem table removed
       safeQuery('CompanyCommunities', () => prisma.companyCommunity.findMany()),
       safeQuery('CompanyCareers', () => prisma.companyCareer.findMany()),
       safeQuery('CompanyEmployeeCauses', () => prisma.companyEmployeeCause.findMany()),

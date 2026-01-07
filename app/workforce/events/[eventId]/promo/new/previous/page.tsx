@@ -3,7 +3,8 @@
 import { useRouter, useParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { getPromotionalWorkItemsByEvent } from '@/lib/actions/promotional-work-item'
+// TODO: Migrate to product creation system
+// import { getPromotionalWorkItemsByEvent } from '@/lib/actions/promotional-work-item' // DEPRECATED - EventItem removed
 
 export default function PromotionalProductPreviousPage() {
   const router = useRouter()
@@ -14,6 +15,11 @@ export default function PromotionalProductPreviousPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // TODO: Migrate to product system - this feature is deprecated
+    setLoading(false)
+    setError('This feature is being migrated to the new product system.')
+    
+    /* DEPRECATED - EventItem removed
     const loadItems = async () => {
       setLoading(true)
       try {
@@ -31,6 +37,7 @@ export default function PromotionalProductPreviousPage() {
       }
     }
     loadItems()
+    */
   }, [eventId])
 
   const handleSelectItem = (item: any) => {

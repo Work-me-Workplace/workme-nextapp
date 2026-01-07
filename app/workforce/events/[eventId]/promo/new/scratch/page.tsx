@@ -3,7 +3,8 @@
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useState, useEffect, Suspense, useCallback } from 'react'
 import Link from 'next/link'
-import { createPromotionalWorkItem } from '@/lib/actions/promotional-work-item'
+// TODO: Migrate to product creation system (ProductDigitalSign or appropriate product type)
+// import { createPromotionalWorkItem } from '@/lib/actions/promotional-work-item' // DEPRECATED - EventItem removed
 
 function SearchParamsInitializer({ onParamsLoaded }: { onParamsLoaded: (params: Record<string, string>) => void }) {
   const searchParams = useSearchParams()
@@ -79,6 +80,11 @@ export default function PromotionalProductScratchPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    // TODO: Migrate to product creation system
+    alert('This feature is being migrated to the new product system. Please use the product creation flow instead.')
+    setLoading(false)
+    
+    /* DEPRECATED - EventItem removed
     setLoading(true)
 
     try {
@@ -99,6 +105,7 @@ export default function PromotionalProductScratchPage() {
       alert('Failed to create promotional product')
       setLoading(false)
     }
+    */
   }
 
   return (
