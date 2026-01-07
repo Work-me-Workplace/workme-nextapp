@@ -22,9 +22,6 @@ export async function GET(
     const { id } = await params
     const event = await prisma.companyEvent.findUnique({
       where: { id },
-      include: {
-        eventItems: true,
-      },
     })
 
     if (!event) {

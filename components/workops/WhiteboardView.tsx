@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Target, Calendar, Move, X, Edit2, CheckCircle, Clock, AlertCircle } from 'lucide-react'
+import { Plus, Target, Calendar, Move, X, Edit2, CheckCircle, Clock, AlertCircle, Layers, Link2, Share2, Copy } from 'lucide-react'
 import { WorkOpsStatus } from '@prisma/client'
 
 interface WorkOpsItem {
@@ -153,35 +153,73 @@ export default function WhiteboardView({ items, onItemUpdate, onAddGoal, onAddIt
   return (
     <div className="relative w-full h-full bg-gray-50 overflow-hidden">
       {/* Toolbar */}
-      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-white rounded-lg shadow-lg p-2">
-        <button
-          onClick={onAddGoal}
-          className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium"
-        >
-          <Target className="h-4 w-4" />
-          Add Goal
-        </button>
-        <button
-          onClick={onAddItem}
-          className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
-        >
-          <Plus className="h-4 w-4" />
-          Add Work
-        </button>
-        <div className="h-6 w-px bg-gray-300 mx-1" />
-        <button
-          onClick={() => setZoom(Math.min(zoom + 0.1, 2))}
-          className="px-2 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded"
-        >
-          +
-        </button>
-        <span className="text-sm text-gray-600">{Math.round(zoom * 100)}%</span>
-        <button
-          onClick={() => setZoom(Math.max(zoom - 0.1, 0.5))}
-          className="px-2 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded"
-        >
-          −
-        </button>
+      <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+        <div className="flex items-center gap-2 bg-white rounded-lg shadow-lg p-2">
+          <button
+            onClick={onAddGoal}
+            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium"
+          >
+            <Target className="h-4 w-4" />
+            Add Goal
+          </button>
+          <button
+            onClick={onAddItem}
+            className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+          >
+            <Plus className="h-4 w-4" />
+            Add Work
+          </button>
+          <div className="h-6 w-px bg-gray-300 mx-1" />
+          <button
+            onClick={() => setZoom(Math.min(zoom + 0.1, 2))}
+            className="px-2 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded"
+          >
+            +
+          </button>
+          <span className="text-sm text-gray-600">{Math.round(zoom * 100)}%</span>
+          <button
+            onClick={() => setZoom(Math.max(zoom - 0.1, 0.5))}
+            className="px-2 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded"
+          >
+            −
+          </button>
+        </div>
+        
+        {/* Coming Soon Actions */}
+        <div className="flex items-center gap-2 bg-white rounded-lg shadow-lg p-2 border border-gray-200">
+          <button
+            onClick={() => alert('Group Items coming soon!')}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded transition"
+            title="Group Items"
+          >
+            <Layers className="h-3.5 w-3.5" />
+            <span className="text-[10px] text-gray-400">Coming Soon</span>
+          </button>
+          <button
+            onClick={() => alert('Link Items coming soon!')}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded transition"
+            title="Link Items"
+          >
+            <Link2 className="h-3.5 w-3.5" />
+            <span className="text-[10px] text-gray-400">Coming Soon</span>
+          </button>
+          <button
+            onClick={() => alert('Share Whiteboard coming soon!')}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded transition"
+            title="Share"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+            <span className="text-[10px] text-gray-400">Coming Soon</span>
+          </button>
+          <button
+            onClick={() => alert('Duplicate View coming soon!')}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded transition"
+            title="Duplicate"
+          >
+            <Copy className="h-3.5 w-3.5" />
+            <span className="text-[10px] text-gray-400">Coming Soon</span>
+          </button>
+        </div>
       </div>
 
       {/* Canvas */}

@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       data: {
         ...data,
         companyId,
-        createdByWorkMeId: workMeId,
+        workMeId: workMeId,
       },
     })
 

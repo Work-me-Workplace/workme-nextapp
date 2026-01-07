@@ -29,9 +29,6 @@ export async function GET(request: NextRequest) {
     const events = await prisma.companyEvent.findMany({
       where: { companyId },
       orderBy: { createdAt: 'desc' },
-      include: {
-        eventItems: true,
-      },
     })
 
     // Calculate stats
@@ -103,7 +100,7 @@ export async function POST(request: NextRequest) {
       data: {
         ...data,
         companyId,
-        createdByWorkMeId: workMeId,
+        workMeId: workMeId,
       },
     })
 

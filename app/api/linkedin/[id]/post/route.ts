@@ -20,8 +20,8 @@ export async function POST(
     const { firebaseId } = await verifyAuth(request as Request)
     
     // 2. Load WorkMe identity
-    const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId } = workMe
+    const workMeIdentity = await loadWorkMe(firebaseId)
+    const { id: workMeId } = workMeIdentity
 
     // 3. Await params
     const { id } = await params
@@ -50,7 +50,7 @@ export async function POST(
     }
 
     // 6. Check LinkedIn connection
-    const workMe = await prisma.workMe.findUnique({
+    const workMeWithLinkedIn = await prisma.workMe.findUnique({
       where: { id: workMeId },
       select: {
         linkedinUserId: true,
@@ -59,7 +59,7 @@ export async function POST(
       },
     })
 
-    if (!workMe?.linkedinUserId || !workMe?.linkedinAccessToken) {
+    if (!workMeWithLinkedIn?.linkedinUserId || !workMeWithLinkedIn?.linkedinAccessToken) {
       return NextResponse.json(
         { success: false, error: 'LinkedIn not connected. Please connect LinkedIn first.' },
         { status: 401 }
@@ -68,7 +68,7 @@ export async function POST(
 
     // 7. Check if token is expired
     const { isTokenExpired } = await import('@/lib/services/linkedinOAuth')
-    if (isTokenExpired(workMe.linkedinTokenExpiresAt)) {
+    if (isTokenExpired(workMeWithLinkedIn.linkedinTokenExpiresAt)) {
       return NextResponse.json(
         { success: false, error: 'LinkedIn token expired. Please reconnect LinkedIn.' },
         { status: 401 }
@@ -79,8 +79,8 @@ export async function POST(
     try {
       const { postToLinkedIn } = await import('@/lib/services/linkedinOAuth')
       const postResult = await postToLinkedIn(
-        workMe.linkedinAccessToken,
-        workMe.linkedinUserId,
+        workMeWithLinkedIn.linkedinAccessToken,
+        workMeWithLinkedIn.linkedinUserId,
         existingPost.content
       )
 

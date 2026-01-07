@@ -46,9 +46,6 @@ export async function GET(request: NextRequest) {
         companyId: targetCompanyUnit, // Multi-tenant security (using companyId)
       },
       orderBy: { createdAt: 'desc' },
-      include: {
-        eventItems: true,
-      },
     })
 
     // Calculate stats

@@ -7,7 +7,7 @@ import { getAuth } from 'firebase/auth'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { getWorkMe } from '@/lib/workme.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Calendar, Filter, Archive, Clock, CheckCircle, Users, AlertCircle, Building2 } from 'lucide-react'
+import { Calendar, Filter, Archive, ArchiveRestore, Clock, CheckCircle, Users, AlertCircle, Building2 } from 'lucide-react'
 import api from '@/lib/api'
 
 // Unified WorkforceStuffItem type
@@ -49,6 +49,7 @@ export default function WorkforceStuffPage() {
   const [companyIdNotFound, setCompanyIdNotFound] = useState(false)
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<'active' | 'archived' | 'all'>('active')
+  const [archiving, setArchiving] = useState<Set<string>>(new Set())
 
   // Wait for auth to be ready before loading data
   useEffect(() => {
@@ -224,6 +225,32 @@ export default function WorkforceStuffPage() {
     }
   }
 
+  async function handleArchive(itemId: string, itemType: string, archived: boolean) {
+    if (archiving.has(itemId)) return
+
+    try {
+      setArchiving(new Set(archiving).add(itemId))
+      
+      const response = await api.put(`/api/workforcestuff/${itemId}`, {
+        type: itemType,
+        data: { archived },
+      })
+
+      if (response.data.success) {
+        // Refresh items
+        await loadItems(true)
+      } else {
+        alert(response.data.error || 'Failed to archive item')
+      }
+    } catch (err: any) {
+      console.error('Failed to archive item:', err)
+      alert(err.response?.data?.error || err.message || 'Failed to archive item')
+    } finally {
+      const newArchiving = new Set(archiving)
+      newArchiving.delete(itemId)
+      setArchiving(newArchiving)
+    }
+  }
 
   const categoryOptions = [
     { value: 'all', label: 'All Categories' },
@@ -248,7 +275,7 @@ export default function WorkforceStuffPage() {
   
   const activeItems = filteredItems.filter(item => {
     // If explicitly archived, exclude from active
-    if (item.status === 'archived') return false
+    if (item.status === 'archived' || item.archived) return false
     
     // For training items: include if ingestStatus is pending or saved, or if trainingDate is today/future
     if (item.type === 'training') {
@@ -280,7 +307,7 @@ export default function WorkforceStuffPage() {
 
   const archivedItems = filteredItems.filter(item => {
     // Explicitly archived
-    if (item.status === 'archived') return true
+    if (item.status === 'archived' || item.archived) return true
     
     // For training items: archive if trainingDate is in the past
     if (item.type === 'training' && item.startDate) {
@@ -491,12 +518,15 @@ export default function WorkforceStuffPage() {
                         : `/mycompany/workforcestuff/${item.id}`
                       
                       return (
-                        <Link
+                        <div
                           key={item.id}
-                          href={detailRoute}
-                          className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-green-500"
+                          className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-green-500 relative group"
                         >
-                          <div className="flex items-start justify-between mb-2">
+                          <Link
+                            href={detailRoute}
+                            className="block"
+                          >
+                            <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-medium text-gray-500 uppercase bg-green-100 text-green-800 px-2 py-1 rounded">
                                 {item.type}
@@ -547,7 +577,21 @@ export default function WorkforceStuffPage() {
                               </div>
                             )}
                           </div>
-                        </Link>
+                          </Link>
+                          {/* Archive button - appears on hover */}
+                          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault()
+                                handleArchive(item.id, item.type, true)
+                              }}
+                              className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition"
+                              title="Archive item"
+                            >
+                              <Archive className="h-4 w-4 text-gray-600" />
+                            </button>
+                          </div>
+                        </div>
                       )
                     })}
                   </div>
@@ -577,12 +621,15 @@ export default function WorkforceStuffPage() {
                       : `/mycompany/workforcestuff/${item.id}`
                     
                     return (
-                      <Link
+                      <div
                         key={item.id}
-                        href={detailRoute}
-                        className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-gray-300 opacity-75"
+                        className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-gray-300 opacity-75 relative group"
                       >
-                        <div className="flex items-start justify-between mb-2">
+                        <Link
+                          href={detailRoute}
+                          className="block"
+                        >
+                          <div className="flex items-start justify-between mb-2">
                           <span className="text-xs font-medium text-gray-500 uppercase bg-gray-100 text-gray-800 px-2 py-1 rounded">
                             {item.type}
                           </span>
@@ -593,9 +640,23 @@ export default function WorkforceStuffPage() {
                           <div className="flex items-center text-xs text-gray-500">
                             <Calendar className="h-4 w-4 mr-1" />
                             {new Date(item.startDate).toLocaleDateString()}
-                          </div>
-                        )}
-                      </Link>
+                            </div>
+                          )}
+                        </Link>
+                        {/* Unarchive button - appears on hover */}
+                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              handleArchive(item.id, item.type, false)
+                            }}
+                            className="p-2 bg-gray-100 hover:bg-green-100 rounded-full transition"
+                            title="Unarchive item"
+                          >
+                            <ArchiveRestore className="h-4 w-4 text-gray-600" />
+                          </button>
+                        </div>
+                      </div>
                     )
                   })}
                 </div>

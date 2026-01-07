@@ -67,23 +67,13 @@ export default function AddWorkforceStuffPage() {
     setError(null)
 
     try {
-      // Step 2: Parse with confirmed type
-      const parseResponse = await api.post('/api/workforcestuff/add', {
-        rawText: rawText.trim(),
-        type: selectedType,
-      })
-
-      if (!parseResponse.data.success) {
-        setError(parseResponse.data.error || 'Failed to parse content')
-        return
-      }
-
-      const { parsedData } = parseResponse.data
-
-      // Step 3: Save to database
+      // Step 2: Save to database (modular ingest pattern)
+      // The save endpoint will:
+      // 1. Create CompanyX with ingest snapshot
+      // 2. Parse the content (calls the parser)
+      // 3. Update the record with parsed data
       const saveResponse = await api.post('/api/workforcestuff/save', {
         type: selectedType,
-        data: parsedData,
         rawText: rawText.trim(),
       })
 
@@ -193,9 +183,9 @@ export default function AddWorkforceStuffPage() {
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Confirm Type</h2>
                 <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-gray-700 mb-2">
-                    <strong>AI detected:</strong> <span className="capitalize">{inference.type.replace('_', ' ')}</span> (Confidence: {Math.round(inference.confidence * 100)}%)
+                    <strong>AI detected:</strong> <span className="capitalize">{(inference.type || 'unknown').replace('_', ' ')}</span> (Confidence: {Math.round((inference.confidence || 0) * 100)}%)
                   </p>
-                  <p className="text-sm text-gray-600 italic">{inference.explanation}</p>
+                  <p className="text-sm text-gray-600 italic">{inference.explanation || 'No explanation provided'}</p>
                 </div>
                 
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -266,10 +256,10 @@ export default function AddWorkforceStuffPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Item Added Successfully!</h2>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <p className="text-sm font-medium text-blue-900 mb-1">
-                  Detected Type: <span className="capitalize">{result.type.replace('_', ' ')}</span>
+                  Detected Type: <span className="capitalize">{(result.type || 'unknown').replace('_', ' ')}</span>
                 </p>
                 <p className="text-xs text-blue-700">
-                  Confidence: {Math.round(result.confidence * 100)}% • {result.explanation}
+                  Confidence: {Math.round((result.confidence || 0) * 100)}% • {result.explanation || 'No explanation provided'}
                 </p>
               </div>
               <p className="text-gray-600 mb-4">Redirecting you to the item...</p>

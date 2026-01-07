@@ -1,16 +1,22 @@
 /**
  * Save Workforce Stuff Item API Route
  * 
- * STEP 3: Save the reviewed and edited data to database
- * This happens AFTER user reviews type inference and parsed fields
+ * Modular ingest pattern:
+ * 1. Create CompanyX with ingest snapshot (using createCompanyXWithIngest)
+ * 2. Parse the content (using parseCompanyXContent - calls the parser)
+ * 3. Update the record with parsed data
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
 import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
-import { CONTEXT_TYPE_TO_ROUTE } from '@/lib/services/companyx-mapper'
+import { CONTEXT_TYPE_TO_ROUTE, CONTEXT_TYPE_TO_MODEL, createCompanyXWithIngest } from '@/lib/services/companyx-mapper'
+import { parseCompanyXContent } from '@/lib/services/companyx-unified-mapper'
 import type { ContextType } from '@/lib/types/context-type'
+
+// Force dynamic rendering to prevent caching issues
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,11 +33,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { type, data, rawText } = body
+    const { type, rawText } = body
 
-    if (!type || !data) {
+    if (!type || !rawText) {
       return NextResponse.json(
-        { success: false, error: 'type and data are required' },
+        { success: false, error: 'type and rawText are required' },
         { status: 400 }
       )
     }
@@ -49,24 +55,47 @@ export async function POST(request: NextRequest) {
       'employee_cause',
     ]
 
-    if (!validTypes.includes(type)) {
+    if (!validTypes.includes(type as ContextType)) {
       return NextResponse.json(
         { success: false, error: `Invalid type: ${type}` },
         { status: 400 }
       )
     }
 
-    let createdRecord: any
+    // STEP 1: Create CompanyX with ingest snapshot (modular ingest pattern)
+    const ingestResult = await createCompanyXWithIngest(
+      prisma,
+      type as ContextType,
+      rawText,
+      workMeId,
+      companyId
+    )
 
-    // Create the record based on type
+    // STEP 2: Parse the content (calls the parser)
+    const parsed = await parseCompanyXContent(rawText, type as ContextType)
+
+    // STEP 3: Update the record with parsed data
+    const modelName = CONTEXT_TYPE_TO_MODEL[type as ContextType]
+    const parsedData = parsed.data
+
+    let updatedRecord: any
+
+    // Map parsed data to update fields based on type
     switch (type) {
       case 'training': {
-        createdRecord = await prisma.companyTraining.create({
+        const data = parsedData as any
+        const pocName = data.poc?.name || ''
+        const nameParts = pocName.split(' ')
+        const pocFirstName = nameParts[0] || null
+        const pocLastName = nameParts.slice(1).join(' ') || null
+
+        updatedRecord = await prisma.companyTraining.update({
+          where: { id: ingestResult.id },
           data: {
             title: data.title || 'Untitled Training',
             description: data.description,
             topic: data.topic,
-            mandatory: data.mandatory,
+            mandatory: data.mandatory ?? false,
             sponsoringOffice: data.sponsoringOffice,
             trainingDate: data.trainingDate ? new Date(data.trainingDate) : null,
             startTime: data.startTime,
@@ -74,89 +103,86 @@ export async function POST(request: NextRequest) {
             location: data.location,
             format: data.format,
             link: data.link,
-            pocFirstName: data.poc?.name ? data.poc.name.split(' ')[0] : null,
-            pocLastName: data.poc?.name ? data.poc.name.split(' ').slice(1).join(' ') : null,
+            pocFirstName,
+            pocLastName,
             pocEmail: data.poc?.email,
             pocPhone: data.poc?.phone,
             pocRankOrTitle: data.poc?.rankOrTitle,
-            ingestRawText: rawText,
-            ingestType: 'training',
             ingestStatus: 'saved',
-            ingestCreatedAt: new Date(),
             summary: data.description || data.title || null,
-            companyId,
-            workMeId: workMeId,
           },
         })
         break
       }
 
       case 'career': {
-        createdRecord = await prisma.companyCareer.create({
+        const data = parsedData as any
+        // Filter out any skills-related leakage
+        const { skillsRaw, strengthsRaw, specialties, certifications, workSkills, mySkills, ...cleanData } = data as any
+        
+        updatedRecord = await prisma.companyCareer.update({
+          where: { id: ingestResult.id },
           data: {
-            title: data.title || 'Untitled Career Opportunity',
-            description: data.description,
-            level: data.level,
-            type: data.type,
-            eligibility: {
-              paygradeRange: data.eligibility?.paygradeRange,
-              timeInServiceMonths: data.eligibility?.timeInServiceMonths,
-              timeInPositionMonths: data.eligibility?.timeInPositionMonths,
-              who: data.eligibility?.who,
-            },
-            application: {
-              instructions: data.application?.instructions,
-              link: data.application?.link,
-            },
-            extras: {
-              cost: data.extras?.cost,
-              notes: data.extras?.notes,
-            },
-            ingestRawText: rawText,
-            summary: data.description || data.title || null,
-            companyId,
-            workMeId: workMeId,
+            title: cleanData.title || 'Untitled Career Opportunity',
+            description: cleanData.description,
+            level: cleanData.level,
+            type: cleanData.type,
+            eligibility: cleanData.eligibility ? {
+              paygradeRange: cleanData.eligibility.paygradeRange,
+              timeInServiceMonths: cleanData.eligibility.timeInServiceMonths,
+              timeInPositionMonths: cleanData.eligibility.timeInPositionMonths,
+              who: cleanData.eligibility.who,
+            } : undefined,
+            application: cleanData.application ? {
+              instructions: cleanData.application.instructions,
+              link: cleanData.application.link,
+            } : undefined,
+            extras: cleanData.extras ? {
+              cost: cleanData.extras.cost,
+              notes: cleanData.extras.notes,
+            } : undefined,
+            summary: cleanData.description || cleanData.title || null,
           },
         })
         break
       }
 
       case 'event': {
-        const eventData: any = {
-          title: data.title || 'Untitled Event',
-          theme: data.theme,
-          description: data.description,
-          eventDate: data.eventDate ? new Date(data.eventDate) : null,
-          startTime: data.startTime,
-          endTime: data.endTime,
-          location: data.location,
-          eventCategory: data.eventCategory,
-          registrationRequired: data.registrationRequired,
-          registrationLink: data.registrationLink,
-          audience: data.audience,
-          vibe: data.vibe,
-          perks: data.perks || [],
-          participation: data.participation || [],
-          foodProvided: data.foodProvided,
-          foodTypes: data.foodTypes,
-          speakers: data.speakers || [],
-          pocEmail: data.pocEmail,
-          pocPhone: data.pocPhone,
-          summary: data.description || data.theme || data.title || null,
-          companyId,
-          workMeId: workMeId,
-        }
-
-        createdRecord = await prisma.companyEvent.create({
+        const data = parsedData as any
+        
+        updatedRecord = await prisma.companyEvent.update({
+          where: { id: ingestResult.id },
           data: {
-            ...eventData,
+            title: data.title || 'Untitled Event',
+            theme: data.theme,
+            description: data.description,
+            eventDate: data.eventDate ? new Date(data.eventDate) : null,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            location: data.location,
+            eventCategory: data.eventCategory,
+            registrationRequired: data.registrationRequired,
+            registrationLink: data.registrationLink,
+            audience: data.audience,
+            vibe: data.vibe,
+            perks: data.perks || [],
+            participation: data.participation || [],
+            foodProvided: data.foodProvided,
+            foodTypes: data.foodTypes,
+            speakers: data.speakers || [],
+            pocEmail: data.pocEmail,
+            pocPhone: data.pocPhone,
+            summary: data.description || data.theme || data.title || null,
           },
         })
         break
       }
 
       case 'leader_engagement': {
-        createdRecord = await prisma.companyLeaderEngagement.create({
+        const data = parsedData as any
+        
+        updatedRecord = await prisma.companyLeaderEngagement.update({
+          where: { id: ingestResult.id },
           data: {
             title: data.title || 'Untitled Leader Engagement',
             description: data.description,
@@ -178,17 +204,17 @@ export async function POST(request: NextRequest) {
             qAndAEnabled: data.qAndAEnabled ?? false,
             pocEmail: data.pocEmail,
             pocPhone: data.pocPhone,
-            ingestRawText: rawText,
             summary: data.description || data.title || null,
-            companyId,
-            workMeId: workMeId,
           },
         })
         break
       }
 
       case 'campaign': {
-        createdRecord = await prisma.companyCampaign.create({
+        const data = parsedData as any
+        
+        updatedRecord = await prisma.companyCampaign.update({
+          where: { id: ingestResult.id },
           data: {
             title: data.title || 'Untitled Campaign',
             description: data.description,
@@ -201,15 +227,16 @@ export async function POST(request: NextRequest) {
             pocEmail: data.pocEmail,
             pocPhone: data.pocPhone,
             summary: data.description || data.title || null,
-            companyId,
-            workMeId: workMeId,
           },
         })
         break
       }
 
       case 'impact_event': {
-        createdRecord = await prisma.companyImpactEvent.create({
+        const data = parsedData as any
+        
+        updatedRecord = await prisma.companyImpactEvent.update({
+          where: { id: ingestResult.id },
           data: {
             title: data.title || 'Untitled Impact Event',
             description: data.description,
@@ -220,17 +247,17 @@ export async function POST(request: NextRequest) {
             pocLastName: data.pocLastName,
             pocEmail: data.pocEmail,
             pocPhone: data.pocPhone,
-            ingestRawText: data.rawText || data.ingestRawText || null, // SAVE THE RAW TEXT!
             summary: data.summary || data.description || data.title || null,
-            companyId,
-            workMeId: workMeId,
           },
         })
         break
       }
 
       case 'community': {
-        createdRecord = await prisma.companyCommunity.create({
+        const data = parsedData as any
+        
+        updatedRecord = await prisma.companyCommunity.update({
+          where: { id: ingestResult.id },
           data: {
             title: data.title || 'Untitled Community Opportunity',
             description: data.description,
@@ -243,54 +270,54 @@ export async function POST(request: NextRequest) {
             pocEmail: data.pocEmail,
             pocPhone: data.pocPhone,
             summary: data.description || data.title || null,
-            companyId,
-            workMeId: workMeId,
           },
         })
         break
       }
 
       case 'benefits': {
-        createdRecord = await prisma.companyBenefits.create({
-          data: {
-            title: data.title || 'Untitled Benefits',
-            description: data.description,
-            employeeBenefitSummary: data.employeeBenefitSummary,
-            windowStart: data.windowStart ? new Date(data.windowStart) : null,
-            windowEnd: data.windowEnd ? new Date(data.windowEnd) : null,
-            actionLink: data.actionLink,
-            ...(data.deadlines != null ? { deadlines: data.deadlines } : {}),
-            ...(data.resources != null ? { resources: data.resources } : {}),
-            ...(data.pocList != null ? { pocList: data.pocList } : {}),
-            ingestRawText: rawText,
-            summary: data.description || data.employeeBenefitSummary || data.title || null,
-            companyId,
-            workMeId: workMeId,
-          },
+        const data = parsedData as any
+        const updateData: any = {
+          title: data.title || 'Untitled Benefits',
+          description: data.description,
+          employeeBenefitSummary: data.employeeBenefitSummary,
+          windowStart: data.windowStart ? new Date(data.windowStart) : null,
+          windowEnd: data.windowEnd ? new Date(data.windowEnd) : null,
+          actionLink: data.actionLink,
+          summary: data.description || data.employeeBenefitSummary || data.title || null,
+        }
+        if (data.deadlines != null) updateData.deadlines = data.deadlines
+        if (data.resources != null) updateData.resources = data.resources
+        if (data.pocList != null) updateData.pocList = data.pocList
+        
+        updatedRecord = await prisma.companyBenefits.update({
+          where: { id: ingestResult.id },
+          data: updateData,
         })
         break
       }
 
       case 'employee_cause': {
-        createdRecord = await prisma.companyEmployeeCause.create({
-          data: {
-            title: data.title || 'Untitled Employee Cause',
-            description: data.description,
-            impactSummary: data.impactSummary,
-            partnerOrg: data.partnerOrg,
-            windowStart: data.windowStart ? new Date(data.windowStart) : null,
-            windowEnd: data.windowEnd ? new Date(data.windowEnd) : null,
-            locations: data.locations || [],
-            link: data.link,
-            ...(data.deadlines != null ? { deadlines: data.deadlines } : {}),
-            sponsoringDepartment: data.sponsoringDepartment,
-            ...(data.pocList != null ? { pocList: data.pocList } : {}),
-            ...(data.extraInstructions != null ? { extraInstructions: data.extraInstructions } : {}),
-            ingestRawText: rawText,
-            summary: data.description || data.impactSummary || data.title || null,
-            companyId,
-            workMeId: workMeId,
-          },
+        const data = parsedData as any
+        const updateData: any = {
+          title: data.title || 'Untitled Employee Cause',
+          description: data.description,
+          impactSummary: data.impactSummary,
+          partnerOrg: data.partnerOrg,
+          windowStart: data.windowStart ? new Date(data.windowStart) : null,
+          windowEnd: data.windowEnd ? new Date(data.windowEnd) : null,
+          locations: data.locations || [],
+          link: data.link,
+          sponsoringDepartment: data.sponsoringDepartment,
+          summary: data.description || data.impactSummary || data.title || null,
+        }
+        if (data.deadlines != null) updateData.deadlines = data.deadlines
+        if (data.pocList != null) updateData.pocList = data.pocList
+        if (data.extraInstructions != null) updateData.extraInstructions = data.extraInstructions
+        
+        updatedRecord = await prisma.companyEmployeeCause.update({
+          where: { id: ingestResult.id },
+          data: updateData,
         })
         break
       }
@@ -304,13 +331,19 @@ export async function POST(request: NextRequest) {
 
     // Build redirect path
     const routeSegment = CONTEXT_TYPE_TO_ROUTE[type as ContextType]
-    const redirectTo = `/mycompany/workforcestuff/${routeSegment}/${createdRecord.id}`
+    const redirectTo = `/mycompany/workforcestuff/${routeSegment}/${updatedRecord.id}`
 
     return NextResponse.json({
       success: true,
-      id: createdRecord.id,
+      id: updatedRecord.id,
       type,
       redirectTo,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
     })
   } catch (error: any) {
     console.error('[Save Workforce Stuff] Error:', error)

@@ -80,7 +80,8 @@ export async function GET(request: NextRequest) {
         summary: training.description ?? '',
         startDate: training.trainingDate ? training.trainingDate.toISOString() : null,
         endDate: training.trainingDate ? training.trainingDate.toISOString() : null,
-        status: training.ingestStatus === 'saved' ? 'active' : (training.ingestStatus === 'pending' ? 'active' : 'archived') as 'active' | 'archived',
+        status: training.archived ? 'archived' : (training.ingestStatus === 'saved' ? 'active' : (training.ingestStatus === 'pending' ? 'active' : 'archived')) as 'active' | 'archived',
+        archived: training.archived || false,
         createdAt: training.createdAt.toISOString(),
         raw: training,
         // Training-specific fields
@@ -107,7 +108,8 @@ export async function GET(request: NextRequest) {
         summary: event.description ?? '',
         startDate: event.eventDate ? event.eventDate.toISOString() : null,
         endDate: event.eventDate ? event.eventDate.toISOString() : null,
-        status: 'active' as const,
+        status: event.archived ? 'archived' : 'active' as const,
+        archived: event.archived || false,
         createdAt: event.createdAt.toISOString(),
         raw: event,
       })),
@@ -120,7 +122,8 @@ export async function GET(request: NextRequest) {
         summary: campaign.description ?? '',
         startDate: campaign.windowStart ? campaign.windowStart.toISOString() : null,
         endDate: campaign.windowEnd ? campaign.windowEnd.toISOString() : null,
-        status: 'active' as const,
+        status: campaign.archived ? 'archived' : 'active' as const,
+        archived: campaign.archived || false,
         createdAt: campaign.createdAt.toISOString(),
         raw: campaign,
       })),
@@ -133,7 +136,8 @@ export async function GET(request: NextRequest) {
         summary: impact.description ?? '',
         startDate: impact.effectiveDate ? impact.effectiveDate.toISOString() : null,
         endDate: null,
-        status: 'active' as const,
+        status: impact.archived ? 'archived' : 'active' as const,
+        archived: impact.archived || false,
         createdAt: impact.createdAt.toISOString(),
         raw: impact,
       })),
@@ -146,7 +150,8 @@ export async function GET(request: NextRequest) {
         summary: comm.description ?? '',
         startDate: comm.date ? comm.date.toISOString() : null,
         endDate: null,
-        status: 'active' as const,
+        status: comm.archived ? 'archived' : 'active' as const,
+        archived: comm.archived || false,
         createdAt: comm.createdAt.toISOString(),
         raw: comm,
       })),
@@ -159,7 +164,8 @@ export async function GET(request: NextRequest) {
         summary: benefit.description ?? '',
         startDate: benefit.windowStart ? benefit.windowStart.toISOString() : null,
         endDate: benefit.windowEnd ? benefit.windowEnd.toISOString() : null,
-        status: 'active' as const,
+        status: benefit.archived ? 'archived' : 'active' as const,
+        archived: benefit.archived || false,
         createdAt: benefit.createdAt.toISOString(),
         raw: benefit,
       })),
@@ -172,15 +178,22 @@ export async function GET(request: NextRequest) {
         summary: career.description ?? '',
         startDate: null, // Careers use deadlines JSON, not a single date
         endDate: null,
-        status: 'active' as const,
+        status: career.archived ? 'archived' : 'active' as const,
+        archived: career.archived || false,
         createdAt: career.createdAt.toISOString(),
         raw: career,
       })),
     ]
 
+    // Add archived field to all items if missing (backward compatibility)
+    const normalizedItemsWithArchived = normalizedItems.map(item => ({
+      ...item,
+      archived: item.archived !== undefined ? item.archived : false,
+    }))
+
     return NextResponse.json({
       success: true,
-      items: normalizedItems,
+      items: normalizedItemsWithArchived,
     })
   } catch (error: any) {
     console.error('[WorkforceStuff API] Error:', error)

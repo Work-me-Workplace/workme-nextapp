@@ -211,6 +211,72 @@ export default function OverallOutlookPage() {
               </div>
             </div>
 
+            {/* Coming Soon Features Toolbar */}
+            <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-gray-700">Quick Actions</h2>
+                <span className="text-xs text-gray-500">Features in development</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                <button
+                  onClick={() => handleComingSoon('Export Work')}
+                  className="flex flex-col items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition group"
+                >
+                  <Download className="h-5 w-5 text-gray-400 group-hover:text-gray-600" />
+                  <span className="text-xs font-medium text-gray-600">Export</span>
+                  <span className="text-[10px] text-gray-400">Coming Soon</span>
+                </button>
+                <button
+                  onClick={() => handleComingSoon('Import Work')}
+                  className="flex flex-col items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition group"
+                >
+                  <Upload className="h-5 w-5 text-gray-400 group-hover:text-gray-600" />
+                  <span className="text-xs font-medium text-gray-600">Import</span>
+                  <span className="text-[10px] text-gray-400">Coming Soon</span>
+                </button>
+                <button
+                  onClick={() => handleComingSoon('Analytics & Reports')}
+                  className="flex flex-col items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition group"
+                >
+                  <BarChart3 className="h-5 w-5 text-gray-400 group-hover:text-gray-600" />
+                  <span className="text-xs font-medium text-gray-600">Analytics</span>
+                  <span className="text-[10px] text-gray-400">Coming Soon</span>
+                </button>
+                <button
+                  onClick={() => handleComingSoon('Work Templates')}
+                  className="flex flex-col items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition group"
+                >
+                  <FileText className="h-5 w-5 text-gray-400 group-hover:text-gray-600" />
+                  <span className="text-xs font-medium text-gray-600">Templates</span>
+                  <span className="text-[10px] text-gray-400">Coming Soon</span>
+                </button>
+                <button
+                  onClick={() => handleComingSoon('Advanced Filters')}
+                  className="flex flex-col items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition group"
+                >
+                  <Filter className="h-5 w-5 text-gray-400 group-hover:text-gray-600" />
+                  <span className="text-xs font-medium text-gray-600">Filters</span>
+                  <span className="text-[10px] text-gray-400">Coming Soon</span>
+                </button>
+                <button
+                  onClick={() => handleComingSoon('AI Insights')}
+                  className="flex flex-col items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition group"
+                >
+                  <Sparkles className="h-5 w-5 text-gray-400 group-hover:text-gray-600" />
+                  <span className="text-xs font-medium text-gray-600">AI Insights</span>
+                  <span className="text-[10px] text-gray-400">Coming Soon</span>
+                </button>
+                <button
+                  onClick={() => handleComingSoon('Settings')}
+                  className="flex flex-col items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition group"
+                >
+                  <Settings className="h-5 w-5 text-gray-400 group-hover:text-gray-600" />
+                  <span className="text-xs font-medium text-gray-600">Settings</span>
+                  <span className="text-[10px] text-gray-400">Coming Soon</span>
+                </button>
+              </div>
+            </div>
+
             {viewMode === 'whiteboard' ? (
               <div className="h-[calc(100vh-250px)] w-full">
                 {items.length > 0 || true ? (

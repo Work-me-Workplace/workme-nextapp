@@ -5,18 +5,22 @@ import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Calendar, FileText, Plus, Archive } from 'lucide-react'
+import { Calendar, FileText, Plus, Archive, Edit, ArchiveRestore } from 'lucide-react'
+import api from '@/lib/api'
 
 interface WorkforceStuffItem {
   id: string
   type: 'event' | 'training' | 'benefit' | 'campaign' | 'impact' | 'cause' | 'community' | 'announcement'
   title: string
-  summary: string
+  summary?: string
+  description?: string
   details?: string
   startDate?: string | null
   endDate?: string | null
-  status: 'active' | 'archived'
+  status?: 'active' | 'archived'
+  archived?: boolean
   createdAt: string
+  [key: string]: any // For additional fields
 }
 
 export default function WorkforceStuffDetailPage() {
@@ -26,6 +30,8 @@ export default function WorkforceStuffDetailPage() {
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [item, setItem] = useState<WorkforceStuffItem | null>(null)
   const [loading, setLoading] = useState(true)
+  const [archiving, setArchiving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -34,7 +40,9 @@ export default function WorkforceStuffDetailPage() {
         router.push('/signin')
       } else {
         setWorkMeId(id)
-        loadItem()
+        if (itemId) {
+          loadItem()
+        }
       }
     }
   }, [router, itemId])
@@ -42,13 +50,51 @@ export default function WorkforceStuffDetailPage() {
   async function loadItem() {
     try {
       setLoading(true)
-      // TODO: Implement API call to fetch workforce stuff item by ID
-      // For now, return null
-      setItem(null)
-    } catch (error) {
-      console.error('Failed to load workforce stuff item:', error)
+      setError(null)
+      const response = await api.get(`/api/workforcestuff/${itemId}`)
+      
+      if (response.data.success && response.data.item) {
+        const loadedItem = response.data.item
+        setItem({
+          ...loadedItem,
+          status: loadedItem.archived ? 'archived' : 'active',
+        })
+      } else {
+        setError('Item not found')
+      }
+    } catch (err: any) {
+      console.error('Failed to load workforce stuff item:', err)
+      setError(err.response?.data?.error || err.message || 'Failed to load item')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleArchive(archived: boolean) {
+    if (!item) return
+
+    try {
+      setArchiving(true)
+      setError(null)
+      
+      const response = await api.put(`/api/workforcestuff/${itemId}`, {
+        type: item.type,
+        data: { archived },
+      })
+
+      if (response.data.success) {
+        // Reload the item to reflect the change
+        await loadItem()
+        // Also refresh the list by redirecting back
+        router.push('/mycompany/workforcestuff')
+      } else {
+        setError(response.data.error || 'Failed to archive item')
+      }
+    } catch (err: any) {
+      console.error('Failed to archive item:', err)
+      setError(err.response?.data?.error || err.message || 'Failed to archive item')
+    } finally {
+      setArchiving(false)
     }
   }
 
@@ -60,7 +106,7 @@ export default function WorkforceStuffDetailPage() {
     )
   }
 
-  if (!item) {
+  if (!loading && !item && !error) {
     return (
       <div className="min-h-screen bg-gray-50">
         <nav className="bg-white shadow-sm border-b">
@@ -83,16 +129,31 @@ export default function WorkforceStuffDetailPage() {
           <main className="flex-1">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <div className="bg-white rounded-lg shadow p-12 text-center">
-                <p className="text-gray-500 mb-4">Workforce item not found</p>
-                <Link href="/mycompany/workforcestuff" className="text-blue-600 hover:text-blue-700">
-                  ← Back to Workforce Stuff
-                </Link>
+                {error ? (
+                  <>
+                    <p className="text-red-600 mb-4 font-semibold">{error}</p>
+                    <Link href="/mycompany/workforcestuff" className="text-blue-600 hover:text-blue-700">
+                      ← Back to Workforce Stuff
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-gray-500 mb-4">Workforce item not found</p>
+                    <Link href="/mycompany/workforcestuff" className="text-blue-600 hover:text-blue-700">
+                      ← Back to Workforce Stuff
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </main>
         </div>
       </div>
     )
+  }
+
+  if (!item) {
+    return null
   }
 
   return (
@@ -140,8 +201,13 @@ export default function WorkforceStuffDetailPage() {
                     {item.type}
                   </span>
                   <h1 className="text-3xl font-bold text-gray-900 mt-2">{item.title}</h1>
-                  {item.summary && (
-                    <p className="text-gray-600 mt-2">{item.summary}</p>
+                  {(item.summary || item.description) && (
+                    <p className="text-gray-600 mt-2">{item.summary || item.description}</p>
+                  )}
+                  {item.archived && (
+                    <span className="inline-block mt-2 px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded">
+                      Archived
+                    </span>
                   )}
                 </div>
               </div>
@@ -171,12 +237,19 @@ export default function WorkforceStuffDetailPage() {
               )}
 
               {/* Details */}
-              {item.details && (
+              {(item.details || item.description) && (
                 <div className="mb-6">
                   <h2 className="text-xl font-semibold text-gray-900 mb-3">Details</h2>
                   <div className="prose max-w-none">
-                    <p className="text-gray-700 whitespace-pre-wrap">{item.details}</p>
+                    <p className="text-gray-700 whitespace-pre-wrap">{item.details || item.description}</p>
                   </div>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {error && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-800">{error}</p>
                 </div>
               )}
 
@@ -189,16 +262,31 @@ export default function WorkforceStuffDetailPage() {
                   <Plus className="h-5 w-5 mr-2" />
                   Create Work Output
                 </Link>
-                <button className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition">
-                  <FileText className="h-5 w-5 mr-2" />
-                  Add Notes
-                </button>
                 <Link
                   href={`/mywork/products?sourceId=${item.id}`}
                   className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition"
                 >
                   View Related Outputs
                 </Link>
+                {item.archived ? (
+                  <button
+                    onClick={() => handleArchive(false)}
+                    disabled={archiving}
+                    className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    <ArchiveRestore className="h-5 w-5 mr-2" />
+                    {archiving ? 'Unarchiving...' : 'Unarchive'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleArchive(true)}
+                    disabled={archiving}
+                    className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    <Archive className="h-5 w-5 mr-2" />
+                    {archiving ? 'Archiving...' : 'Archive'}
+                  </button>
+                )}
               </div>
             </div>
           </div>

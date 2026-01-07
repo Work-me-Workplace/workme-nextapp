@@ -114,6 +114,8 @@ export default function CareerIngestPage() {
   }
 
   const handleChange = (field: string, value: any) => {
+    if (!field || typeof field !== 'string') return
+    
     if (field.startsWith('eligibility.')) {
       const subField = field.split('.')[1]
       if (subField === 'paygradeRange.min' || subField === 'paygradeRange.max') {

@@ -1,17 +1,18 @@
 /**
  * Add Workforce Stuff Item API Route
  * 
- * STEP 1: Infer type from raw text
- * Returns inference result + parsed fields for user review
- * Does NOT save to database yet - that happens in the save endpoint
+ * STEP 1: Infer type from raw text ONLY
+ * This endpoint ONLY does inference - no parsing
+ * Parsing happens in the save endpoint using the modular ingest pattern
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
 import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { inferCompanyXType } from '@/lib/services/companyx-topic-inference'
-import { parseCompanyXContent } from '@/lib/services/companyx-unified-mapper'
-import type { ContextType } from '@/lib/types/context-type'
+
+// Force dynamic rendering to prevent caching issues
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { rawText, type } = body
+    const { rawText } = body
 
     if (!rawText || typeof rawText !== 'string' || rawText.trim().length === 0) {
       return NextResponse.json(
@@ -37,50 +38,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // If type is provided, user has confirmed - parse with that type
-    if (type) {
-      const validTypes: ContextType[] = [
-        'training',
-        'career',
-        'event',
-        'leader_engagement',
-        'campaign',
-        'impact_event',
-        'community',
-        'benefits',
-        'employee_cause',
-      ]
-
-      if (!validTypes.includes(type as ContextType)) {
-        return NextResponse.json(
-          { success: false, error: `Invalid type: ${type}` },
-          { status: 400 }
-        )
-      }
-
-      // Parse content using the confirmed type
-      const parsed = await parseCompanyXContent(rawText, type as ContextType)
-
-      return NextResponse.json({
-        success: true,
-        parsedData: parsed.data,
-        rawText,
-      })
-    }
-
-    // No type provided - just infer (don't parse yet)
+    // Only infer type - no parsing here
     const inference = await inferCompanyXType(rawText)
-    const inferredType: ContextType = inference.type
 
     // Return inference only - user must confirm before parsing
     return NextResponse.json({
       success: true,
       inference: {
-        type: inferredType,
+        type: inference.type,
         confidence: inference.confidence,
         explanation: inference.explanation,
       },
       rawText, // Send back for review page
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
     })
   } catch (error: any) {
     console.error('[Add Workforce Stuff - Infer] Error:', error)
