@@ -44,7 +44,7 @@ export async function createCampaign(data: {
         pocEmail: data.pocEmail || null,
         pocPhone: data.pocPhone || null,
         companyId,
-        createdByWorkMeId: workMeId,
+        workMeId: workMeId,
       },
     })
 
@@ -86,7 +86,7 @@ export async function createImpactEvent(data: {
         pocEmail: data.pocEmail || null,
         pocPhone: data.pocPhone || null,
         companyId,
-        createdByWorkMeId: workMeId,
+        workMeId: workMeId,
       },
     })
 
@@ -131,7 +131,7 @@ export async function createTraining(data: {
         pocEmail: data.pocEmail || null,
         pocPhone: data.pocPhone || null,
         companyId,
-        createdByWorkMeId: workMeId,
+        workMeId: workMeId,
       },
     })
 
@@ -191,7 +191,7 @@ export async function createEvent(data: {
         pocEmail: data.pocEmail || null,
         pocPhone: data.pocPhone || null,
         companyId,
-        createdByWorkMeId: workMeId,
+        workMeId: workMeId,
       },
     })
 
@@ -235,7 +235,7 @@ export async function createCommunityOpportunity(data: {
         pocEmail: data.pocEmail || null,
         pocPhone: data.pocPhone || null,
         companyId,
-        createdByWorkMeId: workMeId,
+        workMeId: workMeId,
       },
     })
 
@@ -278,7 +278,7 @@ export async function createBenefits(data: {
         windowEnd: data.windowEnd || null,
         actionLink: data.fehbLink || data.fedvipLink || data.fsafedsLink || null,
         companyId,
-        createdByWorkMeId: workMeId,
+        workMeId: workMeId,
       },
     })
 
@@ -316,7 +316,7 @@ export async function createCareer(data: {
         ...(data.deadlines ? { eligibility: { deadlines: data.deadlines } } : {}),
         ...(data.resourceLink ? { application: { link: data.resourceLink } } : {}),
         companyId,
-        createdByWorkMeId: workMeId,
+        workMeId: workMeId,
       },
     })
 
@@ -370,7 +370,7 @@ export async function createEmployeeCause(data: {
           : undefined,
         sponsoringDepartment: data.sponsoringDepartment || null,
         companyId,
-        createdByWorkMeId: workMeId,
+        workMeId: workMeId,
       },
     })
 
