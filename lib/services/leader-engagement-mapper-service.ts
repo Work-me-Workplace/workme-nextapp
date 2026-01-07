@@ -30,6 +30,7 @@ export interface LeaderEngagementModel {
   talkingPoints: string | null // Detailed talking points or script
   leaderName: string | null
   leaderTitle: string | null
+  leaderId: string | null // Optional - not extracted from text, may be set separately
   audience: EventAudience | null
   registrationRequired: string | null
   registrationLink: string | null
@@ -121,6 +122,7 @@ Return only:
       talkingPoints: parsed.talkingPoints || null,
       leaderName: parsed.leaderName || null,
       leaderTitle: parsed.leaderTitle || null,
+      leaderId: parsed.leaderId || null, // Optional - typically not in text, may be set separately
       audience: parsed.audience || null,
       registrationRequired: parsed.registrationRequired || null,
       registrationLink: parsed.registrationLink || null,
@@ -145,6 +147,7 @@ Return only:
       talkingPoints: null,
       leaderName: null,
       leaderTitle: null,
+      leaderId: null,
       audience: null,
       registrationRequired: null,
       registrationLink: null,
