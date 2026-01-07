@@ -101,11 +101,25 @@ const KEYWORDS: Record<ContextType, string[]> = {
     'meeting',
     'gathering',
     'celebration',
-    'all hands',
-    'town hall',
     'lunch',
     'dinner',
     'reception',
+  ],
+  leader_engagement: [
+    'town hall',
+    'all hands',
+    'all-hands',
+    'leadership briefing',
+    'leadership engagement',
+    'state of the org',
+    'state of the organization',
+    'executive update',
+    'senior leadership',
+    'leadership meeting',
+    'q&a session',
+    'question and answer',
+    'leader address',
+    'executive address',
   ],
   employee_cause: [
     'employee cause',
@@ -129,6 +143,7 @@ function scoreByKeywords(text: string): Record<ContextType, number> {
     impact_event: 0,
     community: 0,
     event: 0,
+    leader_engagement: 0,
     employee_cause: 0,
   }
 
@@ -175,6 +190,7 @@ async function llmFallback(text: string): Promise<InferenceResult> {
 Valid CompanyX types:
 - training (training programs, courses, learning, workshops, certifications)
 - event (company events, gatherings, meetings, celebrations)
+- leader_engagement (town halls, all-hands meetings, leadership briefings, state of the org)
 - campaign (company campaigns, initiatives, drives)
 - impact_event (disruptions, changes affecting workforce, announcements)
 - benefits (benefits enrollment, open season, health benefits)
@@ -215,6 +231,7 @@ ${text.substring(0, 2000)}`
     const validTypes: ContextType[] = [
       'training',
       'event',
+      'leader_engagement',
       'campaign',
       'impact_event',
       'benefits',

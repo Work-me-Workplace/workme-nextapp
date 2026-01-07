@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
         'training',
         'career',
         'event',
+        'leader_engagement',
         'campaign',
         'impact_event',
         'community',

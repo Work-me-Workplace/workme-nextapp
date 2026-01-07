@@ -11,6 +11,7 @@ export type ContextType =
   | 'impact_event'
   | 'training'
   | 'event'
+  | 'leader_engagement'
   | 'community'
   | 'benefits'
   | 'career'
@@ -21,6 +22,7 @@ export const CONTEXT_TYPES: ContextType[] = [
   'impact_event',
   'training',
   'event',
+  'leader_engagement',
   'community',
   'benefits',
   'career',

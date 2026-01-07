@@ -16,6 +16,7 @@ export const CONTEXT_TYPE_TO_MODEL: Record<ContextType, string> = {
   impact_event: 'companyImpactEvent',
   training: 'companyTraining',
   event: 'companyEvent',
+  leader_engagement: 'companyLeaderEngagement',
   community: 'companyCommunity',
   benefits: 'companyBenefits',
   career: 'companyCareer',
@@ -30,6 +31,7 @@ export const CONTEXT_TYPE_TO_ROUTE: Record<ContextType, string> = {
   impact_event: 'impact-event',
   training: 'training',
   event: 'event',
+  leader_engagement: 'leader-engagement',
   community: 'community',
   benefits: 'benefits',
   career: 'career',
@@ -54,6 +56,9 @@ export const REQUIRED_FIELDS: Record<ContextType, Record<string, any>> = {
     title: '', // Required field, will be updated in Stage 2
   },
   event: {
+    title: '', // Required field, will be updated in Stage 2
+  },
+  leader_engagement: {
     title: '', // Required field, will be updated in Stage 2
   },
   community: {
@@ -91,7 +96,7 @@ export async function createCompanyXWithIngest(
   const baseData: any = {
     ...requiredFields,
     companyId,
-    createdByWorkMeId: workMeId,
+    workMeId: workMeId,
   }
 
   // Add ingest fields for models that support them

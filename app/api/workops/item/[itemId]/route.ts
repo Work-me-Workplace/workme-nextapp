@@ -31,7 +31,7 @@ const updateItemSchema = z.object({
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { itemId: string } }
+  { params }: { params: Promise<{ itemId: string }> }
 ) {
   try {
     // 1. Auth - Verify Firebase token
@@ -41,7 +41,7 @@ export async function PATCH(
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    const { itemId } = params
+    const { itemId } = await params
 
     // 3. Verify item exists and belongs to user's outlook
     const item = await getWorkOpsItem(itemId)

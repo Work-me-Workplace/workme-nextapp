@@ -8,7 +8,7 @@ import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import AddWorkModal from '@/components/workops/add-work/AddWorkModal'
 import WhiteboardView from '@/components/workops/WhiteboardView'
-import { Plus, Clock, CheckCircle, AlertCircle, XCircle, LayoutGrid, List } from 'lucide-react'
+import { Plus, Clock, CheckCircle, AlertCircle, XCircle, LayoutGrid, List, Download, Upload, BarChart3, FileText, Filter, Sparkles, Settings } from 'lucide-react'
 import api from '@/lib/api'
 import { WorkOpsStatus } from '@prisma/client'
 
@@ -130,6 +130,10 @@ export default function OverallOutlookPage() {
       default:
         return 'bg-gray-100 text-gray-800'
     }
+  }
+
+  const handleComingSoon = (featureName: string) => {
+    alert(`${featureName} coming soon!`)
   }
 
   if (!authReady || !workMeId || loading) {

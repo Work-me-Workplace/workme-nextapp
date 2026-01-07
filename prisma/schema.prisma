@@ -24,6 +24,11 @@ model WorkMe {
   title       String?
   linkedinUrl String?
 
+  // LinkedIn OAuth (minimal required fields)
+  linkedinUserId         String? // LinkedIn user ID from /v2/userinfo
+  linkedinAccessToken    String? // Access token (no refresh token support)
+  linkedinTokenExpiresAt DateTime? // When token expires (5184000 seconds = 60 days)
+
   // WorkMeCompany - silent background tag for tenant partitioning
   workMeCompanyId String?
   workMeCompany   WorkMeCompany? @relation(fields: [workMeCompanyId], references: [id])
@@ -52,14 +57,15 @@ model WorkMe {
   originatedAchievements       Achievement[]                      @relation("AchievementOriginator")
   createdEmailDigestProducts   WorkForceEnduringProdEmailDigest[] @relation("EmailDigestProductCreator")
   createdOneOffEmails          WorkForceOneOffEmailDigest[]       @relation("OneOffEmailCreator")
-  createdCompanyCampaigns      CompanyCampaign[]                  @relation("CompanyCampaignCreator")
-  createdCompanyImpactEvents   CompanyImpactEvent[]               @relation("CompanyImpactEventCreator")
-  createdCompanyTrainings      CompanyTraining[]                  @relation("CompanyTrainingCreator")
-  createdCompanyEvents         CompanyEvent[]                     @relation("CompanyEventCreator")
-  createdCompanyCommunities    CompanyCommunity[]                 @relation("CompanyCommunityCreator")
-  createdCompanyCareers        CompanyCareer[]                    @relation("CompanyCareerCreator")
-  createdCompanyBenefits       CompanyBenefits[]                  @relation("CompanyBenefitsCreator")
-  createdCompanyEmployeeCauses CompanyEmployeeCause[]             @relation("CompanyEmployeeCauseCreator")
+  companyCampaigns      CompanyCampaign[]      @relation("CompanyCampaignWorkMe")
+  companyImpactEvents   CompanyImpactEvent[]    @relation("CompanyImpactEventWorkMe")
+  companyTrainings      CompanyTraining[]      @relation("CompanyTrainingWorkMe")
+  companyEvents         CompanyEvent[]          @relation("CompanyEventWorkMe")
+  companyLeaderEngagements CompanyLeaderEngagement[] @relation("CompanyLeaderEngagementWorkMe")
+  companyCommunities    CompanyCommunity[]      @relation("CompanyCommunityWorkMe")
+  companyCareers        CompanyCareer[]         @relation("CompanyCareerWorkMe")
+  companyBenefits       CompanyBenefits[]       @relation("CompanyBenefitsWorkMe")
+  companyEmployeeCauses CompanyEmployeeCause[]  @relation("CompanyEmployeeCauseWorkMe")
   createdDigitalSignProducts   ProductDigitalSign[]               @relation("ProductDigitalSignCreator")
   createdEmployeeHighlights    CompanyEmployeeHighlight[]         @relation("CompanyEmployeeHighlightCreator")
   createdCompanyEmployees      CompanyEmployee[]                  @relation("CompanyEmployeeCreator")
@@ -253,6 +259,7 @@ model Company {
   impactEvents    CompanyImpactEvent[]       @relation("CompanyImpactEventCompany")
   trainings       CompanyTraining[]          @relation("CompanyTrainingCompany")
   events          CompanyEvent[]             @relation("CompanyEventCompany")
+  leaderEngagements CompanyLeaderEngagement[] @relation("CompanyLeaderEngagementCompany")
   communities     CompanyCommunity[]         @relation("CompanyCommunityCompany")
   benefits        CompanyBenefits[]          @relation("CompanyBenefitsCompany")
   careers         CompanyCareer[]            @relation("CompanyCareerCompany")
@@ -439,10 +446,15 @@ model Achievement {
 model CompanyCampaign {
   id           String    @id @default(cuid())
   createdAt    DateTime  @default(now())
+  archived     Boolean   @default(false)
   title        String
   description  String?
-  windowStart  DateTime?
-  windowEnd    DateTime?
+
+  // Standardized CompanyX Fields
+  windowStart DateTime?  // Date field (standardized - window start)
+  windowEnd   DateTime?  // Date field (standardized - window end)
+  location    String?     // Location field (standardized) - ADDED
+
   ctaLink      String?
   sponsor      String?
   pocFirstName String?
@@ -451,27 +463,32 @@ model CompanyCampaign {
   pocPhone     String?
 
   ingestRawText String?
+  summary       String?
 
-  summary String?
-
-  companyId         String?
-  company           Company? @relation("CompanyCampaignCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  createdByWorkMeId String   @db.Uuid
-  createdBy         WorkMe   @relation("CompanyCampaignCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  // Standardized Relations
+  companyId String?
+  company   Company? @relation("CompanyCampaignCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  workMeId  String   @db.Uuid
+  workMe    WorkMe   @relation("CompanyCampaignWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemCampaign")
   companyWork      CompanyWork[]     @relation
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([workMeId])
 }
 
 model CompanyImpactEvent {
   id                 String    @id @default(cuid())
   createdAt          DateTime  @default(now())
+  archived           Boolean   @default(false)
   title              String
   description        String?
-  effectiveDate      DateTime?
+
+  // Standardized CompanyX Fields
+  effectiveDate DateTime?  // Date field (standardized)
+  location      String?     // Location field (standardized) - ADDED
+
   impactedPopulation String?
   urgency            String?
   pocFirstName       String?
@@ -480,24 +497,25 @@ model CompanyImpactEvent {
   pocPhone           String?
 
   ingestRawText String?
+  summary       String?
 
-  summary String?
-
-  companyId         String?
-  company           Company? @relation("CompanyImpactEventCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  createdByWorkMeId String   @db.Uuid
-  createdBy         WorkMe   @relation("CompanyImpactEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  // Standardized Relations
+  companyId String?
+  company   Company? @relation("CompanyImpactEventCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  workMeId  String   @db.Uuid
+  workMe    WorkMe   @relation("CompanyImpactEventWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemImpactEvent")
   companyWork      CompanyWork[]     @relation
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([workMeId])
 }
 
 model CompanyTraining {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
+  archived  Boolean  @default(false)
 
   title            String?
   topic            String?
@@ -526,31 +544,36 @@ model CompanyTraining {
 
   summary String?
 
-  companyId         String?
-  company           Company? @relation("CompanyTrainingCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  createdByWorkMeId String   @db.Uuid
-  createdBy         WorkMe   @relation("CompanyTrainingCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId String?
+  company   Company? @relation("CompanyTrainingCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  workMeId  String   @db.Uuid
+  workMe    WorkMe   @relation("CompanyTrainingWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemTraining")
   companyWork      CompanyWork[]     @relation
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([workMeId])
 }
 
 model CompanyEvent {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  archived  Boolean  @default(false)
 
+  // Core Content
   title       String
   theme       String?
   description String?
 
-  eventDate DateTime?
-  startTime String?
-  endTime   String?
+  // Standardized CompanyX Fields
+  eventDate DateTime?  // Date field (standardized)
+  startTime String?     // Time field (standardized)
+  endTime   String?    // Time field (standardized)
+  location  String?     // Location field (standardized) - ADDED
 
+  // Event-specific fields
   eventCategory EventCategory?
 
   registrationRequired String?
@@ -568,46 +591,108 @@ model CompanyEvent {
   pocEmail String?
   pocPhone String?
 
+  // Ingestion
   ingestRawText String?
+  summary       String?
 
-  summary String?
+  // Standardized Relations
+  companyId String?  // Company ID (standardized)
+  company   Company? @relation("CompanyEventCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  workMeId  String   @db.Uuid  // Owner ID / Author ID (standardized)
+  workMe    WorkMe   @relation("CompanyEventWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
-  companyId         String?
-  company           Company? @relation("CompanyEventCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  createdByWorkMeId String   @db.Uuid
-  createdBy         WorkMe   @relation("CompanyEventCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-
-  eventItems       EventItem[]       @relation
+  // Relations
+  // NOTE: EventItem is deprecated - products now link via CompanyWorkLink
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemEvent")
   companyWork      CompanyWork[]     @relation
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([workMeId])
+  @@index([eventDate])
 }
 
-model EventItem {
-  id      String       @id @default(cuid())
-  eventId String
-  event   CompanyEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-
-  title       String
-  description String?
-  metadata    Json?
-
+model CompanyLeaderEngagement {
+  id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([eventId])
+  title       String
+  description String?
+
+  // Standardized CompanyX Fields
+  engagementDate DateTime?  // Date field (standardized)
+  startTime      String?     // Time field (standardized)
+  endTime        String?     // Time field (standardized)
+  location       String?     // Location field (standardized)
+
+  // Leadership engagement specific fields
+  topicAreas         String[] @default([]) // Topics that will be covered (e.g., "State of the Org", "Q4 Results", "Strategic Priorities")
+  potentialQuestions String[] @default([]) // Anticipated questions from the audience
+  keyMessages        String[] @default([]) // Key messages the leader wants to convey
+  talkingPoints      String? // Detailed talking points or script
+
+  // Leader information
+  leaderName  String? // Name of the principal speaker/leader
+  leaderTitle String? // Title/role of the leader
+  leaderId    String? // Optional FK to CompanyEmployee if they exist in the system
+
+  // Audience
+  audience      EventAudience?
+  registrationRequired String?
+  registrationLink     String?
+
+  // Format details
+  format String? // "Town Hall", "All-Hands", "Leadership Briefing", etc.
+  qAndAEnabled Boolean @default(false) // Whether Q&A is enabled
+
+  // Contact
+  pocEmail String?
+  pocPhone String?
+
+  // Ingestion
+  ingestRawText String?
+  summary       String?
+
+  // Standardized Relations
+  companyId String?  // Company ID (standardized)
+  company   Company? @relation("CompanyLeaderEngagementCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  workMeId  String   @db.Uuid  // Owner ID / Author ID (standardized)
+  workMe    WorkMe   @relation("CompanyLeaderEngagementWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
+
+  oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemLeaderEngagement")
+  companyWork      CompanyWork[]     @relation
+
+  @@index([companyId])
+  @@index([workMeId])
+  @@index([engagementDate])
+  @@index([leaderId])
 }
+
+// ============================================
+// EventItem Model - DROPPED
+// ============================================
+// ⚠️ REMOVED: EventItem table has been dropped.
+// Products now link to CompanyEvent via CompanyWorkLink (foreign key capability).
+//
+// Migration path:
+// - Old EventItem data should be migrated to WorkCommsProduct with CompanyWorkLink
+// - Event-specific items should be stored as products, not EventItems
+//
 
 model CompanyCommunity {
   id           String    @id @default(cuid())
   createdAt    DateTime  @default(now())
+  archived     Boolean   @default(false)
   title        String
   description  String?
   partnerOrg   String?
-  date         DateTime?
-  location     String?
+
+  // Standardized CompanyX Fields
+  date      DateTime?  // Date field (standardized)
+  startTime String?     // Time field (standardized) - ADDED
+  endTime   String?     // Time field (standardized) - ADDED
+  location  String?     // Location field (standardized)
+
   signUpLink   String?
   pocFirstName String?
   pocLastName  String?
@@ -615,32 +700,35 @@ model CompanyCommunity {
   pocPhone     String?
 
   ingestRawText String?
+  summary       String?
 
-  summary String?
-
-  companyId         String?
-  company           Company? @relation("CompanyCommunityCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  createdByWorkMeId String   @db.Uuid
-  createdBy         WorkMe   @relation("CompanyCommunityCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  // Standardized Relations
+  companyId String?
+  company   Company? @relation("CompanyCommunityCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  workMeId  String   @db.Uuid
+  workMe    WorkMe   @relation("CompanyCommunityWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemCommunity")
   companyWork      CompanyWork[]     @relation
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([workMeId])
 }
 
 model CompanyBenefits {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  archived  Boolean  @default(false)
 
   title                  String
   description            String?
   employeeBenefitSummary String?
 
-  windowStart DateTime?
-  windowEnd   DateTime?
+  // Standardized CompanyX Fields
+  windowStart DateTime?  // Date field (standardized - window start)
+  windowEnd   DateTime?  // Date field (standardized - window end)
+  location    String?     // Location field (standardized) - ADDED
 
   deadlines Json?
 
@@ -654,16 +742,17 @@ model CompanyBenefits {
 
   ingestRawText String?
 
-  companyId         String?
-  company           Company? @relation("CompanyBenefitsCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  createdByWorkMeId String   @db.Uuid
-  createdBy         WorkMe   @relation("CompanyBenefitsCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  // Standardized Relations
+  companyId String?
+  company   Company? @relation("CompanyBenefitsCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  workMeId  String   @db.Uuid
+  workMe    WorkMe   @relation("CompanyBenefitsWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemBenefits")
   companyWork      CompanyWork[]     @relation
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([workMeId])
 }
 
 enum CareerLevel {
@@ -681,6 +770,7 @@ enum CareerType {
 model CompanyCareer {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
+  archived  Boolean  @default(false)
 
   title       String
   description String?
@@ -698,16 +788,16 @@ model CompanyCareer {
 
   summary String?
 
-  companyId         String?
-  company           Company? @relation("CompanyCareerCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  createdByWorkMeId String   @db.Uuid
-  createdBy         WorkMe   @relation("CompanyCareerCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId String?
+  company   Company? @relation("CompanyCareerCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  workMeId  String   @db.Uuid
+  workMe    WorkMe   @relation("CompanyCareerWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemCareer")
   companyWork      CompanyWork[]     @relation
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([workMeId])
 }
 
 model CompanyEmployeeCause {
@@ -736,16 +826,16 @@ model CompanyEmployeeCause {
 
   ingestRawText String?
 
-  companyId         String?
-  company           Company? @relation("CompanyEmployeeCauseCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  createdByWorkMeId String   @db.Uuid
-  createdBy         WorkMe   @relation("CompanyEmployeeCauseCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  companyId String?
+  company   Company? @relation("CompanyEmployeeCauseCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  workMeId  String   @db.Uuid
+  workMe    WorkMe   @relation("CompanyEmployeeCauseWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemEmployeeCause")
   companyWork      CompanyWork[]     @relation
 
   @@index([companyId])
-  @@index([createdByWorkMeId])
+  @@index([workMeId])
 }
 
 // ====================================================
@@ -968,6 +1058,7 @@ model OneOffEmailItem {
   companyCommunityId     String?
   companyCareerId        String?
   companyEmployeeCauseId String?
+  companyLeaderEngagementId String?
 
   // Relations (nullable)
   companyEvent         CompanyEvent?         @relation("OneOffEmailItemEvent", fields: [companyEventId], references: [id], onDelete: Cascade)
@@ -978,6 +1069,7 @@ model OneOffEmailItem {
   companyCommunity     CompanyCommunity?     @relation("OneOffEmailItemCommunity", fields: [companyCommunityId], references: [id], onDelete: Cascade)
   companyCareer        CompanyCareer?        @relation("OneOffEmailItemCareer", fields: [companyCareerId], references: [id], onDelete: Cascade)
   companyEmployeeCause CompanyEmployeeCause? @relation("OneOffEmailItemEmployeeCause", fields: [companyEmployeeCauseId], references: [id], onDelete: Cascade)
+  companyLeaderEngagement CompanyLeaderEngagement? @relation("OneOffEmailItemLeaderEngagement", fields: [companyLeaderEngagementId], references: [id], onDelete: Cascade)
 
   order     Int // Display order in email
   notes     String? // User notes for this item
@@ -992,6 +1084,7 @@ model OneOffEmailItem {
   @@index([companyCommunityId])
   @@index([companyCareerId])
   @@index([companyEmployeeCauseId])
+  @@index([companyLeaderEngagementId])
   @@index([order])
 }
 
@@ -2609,15 +2702,9 @@ model SkillItem {
   companyWorkId String?
   companyWork   CompanyWork? @relation(fields: [companyWorkId], references: [id], onDelete: SetNull)
 
-  // Optional reference to specific company work types (polymorphic)
-  companyEventId         String?
-  companyCampaignId      String?
-  companyTrainingId      String?
-  companyImpactEventId   String?
-  companyCommunityId     String?
-  companyEmployeeCauseId String?
-  memoId                 String?
-  memo                   Memo?   @relation(fields: [memoId], references: [id], onDelete: SetNull)
+  // Optional reference to personal work
+  memoId String?
+  memo   Memo?   @relation(fields: [memoId], references: [id], onDelete: SetNull)
 
   // Relations
   skillTopic SkillTopic @relation(fields: [skillTopicId], references: [id], onDelete: Cascade)
@@ -2740,11 +2827,12 @@ model CompanyWork {
   companyEmployeeCauseId String?
   companyBenefitsId      String?
   companyCareerId        String?
+  companyLeaderEngagementId String?
 
   // Generic metadata
   title       String
   description String?
-  workType    String? // "event", "campaign", "training", etc.
+  workType    String? // "event", "campaign", "training", "leaderEngagement", etc.
 
   // Relations to specific company work types
   companyEvent         CompanyEvent?         @relation(fields: [companyEventId], references: [id], onDelete: SetNull)
@@ -2755,6 +2843,7 @@ model CompanyWork {
   companyEmployeeCause CompanyEmployeeCause? @relation(fields: [companyEmployeeCauseId], references: [id], onDelete: SetNull)
   companyBenefits      CompanyBenefits?      @relation(fields: [companyBenefitsId], references: [id], onDelete: SetNull)
   companyCareer        CompanyCareer?        @relation(fields: [companyCareerId], references: [id], onDelete: SetNull)
+  companyLeaderEngagement CompanyLeaderEngagement? @relation(fields: [companyLeaderEngagementId], references: [id], onDelete: SetNull)
   company              Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   // Personal contributions (user-specific views)

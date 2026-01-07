@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
       'training',
       'career',
       'event',
+      'leader_engagement',
       'campaign',
       'impact_event',
       'community',
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
             ingestCreatedAt: new Date(),
             summary: data.description || data.title || null,
             companyId,
-            createdByWorkMeId: workMeId,
+            workMeId: workMeId,
           },
         })
         break
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
             ingestRawText: rawText,
             summary: data.description || data.title || null,
             companyId,
-            createdByWorkMeId: workMeId,
+            workMeId: workMeId,
           },
         })
         break
@@ -128,6 +129,7 @@ export async function POST(request: NextRequest) {
           eventDate: data.eventDate ? new Date(data.eventDate) : null,
           startTime: data.startTime,
           endTime: data.endTime,
+          location: data.location,
           eventCategory: data.eventCategory,
           registrationRequired: data.registrationRequired,
           registrationLink: data.registrationLink,
@@ -142,21 +144,44 @@ export async function POST(request: NextRequest) {
           pocPhone: data.pocPhone,
           summary: data.description || data.theme || data.title || null,
           companyId,
-          createdByWorkMeId: workMeId,
+          workMeId: workMeId,
         }
 
         createdRecord = await prisma.companyEvent.create({
           data: {
             ...eventData,
-            eventItems: data.eventItems
-              ? {
-                  create: data.eventItems.map((item: any) => ({
-                    title: item.title,
-                    description: item.description,
-                    metadata: item.metadata,
-                  })),
-                }
-              : undefined,
+          },
+        })
+        break
+      }
+
+      case 'leader_engagement': {
+        createdRecord = await prisma.companyLeaderEngagement.create({
+          data: {
+            title: data.title || 'Untitled Leader Engagement',
+            description: data.description,
+            engagementDate: data.engagementDate ? new Date(data.engagementDate) : null,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            location: data.location,
+            topicAreas: data.topicAreas || [],
+            potentialQuestions: data.potentialQuestions || [],
+            keyMessages: data.keyMessages || [],
+            talkingPoints: data.talkingPoints,
+            leaderName: data.leaderName,
+            leaderTitle: data.leaderTitle,
+            leaderId: data.leaderId,
+            audience: data.audience,
+            registrationRequired: data.registrationRequired,
+            registrationLink: data.registrationLink,
+            format: data.format,
+            qAndAEnabled: data.qAndAEnabled ?? false,
+            pocEmail: data.pocEmail,
+            pocPhone: data.pocPhone,
+            ingestRawText: rawText,
+            summary: data.description || data.title || null,
+            companyId,
+            workMeId: workMeId,
           },
         })
         break
@@ -177,7 +202,7 @@ export async function POST(request: NextRequest) {
             pocPhone: data.pocPhone,
             summary: data.description || data.title || null,
             companyId,
-            createdByWorkMeId: workMeId,
+            workMeId: workMeId,
           },
         })
         break
@@ -198,7 +223,7 @@ export async function POST(request: NextRequest) {
             ingestRawText: data.rawText || data.ingestRawText || null, // SAVE THE RAW TEXT!
             summary: data.summary || data.description || data.title || null,
             companyId,
-            createdByWorkMeId: workMeId,
+            workMeId: workMeId,
           },
         })
         break
@@ -219,7 +244,7 @@ export async function POST(request: NextRequest) {
             pocPhone: data.pocPhone,
             summary: data.description || data.title || null,
             companyId,
-            createdByWorkMeId: workMeId,
+            workMeId: workMeId,
           },
         })
         break
@@ -240,7 +265,7 @@ export async function POST(request: NextRequest) {
             ingestRawText: rawText,
             summary: data.description || data.employeeBenefitSummary || data.title || null,
             companyId,
-            createdByWorkMeId: workMeId,
+            workMeId: workMeId,
           },
         })
         break
@@ -264,7 +289,7 @@ export async function POST(request: NextRequest) {
             ingestRawText: rawText,
             summary: data.description || data.impactSummary || data.title || null,
             companyId,
-            createdByWorkMeId: workMeId,
+            workMeId: workMeId,
           },
         })
         break

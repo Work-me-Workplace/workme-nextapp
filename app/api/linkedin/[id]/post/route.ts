@@ -49,21 +49,49 @@ export async function POST(
       )
     }
 
-    // 6. TODO: Implement actual LinkedIn API call
-    // For now, this is a placeholder that simulates success
-    
-    // Simulated LinkedIn API call
-    const linkedInApiSuccess = true // Change to actual API call
-    
-    if (linkedInApiSuccess) {
-      // Update post as POSTED
+    // 6. Check LinkedIn connection
+    const workMe = await prisma.workMe.findUnique({
+      where: { id: workMeId },
+      select: {
+        linkedinUserId: true,
+        linkedinAccessToken: true,
+        linkedinTokenExpiresAt: true,
+      },
+    })
+
+    if (!workMe?.linkedinUserId || !workMe?.linkedinAccessToken) {
+      return NextResponse.json(
+        { success: false, error: 'LinkedIn not connected. Please connect LinkedIn first.' },
+        { status: 401 }
+      )
+    }
+
+    // 7. Check if token is expired
+    const { isTokenExpired } = await import('@/lib/services/linkedinOAuth')
+    if (isTokenExpired(workMe.linkedinTokenExpiresAt)) {
+      return NextResponse.json(
+        { success: false, error: 'LinkedIn token expired. Please reconnect LinkedIn.' },
+        { status: 401 }
+      )
+    }
+
+    // 8. Post to LinkedIn API
+    try {
+      const { postToLinkedIn } = await import('@/lib/services/linkedinOAuth')
+      const postResult = await postToLinkedIn(
+        workMe.linkedinAccessToken,
+        workMe.linkedinUserId,
+        existingPost.content
+      )
+
+      // 9. Update post as POSTED
       const linkedInPost = await prisma.linkedInPost.update({
         where: { id },
         data: {
           status: 'POSTED',
           postedAt: new Date(),
-          // linkedinPostUrn would come from LinkedIn API response
-          linkedinPostUrn: `urn:li:share:${Date.now()}`, // Placeholder
+          linkedinPostUrn: postResult.id,
+          errorMessage: null,
         },
         include: {
           memo: true,
@@ -75,23 +103,28 @@ export async function POST(
         linkedInPost,
         message: 'Post published to LinkedIn successfully',
       })
-    } else {
-      // Mark as FAILED with error message
+    } catch (apiError: any) {
+      // 10. Mark as FAILED with error message
       const linkedInPost = await prisma.linkedInPost.update({
         where: { id },
         data: {
           status: 'FAILED',
-          errorMessage: 'Failed to post to LinkedIn',
+          errorMessage: apiError.message || 'Failed to post to LinkedIn',
         },
         include: {
           memo: true,
         },
       })
 
+      // If 401, suggest reconnection
+      const isUnauthorized = apiError.message?.includes('401') || 
+                            apiError.message?.toLowerCase().includes('unauthorized')
+
       return NextResponse.json({
         success: false,
         linkedInPost,
-        error: 'Failed to post to LinkedIn',
+        error: apiError.message || 'Failed to post to LinkedIn',
+        requiresReconnect: isUnauthorized,
       }, { status: 500 })
     }
   } catch (error: any) {

@@ -9,6 +9,7 @@ import type { ContextType } from '@/lib/types/context-type'
 import { parseTraining, type TrainingModel } from './training-parser-service'
 import { parseCareer, type CareerModel } from './career-parser-service'
 import { parseEvent, type EventModel } from './event-mapper-service'
+import { parseLeaderEngagement, type LeaderEngagementModel } from './leader-engagement-mapper-service'
 import { parseCampaign, type CampaignModel } from './campaign-mapper-service'
 import { parseImpactEvent, type ImpactEventModel } from './impact-event-mapper-service'
 import { parseCommunity, type CommunityModel } from './community-mapper-service'
@@ -19,6 +20,7 @@ export type ParsedCompanyXData =
   | { type: 'training'; data: TrainingModel }
   | { type: 'career'; data: CareerModel }
   | { type: 'event'; data: EventModel }
+  | { type: 'leader_engagement'; data: LeaderEngagementModel }
   | { type: 'campaign'; data: CampaignModel }
   | { type: 'impact_event'; data: ImpactEventModel }
   | { type: 'community'; data: CommunityModel }
@@ -43,6 +45,8 @@ export async function parseCompanyXContent(
       return { type: 'career', data: await parseCareer(rawText) }
     case 'event':
       return { type: 'event', data: await parseEvent(rawText) }
+    case 'leader_engagement':
+      return { type: 'leader_engagement', data: await parseLeaderEngagement(rawText) }
     case 'campaign':
       return { type: 'campaign', data: await parseCampaign(rawText) }
     case 'impact_event':
