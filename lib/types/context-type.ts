@@ -29,3 +29,13 @@ export const CONTEXT_TYPES: ContextType[] = [
   'employee_cause',
 ]
 
+/**
+ * Type guard to check if a string is a valid ContextType
+ * 
+ * @param value - String to validate
+ * @returns True if value is a valid ContextType
+ */
+export function isValidContextType(value: string): value is ContextType {
+  return CONTEXT_TYPES.includes(value as ContextType)
+}
+

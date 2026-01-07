@@ -3,6 +3,7 @@ import { requireWorkMeAuth } from '@/lib/server/requireWorkMeAuth'
 import { prisma } from '@/lib/prisma'
 import { createCompanyXWithIngest, getCompanyXRedirectPath, CONTEXT_TYPE_TO_MODEL } from '@/lib/services/companyx-mapper'
 import type { ContextType } from '@/lib/types/context-type'
+import { CONTEXT_TYPES, isValidContextType } from '@/lib/types/context-type'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -50,21 +51,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate selectedType is a valid ContextType
-    const validTypes: ContextType[] = [
-      'training',
-      'career',
-      'event',
-      'leader_engagement',
-      'campaign',
-      'impact_event',
-      'community',
-      'benefits',
-      'employee_cause',
-    ]
-
-    if (!validTypes.includes(selectedType as ContextType)) {
+    if (!isValidContextType(selectedType)) {
       return NextResponse.json(
-        { success: false, error: `Invalid selectedType. Must be one of: ${validTypes.join(', ')}` },
+        { success: false, error: `Invalid selectedType. Must be one of: ${CONTEXT_TYPES.join(', ')}` },
         { status: 400 }
       )
     }

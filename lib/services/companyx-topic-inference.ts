@@ -9,6 +9,7 @@
 
 import OpenAI from 'openai'
 import type { ContextType } from '@/lib/types/context-type'
+import { CONTEXT_TYPES } from '@/lib/types/context-type'
 
 interface InferenceResult {
   type: ContextType
@@ -227,20 +228,8 @@ ${text.substring(0, 2000)}`
 
     const result = JSON.parse(response.choices[0].message.content || '{}')
 
-    // Validate type
-    const validTypes: ContextType[] = [
-      'training',
-      'event',
-      'leader_engagement',
-      'campaign',
-      'impact_event',
-      'benefits',
-      'community',
-      'career',
-      'employee_cause',
-    ]
-
-    const inferredType = validTypes.includes(result.type) ? result.type : 'training'
+    // Validate type - use CONTEXT_TYPES for consistency
+    const inferredType = CONTEXT_TYPES.includes(result.type) ? result.type : 'training'
 
     return {
       type: inferredType,

@@ -25,3 +25,4 @@ CREATE INDEX IF NOT EXISTS "CompanyBenefits_status_idx" ON "CompanyBenefits"("st
 CREATE INDEX IF NOT EXISTS "CompanyCareer_status_idx" ON "CompanyCareer"("status");
 CREATE INDEX IF NOT EXISTS "CompanyEmployeeCause_status_idx" ON "CompanyEmployeeCause"("status");
 
+

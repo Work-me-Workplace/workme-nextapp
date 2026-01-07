@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react'
-import api from '@/lib/api'
 
 export default function AddWorkforceStuffPage() {
   const router = useRouter()
@@ -36,22 +35,36 @@ export default function AddWorkforceStuffPage() {
 
     try {
       // Step 1: Infer type only (no parsing yet)
-      const inferResponse = await api.post('/api/workforcestuff/add', {
-        rawText: rawText.trim(),
+      const res = await fetch('/api/workforcestuff/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rawText: rawText.trim() }),
       })
 
-      if (!inferResponse.data.success) {
-        setError(inferResponse.data.error || 'Failed to infer type')
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Request failed')
+      }
+
+      const data = await res.json()
+
+      if (!data.success) {
+        setError(data.error || 'Failed to infer type')
         return
       }
 
-      const { inference: inferred } = inferResponse.data
+      const inferred = data.inference
+      if (!inferred || !inferred.type) {
+        setError('Invalid response from server')
+        return
+      }
+
       setInference(inferred)
       setSelectedType(inferred.type)
       setStep('confirm')
     } catch (err: any) {
       console.error('Infer error:', err)
-      setError(err.response?.data?.error || err.message || 'Failed to infer type')
+      setError(err.message || 'Failed to infer type')
     } finally {
       setLoading(false)
     }
@@ -72,30 +85,49 @@ export default function AddWorkforceStuffPage() {
       // 1. Create CompanyX with ingest snapshot
       // 2. Parse the content (calls the parser)
       // 3. Update the record with parsed data
-      const saveResponse = await api.post('/api/workforcestuff/save', {
-        type: selectedType,
-        rawText: rawText.trim(),
+      const res = await fetch('/api/workforcestuff/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: selectedType,
+          rawText: rawText.trim(),
+        }),
       })
 
-      if (saveResponse.data.success) {
-        setResult({
-          type: selectedType,
-          confidence: inference?.confidence || 0,
-          explanation: inference?.explanation || '',
-          redirectTo: saveResponse.data.redirectTo,
-        })
-        setStep('success')
-
-        // Auto-redirect after 2 seconds
-        setTimeout(() => {
-          router.push(saveResponse.data.redirectTo)
-        }, 2000)
-      } else {
-        setError(saveResponse.data.error || 'Failed to save item')
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Request failed')
       }
+
+      const data = await res.json()
+
+      if (!data.success) {
+        setError(data.error || 'Failed to save item')
+        return
+      }
+
+      // Verify response structure
+      if (!data.redirectTo || typeof data.redirectTo !== 'string') {
+        console.error('Save response missing redirectTo:', data)
+        setError('Server response missing redirect path')
+        return
+      }
+
+      setResult({
+        type: selectedType,
+        confidence: inference?.confidence || 0,
+        explanation: inference?.explanation || '',
+        redirectTo: data.redirectTo,
+      })
+      setStep('success')
+
+      // Auto-redirect after 2 seconds
+      setTimeout(() => {
+        router.push(data.redirectTo)
+      }, 2000)
     } catch (err: any) {
       console.error('Save error:', err)
-      setError(err.response?.data?.error || err.message || 'Failed to save item')
+      setError(err.message || 'Failed to save item')
     } finally {
       setLoading(false)
     }
@@ -183,7 +215,7 @@ export default function AddWorkforceStuffPage() {
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Confirm Type</h2>
                 <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-gray-700 mb-2">
-                    <strong>AI detected:</strong> <span className="capitalize">{(inference.type || 'unknown').replace('_', ' ')}</span> (Confidence: {Math.round((inference.confidence || 0) * 100)}%)
+                    <strong>AI detected:</strong> <span className="capitalize">{inference.type ? inference.type.replace('_', ' ') : 'unknown'}</span> (Confidence: {Math.round((inference.confidence || 0) * 100)}%)
                   </p>
                   <p className="text-sm text-gray-600 italic">{inference.explanation || 'No explanation provided'}</p>
                 </div>
@@ -199,6 +231,7 @@ export default function AddWorkforceStuffPage() {
                   <option value="training">Training</option>
                   <option value="career">Career Opportunity</option>
                   <option value="event">Event</option>
+                  <option value="leader_engagement">Leader Engagement</option>
                   <option value="campaign">Campaign</option>
                   <option value="impact_event">Impact Event</option>
                   <option value="community">Community Engagement</option>
@@ -256,7 +289,7 @@ export default function AddWorkforceStuffPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Item Added Successfully!</h2>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <p className="text-sm font-medium text-blue-900 mb-1">
-                  Detected Type: <span className="capitalize">{(result.type || 'unknown').replace('_', ' ')}</span>
+                  Detected Type: <span className="capitalize">{result.type ? result.type.replace('_', ' ') : 'unknown'}</span>
                 </p>
                 <p className="text-xs text-blue-700">
                   Confidence: {Math.round((result.confidence || 0) * 100)}% • {result.explanation || 'No explanation provided'}

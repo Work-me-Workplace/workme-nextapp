@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { rawText } = body
+    const rawText = body?.rawText
 
     if (!rawText || typeof rawText !== 'string' || rawText.trim().length === 0) {
       return NextResponse.json(
@@ -38,18 +38,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Only infer type - no parsing here
+    // Only infer type - no parsing here, no database writes
     const inference = await inferCompanyXType(rawText)
 
     // Return inference only - user must confirm before parsing
     return NextResponse.json({
       success: true,
       inference: {
-        type: inference.type,
-        confidence: inference.confidence,
-        explanation: inference.explanation,
+        type: inference?.type || 'training',
+        confidence: inference?.confidence ?? 0,
+        explanation: inference?.explanation || 'No explanation provided',
       },
-      rawText, // Send back for review page
     }, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
