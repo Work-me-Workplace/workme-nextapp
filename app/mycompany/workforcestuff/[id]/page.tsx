@@ -55,9 +55,11 @@ export default function WorkforceStuffDetailPage() {
       
       if (response.data.success && response.data.item) {
         const loadedItem = response.data.item
+        const isArchived = loadedItem.status === 'ARCHIVED' || loadedItem.archived
         setItem({
           ...loadedItem,
-          status: loadedItem.archived ? 'archived' : 'active',
+          status: isArchived ? 'archived' : 'active',
+          archived: isArchived,
         })
       } else {
         setError('Item not found')
@@ -79,7 +81,7 @@ export default function WorkforceStuffDetailPage() {
       
       const response = await api.put(`/api/workforcestuff/${itemId}`, {
         type: item.type,
-        data: { archived },
+        data: { status: archived ? 'ARCHIVED' : 'ACTIVE' },
       })
 
       if (response.data.success) {

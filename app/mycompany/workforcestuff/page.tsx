@@ -233,7 +233,7 @@ export default function WorkforceStuffPage() {
       
       const response = await api.put(`/api/workforcestuff/${itemId}`, {
         type: itemType,
-        data: { archived },
+        data: { status: archived ? 'ARCHIVED' : 'ACTIVE' },
       })
 
       if (response.data.success) {

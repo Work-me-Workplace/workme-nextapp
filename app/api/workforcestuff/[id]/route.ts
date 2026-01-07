@@ -205,17 +205,41 @@ export async function PUT(
       )
     }
 
+    // Prepare update data
+    const updateData: any = { ...data }
+    
+    // Preserve ingest fields if they exist
+    if (existing.ingestRawText !== undefined) {
+      updateData.ingestRawText = existing.ingestRawText
+    }
+    if (existing.ingestType !== undefined) {
+      updateData.ingestType = existing.ingestType
+    }
+    if (existing.ingestCreatedAt !== undefined) {
+      updateData.ingestCreatedAt = existing.ingestCreatedAt
+    }
+    if (existing.summary !== undefined && !data.summary) {
+      updateData.summary = existing.summary
+    }
+    
+    // Convert archived boolean to status enum if provided (backward compatibility)
+    if (data.archived !== undefined) {
+      updateData.status = data.archived ? 'ARCHIVED' : 'ACTIVE'
+      delete updateData.archived // Remove boolean field
+    }
+    
+    // Ensure status is valid enum value if provided
+    if (updateData.status && !['ACTIVE', 'ARCHIVED', 'DRAFT', 'EXPIRED'].includes(updateData.status)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid status value. Must be ACTIVE, ARCHIVED, DRAFT, or EXPIRED' },
+        { status: 400 }
+      )
+    }
+
     // Update the item
     const updated = await (prisma as any)[modelName].update({
       where: { id },
-      data: {
-        ...data,
-        // Preserve ingest fields if they exist
-        ...(existing.ingestRawText !== undefined && { ingestRawText: existing.ingestRawText }),
-        ...(existing.ingestType !== undefined && { ingestType: existing.ingestType }),
-        ...(existing.ingestCreatedAt !== undefined && { ingestCreatedAt: existing.ingestCreatedAt }),
-        ...(existing.summary !== undefined && { summary: data.summary ?? existing.summary }),
-      },
+      data: updateData,
     })
 
     return NextResponse.json({
