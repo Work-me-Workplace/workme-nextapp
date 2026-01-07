@@ -24,6 +24,7 @@ export interface EventModel {
   eventDate: string | null // ISO date string
   startTime: string | null // "09:00"
   endTime: string | null // "10:30"
+  location: string | null
   eventCategory: EventCategory | null
   registrationRequired: string | null
   registrationLink: string | null
@@ -63,6 +64,7 @@ Return JSON with these exact fields:
   "eventDate": "ISO date string (YYYY-MM-DD) or null",
   "startTime": "Time string in HH:MM format (e.g., '09:00') or null",
   "endTime": "Time string in HH:MM format (e.g., '10:30') or null",
+  "location": "Event location/venue (or null)",
   "eventCategory": "One of: ${validCategories} (or null)",
   "registrationRequired": "yes" or "no" or "optional" or null,
   "registrationLink": "Registration URL (or null)",
@@ -117,6 +119,7 @@ ${rawText.substring(0, 3000)}`
       eventDate: parsed.eventDate || null,
       startTime: parsed.startTime || null,
       endTime: parsed.endTime || null,
+      location: parsed.location || null,
       eventCategory: validEventCategories.includes(parsed.eventCategory) ? parsed.eventCategory : null,
       registrationRequired: parsed.registrationRequired || null,
       registrationLink: parsed.registrationLink || null,
@@ -147,6 +150,7 @@ ${rawText.substring(0, 3000)}`
       eventDate: null,
       startTime: null,
       endTime: null,
+      location: null,
       eventCategory: null,
       registrationRequired: null,
       registrationLink: null,
