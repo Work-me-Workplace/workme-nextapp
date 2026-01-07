@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       const companyEvent = await tx.companyEvent.create({
         data: {
           ...eventCreateData,
-          createdByWorkMeId: workMeId,
+          workMeId: workMeId,
         },
       })
 
@@ -64,34 +64,19 @@ export async function POST(request: Request) {
         title: companyEvent.title,
       })
 
-      const eventItems = await Promise.all(
-        normalized.eventItemsData.map((itemData) =>
-          tx.eventItem.create({
-            data: {
-              title: itemData.title,
-              description: itemData.description,
-              metadata: itemData.metadata ?? undefined,
-              eventId: companyEvent.id,
-            },
-          })
-        )
-      )
-
-      console.log('[API POST /api/workstuff/events/save] EventItems created', {
-        eventId: companyEvent.id,
-        itemsCount: eventItems.length,
-      })
+      // Note: EventItem table has been deprecated. Products should link directly via CompanyWork.
+      // eventItemsData is kept for backwards compatibility but items are no longer created.
 
       return {
         companyEvent,
-        eventItems,
+        eventItems: [], // EventItem table deprecated
       }
     })
 
     return NextResponse.json({
       success: true,
       eventId: result.companyEvent.id,
-      itemCount: result.eventItems.length,
+      itemCount: normalized.eventItemsData.length, // Return count for backwards compatibility
     })
   } catch (error: any) {
     console.error('[API POST /api/workstuff/events/save] Error:', error)

@@ -275,7 +275,7 @@ export default function WorkforceStuffPage() {
   
   const activeItems = filteredItems.filter(item => {
     // If explicitly archived, exclude from active
-    if (item.status === 'archived' || item.archived) return false
+    if (item.status === 'archived') return false
     
     // For training items: include if ingestStatus is pending or saved, or if trainingDate is today/future
     if (item.type === 'training') {
@@ -307,7 +307,7 @@ export default function WorkforceStuffPage() {
 
   const archivedItems = filteredItems.filter(item => {
     // Explicitly archived
-    if (item.status === 'archived' || item.archived) return true
+    if (item.status === 'archived') return true
     
     // For training items: archive if trainingDate is in the past
     if (item.type === 'training' && item.startDate) {

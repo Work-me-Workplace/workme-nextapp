@@ -1,8 +1,11 @@
 /**
  * Promotional Work Item Actions
  * 
- * NOTE: PromotionalWorkItem has been migrated to EventItem with metadata.
- * This module provides compatibility functions that use EventItem.
+ * @deprecated EventItem table has been removed. This module is no longer functional.
+ * Promotional work items should be migrated to use CompanyWork with CompanyEvent relations.
+ * 
+ * NOTE: PromotionalWorkItem was migrated to EventItem with metadata, but EventItem has been deprecated.
+ * This module is kept for reference but will return errors.
  */
 
 import { prisma } from '@/lib/prisma'
@@ -48,11 +51,19 @@ export interface PromotionalWorkItem {
 
 /**
  * Create a promotional work item (stored as EventItem with metadata)
+ * @deprecated EventItem table has been removed. Use CompanyWork instead.
  */
 export async function createPromotionalWorkItem(
   data: PromotionalWorkItemData
 ): Promise<{ success: boolean; promotionalWorkItem?: PromotionalWorkItem; error?: string }> {
   try {
+    // DEPRECATED: EventItem table has been removed
+    return {
+      success: false,
+      error: 'EventItem table has been deprecated. Please use CompanyWork with CompanyEvent relations instead.',
+    }
+    
+    /* DEPRECATED CODE - EventItem table removed
     // Store promotional item data in EventItem with metadata
     const eventItem = await prisma.eventItem.create({
       data: {
@@ -103,6 +114,7 @@ export async function createPromotionalWorkItem(
       success: true,
       promotionalWorkItem,
     }
+    */ // END DEPRECATED CODE
   } catch (error: any) {
     console.error('[createPromotionalWorkItem] Error:', error)
     return {
@@ -114,11 +126,19 @@ export async function createPromotionalWorkItem(
 
 /**
  * Get a promotional work item by ID (from EventItem)
+ * @deprecated EventItem table has been removed. Use CompanyWork instead.
  */
 export async function getPromotionalWorkItem(
   id: string
 ): Promise<{ success: boolean; item?: PromotionalWorkItem; error?: string }> {
   try {
+    // DEPRECATED: EventItem table has been removed
+    return {
+      success: false,
+      error: 'EventItem table has been deprecated. Please use CompanyWork with CompanyEvent relations instead.',
+    }
+    
+    /* DEPRECATED CODE - EventItem table removed
     const eventItem = await prisma.eventItem.findUnique({
       where: { id },
     })
@@ -164,6 +184,7 @@ export async function getPromotionalWorkItem(
       success: true,
       item,
     }
+    */ // END DEPRECATED CODE
   } catch (error: any) {
     console.error('[getPromotionalWorkItem] Error:', error)
     return {
@@ -175,11 +196,19 @@ export async function getPromotionalWorkItem(
 
 /**
  * Get all promotional work items for an event (from EventItems)
+ * @deprecated EventItem table has been removed. Use CompanyWork instead.
  */
 export async function getPromotionalWorkItemsByEvent(
   eventId: string
 ): Promise<{ success: boolean; items?: PromotionalWorkItem[]; error?: string }> {
   try {
+    // DEPRECATED: EventItem table has been removed
+    return {
+      success: false,
+      error: 'EventItem table has been deprecated. Please use CompanyWork with CompanyEvent relations instead.',
+    }
+    
+    /* DEPRECATED CODE - EventItem table removed
     // Get all event items and filter for promotional ones
     const allEventItems = await prisma.eventItem.findMany({
       where: {
@@ -224,6 +253,7 @@ export async function getPromotionalWorkItemsByEvent(
       success: true,
       items,
     }
+    */ // END DEPRECATED CODE
   } catch (error: any) {
     console.error('[getPromotionalWorkItemsByEvent] Error:', error)
     return {

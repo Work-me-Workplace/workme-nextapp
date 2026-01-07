@@ -47,13 +47,13 @@ export async function createWorkEventFromIngest(
       itemsCount: normalized.eventItemsData.length,
     })
 
-    // Create CompanyEvent and EventItems in a transaction
+    // Create CompanyEvent in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create CompanyEvent (WorkEvent renamed to CompanyEvent)
       const companyEvent = await tx.companyEvent.create({
         data: {
           ...normalized.eventData,
-          createdByWorkMeId: workMeId,
+          workMeId: workMeId,
         },
       })
 
@@ -62,36 +62,20 @@ export async function createWorkEventFromIngest(
         title: companyEvent.title,
       })
 
-      // 2. Create EventItems
-      const eventItems = await Promise.all(
-        normalized.eventItemsData.map((itemData) =>
-          tx.eventItem.create({
-            data: {
-              title: itemData.title,
-              description: itemData.description,
-              metadata: itemData.metadata ?? undefined,
-              eventId: companyEvent.id,
-            },
-          })
-        )
-      )
-
-      console.log('[createWorkEventFromIngest] EventItems created', {
-        eventId: companyEvent.id,
-        itemsCount: eventItems.length,
-      })
+      // NOTE: EventItem table has been deprecated. Products should link directly via CompanyWork.
+      // eventItemsData is kept for backwards compatibility but items are no longer created.
 
       // NOTE: WorkEventRouter has been removed - CompanyEvent is now the direct model
       return {
         companyEvent,
-        eventItems,
+        eventItems: [], // EventItem table deprecated
       }
     })
 
     return {
       success: true as const,
       eventId: result.companyEvent.id, // Return CompanyEvent ID for navigation
-      itemCount: result.eventItems.length,
+      itemCount: normalized.eventItemsData.length, // Return count for backwards compatibility
     }
   } catch (error: any) {
     console.error('[createWorkEventFromIngest] Error:', error)
