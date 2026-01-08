@@ -189,15 +189,15 @@ async function llmFallback(text: string): Promise<InferenceResult> {
   const prompt = `You are a classification model. Read the following NAVSEA workforce announcement and classify it into exactly one CompanyX type:
 
 Valid CompanyX types:
-- training (training programs, courses, learning, workshops, certifications)
-- event (company events, gatherings, meetings, celebrations)
-- leader_engagement (town halls, all-hands meetings, leadership briefings, state of the org)
-- campaign (company campaigns, initiatives, drives)
-- impact_event (disruptions, changes affecting workforce, announcements)
-- benefits (benefits enrollment, open season, health benefits)
-- community (community engagement, volunteer opportunities)
-- career (career development, promotions, opportunities, job postings)
-- employee_cause (employee causes, drives, collections, fundraisers)
+- training (training programs, courses, learning, workshops, certifications, mandatory training)
+- event (company events, gatherings, meetings, celebrations, social events)
+- leader_engagement (town halls, all-hands meetings, leadership briefings, state of the organization, executive updates, senior leadership meetings, Q&A sessions with leaders, leader addresses)
+- campaign (company campaigns, initiatives, drives, awareness programs, outreach efforts)
+- impact_event (disruptions, changes affecting workforce, announcements, outages, emergencies)
+- benefits (benefits enrollment, open season, health benefits, FEHB, FEDVIP, FSAFEDS)
+- community (community engagement, volunteer opportunities, outreach, service events)
+- career (career development, promotions, opportunities, job postings, professional development)
+- employee_cause (employee causes, drives, collections, fundraisers, employee initiatives)
 
 Return ONLY JSON:
 {

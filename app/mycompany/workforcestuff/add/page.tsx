@@ -5,6 +5,15 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react'
 
+// Helper function to format type names for display
+function formatTypeName(type: string | null | undefined): string {
+  if (!type) return 'unknown'
+  return type
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
 export default function AddWorkforceStuffPage() {
   const router = useRouter()
   const [rawText, setRawText] = useState('')
@@ -59,8 +68,10 @@ export default function AddWorkforceStuffPage() {
         return
       }
 
+      // Ensure we have a valid type
+      const inferredType = inferred.type
       setInference(inferred)
-      setSelectedType(inferred.type)
+      setSelectedType(inferredType) // Set selected type to match AI inference
       setStep('confirm')
     } catch (err: any) {
       console.error('Infer error:', err)
@@ -215,7 +226,7 @@ export default function AddWorkforceStuffPage() {
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Confirm Type</h2>
                 <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-gray-700 mb-2">
-                    <strong>AI detected:</strong> <span className="capitalize">{inference.type ? inference.type.replace('_', ' ') : 'unknown'}</span> (Confidence: {Math.round((inference.confidence || 0) * 100)}%)
+                    <strong>AI detected:</strong> {formatTypeName(inference.type)} (Confidence: {Math.round((inference.confidence || 0) * 100)}%)
                   </p>
                   <p className="text-sm text-gray-600 italic">{inference.explanation || 'No explanation provided'}</p>
                 </div>
@@ -289,7 +300,7 @@ export default function AddWorkforceStuffPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Item Added Successfully!</h2>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <p className="text-sm font-medium text-blue-900 mb-1">
-                  Detected Type: <span className="capitalize">{result.type ? result.type.replace('_', ' ') : 'unknown'}</span>
+                  Detected Type: {formatTypeName(result.type)}
                 </p>
                 <p className="text-xs text-blue-700">
                   Confidence: {Math.round((result.confidence || 0) * 100)}% • {result.explanation || 'No explanation provided'}
