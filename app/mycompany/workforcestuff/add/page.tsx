@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react'
+import { getIdToken } from '@/lib/firebase/getIdToken'
 
 // Helper function to format type names for display
 function formatTypeName(type: string | null | undefined): string {
@@ -43,10 +44,21 @@ export default function AddWorkforceStuffPage() {
     setError(null)
 
     try {
+      // Get Firebase token for authentication
+      const token = await getIdToken()
+      if (!token) {
+        setError('Not authenticated. Please sign in.')
+        setLoading(false)
+        return
+      }
+
       // Step 1: Infer type only (no parsing yet)
       const res = await fetch('/api/workforcestuff/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ rawText: rawText.trim() }),
       })
 
@@ -91,6 +103,14 @@ export default function AddWorkforceStuffPage() {
     setError(null)
 
     try {
+      // Get Firebase token for authentication
+      const token = await getIdToken()
+      if (!token) {
+        setError('Not authenticated. Please sign in.')
+        setLoading(false)
+        return
+      }
+
       // Step 2: Save to database (modular ingest pattern)
       // The save endpoint will:
       // 1. Create CompanyX with ingest snapshot
@@ -98,7 +118,10 @@ export default function AddWorkforceStuffPage() {
       // 3. Update the record with parsed data
       const res = await fetch('/api/workforcestuff/save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           type: selectedType,
           rawText: rawText.trim(),
