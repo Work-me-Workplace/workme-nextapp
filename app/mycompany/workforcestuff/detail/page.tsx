@@ -164,7 +164,7 @@ export default function WorkforceStuffDetailByCompanyPage() {
       partnerOrg: source.partnerOrg || '',
       impactSummary: source.impactSummary || '',
       level: source.level || '',
-      type: source.type === 'career' ? source.type : source.type || '',
+      type: source.type || '',
       pocFirstName: source.pocFirstName || '',
       pocLastName: source.pocLastName || '',
       pocEmail: source.pocEmail || '',
