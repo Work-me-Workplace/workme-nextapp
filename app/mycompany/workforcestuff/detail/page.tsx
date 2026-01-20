@@ -10,7 +10,7 @@ import api from '@/lib/api'
 
 interface WorkforceStuffItem {
   id: string
-  type: 'event' | 'training' | 'benefit' | 'campaign' | 'impact' | 'cause' | 'community' | 'announcement'
+  type: 'event' | 'training' | 'benefit' | 'campaign' | 'impact' | 'cause' | 'community' | 'announcement' | 'career'
   title: string
   summary?: string
   description?: string
