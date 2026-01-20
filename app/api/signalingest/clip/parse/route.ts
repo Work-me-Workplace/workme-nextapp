@@ -316,13 +316,23 @@ export async function POST(request: Request) {
             ? `${title}\n\n${snippet}` 
             : (title || snippet || rawText.substring(0, 500))
           
+          const titleText = title || 'Untitled Pressure'
+          
+          // Map source to valid PressureSource enum value
+          const validSources = ['CONGRESS', 'OSD', 'NAVSEA_LEADERSHIP', 'PEO', 'POLICY', 'BUDGET', 'GAO', 'INDUSTRY', 'OPERATIONS', 'TECHNOLOGY', 'CYBER']
+          const sourceValue = parsed.data.source && validSources.includes(parsed.data.source) 
+            ? parsed.data.source 
+            : 'POLICY' // Default to POLICY if source is invalid or missing
+          
           createdRecord = await prisma.externalCompanyPressure.create({
             data: {
               workMeId,
-              source: parsed.data.source || source || url || 'Unknown',
+              source: sourceValue as any,
+              title: titleText,
               summary: summaryText,
-              category: null, // Could be inferred in the future
-              impact: null,
+              impact: parsed.data.impact || null,
+              workforceConcern: 'JOB_SECURITY' as any, // Default, should be inferred in the future
+              levelOfSeverity: parsed.data.levelOfSeverity || 0, // Default to 0, should be inferred
             },
           })
           break
