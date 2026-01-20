@@ -10,28 +10,31 @@ export default function WorkforceStuffIngestPage() {
   const router = useRouter()
   const [rawText, setRawText] = useState('')
   const [loading, setLoading] = useState(false)
-  const [inference, setInference] = useState<any>(null)
   const [parsedData, setParsedData] = useState<any>(null)
   const [selectedType, setSelectedType] = useState<string>('')
   const [step, setStep] = useState<'input' | 'review'>('input')
 
-  async function handleInferAndParse() {
+  async function handleParse() {
     if (!rawText.trim()) {
       alert('Please paste some text first')
+      return
+    }
+
+    if (!selectedType) {
+      alert('Please select a content type first')
       return
     }
 
     setLoading(true)
     try {
       const { default: api } = await import('@/lib/api')
-      const response = await api.post('/api/workforcestuff/add', {
+      const response = await api.post('/api/workforcestuff/parse', {
         rawText,
+        type: selectedType,
       })
 
       if (response.data.success) {
-        setInference(response.data.inference)
         setParsedData(response.data.parsedData)
-        setSelectedType(response.data.inference.type)
         setStep('review')
       } else {
         alert('Failed to parse: ' + (response.data.error || 'Unknown error'))
@@ -44,25 +47,27 @@ export default function WorkforceStuffIngestPage() {
     }
   }
 
-  async function handleReparse() {
+  async function handleReparse(typeToUse?: string) {
     // User changed type, reparse with new type
+    const type = typeToUse || selectedType
+    if (!type || !rawText.trim()) return
+    
     setLoading(true)
     try {
       const { default: api } = await import('@/lib/api')
-      const { parseCompanyXContent } = await import('@/lib/services/companyx-unified-mapper')
-      
-      // Call parse again with new type (client-side not possible, need API)
-      // For now, just re-run the full flow
-      const response = await api.post('/api/workforcestuff/add', {
+      const response = await api.post('/api/workforcestuff/parse', {
         rawText,
+        type: type,
       })
 
       if (response.data.success) {
-        // Manually override with selected type if different
         setParsedData(response.data.parsedData)
+      } else {
+        alert('Failed to reparse: ' + (response.data.error || 'Unknown error'))
       }
     } catch (error) {
       console.error('Reparse error:', error)
+      alert('Failed to reparse content')
     } finally {
       setLoading(false)
     }
@@ -102,12 +107,34 @@ export default function WorkforceStuffIngestPage() {
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">Ingest Workforce Content</h1>
           <p className="text-gray-600 mt-2">
-            {step === 'input' ? 'Paste your content and we\'ll help you structure it' : 'Review and edit the parsed fields'}
+            {step === 'input' ? 'Select the content type and paste your content to parse it' : 'Review and edit the parsed fields'}
           </p>
         </div>
 
         {step === 'input' && (
           <div className="bg-white rounded-lg shadow p-8">
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Content Type
+              </label>
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 bg-white w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-6"
+              >
+                <option value="">Select a type...</option>
+                <option value="training">Training</option>
+                <option value="career">Career Opportunity</option>
+                <option value="event">Event</option>
+                <option value="campaign">Campaign</option>
+                <option value="impact_event">Impact Event</option>
+                <option value="community">Community Engagement</option>
+                <option value="benefits">Benefits</option>
+                <option value="employee_cause">Employee Cause</option>
+                <option value="leader_engagement">Leader Engagement</option>
+              </select>
+            </div>
+
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Paste Content
@@ -121,18 +148,18 @@ export default function WorkforceStuffIngestPage() {
             </div>
 
             <button
-              onClick={handleInferAndParse}
-              disabled={!rawText.trim() || loading}
+              onClick={handleParse}
+              disabled={!rawText.trim() || !selectedType || loading}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {loading ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  Analyzing with AI...
+                  Parsing...
                 </>
               ) : (
                 <>
-                  Analyze with AI
+                  Parse Content
                   <ArrowRight className="h-5 w-5" />
                 </>
               )}
@@ -140,17 +167,11 @@ export default function WorkforceStuffIngestPage() {
           </div>
         )}
 
-        {step === 'review' && inference && parsedData && (
+        {step === 'review' && parsedData && (
           <div className="space-y-6">
             {/* Step 1: Type Review */}
             <div className="bg-white rounded-lg shadow p-8">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Step 1: Confirm Type</h2>
-              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-gray-700 mb-2">
-                  <strong>AI detected:</strong> {inference.type} (Confidence: {Math.round(inference.confidence * 100)}%)
-                </p>
-                <p className="text-sm text-gray-600 italic">{inference.explanation}</p>
-              </div>
               
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Content Type
@@ -158,8 +179,12 @@ export default function WorkforceStuffIngestPage() {
               <select
                 value={selectedType}
                 onChange={(e) => {
-                  setSelectedType(e.target.value)
-                  // TODO: Trigger reparse if type changes
+                  const newType = e.target.value
+                  setSelectedType(newType)
+                  // Trigger reparse if type changes and we have content
+                  if (newType && rawText.trim()) {
+                    handleReparse(newType)
+                  }
                 }}
                 className="border border-gray-300 rounded-md px-3 py-2 bg-white w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
@@ -171,6 +196,7 @@ export default function WorkforceStuffIngestPage() {
                 <option value="community">Community Engagement</option>
                 <option value="benefits">Benefits</option>
                 <option value="employee_cause">Employee Cause</option>
+                <option value="leader_engagement">Leader Engagement</option>
               </select>
             </div>
 
