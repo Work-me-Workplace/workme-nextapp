@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, Suspense } from 'react'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { Calendar, FileText, Plus, Archive, Edit, ArchiveRestore, Save, X } from 'lucide-react'
@@ -25,7 +25,7 @@ interface WorkforceStuffItem {
 
 const STORAGE_KEY = 'workforce_detail_item'
 
-export default function WorkforceStuffDetailByCompanyPage() {
+function WorkforceStuffDetailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const companyId = searchParams?.get('companyId') || ''
