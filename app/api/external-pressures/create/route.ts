@@ -21,12 +21,19 @@ export async function POST(request: NextRequest) {
 
     // 3. Parse request body
     const body = await request.json()
-    const { source, category, summary, impact } = body
+    const { source, title, summary, impact, workforceConcern, levelOfSeverity } = body
 
     // 4. Validate required fields
-    if (!source || typeof source !== 'string' || source.trim().length === 0) {
+    if (!source || typeof source !== 'string') {
       return NextResponse.json(
-        { success: false, error: 'Source is required' },
+        { success: false, error: 'Source is required and must be a valid enum value' },
+        { status: 400 },
+      )
+    }
+
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Title is required' },
         { status: 400 },
       )
     }
@@ -38,19 +45,45 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (!workforceConcern || typeof workforceConcern !== 'string') {
+      return NextResponse.json(
+        { success: false, error: 'Workforce concern is required and must be a valid enum value' },
+        { status: 400 },
+      )
+    }
+
+    if (levelOfSeverity === undefined || levelOfSeverity === null || typeof levelOfSeverity !== 'number') {
+      return NextResponse.json(
+        { success: false, error: 'Level of severity is required and must be a number (0-5)' },
+        { status: 400 },
+      )
+    }
+
+    if (levelOfSeverity < 0 || levelOfSeverity > 5) {
+      return NextResponse.json(
+        { success: false, error: 'Level of severity must be between 0 and 5' },
+        { status: 400 },
+      )
+    }
+
     console.log('[API POST /api/external-pressures/create]', {
       workMeId,
       source,
+      title,
+      workforceConcern,
+      levelOfSeverity,
     })
 
     // 5. Create pressure
     const pressure = await prisma.externalCompanyPressure.create({
       data: {
         workMeId,
-        source: source.trim(),
-        category: category?.trim() || null,
+        source: source as any, // Prisma enum
+        title: title.trim(),
         summary: summary.trim(),
         impact: impact?.trim() || null,
+        workforceConcern: workforceConcern as any, // Prisma enum
+        levelOfSeverity,
       },
     })
 

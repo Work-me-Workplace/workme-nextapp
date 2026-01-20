@@ -8,15 +8,48 @@ import SidebarNav from '@/components/mywork/SidebarNav'
 import { AlertTriangle, ArrowLeft } from 'lucide-react'
 import api from '@/lib/api'
 
+const PRESSURE_SOURCES = [
+  'CONGRESS',
+  'OSD',
+  'NAVSEA_LEADERSHIP',
+  'PEO',
+  'POLICY',
+  'BUDGET',
+  'GAO',
+  'INDUSTRY',
+  'OPERATIONS',
+  'TECHNOLOGY',
+  'CYBER',
+] as const
+
+const WORKFORCE_CONCERNS = [
+  { value: 'JOB_SECURITY', label: 'Job Security - "Will I still have a job?"' },
+  { value: 'ROLE_CLARITY', label: 'Role Clarity - "What is my role / does it still matter?"' },
+  { value: 'FAIRNESS', label: 'Fairness - "Is the burden shared equitably?"' },
+  { value: 'ADMIN_FRICTION', label: 'Admin Friction - "Why is it harder to do my job?"' },
+  { value: 'TRUST_CREDIBILITY', label: 'Trust & Credibility - "Do leadership actions match reality?"' },
+] as const
+
+const SEVERITY_LABELS = [
+  'Informational / Low Concern',
+  'Mild Background Concern',
+  'Noticeable but Contained',
+  'Disruptive to Focus or Planning',
+  'High Anxiety / Widespread Concern',
+  'Existential (Job, Identity, Trust at Risk)',
+] as const
+
 export default function CreateExternalCompanyPressurePage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    source: '',
-    category: '',
+    source: 'GAO',
+    title: '',
     summary: '',
     impact: '',
+    workforceConcern: 'JOB_SECURITY',
+    levelOfSeverity: 2,
   })
 
   useEffect(() => {
@@ -112,28 +145,31 @@ export default function CreateExternalCompanyPressurePage() {
                   <label htmlFor="source" className="block text-sm font-medium text-gray-700 mb-2">
                     Source *
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="source"
                     required
                     value={formData.source}
                     onChange={(e) => setFormData({ ...formData, source: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g., GAO, Congress, Industry"
-                  />
+                  >
+                    {PRESSURE_SOURCES.map(source => (
+                      <option key={source} value={source}>{source.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
-                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-                    Category
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                    Title *
                   </label>
                   <input
                     type="text"
-                    id="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    id="title"
+                    required
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g., Budget, Legislation, Testing, Ops"
+                    placeholder="e.g., PAE Realignment, Budget / CR Uncertainty"
                   />
                 </div>
 
@@ -148,7 +184,7 @@ export default function CreateExternalCompanyPressurePage() {
                     value={formData.summary}
                     onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Summary of the external pressure..."
+                    placeholder="What is happening..."
                   />
                 </div>
 
@@ -162,8 +198,45 @@ export default function CreateExternalCompanyPressurePage() {
                     value={formData.impact}
                     onChange={(e) => setFormData({ ...formData, impact: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Why this matters..."
+                    placeholder="Why it matters to work..."
                   />
+                </div>
+
+                <div>
+                  <label htmlFor="workforceConcern" className="block text-sm font-medium text-gray-700 mb-2">
+                    Workforce Concern *
+                  </label>
+                  <select
+                    id="workforceConcern"
+                    required
+                    value={formData.workforceConcern}
+                    onChange={(e) => setFormData({ ...formData, workforceConcern: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {WORKFORCE_CONCERNS.map(concern => (
+                      <option key={concern.value} value={concern.value}>{concern.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="levelOfSeverity" className="block text-sm font-medium text-gray-700 mb-2">
+                    Level of Severity: {formData.levelOfSeverity}/5 - {SEVERITY_LABELS[formData.levelOfSeverity]} *
+                  </label>
+                  <input
+                    type="range"
+                    id="levelOfSeverity"
+                    min="0"
+                    max="5"
+                    required
+                    value={formData.levelOfSeverity}
+                    onChange={(e) => setFormData({ ...formData, levelOfSeverity: parseInt(e.target.value) })}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>0 - Low</span>
+                    <span>5 - Critical</span>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-end space-x-4">
@@ -189,4 +262,3 @@ export default function CreateExternalCompanyPressurePage() {
     </div>
   )
 }
-

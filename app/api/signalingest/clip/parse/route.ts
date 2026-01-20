@@ -109,10 +109,18 @@ export async function POST(request: Request) {
       lowerText.includes('launch') ||
       lowerText.includes('christening')
     ) {
-      // Likely CompanyMilestone
-      inferredType = 'milestone'
-      isExternalModel = true
-      parsed = { type: 'milestone', data: { title: title || 'Milestone', description: rawText, sourceUrl: url } }
+      // Likely CompanyMilestone - but milestones need proper parsing via news artifact flow
+      // Don't auto-create - user should use the news artifact ingestion flow
+      // This prevents hallucination and allows proper confirmation
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Milestone articles need to be ingested via the news artifact flow where you can confirm and parse the milestone properly. Detected as: milestone article.',
+          inferredType: 'milestone',
+          suggestion: 'Use the news artifact ingestion feature to properly parse and confirm milestone details before creating.'
+        },
+        { status: 400 }
+      )
     } else {
       // Use CompanyX inference
       const inference = await inferCompanyXType(rawText)
@@ -319,25 +327,17 @@ export async function POST(request: Request) {
           })
           break
         } else if (inferredType === 'milestone') {
-          // CompanyMilestone requires companyId
-          if (!companyId) {
-            return NextResponse.json(
-              { success: false, error: 'companyId is required for milestones' },
-              { status: 400 }
-            )
-          }
-          createdRecord = await prisma.companyMilestone.create({
-            data: {
-              companyId,
-              title: parsed.data.title || title || 'Company Milestone',
-              description: parsed.data.description || snippet || rawText.substring(0, 1000),
-              sourceUrl: parsed.data.sourceUrl || url || null,
-              category: 'Platform', // Default, could be inferred
-              milestoneType: null, // Could be inferred from keywords
-              date: date ? new Date(date) : null,
+          // This should never be reached now since we return early for milestones
+          // But keeping as safety check
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: 'Milestone articles need to be ingested via the news artifact flow where you can confirm and parse the milestone properly.',
+              inferredType: 'milestone',
+              suggestion: 'Use the news artifact ingestion feature to properly parse and confirm milestone details before creating.'
             },
-          })
-          break
+            { status: 400 }
+          )
         } else if (inferredType === 'platform_product') {
           // CompanyPlatformStatement - requires platformProductId
           // For articles detected as platform/product related, users should use

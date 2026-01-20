@@ -7,7 +7,7 @@ import { getAuth } from 'firebase/auth'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { getWorkMe } from '@/lib/workme.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Calendar, Filter, Archive, ArchiveRestore, Clock, CheckCircle, Users, AlertCircle, Building2 } from 'lucide-react'
+import { Calendar, Filter, Archive, ArchiveRestore, Clock, CheckCircle, Users, AlertCircle, Building2, Edit, Trash2, MoreVertical } from 'lucide-react'
 import api from '@/lib/api'
 
 // Unified WorkforceStuffItem type
@@ -38,6 +38,8 @@ interface WorkforceStuffItem {
   raw?: any
 }
 
+const DETAIL_STORAGE_KEY = 'workforce_detail_item'
+
 export default function WorkforceStuffPage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
@@ -50,6 +52,8 @@ export default function WorkforceStuffPage() {
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<'active' | 'archived' | 'all'>('active')
   const [archiving, setArchiving] = useState<Set<string>>(new Set())
+  const [deleting, setDeleting] = useState<Set<string>>(new Set())
+  const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null)
 
   // Wait for auth to be ready before loading data
   useEffect(() => {
@@ -64,23 +68,24 @@ export default function WorkforceStuffPage() {
         if (id) {
           setWorkMeId(id)
           // Try multiple sources for companyId:
+          // 0. URL param (preferred)
           // 1. Direct localStorage key (set by refreshWorkMe)
           // 2. From stored WorkMe object in localStorage
           // 3. Legacy companyUnit key (backward compat)
           // 4. API call if none found
+          const urlCompanyId = new URL(window.location.href).searchParams.get('companyId')
           const directCompanyId = localStorage.getItem('companyId')
           const storedWorkMe = getWorkMe()
           const workMeCompanyId = storedWorkMe?.companyId
           const legacyCompanyUnit = localStorage.getItem('companyUnit')
           
-          const companyIdValue = directCompanyId || workMeCompanyId || legacyCompanyUnit
+          const companyIdValue = urlCompanyId || directCompanyId || workMeCompanyId || legacyCompanyUnit
           
           if (companyIdValue) {
             setCompanyId(companyIdValue)
             // Ensure it's saved to localStorage for future use
-            if (!directCompanyId && companyIdValue) {
-              localStorage.setItem('companyId', companyIdValue)
-            }
+            localStorage.setItem('companyId', companyIdValue)
+            localStorage.setItem('companyUnit', companyIdValue)
             setCompanyIdNotFound(false)
             setCompanyIdLoading(false)
             // Don't set loading to false here - let loadItems() handle it
@@ -131,6 +136,26 @@ export default function WorkforceStuffPage() {
       loadItems()
     }
   }, [authReady, workMeId, companyId])
+
+  // Close action menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as HTMLElement
+      // Don't close if clicking on the menu or its button
+      if (target.closest('[data-action-menu]')) {
+        return
+      }
+      if (actionMenuOpen) {
+        setActionMenuOpen(null)
+      }
+    }
+    if (actionMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [actionMenuOpen])
 
   async function loadItems(forceRefresh = false) {
     if (!companyId) {
@@ -250,6 +275,74 @@ export default function WorkforceStuffPage() {
       newArchiving.delete(itemId)
       setArchiving(newArchiving)
     }
+  }
+
+  async function handleDelete(itemId: string, itemType: string) {
+    if (!confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
+      return
+    }
+
+    if (deleting.has(itemId)) return
+
+    try {
+      setDeleting(new Set(deleting).add(itemId))
+      
+      const response = await api.delete(`/api/workforcestuff/${itemId}`)
+
+      if (response.data.success) {
+        // Refresh items
+        await loadItems(true)
+      } else {
+        alert(response.data.error || 'Failed to delete item')
+      }
+    } catch (err: any) {
+      console.error('Failed to delete item:', err)
+      alert(err.response?.data?.error || err.message || 'Failed to delete item')
+    } finally {
+      const newDeleting = new Set(deleting)
+      newDeleting.delete(itemId)
+      setDeleting(newDeleting)
+      setActionMenuOpen(null)
+    }
+  }
+
+  function handleEdit(item: WorkforceStuffItem) {
+    if (!companyId) return
+    try {
+      sessionStorage.setItem(DETAIL_STORAGE_KEY, JSON.stringify({ id: item.id, type: item.type }))
+    } catch (error) {
+      console.warn('Failed to store detail selection:', error)
+    }
+    router.push(`/mycompany/workforcestuff/detail?companyId=${encodeURIComponent(companyId)}&edit=1`)
+  }
+
+  function isPastRelevanceWindow(item: WorkforceStuffItem): boolean {
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+    
+    if (item.type === 'training' && item.startDate) {
+      const trainingDate = new Date(item.startDate)
+      trainingDate.setHours(0, 0, 0, 0)
+      return trainingDate < now
+    }
+    
+    if (item.endDate) {
+      const endDate = new Date(item.endDate)
+      endDate.setHours(0, 0, 0, 0)
+      return endDate < now
+    }
+    
+    return false
+  }
+
+  function openDetail(item: WorkforceStuffItem) {
+    if (!companyId) return
+    try {
+      sessionStorage.setItem(DETAIL_STORAGE_KEY, JSON.stringify({ id: item.id, type: item.type }))
+    } catch (error) {
+      console.warn('Failed to store detail selection:', error)
+    }
+    router.push(`/mycompany/workforcestuff/detail?companyId=${encodeURIComponent(companyId)}`)
   }
 
   const categoryOptions = [
@@ -513,19 +606,12 @@ export default function WorkforceStuffPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {activeItems.map(item => {
                       // Determine the correct detail page route
-                      const detailRoute = item.type === 'training' 
-                        ? `/mycompany/workforcestuff/training/${item.id}`
-                        : `/mycompany/workforcestuff/${item.id}`
-                      
                       return (
                         <div
                           key={item.id}
-                          className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-green-500 relative group"
+                          className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-green-500 relative group cursor-pointer"
+                          onClick={() => openDetail(item)}
                         >
-                          <Link
-                            href={detailRoute}
-                            className="block"
-                          >
                             <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-medium text-gray-500 uppercase bg-green-100 text-green-800 px-2 py-1 rounded">
@@ -577,19 +663,64 @@ export default function WorkforceStuffPage() {
                               </div>
                             )}
                           </div>
-                          </Link>
-                          {/* Archive button - appears on hover */}
-                          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault()
-                                handleArchive(item.id, item.type, true)
-                              }}
-                              className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition"
-                              title="Archive item"
-                            >
-                              <Archive className="h-4 w-4 text-gray-600" />
-                            </button>
+                          {/* Action buttons - more visible for past items */}
+                          <div className={`absolute top-4 right-4 ${isPastRelevanceWindow(item) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`} data-action-menu>
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  setActionMenuOpen(actionMenuOpen === item.id ? null : item.id)
+                                }}
+                                className="p-2 bg-white hover:bg-gray-100 rounded-full transition shadow-sm border border-gray-200"
+                                title="Actions"
+                                data-action-menu
+                              >
+                                <MoreVertical className="h-4 w-4 text-gray-600" />
+                              </button>
+                              
+                              {actionMenuOpen === item.id && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10" data-action-menu>
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      e.stopPropagation()
+                                      handleEdit(item)
+                                      setActionMenuOpen(null)
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      e.stopPropagation()
+                                      handleArchive(item.id, item.type, true)
+                                      setActionMenuOpen(null)
+                                    }}
+                                    disabled={archiving.has(item.id)}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50"
+                                  >
+                                    <Archive className="h-4 w-4" />
+                                    {archiving.has(item.id) ? 'Archiving...' : 'Archive'}
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      e.stopPropagation()
+                                      handleDelete(item.id, item.type)
+                                    }}
+                                    disabled={deleting.has(item.id)}
+                                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    {deleting.has(item.id) ? 'Deleting...' : 'Delete'}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       )
@@ -616,19 +747,12 @@ export default function WorkforceStuffPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {archivedItems.map(item => {
-                    const detailRoute = item.type === 'training' 
-                      ? `/mycompany/workforcestuff/training/${item.id}`
-                      : `/mycompany/workforcestuff/${item.id}`
-                    
                     return (
                       <div
                         key={item.id}
-                        className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-gray-300 opacity-75 relative group"
+                        className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-gray-300 opacity-75 relative group cursor-pointer"
+                        onClick={() => openDetail(item)}
                       >
-                        <Link
-                          href={detailRoute}
-                          className="block"
-                        >
                           <div className="flex items-start justify-between mb-2">
                           <span className="text-xs font-medium text-gray-500 uppercase bg-gray-100 text-gray-800 px-2 py-1 rounded">
                             {item.type}
@@ -642,19 +766,64 @@ export default function WorkforceStuffPage() {
                             {new Date(item.startDate).toLocaleDateString()}
                             </div>
                           )}
-                        </Link>
-                        {/* Unarchive button - appears on hover */}
-                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault()
-                              handleArchive(item.id, item.type, false)
-                            }}
-                            className="p-2 bg-gray-100 hover:bg-green-100 rounded-full transition"
-                            title="Unarchive item"
-                          >
-                            <ArchiveRestore className="h-4 w-4 text-gray-600" />
-                          </button>
+                        {/* Action buttons for archived items */}
+                        <div className="absolute top-4 right-4 opacity-100 transition-opacity" data-action-menu>
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                setActionMenuOpen(actionMenuOpen === item.id ? null : item.id)
+                              }}
+                              className="p-2 bg-white hover:bg-gray-100 rounded-full transition shadow-sm border border-gray-200"
+                              title="Actions"
+                              data-action-menu
+                            >
+                              <MoreVertical className="h-4 w-4 text-gray-600" />
+                            </button>
+                            
+                            {actionMenuOpen === item.id && (
+                              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10" data-action-menu>
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    handleEdit(item)
+                                    setActionMenuOpen(null)
+                                  }}
+                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    handleArchive(item.id, item.type, false)
+                                    setActionMenuOpen(null)
+                                  }}
+                                  disabled={archiving.has(item.id)}
+                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50"
+                                >
+                                  <ArchiveRestore className="h-4 w-4" />
+                                  {archiving.has(item.id) ? 'Unarchiving...' : 'Unarchive'}
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    handleDelete(item.id, item.type)
+                                  }}
+                                  disabled={deleting.has(item.id)}
+                                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  {deleting.has(item.id) ? 'Deleting...' : 'Delete'}
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )

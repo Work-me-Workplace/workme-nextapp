@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import {
   Users,
   Target,
@@ -31,7 +30,26 @@ import {
 } from 'lucide-react'
 
 export default function SidebarNav() {
-  const pathname = usePathname()
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
+
+  const getCompanyId = () => {
+    if (typeof window === 'undefined') return null
+    const urlCompanyId = new URL(window.location.href).searchParams.get('companyId')
+    if (urlCompanyId) {
+      localStorage.setItem('companyId', urlCompanyId)
+      return urlCompanyId
+    }
+    return localStorage.getItem('companyId') || localStorage.getItem('companyUnit')
+  }
+
+  const companyId = getCompanyId()
+
+  const buildHref = (path: string) => {
+    if (!companyId) return path
+    if (!path.startsWith('/mycompany')) return path
+    const separator = path.includes('?') ? '&' : '?'
+    return `${path}${separator}companyId=${encodeURIComponent(companyId)}`
+  }
 
   const isActive = (path: string) => {
     if (path === '/dashboard') return pathname === path
@@ -143,7 +161,7 @@ export default function SidebarNav() {
                 return (
                   <Link
                     key={item.path}
-                    href={item.path}
+                    href={buildHref(item.path)}
                     className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
                       active
                         ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700'

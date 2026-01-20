@@ -255,3 +255,65 @@ export async function PUT(
   }
 }
 
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // Auth
+    const { firebaseId } = await verifyAuth()
+    const workMe = await loadWorkMe(firebaseId)
+    const { companyId } = workMe
+
+    if (!companyId) {
+      return NextResponse.json(
+        { success: false, error: 'Not authenticated' },
+        { status: 401 }
+      )
+    }
+
+    const { id } = await params
+
+    // Map type to model name
+    const modelMap: Record<string, string> = {
+      training: 'companyTraining',
+      event: 'companyEvent',
+      campaign: 'companyCampaign',
+      impact: 'companyImpactEvent',
+      community: 'companyCommunity',
+      benefit: 'companyBenefits',
+      career: 'companyCareer',
+      cause: 'companyEmployeeCause',
+    }
+
+    // Try to find and delete from each model
+    for (const [type, modelName] of Object.entries(modelMap)) {
+      const existing = await (prisma as any)[modelName].findFirst({
+        where: { id, companyId },
+      })
+
+      if (existing) {
+        await (prisma as any)[modelName].delete({
+          where: { id },
+        })
+
+        return NextResponse.json({
+          success: true,
+          message: `${type} deleted successfully`,
+        })
+      }
+    }
+
+    return NextResponse.json(
+      { success: false, error: 'Item not found' },
+      { status: 404 }
+    )
+  } catch (error: any) {
+    console.error('[WorkforceStuff Delete] Error:', error)
+    return NextResponse.json(
+      { success: false, error: error.message || 'Failed to delete item' },
+      { status: 500 }
+    )
+  }
+}
+

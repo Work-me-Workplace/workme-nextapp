@@ -11,11 +11,22 @@ import api from '@/lib/api'
 interface ExternalCompanyPressure {
   id: string
   source: string
-  category?: string | null
+  title: string
   summary: string
   impact?: string | null
+  workforceConcern: string
+  levelOfSeverity: number
   createdAt: string
 }
+
+const SEVERITY_LABELS = [
+  'Informational / Low Concern',
+  'Mild Background Concern',
+  'Noticeable but Contained',
+  'Disruptive to Focus or Planning',
+  'High Anxiety / Widespread Concern',
+  'Existential (Job, Identity, Trust at Risk)',
+] as const
 
 export default function ExternalCompanyPressureDetailPage() {
   const router = useRouter()
@@ -133,13 +144,27 @@ export default function ExternalCompanyPressureDetailPage() {
             </Link>
 
             <div className="bg-white rounded-lg shadow p-8">
-              <div className="flex items-center mb-6">
-                <AlertTriangle className="h-8 w-8 text-orange-600 mr-3" />
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{pressure.source}</h1>
-                  {pressure.category && (
-                    <p className="text-gray-600 mt-1">Category: {pressure.category}</p>
-                  )}
+              <div className="flex items-start justify-between mb-6">
+                <div className="flex items-start">
+                  <AlertTriangle className={`h-8 w-8 mr-3 ${
+                    pressure.levelOfSeverity >= 4 ? 'text-red-600' :
+                    pressure.levelOfSeverity >= 2 ? 'text-orange-600' :
+                    'text-yellow-600'
+                  }`} />
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-900">{pressure.title}</h1>
+                    <div className="flex items-center gap-3 mt-2">
+                      <span className="text-sm text-gray-600">Source: {pressure.source.replace(/_/g, ' ')}</span>
+                      <span className="text-sm text-blue-600 font-medium">{pressure.workforceConcern.replace(/_/g, ' ')}</span>
+                      <span className={`text-sm font-semibold px-2 py-1 rounded ${
+                        pressure.levelOfSeverity >= 4 ? 'bg-red-100 text-red-700' :
+                        pressure.levelOfSeverity >= 2 ? 'bg-orange-100 text-orange-700' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        Severity: {pressure.levelOfSeverity}/5
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -154,6 +179,13 @@ export default function ExternalCompanyPressureDetailPage() {
                   <p className="text-gray-700">{pressure.impact}</p>
                 </div>
               )}
+
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h2 className="text-sm font-semibold text-gray-700 mb-2">Severity Interpretation</h2>
+                <p className="text-sm text-gray-600">
+                  {SEVERITY_LABELS[pressure.levelOfSeverity]}
+                </p>
+              </div>
 
               <div className="mt-8 pt-6 border-t border-gray-200">
                 <p className="text-sm text-gray-500">

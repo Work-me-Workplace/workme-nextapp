@@ -1,33 +1,34 @@
-'use client'
+\'use client\'
 
-import Link from 'next/link'
-import { useRouter, useParams, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
-import SidebarNav from '@/components/mywork/SidebarNav'
-import { Calendar, FileText, Plus, Archive, Edit, ArchiveRestore, Save, X } from 'lucide-react'
-import api from '@/lib/api'
+import Link from \'next/link\'
+import { useRouter, useSearchParams } from \'next/navigation\'
+import { useEffect, useMemo, useState } from \'react\'
+import SidebarNav from \'@/components/mywork/SidebarNav\'
+import { getWorkMeIdFromStorage } from \'@/lib/getWorkMeId.client\'
+import { Calendar, FileText, Plus, Archive, Edit, ArchiveRestore, Save, X } from \'lucide-react\'
+import api from \'@/lib/api\'
 
 interface WorkforceStuffItem {
   id: string
-  type: 'event' | 'training' | 'benefit' | 'campaign' | 'impact' | 'cause' | 'community' | 'announcement'
+  type: \'event\' | \'training\' | \'benefit\' | \'campaign\' | \'impact\' | \'cause\' | \'community\' | \'announcement\'
   title: string
   summary?: string
   description?: string
   details?: string
   startDate?: string | null
   endDate?: string | null
-  status?: 'active' | 'archived'
+  status?: \'active\' | \'archived\'
   archived?: boolean
   createdAt: string
-  [key: string]: any // For additional fields
+  [key: string]: any
 }
 
-export default function WorkforceStuffDetailPage() {
+const STORAGE_KEY = \'workforce_detail_item\'
+
+export default function WorkforceStuffDetailByCompanyPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const params = useParams()
-  const itemId = params?.id as string
+  const companyId = searchParams?.get(\'companyId\') || \'\'\n+
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [item, setItem] = useState<WorkforceStuffItem | null>(null)
   const [loading, setLoading] = useState(true)
@@ -38,48 +39,72 @@ export default function WorkforceStuffDetailPage() {
   const [formData, setFormData] = useState<Record<string, any>>({})
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== \'undefined\') {
       const id = getWorkMeIdFromStorage()
       if (!id) {
-        router.push('/signin')
-      } else {
-        setWorkMeId(id)
-        if (itemId) {
-          loadItem()
-        }
+        router.push(\'/signin\')
+        return
       }
+      setWorkMeId(id)
     }
-  }, [router, itemId])
+  }, [router])
 
   useEffect(() => {
-    const editParam = searchParams?.get('edit')
-    if (editParam === '1') {
-      setIsEditing(true)
-    }
-  }, [searchParams])
+    if (!companyId) return
+    loadItemByCompany()
+  }, [companyId])
 
-  async function loadItem() {
+  const selectedItemId = useMemo(() => {
+    if (typeof window === \'undefined\') return null
+    try {
+      const stored = sessionStorage.getItem(STORAGE_KEY)
+      if (!stored) return null
+      const parsed = JSON.parse(stored)
+      return parsed?.id || null
+    } catch {
+      return null
+    }
+  }, [])
+
+  async function loadItemByCompany() {
     try {
       setLoading(true)
       setError(null)
-      const response = await api.get(`/api/workforcestuff/${itemId}`)
-      
-      if (response.data.success && response.data.item) {
-        const loadedItem = response.data.item
-        const isArchived = loadedItem.status === 'ARCHIVED' || loadedItem.archived
-        const normalized = {
-          ...loadedItem,
-          status: isArchived ? 'archived' : 'active',
-          archived: isArchived,
-        }
-        setItem(normalized)
-        setFormData(buildInitialForm(normalized))
-      } else {
-        setError('Item not found')
+
+      if (!companyId) {
+        setError(\'companyId is required\')
+        return
       }
+
+      if (!selectedItemId) {
+        setError(\'No item selected\')
+        return
+      }
+
+      const response = await api.get(`/api/workforcestuff?companyId=${encodeURIComponent(companyId)}`)
+      if (!response.data.success || !response.data.items) {
+        setError(\'Failed to load workforce items\')
+        return
+      }
+
+      const found = response.data.items.find((it: WorkforceStuffItem) => it.id === selectedItemId)
+      if (!found) {
+        setError(\'Item not found\')
+        return
+      }
+
+      const isArchived = found.status === \'ARCHIVED\' || found.archived
+      const normalized = {
+        ...found,
+        status: isArchived ? \'archived\' : \'active\',
+        archived: isArchived,
+      }
+
+      setItem(normalized)
+      setFormData(buildInitialForm(normalized))
     } catch (err: any) {
-      console.error('Failed to load workforce stuff item:', err)
-      setError(err.response?.data?.error || err.message || 'Failed to load item')
+      console.error(\'Failed to load item by company:\', err)
+      setError(err.response?.data?.error || err.message || \'Failed to load item\')
     } finally {
       setLoading(false)
     }
@@ -91,70 +116,66 @@ export default function WorkforceStuffDetailPage() {
     try {
       setArchiving(true)
       setError(null)
-      
-      const response = await api.put(`/api/workforcestuff/${itemId}`, {
+
+      const response = await api.put(`/api/workforcestuff/${item.id}`, {
         type: item.type,
-        data: { status: archived ? 'ARCHIVED' : 'ACTIVE' },
+        data: { status: archived ? \'ARCHIVED\' : \'ACTIVE\' },
       })
 
       if (response.data.success) {
-        // Reload the item to reflect the change
-        await loadItem()
-        // Also refresh the list by redirecting back
-        router.push('/mycompany/workforcestuff')
+        await loadItemByCompany()
+        router.push(`/mycompany/workforcestuff`)
       } else {
-        setError(response.data.error || 'Failed to archive item')
+        setError(response.data.error || \'Failed to archive item\')
       }
     } catch (err: any) {
-      console.error('Failed to archive item:', err)
-      setError(err.response?.data?.error || err.message || 'Failed to archive item')
+      console.error(\'Failed to archive item:\', err)
+      setError(err.response?.data?.error || err.message || \'Failed to archive item\')
     } finally {
       setArchiving(false)
     }
   }
 
   function toDateInput(value?: string | null) {
-    if (!value) return ''
+    if (!value) return \'\'
     const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return ''
+    if (Number.isNaN(date.getTime())) return \'\'
     return date.toISOString().slice(0, 10)
   }
 
   function buildInitialForm(source: WorkforceStuffItem) {
-    const base = {
-      title: source.title || '',
-      description: source.description || source.summary || '',
+    return {
+      title: source.title || \'\',
+      description: source.description || source.summary || \'\',
       startDate: toDateInput(source.startDate),
       endDate: toDateInput(source.endDate),
-      location: source.location || '',
-      link: source.link || source.ctaLink || source.actionLink || source.registrationLink || '',
-      topic: source.topic || '',
+      location: source.location || \'\',
+      link: source.link || source.ctaLink || source.actionLink || source.registrationLink || \'\',
+      topic: source.topic || \'\',
       mandatory: source.mandatory || false,
-      sponsoringOffice: source.sponsoringOffice || '',
-      format: source.format || '',
-      startTime: source.startTime || '',
-      endTime: source.endTime || '',
-      impactedPopulation: source.impactedPopulation || '',
-      urgency: source.urgency || '',
-      sponsor: source.sponsor || '',
-      employeeBenefitSummary: source.employeeBenefitSummary || '',
-      partnerOrg: source.partnerOrg || '',
-      impactSummary: source.impactSummary || '',
-      level: source.level || '',
-      type: source.type === 'career' ? source.type : source.type || '',
-      pocFirstName: source.pocFirstName || '',
-      pocLastName: source.pocLastName || '',
-      pocEmail: source.pocEmail || '',
-      pocPhone: source.pocPhone || '',
-      pocRankOrTitle: source.pocRankOrTitle || '',
+      sponsoringOffice: source.sponsoringOffice || \'\',
+      format: source.format || \'\',
+      startTime: source.startTime || \'\',
+      endTime: source.endTime || \'\',
+      impactedPopulation: source.impactedPopulation || \'\',
+      urgency: source.urgency || \'\',
+      sponsor: source.sponsor || \'\',
+      employeeBenefitSummary: source.employeeBenefitSummary || \'\',
+      partnerOrg: source.partnerOrg || \'\',
+      impactSummary: source.impactSummary || \'\',
+      level: source.level || \'\',
+      type: source.type === \'career\' ? source.type : source.type || \'\',
+      pocFirstName: source.pocFirstName || \'\',
+      pocLastName: source.pocLastName || \'\',
+      pocEmail: source.pocEmail || \'\',
+      pocPhone: source.pocPhone || \'\',
+      pocRankOrTitle: source.pocRankOrTitle || \'\',
     }
-
-    return base
   }
 
   function buildUpdateData(source: WorkforceStuffItem, data: Record<string, any>) {
     switch (source.type) {
-      case 'training':
+      case \'training\':
         return {
           title: data.title || null,
           description: data.description || null,
@@ -173,7 +194,7 @@ export default function WorkforceStuffDetailPage() {
           pocPhone: data.pocPhone || null,
           pocRankOrTitle: data.pocRankOrTitle || null,
         }
-      case 'event':
+      case \'event\':
         return {
           title: data.title || null,
           description: data.description || null,
@@ -185,7 +206,7 @@ export default function WorkforceStuffDetailPage() {
           pocEmail: data.pocEmail || null,
           pocPhone: data.pocPhone || null,
         }
-      case 'campaign':
+      case \'campaign\':
         return {
           title: data.title || null,
           description: data.description || null,
@@ -194,7 +215,7 @@ export default function WorkforceStuffDetailPage() {
           ctaLink: data.link || null,
           sponsor: data.sponsor || null,
         }
-      case 'impact':
+      case \'impact\':
         return {
           title: data.title || null,
           description: data.description || null,
@@ -206,7 +227,7 @@ export default function WorkforceStuffDetailPage() {
           pocEmail: data.pocEmail || null,
           pocPhone: data.pocPhone || null,
         }
-      case 'community':
+      case \'community\':
         return {
           title: data.title || null,
           description: data.description || null,
@@ -218,7 +239,7 @@ export default function WorkforceStuffDetailPage() {
           pocEmail: data.pocEmail || null,
           pocPhone: data.pocPhone || null,
         }
-      case 'benefit':
+      case \'benefit\':
         return {
           title: data.title || null,
           description: data.description || null,
@@ -227,14 +248,14 @@ export default function WorkforceStuffDetailPage() {
           windowEnd: data.endDate ? new Date(data.endDate) : null,
           actionLink: data.link || null,
         }
-      case 'career':
+      case \'career\':
         return {
           title: data.title || null,
           description: data.description || null,
           level: data.level || null,
           type: data.type || null,
         }
-      case 'cause':
+      case \'cause\':
         return {
           title: data.title || null,
           description: data.description || null,
@@ -260,21 +281,21 @@ export default function WorkforceStuffDetailPage() {
       setSaving(true)
       setError(null)
       const updateData = buildUpdateData(item, formData)
-      const response = await api.put(`/api/workforcestuff/${itemId}`, {
+      const response = await api.put(`/api/workforcestuff/${item.id}`, {
         type: item.type,
         data: updateData,
       })
 
       if (!response.data.success) {
-        setError(response.data.error || 'Failed to update item')
+        setError(response.data.error || \'Failed to update item\')
         return
       }
 
-      await loadItem()
+      await loadItemByCompany()
       setIsEditing(false)
     } catch (err: any) {
-      console.error('Failed to update item:', err)
-      setError(err.response?.data?.error || err.message || 'Failed to update item')
+      console.error(\'Failed to update item:\', err)
+      setError(err.response?.data?.error || err.message || \'Failed to update item\')
     } finally {
       setSaving(false)
     }
@@ -288,7 +309,7 @@ export default function WorkforceStuffDetailPage() {
     )
   }
 
-  if (!loading && !item && !error) {
+  if (!item) {
     return (
       <div className="min-h-screen bg-gray-50">
         <nav className="bg-white shadow-sm border-b">
@@ -296,9 +317,6 @@ export default function WorkforceStuffDetailPage() {
             <div className="flex justify-between h-16">
               <div className="flex items-center">
                 <Link href="/dashboard" className="flex items-center space-x-2">
-                  <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
                   <span className="text-xl font-bold text-gray-900">Work.me</span>
                 </Link>
               </div>
@@ -311,21 +329,10 @@ export default function WorkforceStuffDetailPage() {
           <main className="flex-1">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <div className="bg-white rounded-lg shadow p-12 text-center">
-                {error ? (
-                  <>
-                    <p className="text-red-600 mb-4 font-semibold">{error}</p>
-                    <Link href="/mycompany/workforcestuff" className="text-blue-600 hover:text-blue-700">
-                      ← Back to Workforce Stuff
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-gray-500 mb-4">Workforce item not found</p>
-                    <Link href="/mycompany/workforcestuff" className="text-blue-600 hover:text-blue-700">
-                      ← Back to Workforce Stuff
-                    </Link>
-                  </>
-                )}
+                <p className="text-gray-500 mb-4">{error || \'Workforce item not found\'}</p>
+                <Link href="/mycompany/workforcestuff" className="text-blue-600 hover:text-blue-700">
+                  ← Back to Workforce Stuff
+                </Link>
               </div>
             </div>
           </main>
@@ -334,21 +341,13 @@ export default function WorkforceStuffDetailPage() {
     )
   }
 
-  if (!item) {
-    return null
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Nav */}
       <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Link href="/dashboard" className="flex items-center space-x-2">
-                <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
                 <span className="text-xl font-bold text-gray-900">Work.me</span>
               </Link>
             </div>
@@ -356,7 +355,7 @@ export default function WorkforceStuffDetailPage() {
               <button
                 onClick={() => {
                   localStorage.clear()
-                  router.push('/signin')
+                  router.push(\'/signin\')
                 }}
                 className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
               >
@@ -420,14 +419,13 @@ export default function WorkforceStuffDetailPage() {
                         className="inline-flex items-center px-3 py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
                       >
                         <Save className="h-4 w-4 mr-2" />
-                        {saving ? 'Saving...' : 'Save'}
+                        {saving ? \'Saving...\' : \'Save\'}
                       </button>
                     </>
                   )}
                 </div>
               </div>
 
-              {/* Date Information */}
               {(item.startDate || item.endDate) && !isEditing && (
                 <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
                   {item.startDate && (
@@ -451,7 +449,6 @@ export default function WorkforceStuffDetailPage() {
                 </div>
               )}
 
-              {/* Details */}
               {(item.details || item.description) && !isEditing && (
                 <div className="mb-6">
                   <h2 className="text-xl font-semibold text-gray-900 mb-3">Details</h2>
@@ -467,7 +464,7 @@ export default function WorkforceStuffDetailPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
                     <input
                       type="text"
-                      value={formData.title || ''}
+                      value={formData.title || \'\'}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                     />
@@ -476,22 +473,22 @@ export default function WorkforceStuffDetailPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                     <textarea
-                      value={formData.description || ''}
+                      value={formData.description || \'\'}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       rows={4}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                     />
                   </div>
 
-                  {(item.type === 'training' || item.type === 'event') && (
+                  {(item.type === \'training\' || item.type === \'event\') && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          {item.type === 'training' ? 'Training Date' : 'Event Date'}
+                          {item.type === \'training\' ? \'Training Date\' : \'Event Date\'}
                         </label>
                         <input
                           type="date"
-                          value={formData.startDate || ''}
+                          value={formData.startDate || \'\'}
                           onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         />
@@ -500,7 +497,7 @@ export default function WorkforceStuffDetailPage() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
                         <input
                           type="text"
-                          value={formData.location || ''}
+                          value={formData.location || \'\'}
                           onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         />
@@ -508,13 +505,13 @@ export default function WorkforceStuffDetailPage() {
                     </div>
                   )}
 
-                  {(item.type === 'campaign' || item.type === 'benefit' || item.type === 'cause') && (
+                  {(item.type === \'campaign\' || item.type === \'benefit\' || item.type === \'cause\') && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
                         <input
                           type="date"
-                          value={formData.startDate || ''}
+                          value={formData.startDate || \'\'}
                           onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         />
@@ -523,7 +520,7 @@ export default function WorkforceStuffDetailPage() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
                         <input
                           type="date"
-                          value={formData.endDate || ''}
+                          value={formData.endDate || \'\'}
                           onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         />
@@ -531,13 +528,13 @@ export default function WorkforceStuffDetailPage() {
                     </div>
                   )}
 
-                  {item.type === 'impact' && (
+                  {item.type === \'impact\' && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Effective Date</label>
                         <input
                           type="date"
-                          value={formData.startDate || ''}
+                          value={formData.startDate || \'\'}
                           onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         />
@@ -546,7 +543,7 @@ export default function WorkforceStuffDetailPage() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">Impacted Population</label>
                         <input
                           type="text"
-                          value={formData.impactedPopulation || ''}
+                          value={formData.impactedPopulation || \'\'}
                           onChange={(e) => setFormData({ ...formData, impactedPopulation: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         />
@@ -554,7 +551,7 @@ export default function WorkforceStuffDetailPage() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Urgency</label>
                         <select
-                          value={formData.urgency || ''}
+                          value={formData.urgency || \'\'}
                           onChange={(e) => setFormData({ ...formData, urgency: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         >
@@ -568,25 +565,25 @@ export default function WorkforceStuffDetailPage() {
                     </div>
                   )}
 
-                  {(item.type === 'campaign' || item.type === 'benefit' || item.type === 'community' || item.type === 'cause') && (
+                  {(item.type === \'campaign\' || item.type === \'benefit\' || item.type === \'community\' || item.type === \'cause\') && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Link</label>
                       <input
                         type="url"
-                        value={formData.link || ''}
+                        value={formData.link || \'\'}
                         onChange={(e) => setFormData({ ...formData, link: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                       />
                     </div>
                   )}
 
-                  {(item.type === 'training' || item.type === 'event') && (
+                  {(item.type === \'training\' || item.type === \'event\') && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
                         <input
                           type="time"
-                          value={formData.startTime || ''}
+                          value={formData.startTime || \'\'}
                           onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         />
@@ -595,7 +592,7 @@ export default function WorkforceStuffDetailPage() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
                         <input
                           type="time"
-                          value={formData.endTime || ''}
+                          value={formData.endTime || \'\'}
                           onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         />
@@ -605,14 +602,12 @@ export default function WorkforceStuffDetailPage() {
                 </div>
               )}
 
-              {/* Error Message */}
               {error && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                   <p className="text-sm text-red-800">{error}</p>
                 </div>
               )}
 
-              {/* Action Buttons */}
               <div className="flex flex-wrap gap-4 pt-6 border-t">
                 <Link
                   href={`/mywork/create?sourceId=${item.id}&sourceType=${item.type}`}
@@ -625,6 +620,7 @@ export default function WorkforceStuffDetailPage() {
                   href={`/mywork/products?sourceId=${item.id}`}
                   className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition"
                 >
+                  <FileText className="h-5 w-5 mr-2" />
                   View Related Outputs
                 </Link>
                 {item.archived ? (
@@ -634,7 +630,7 @@ export default function WorkforceStuffDetailPage() {
                     className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
                     <ArchiveRestore className="h-5 w-5 mr-2" />
-                    {archiving ? 'Unarchiving...' : 'Unarchive'}
+                    {archiving ? \'Unarchiving...\' : \'Unarchive\'}
                   </button>
                 ) : (
                   <button
@@ -643,7 +639,7 @@ export default function WorkforceStuffDetailPage() {
                     className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
                     <Archive className="h-5 w-5 mr-2" />
-                    {archiving ? 'Archiving...' : 'Archive'}
+                    {archiving ? \'Archiving...\' : \'Archive\'}
                   </button>
                 )}
               </div>

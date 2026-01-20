@@ -33,9 +33,11 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         source: true,
-        category: true,
+        title: true,
         summary: true,
         impact: true,
+        workforceConcern: true,
+        levelOfSeverity: true,
         createdAt: true,
       },
     })

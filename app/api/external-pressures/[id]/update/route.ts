@@ -51,17 +51,23 @@ export async function POST(
     const updateData: any = {}
     
     if (body.source !== undefined) {
-      if (typeof body.source !== 'string' || body.source.trim().length === 0) {
+      if (typeof body.source !== 'string') {
         return NextResponse.json(
-          { success: false, error: 'Source cannot be empty' },
+          { success: false, error: 'Source must be a valid enum value' },
           { status: 400 },
         )
       }
-      updateData.source = body.source.trim()
+      updateData.source = body.source as any
     }
     
-    if (body.category !== undefined) {
-      updateData.category = body.category?.trim() || null
+    if (body.title !== undefined) {
+      if (typeof body.title !== 'string' || body.title.trim().length === 0) {
+        return NextResponse.json(
+          { success: false, error: 'Title cannot be empty' },
+          { status: 400 },
+        )
+      }
+      updateData.title = body.title.trim()
     }
     
     if (body.summary !== undefined) {
@@ -76,6 +82,32 @@ export async function POST(
     
     if (body.impact !== undefined) {
       updateData.impact = body.impact?.trim() || null
+    }
+    
+    if (body.workforceConcern !== undefined) {
+      if (typeof body.workforceConcern !== 'string') {
+        return NextResponse.json(
+          { success: false, error: 'Workforce concern must be a valid enum value' },
+          { status: 400 },
+        )
+      }
+      updateData.workforceConcern = body.workforceConcern as any
+    }
+    
+    if (body.levelOfSeverity !== undefined) {
+      if (typeof body.levelOfSeverity !== 'number') {
+        return NextResponse.json(
+          { success: false, error: 'Level of severity must be a number' },
+          { status: 400 },
+        )
+      }
+      if (body.levelOfSeverity < 0 || body.levelOfSeverity > 5) {
+        return NextResponse.json(
+          { success: false, error: 'Level of severity must be between 0 and 5' },
+          { status: 400 },
+        )
+      }
+      updateData.levelOfSeverity = body.levelOfSeverity
     }
 
     // 6. Update pressure

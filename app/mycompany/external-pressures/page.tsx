@@ -11,9 +11,11 @@ import api from '@/lib/api'
 interface ExternalCompanyPressure {
   id: string
   source: string
-  category?: string | null
+  title: string
   summary: string
   impact?: string | null
+  workforceConcern: string
+  levelOfSeverity: number
   createdAt: string
 }
 
@@ -117,16 +119,27 @@ export default function ExternalCompanyPressuresPage() {
                     href={`/mycompany/external-pressures/${pressure.id}`}
                     className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition"
                   >
-                    <div className="flex items-center mb-3">
-                      <AlertTriangle className="h-5 w-5 text-orange-600 mr-2" />
-                      <span className="text-xs font-medium text-gray-500">
-                        {new Date(pressure.createdAt).toLocaleDateString()}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center">
+                        <AlertTriangle className={`h-5 w-5 mr-2 ${
+                          pressure.levelOfSeverity >= 4 ? 'text-red-600' :
+                          pressure.levelOfSeverity >= 2 ? 'text-orange-600' :
+                          'text-yellow-600'
+                        }`} />
+                        <span className="text-xs font-medium text-gray-500">
+                          {new Date(pressure.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <span className="text-xs font-semibold px-2 py-1 rounded bg-gray-100 text-gray-700">
+                        Severity: {pressure.levelOfSeverity}/5
                       </span>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{pressure.source}</h3>
-                    {pressure.category && (
-                      <p className="text-sm text-gray-600 mb-2">Category: {pressure.category}</p>
-                    )}
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{pressure.title}</h3>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-medium text-gray-500">Source: {pressure.source.replace(/_/g, ' ')}</span>
+                      <span className="text-xs text-gray-400">•</span>
+                      <span className="text-xs font-medium text-blue-600">{pressure.workforceConcern.replace(/_/g, ' ')}</span>
+                    </div>
                     <p className="text-sm text-gray-700 line-clamp-3">{pressure.summary}</p>
                   </Link>
                 ))}

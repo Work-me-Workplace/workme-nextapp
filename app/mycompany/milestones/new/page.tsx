@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { FileText, Sparkles, Plus, Loader2, CheckCircle } from 'lucide-react'
+import { FileText, Sparkles, Plus, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
 import api from '@/lib/api'
 
 type InputMethod = 'url' | 'text'
@@ -18,9 +18,11 @@ export default function NewMilestonePage() {
   const [url, setUrl] = useState('')
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
-  const [step, setStep] = useState<'input' | 'parsing' | 'complete'>('input')
+  const [step, setStep] = useState<'input' | 'parsing' | 'preview' | 'complete'>('input')
   const [error, setError] = useState<string | null>(null)
   const [createdMilestone, setCreatedMilestone] = useState<any>(null)
+  const [parsedPreview, setParsedPreview] = useState<any>(null)
+  const [newsArtifactId, setNewsArtifactId] = useState<string | null>(null)
 
   const handleAIGenerate = async () => {
     setError(null)
@@ -39,22 +41,65 @@ export default function NewMilestonePage() {
       }
 
       const artifactId = artifactResponse.data.data.id
+      setNewsArtifactId(artifactId)
 
-      // Step 2: Upsert CompanyMilestone from the artifact
-      const milestoneResponse = await api.post('/api/company/milestones/upsert', {
+      // Step 2: Parse milestone (preview only, no save)
+      const parseResponse = await api.post('/api/company/milestones/parse', {
         newsArtifactId: artifactId,
       })
 
-      if (!milestoneResponse.data.success) {
-        throw new Error(milestoneResponse.data.error || 'Failed to create milestone')
+      if (!parseResponse.data.success) {
+        // Check if it's not a big picture milestone
+        if (parseResponse.data.isBigPictureMilestone === false) {
+          setError(parseResponse.data.reason || 'This article does not describe a company-wide milestone.')
+          setStep('input')
+          return
+        }
+        throw new Error(parseResponse.data.error || 'Failed to parse milestone')
       }
 
-      setCreatedMilestone(milestoneResponse.data.milestone)
+      // Show preview
+      setParsedPreview(parseResponse.data.preview)
+      setStep('preview')
+    } catch (err: any) {
+      console.error('Error parsing milestone:', err)
+      setError(err.response?.data?.error || err.message || 'Failed to parse milestone')
+      setStep('input')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleConfirmAndSave = async () => {
+    if (!parsedPreview || !newsArtifactId) {
+      setError('Missing preview data')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      // Step 3: Save milestone after user confirmation
+      const saveResponse = await api.post('/api/company/milestones/upsert', {
+        newsArtifactId,
+        title: parsedPreview.title,
+        category: parsedPreview.category,
+        milestoneType: parsedPreview.milestoneType,
+        date: parsedPreview.date,
+        description: parsedPreview.description,
+        sourceUrl: parsedPreview.sourceUrl,
+      })
+
+      if (!saveResponse.data.success) {
+        throw new Error(saveResponse.data.error || 'Failed to save milestone')
+      }
+
+      setCreatedMilestone(saveResponse.data.milestone)
       setStep('complete')
     } catch (err: any) {
-      console.error('Error generating milestone:', err)
-      setError(err.message || 'Failed to generate milestone')
-      setStep('input')
+      console.error('Error saving milestone:', err)
+      setError(err.response?.data?.error || err.message || 'Failed to save milestone')
     } finally {
       setLoading(false)
     }
@@ -90,7 +135,8 @@ export default function NewMilestonePage() {
 
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900">Add Company Milestone</h1>
-              <p className="text-gray-600 mt-2">Choose how you want to add this milestone</p>
+              <p className="text-gray-600 mt-2">Company-wide milestones only (reorganizations, major contracts, strategic initiatives)</p>
+              <p className="text-sm text-gray-500 mt-1">For platform-specific events (ship commissioning, keel laying, etc.), use platform updates instead</p>
             </div>
 
             {!method ? (
@@ -119,7 +165,7 @@ export default function NewMilestonePage() {
                 >
                   <Sparkles className="h-8 w-8 text-purple-600 mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Generate w/ AI</h3>
-                  <p className="text-sm text-gray-600">Provide URL or paste content to generate</p>
+                  <p className="text-sm text-gray-600">AI will filter for company-wide milestones only</p>
                 </button>
               </div>
             ) : (
@@ -218,15 +264,22 @@ export default function NewMilestonePage() {
                               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm"
                             />
                             <p className="text-xs text-gray-500 mt-1">
-                              AI will extract milestone information from this text
+                              AI will check if this is a company-wide milestone and extract information
                             </p>
                           </div>
                         )}
 
                         {/* Error Display */}
                         {error && (
-                          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                            <p className="text-sm text-red-600">{error}</p>
+                          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium text-red-800">Not a Company-Wide Milestone</p>
+                              <p className="text-sm text-red-700 mt-1">{error}</p>
+                              <p className="text-xs text-red-600 mt-2">
+                                For platform-specific events (ship commissioning, keel laying, etc.), use the platform update flow instead.
+                              </p>
+                            </div>
                           </div>
                         )}
 
@@ -257,11 +310,119 @@ export default function NewMilestonePage() {
                       <div className="text-center py-12">
                         <Loader2 className="h-12 w-12 animate-spin text-purple-600 mx-auto mb-4" />
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                          Parsing Article...
+                          Analyzing Article...
                         </h3>
                         <p className="text-gray-600">
-                          AI is extracting milestone information from the content
+                          AI is checking if this is a company-wide milestone
                         </p>
+                      </div>
+                    )}
+
+                    {step === 'preview' && parsedPreview && (
+                      <div>
+                        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <h3 className="text-sm font-semibold text-blue-900 mb-2">Preview - Review Before Saving</h3>
+                          <p className="text-sm text-blue-800">
+                            This article describes a company-wide milestone. Review the extracted information below and confirm to save.
+                          </p>
+                        </div>
+
+                        <div className="space-y-4 mb-6">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                            <input
+                              type="text"
+                              value={parsedPreview.title || ''}
+                              onChange={(e) => setParsedPreview({ ...parsedPreview, title: e.target.value })}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                            <select
+                              value={parsedPreview.category || ''}
+                              onChange={(e) => setParsedPreview({ ...parsedPreview, category: e.target.value })}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            >
+                              <option value="">Select category...</option>
+                              <option value="BUSINESS">Business</option>
+                              <option value="STRATEGY">Strategy</option>
+                              <option value="ACHIEVEMENT">Achievement</option>
+                              <option value="REORGANIZATION">Reorganization</option>
+                              <option value="MERGER">Merger</option>
+                              <option value="CONTRACT">Contract</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Milestone Type</label>
+                            <input
+                              type="text"
+                              value={parsedPreview.milestoneType || ''}
+                              onChange={(e) => setParsedPreview({ ...parsedPreview, milestoneType: e.target.value })}
+                              placeholder="e.g., Major Contract Award, Strategic Initiative Launch"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                            <input
+                              type="date"
+                              value={parsedPreview.date ? parsedPreview.date.split('T')[0] : ''}
+                              onChange={(e) => setParsedPreview({ ...parsedPreview, date: e.target.value })}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea
+                              value={parsedPreview.description || ''}
+                              onChange={(e) => setParsedPreview({ ...parsedPreview, description: e.target.value })}
+                              rows={4}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                          </div>
+                        </div>
+
+                        {error && (
+                          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <p className="text-sm text-red-600">{error}</p>
+                          </div>
+                        )}
+
+                        <div className="flex gap-4">
+                          <button
+                            onClick={() => {
+                              setStep('input')
+                              setParsedPreview(null)
+                              setNewsArtifactId(null)
+                              setError(null)
+                            }}
+                            className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+                          >
+                            ← Back
+                          </button>
+                          <button
+                            onClick={handleConfirmAndSave}
+                            disabled={loading || !parsedPreview.title}
+                            className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                          >
+                            {loading ? (
+                              <>
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                Saving...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="h-5 w-5" />
+                                Confirm & Save Milestone
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     )}
 

@@ -53,7 +53,20 @@ export default function WelcomePage() {
   // Always go to dashboard - onboarding prompts will handle setup
 
   const handleContinue = () => {
-      router.push('/dashboard')
+    if (typeof window !== 'undefined') {
+      const storedCompanyId = localStorage.getItem('companyId') || localStorage.getItem('companyUnit')
+      const workMeCompanyId = workMe?.companyId || null
+      const companyId = workMeCompanyId || storedCompanyId
+
+      if (companyId) {
+        localStorage.setItem('companyId', companyId)
+        localStorage.setItem('companyUnit', companyId)
+        router.push(`/mycompany/workforcestuff?companyId=${encodeURIComponent(companyId)}`)
+        return
+      }
+    }
+
+    router.push('/dashboard')
   }
 
   if (loading) {
@@ -77,48 +90,42 @@ export default function WelcomePage() {
             Welcome to Work.me!
           </h1>
           <p className="text-xl text-white/90">
-            Your career growth platform is ready
+            You are living inside your company. Everything else flows from that.
           </p>
         </div>
-        
-        <div className="space-y-6 text-left bg-white/5 rounded-xl p-6">
-          <div className="flex items-start gap-4">
-            <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">1</span>
-            </div>
-          <div>
-              <h3 className="text-lg font-semibold text-white mb-1">Track Your Achievements</h3>
-              <p className="text-white/80">Document your professional accomplishments and impact</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-4">
-            <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">2</span>
-            </div>
-          <div>
-              <h3 className="text-lg font-semibold text-white mb-1">Set Objectives</h3>
-              <p className="text-white/80">Define goals and measure your progress</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+          <div className="bg-white/10 border border-white/20 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-2">Career Building</h3>
+            <p className="text-white/80 text-sm mb-4">Personal tools that support your growth.</p>
+            <div className="space-y-2 text-white/90 text-sm">
+              <Link href="/mywork/memos" className="block hover:text-white">Personal Blog</Link>
+              <Link href="/mynetwork/connections" className="block hover:text-white">CRM</Link>
+              <Link href="/mycareer/track" className="block hover:text-white">MySkills</Link>
             </div>
           </div>
-          <div className="flex items-start gap-4">
-            <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">3</span>
-            </div>
-          <div>
-              <h3 className="text-lg font-semibold text-white mb-1">Build Your Career</h3>
-              <p className="text-white/80">Grow your network and advance your professional journey</p>
+          <div className="bg-white/10 border border-white/20 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-2">My Work</h3>
+            <p className="text-white/80 text-sm mb-4">Your outputs, tasks, and momentum.</p>
+            <div className="space-y-2 text-white/90 text-sm">
+              <Link href="/mywork/products" className="block hover:text-white">Work Products</Link>
+              <Link href="/mywork/active" className="block hover:text-white">Stuff I’m Working On</Link>
+              <Link href="/mywork/team" className="block hover:text-white">Team Members</Link>
             </div>
           </div>
-          </div>
-          
-        <div className="flex gap-4">
-            <button
+        </div>
+
+        <div className="space-y-3">
+          <p className="text-white/80 text-sm">
+            Everything else is company work.
+          </p>
+          <button
             onClick={handleContinue}
-            className="flex-1 bg-white text-blue-700 py-4 px-8 rounded-xl font-semibold hover:bg-blue-50 transition shadow-lg"
-            >
-            Continue to Dashboard →
-            </button>
-          </div>
+            className="w-full bg-white text-blue-700 py-4 px-8 rounded-xl font-semibold hover:bg-blue-50 transition shadow-lg"
+          >
+            Go to Company Work →
+          </button>
+        </div>
 
         {workMe?.id && (
           <p className="text-white/60 text-sm">

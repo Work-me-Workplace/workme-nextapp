@@ -173,6 +173,34 @@ enum WorkforceStuffStatus {
   EXPIRED
 }
 
+enum PressureSource {
+  CONGRESS
+  OSD
+  NAVSEA_LEADERSHIP
+  PEO
+  POLICY
+  BUDGET
+  GAO
+  INDUSTRY
+  OPERATIONS
+  TECHNOLOGY
+  CYBER
+}
+
+// Workforce Concern Type: Perceptual lenses for why pressures bother people
+// JOB_SECURITY: "Will I still have a job?"
+// ROLE_CLARITY: "What is my role / does it still matter?"
+// FAIRNESS: "Is the burden shared equitably?"
+// ADMIN_FRICTION: "Why is it harder to do my job?"
+// TRUST_CREDIBILITY: "Do leadership actions match reality?"
+enum WorkforceConcernType {
+  JOB_SECURITY
+  ROLE_CLARITY
+  FAIRNESS
+  ADMIN_FRICTION
+  TRUST_CREDIBILITY
+}
+
 enum PlatformMilestoneType {
   CONTRACT_AWARDED
   KEEL_LAYING
@@ -1699,19 +1727,37 @@ model MyEcosystemContact {
 // ============================================
 // EXTERNAL COMPANY PRESSURE MODEL
 // ============================================
+// Refactored to cleanly separate what happened from how the workforce experiences it.
+// The title is free-text and descriptive (e.g. "PAE Realignment", "Budget / CR Uncertainty").
+// The workforce concern is an enum that captures why this is bothering people (job security, fairness, etc.).
+// levelOfSeverity (0-5) represents perceived workforce impact:
+//   0 = informational / low concern
+//   1 = mild background concern
+//   2 = noticeable but contained
+//   3 = disruptive to focus or planning
+//   4 = high anxiety / widespread concern
+//   5 = existential (job, identity, trust at risk)
 model ExternalCompanyPressure {
-  id        String   @id @default(cuid())
-  workMeId  String   @db.Uuid
-  source    String
-  category  String?
-  summary   String
-  impact    String?
+  id       String @id @default(cuid())
+  workMeId String @db.Uuid
+
+  source PressureSource
+
+  title   String // e.g. "PAE Realignment"
+  summary String // what is happening
+  impact  String? // why it matters to work
+
+  workforceConcern WorkforceConcernType
+
+  levelOfSeverity Int // 0–5, perceived workforce impact
+
   createdAt DateTime @default(now())
 
   workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
 
   @@index([source])
-  @@index([category])
+  @@index([workforceConcern])
+  @@index([levelOfSeverity])
 }
 
 // ============================================
@@ -2061,16 +2107,28 @@ model CompanyPlatformUnitLivingHomage {
 // ============================================
 // COMPANY MILESTONE MODEL
 // ============================================
-// Generic company-level milestones (platform events, business milestones, strategic milestones)
+// BIG PICTURE company-wide milestones ONLY
 // 
+// CRITICAL: This model is for COMPANY-WIDE milestones (entire company does something)
+// NOT for platform-specific events (ship commissioning, keel laying, etc.)
+// Platform-specific events should use CompanyPlatformUnitUpdate instead
+//
+// Examples of BIG PICTURE milestones:
+// - Company-wide reorganizations or restructuring
+// - Major company-wide contract awards (affecting entire company)
+// - Company-wide strategic initiatives or launches
+// - Company mergers or acquisitions
+// - Company-wide achievements (e.g., "Company reaches 10,000 employees")
+// - Company-wide policy changes
+//
 // OWNERSHIP: CompanyMilestone is owned by Company (companyId REQUIRED)
 // 
-// CONTEXT: platformUnitId is OPTIONAL - provides context when milestone relates to a platform unit
+// CONTEXT: platformUnitId is DEPRECATED - big picture milestones are company-wide, not platform-specific
 // PROVENANCE: updateId is OPTIONAL - links back to the update that triggered this milestone
 // 
 // Milestones may exist:
 // - without updates (manual creation)
-// - without platform units (business/strategic milestones)
+// - without platform units (all big picture milestones are company-wide)
 // 
 // INFERENCE RULE (future enforcement):
 // If milestoneType === KEEL_LAYING, the platform unit should have a CompanyPlatformUnitLivingHomage.
