@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { getAuth } from 'firebase/auth'
 import { getWorkMe, refreshWorkMe, type WorkMe } from '@/lib/workme.client'
 
