@@ -10,7 +10,7 @@ import api from '@/lib/api'
 
 interface WorkforceStuffItem {
   id: string
-  type: 'event' | 'training' | 'benefit' | 'campaign' | 'impact' | 'cause' | 'community' | 'announcement'
+  type: 'event' | 'training' | 'benefit' | 'campaign' | 'impact' | 'cause' | 'community' | 'announcement' | 'career'
   title: string
   summary?: string
   description?: string
@@ -141,7 +141,7 @@ export default function WorkforceStuffDetailPage() {
       partnerOrg: source.partnerOrg || '',
       impactSummary: source.impactSummary || '',
       level: source.level || '',
-      type: source.type === 'career' ? source.type : source.type || '',
+      type: source.type || '',
       pocFirstName: source.pocFirstName || '',
       pocLastName: source.pocLastName || '',
       pocEmail: source.pocEmail || '',
