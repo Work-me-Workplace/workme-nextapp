@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 
-export default function MyCompanyLayout({ children }: { children: React.ReactNode }) {
+function MyCompanyLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -29,5 +29,13 @@ export default function MyCompanyLayout({ children }: { children: React.ReactNod
   }, [router, pathname, searchParams])
 
   return <>{children}</>
+}
+
+export default function MyCompanyLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>}>
+      <MyCompanyLayoutContent>{children}</MyCompanyLayoutContent>
+    </Suspense>
+  )
 }
 
