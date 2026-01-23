@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { getDashboard, refreshDashboard, type WorkProduct } from '@/lib/dashboard.client'
@@ -76,13 +76,19 @@ const productTypeConfig = {
   },
 }
 
-export default function ProductsPage() {
+function ProductsPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [products, setProducts] = useState<WorkProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'create' | 'review'>('create')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  
+  // Check if we're creating from a source
+  const sourceId = searchParams?.get('sourceId')
+  const sourceType = searchParams?.get('sourceType')
+  const hasSource = !!sourceId && !!sourceType
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -94,8 +100,13 @@ export default function ProductsPage() {
       
       setWorkMeId(id)
       loadProducts()
+      
+      // If we have a source, default to create tab
+      if (hasSource) {
+        setActiveTab('create')
+      }
     }
-  }, [router])
+  }, [router, hasSource])
 
   async function loadProducts() {
     try {
@@ -195,7 +206,18 @@ export default function ProductsPage() {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-3xl font-bold text-gray-900">Work Products</h2>
-                  <p className="text-gray-600 mt-2">Your work outputs and communication products</p>
+                  <p className="text-gray-600 mt-2">
+                    {hasSource 
+                      ? `Create a product from this ${sourceType === 'impact' ? 'impact event' : sourceType}`
+                      : 'Your work outputs and communication products'}
+                  </p>
+                  {hasSource && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <strong>Creating from source:</strong> {sourceType === 'impact' ? 'Impact Event' : sourceType}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -241,10 +263,15 @@ export default function ProductsPage() {
                                         colorClass === 'text-green-600' ? 'group-hover:text-green-600' :
                                         colorClass === 'text-orange-600' ? 'group-hover:text-orange-600' :
                                         'group-hover:text-blue-600'
+                  // Build create path with source params if available
+                  const createPath = hasSource 
+                    ? `${config.createPath}${config.createPath.includes('?') ? '&' : '?'}sourceId=${sourceId}&sourceType=${sourceType}`
+                    : config.createPath
+                  
                   return (
                     <Link
                       key={`create-${type}`}
-                      href={config.createPath}
+                      href={createPath}
                       className="group aspect-square bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all flex flex-col items-center justify-center p-6 text-center"
                     >
                       <Icon className={`h-10 w-10 mb-3 text-gray-400 ${hoverColorClass} transition-colors`} />
@@ -370,5 +397,17 @@ export default function ProductsPage() {
         </main>
       </div>
     </div>
+  )
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <ProductsPageContent />
+    </Suspense>
   )
 }
