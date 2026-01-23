@@ -69,24 +69,24 @@ export default function EmailDigestEditionPage({
         <EmailDigestSidebar />
         <div className="flex-1">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link
-          href={`/workforce/enduring/email-digest/${emailDigestId}/editions`}
-          className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm"
-        >
-          ← Back to Editions
-        </Link>
+            <Link
+              href={`/workforce/enduring/email-digest/${emailDigestId}/editions`}
+              className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm"
+            >
+              ← Back to Editions
+            </Link>
 
-        <div className="bg-white rounded-lg shadow p-8">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">{edition.product.title}</h1>
-            <p className="text-sm text-gray-500">
-              Generated: {new Date(edition.generatedAt).toLocaleString()}
-            </p>
-          </div>
+            <div className="bg-white rounded-lg shadow p-8">
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">{edition.product.title}</h1>
+                <p className="text-sm text-gray-500">
+                  Generated: {new Date(edition.generatedAt).toLocaleString()}
+                </p>
+              </div>
 
-          <div className="border-t border-gray-200 pt-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Email Content</h2>
-            <div className="space-y-4">
+              <div className="border-t border-gray-200 pt-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Email Content</h2>
+                <div className="space-y-4">
               {content.subject && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Subject:</label>
@@ -103,9 +103,10 @@ export default function EmailDigestEditionPage({
                   </div>
                 </div>
               )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
         </div>
       </div>
     </div>

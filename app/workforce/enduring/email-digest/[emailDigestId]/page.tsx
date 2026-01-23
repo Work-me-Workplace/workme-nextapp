@@ -104,30 +104,30 @@ export default function EmailDigestProductPage({ params }: { params: Promise<{ e
         <EmailDigestSidebar />
         <div className="flex-1">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link href="/workforce/enduring/email-digest" className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm">
-          ← Back to Products
-        </Link>
+            <Link href="/workforce/enduring/email-digest" className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm">
+              ← Back to Products
+            </Link>
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.title}</h1>
-          {product.description && <p className="text-gray-600">{product.description}</p>}
-        </div>
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.title}</h1>
+              {product.description && <p className="text-gray-600">{product.description}</p>}
+            </div>
 
-        {/* Workflow Guide */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+            {/* Workflow Guide */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
           <h3 className="text-sm font-semibold text-blue-900 mb-2">📋 Workflow: Build Items → Create Edition</h3>
           <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
             <li><strong>Build NTK Items:</strong> Create formatted items from workstuff (events, campaigns, trainings, etc.)</li>
             <li><strong>Create Edition:</strong> Start a new edition for this week</li>
             <li><strong>Add Items:</strong> Select which items to include in the edition</li>
-            <li><strong>Generate:</strong> Compile items into final email content</li>
-          </ol>
-        </div>
+              <li><strong>Generate:</strong> Compile items into final email content</li>
+            </ol>
+            </div>
 
-        {/* Primary Actions */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Step 1: Build NTK Items</h2>
-          <div className="flex gap-4 mb-6">
+            {/* Primary Actions */}
+            <div className="mb-8">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Step 1: Build NTK Items</h2>
+              <div className="flex gap-4 mb-6">
             <Link
               href="/workforce/enduring/email-digest/items/new"
               className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold inline-flex items-center"
@@ -144,12 +144,12 @@ export default function EmailDigestProductPage({ params }: { params: Promise<{ e
               <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
               </svg>
-              Browse All Items
-            </Link>
-          </div>
+                Browse All Items
+              </Link>
+              </div>
 
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Step 2: Create & Curate Edition</h2>
-          <button
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Step 2: Create & Curate Edition</h2>
+              <button
             onClick={handleGenerateEdition}
             disabled={generating}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 inline-flex items-center"
@@ -157,13 +157,13 @@ export default function EmailDigestProductPage({ params }: { params: Promise<{ e
             <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            {generating ? 'Creating...' : 'Create New Edition'}
-          </button>
-        </div>
+                {generating ? 'Creating...' : 'Create New Edition'}
+              </button>
+            </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link
               href={`/workforce/enduring/email-digest/${emailDigestId}/editions`}
               className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition group"
@@ -189,8 +189,9 @@ export default function EmailDigestProductPage({ params }: { params: Promise<{ e
                 </div>
               </div>
             </div>
+              </div>
+            </div>
           </div>
-        </div>
         </div>
       </div>
     </div>

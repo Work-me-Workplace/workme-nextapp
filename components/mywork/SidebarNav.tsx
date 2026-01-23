@@ -27,6 +27,7 @@ import {
   Sparkles,
   History,
   Monitor,
+  LayoutDashboard,
 } from 'lucide-react'
 
 export default function SidebarNav() {
@@ -58,6 +59,7 @@ export default function SidebarNav() {
     if (path === '/mycompany/senior-leaders') return pathname?.startsWith(path)
     if (path === '/mycompany/products') return pathname?.startsWith(path) || pathname?.startsWith('/mycompany/platforms')
     if (path === '/mycompany/external-pressures') return pathname?.startsWith(path)
+    if (path === '/mywork') return pathname === path || pathname === '/mywork/'
     if (path === '/mywork/memos') return pathname?.startsWith(path) || pathname?.startsWith('/mywork/linkedin')
     if (path === '/mywork/products') return pathname === path || pathname?.startsWith('/mywork/digital-signage')
     if (path === '/mywork/active') return pathname === path
@@ -93,6 +95,7 @@ export default function SidebarNav() {
     {
       name: 'Mywork',
       items: [
+        { name: 'My Work', path: '/mywork', icon: LayoutDashboard },
         { name: 'Personal Branding', path: '/mywork/memos', icon: BookOpen },
         { name: 'Work Products', path: '/mywork/products', icon: Package },
         { name: "Stuff I'm Working On", path: '/mywork/active', icon: CheckSquare },

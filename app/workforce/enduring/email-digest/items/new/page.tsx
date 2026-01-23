@@ -209,19 +209,19 @@ export default function CreateItemPage() {
         <EmailDigestSidebar />
         <div className="flex-1">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link
-          href="/workforce/enduring/email-digest/items"
-          className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm"
-        >
-          ← Back to Item Catalogue
-        </Link>
+            <Link
+              href="/workforce/enduring/email-digest/items"
+              className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm"
+            >
+              ← Back to Item Catalogue
+            </Link>
 
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Digest Item</h1>
-        <p className="text-gray-600 mb-8">Build a formatted item for your email digests</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Digest Item</h1>
+            <p className="text-gray-600 mb-8">Build a formatted item for your email digests</p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* LEFT: Source Selection & Generation */}
-          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* LEFT: Source Selection & Generation */}
+              <div className="space-y-6">
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">1. Select Source</h2>
 
@@ -532,11 +532,11 @@ export default function CreateItemPage() {
                 </>
               )}
             </button>
-          </div>
+              </div>
 
-          {/* RIGHT: Preview & Edit */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
+              {/* RIGHT: Preview & Edit */}
+              <div className="space-y-6">
+                <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">3. Review & Edit</h2>
 
               <div className="space-y-4">
@@ -605,8 +605,9 @@ export default function CreateItemPage() {
                 Save as Ready
               </button>
             </div>
+              </div>
+            </div>
           </div>
-        </div>
         </div>
       </div>
     </div>

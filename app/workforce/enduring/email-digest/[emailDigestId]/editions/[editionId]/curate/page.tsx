@@ -181,26 +181,29 @@ export default function CurateEditionPage({
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link
-          href={`/workforce/enduring/email-digest/${emailDigestId}`}
-          className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm"
-        >
-          ← Back to Series
-        </Link>
+      <div className="flex">
+        <EmailDigestSidebar />
+        <div className="flex-1">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <Link
+              href={`/workforce/enduring/email-digest/${emailDigestId}`}
+              className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm"
+            >
+              ← Back to Series
+            </Link>
 
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {isFirst ? 'Create First Edition' : 'Curate Edition'}
-          </h1>
-          <p className="text-gray-600">
-            {product?.title && `Series: ${product.title}`}
-            {edition && ` • Edition created ${new Date(edition.generatedAt).toLocaleDateString()}`}
-          </p>
-        </div>
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {isFirst ? 'Create First Edition' : 'Curate Edition'}
+              </h1>
+              <p className="text-gray-600">
+                {product?.title && `Series: ${product.title}`}
+                {edition && ` • Edition created ${new Date(edition.generatedAt).toLocaleDateString()}`}
+              </p>
+            </div>
 
-        {isFirst && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            {isFirst && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
             <div className="flex">
               <svg
                 className="h-5 w-5 text-green-600 mr-3 mt-0.5 flex-shrink-0"
@@ -217,15 +220,15 @@ export default function CurateEditionPage({
               </svg>
               <div>
                 <h3 className="text-sm font-semibold text-green-900 mb-1">Series Created Successfully!</h3>
-                <p className="text-sm text-green-800">
-                  Now add "Need to Know" items to this edition. Items should be created from workstuff first.
-                </p>
+                  <p className="text-sm text-green-800">
+                    Now add "Need to Know" items to this edition. Items should be created from workstuff first.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+            )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* LEFT: Available Items */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex justify-between items-center mb-4">
@@ -372,7 +375,8 @@ export default function CurateEditionPage({
               </div>
             )}
           </div>
-        </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -34,6 +34,7 @@ import {
   Sparkles,
   History,
   Image as ImageIcon,
+  LayoutDashboard,
 } from 'lucide-react'
 
 export default function TopNav() {
@@ -72,6 +73,11 @@ export default function TopNav() {
 
   const isActive = (path: string) => {
     if (path === '/dashboard') return pathname === path
+    if (path === '/mywork') {
+      // Only match exactly /mywork or /mywork/, not /mywork/* sub-pages
+      const isExactMatch = pathname === path || pathname === '/mywork/'
+      return isExactMatch
+    }
     return pathname?.startsWith(path)
   }
 
@@ -92,6 +98,7 @@ export default function TopNav() {
       name: 'My Work',
       icon: CheckSquare,
       items: [
+        { name: 'My Work', path: '/mywork', icon: LayoutDashboard },
         { name: 'Products', path: '/mywork/products', icon: Package },
         { name: 'Active', path: '/mywork/active', icon: CheckSquare },
       ],
