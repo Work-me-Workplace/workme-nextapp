@@ -273,6 +273,8 @@ export async function DELETE(
     }
 
     const { id } = await params
+    const { searchParams } = new URL(request.url)
+    const type = searchParams.get('type')
 
     // Map type to model name
     const modelMap: Record<string, string> = {
@@ -286,8 +288,9 @@ export async function DELETE(
       cause: 'companyEmployeeCause',
     }
 
-    // Try to find and delete from each model
-    for (const [type, modelName] of Object.entries(modelMap)) {
+    // If type is provided, use it directly (more efficient)
+    if (type && modelMap[type]) {
+      const modelName = modelMap[type]
       const existing = await (prisma as any)[modelName].findFirst({
         where: { id, companyId },
       })
@@ -301,6 +304,24 @@ export async function DELETE(
           success: true,
           message: `${type} deleted successfully`,
         })
+      }
+    } else {
+      // Fallback: Try to find and delete from each model
+      for (const [typeKey, modelName] of Object.entries(modelMap)) {
+        const existing = await (prisma as any)[modelName].findFirst({
+          where: { id, companyId },
+        })
+
+        if (existing) {
+          await (prisma as any)[modelName].delete({
+            where: { id },
+          })
+
+          return NextResponse.json({
+            success: true,
+            message: `${typeKey} deleted successfully`,
+          })
+        }
       }
     }
 

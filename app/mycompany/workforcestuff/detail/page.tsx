@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState, Suspense } from 'react'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
-import { Calendar, FileText, Plus, Archive, Edit, ArchiveRestore, Save, X } from 'lucide-react'
+import { Calendar, FileText, Plus, Archive, Edit, ArchiveRestore, Save, X, Trash2 } from 'lucide-react'
 import api from '@/lib/api'
 
 interface WorkforceStuffItem {
@@ -33,6 +33,7 @@ function WorkforceStuffDetailContent() {
   const [item, setItem] = useState<WorkforceStuffItem | null>(null)
   const [loading, setLoading] = useState(true)
   const [archiving, setArchiving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -136,6 +137,31 @@ function WorkforceStuffDetailContent() {
     }
   }
 
+  async function handleDelete() {
+    if (!item) return
+    if (!confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      setDeleting(true)
+      setError(null)
+
+      const response = await api.delete(`/api/workforcestuff/${item.id}?type=${item.type}`)
+
+      if (response.data.success) {
+        router.push(`/mycompany/workforcestuff?companyId=${encodeURIComponent(companyId)}`)
+      } else {
+        setError(response.data.error || 'Failed to delete item')
+      }
+    } catch (err: any) {
+      console.error('Failed to delete item:', err)
+      setError(err.response?.data?.error || err.message || 'Failed to delete item')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   function toDateInput(value?: string | null) {
     if (!value) return ''
     const date = new Date(value)
@@ -144,6 +170,18 @@ function WorkforceStuffDetailContent() {
   }
 
   function buildInitialForm(source: WorkforceStuffItem) {
+    // Simplified form for impact events - just the essentials
+    if (source.type === 'impact') {
+      return {
+        title: source.title || '',
+        description: source.description || source.summary || '',
+        effectiveDate: toDateInput(source.startDate || source.effectiveDate),
+        impactedPopulation: source.impactedPopulation || '',
+        urgency: source.urgency || '',
+      }
+    }
+
+    // Full form for other types
     return {
       title: source.title || '',
       description: source.description || source.summary || '',
@@ -219,13 +257,10 @@ function WorkforceStuffDetailContent() {
         return {
           title: data.title || null,
           description: data.description || null,
-          effectiveDate: data.startDate ? new Date(data.startDate) : null,
+          summary: data.description || null, // Use description as summary
+          effectiveDate: (data.effectiveDate || data.startDate) ? new Date(data.effectiveDate || data.startDate) : null,
           impactedPopulation: data.impactedPopulation || null,
           urgency: data.urgency || null,
-          pocFirstName: data.pocFirstName || null,
-          pocLastName: data.pocLastName || null,
-          pocEmail: data.pocEmail || null,
-          pocPhone: data.pocPhone || null,
         }
       case 'community':
         return {
@@ -426,7 +461,35 @@ function WorkforceStuffDetailContent() {
                 </div>
               </div>
 
-              {(item.startDate || item.endDate) && !isEditing && (
+              {!isEditing && item.type === 'impact' && (
+                <div className="mb-6 space-y-4 p-4 bg-gray-50 rounded-lg">
+                  {item.startDate && (
+                    <div className="flex items-center">
+                      <Calendar className="h-5 w-5 text-gray-500 mr-2" />
+                      <div>
+                        <p className="text-sm text-gray-600">Effective Date</p>
+                        <p className="font-semibold text-gray-900">{new Date(item.startDate).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  )}
+                  {item.impactedPopulation && (
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Who It Affects</p>
+                      <p className="font-semibold text-gray-900">{item.impactedPopulation}</p>
+                    </div>
+                  )}
+                  {item.urgency && (
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Urgency</p>
+                      <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded">
+                        {item.urgency}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {(item.startDate || item.endDate) && !isEditing && item.type !== 'impact' && (
                 <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
                   {item.startDate && (
                     <div className="flex items-center">
@@ -529,22 +592,23 @@ function WorkforceStuffDetailContent() {
                   )}
 
                   {item.type === 'impact' && (
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Effective Date</label>
                         <input
                           type="date"
-                          value={formData.startDate || ''}
-                          onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                          value={formData.effectiveDate || formData.startDate || ''}
+                          onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value, startDate: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Impacted Population</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Who It Affects</label>
                         <input
                           type="text"
                           value={formData.impactedPopulation || ''}
                           onChange={(e) => setFormData({ ...formData, impactedPopulation: e.target.value })}
+                          placeholder="e.g., All D.C. area employees, Remote workers, etc."
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         />
                       </div>
@@ -642,6 +706,14 @@ function WorkforceStuffDetailContent() {
                     {archiving ? 'Archiving...' : 'Archive'}
                   </button>
                 )}
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  <Trash2 className="h-5 w-5 mr-2" />
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </button>
               </div>
             </div>
           </div>
