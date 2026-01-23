@@ -615,7 +615,7 @@ export default function WorkforceStuffDetailPage() {
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-4 pt-6 border-t">
                 <Link
-                  href={`/mywork/products?sourceId=${item.id}&sourceType=${item.type}`}
+                  href={`/mycompany/workforcestuff/${item.id}/product-gen${companyId ? `?companyId=${companyId}` : ''}`}
                   className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
                 >
                   <Plus className="h-5 w-5 mr-2" />
