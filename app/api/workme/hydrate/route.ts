@@ -81,11 +81,14 @@ export async function GET(request: Request) {
             },
           },
         },
-        externalCompanyPressures: {
-          orderBy: {
-            createdAt: 'desc',
-          },
-        },
+        // Temporarily removed externalCompanyPressures due to schema migration issue
+        // The schema has 'title' field but DB migration hasn't been run yet
+        // TODO: Re-enable after running ExternalCompanyPressure migration
+        // externalCompanyPressures: {
+        //   orderBy: {
+        //     createdAt: 'desc',
+        //   },
+        // },
       },
     })
 

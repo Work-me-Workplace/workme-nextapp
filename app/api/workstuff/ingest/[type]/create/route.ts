@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireWorkMeAuth } from '@/lib/server/requireWorkMeAuth'
 import { prisma } from '@/lib/prisma'
 import { createCompanyXWithIngest, getCompanyXRedirectPath } from '@/lib/services/companyx-mapper'
+import { parseCompanyXContent } from '@/lib/services/companyx-unified-mapper'
 import type { ContextType } from '@/lib/types/context-type'
 import { isValidContextType } from '@/lib/types/context-type'
 
@@ -65,6 +66,18 @@ export async function POST(
       companyId
     )
 
+    // Parse immediately for types that support review UI
+    let parsedModel = null
+    if (type === 'training' || type === 'impact_event') {
+      try {
+        const parsed = await parseCompanyXContent(rawText, type as ContextType)
+        parsedModel = parsed.data
+      } catch (parseError: any) {
+        console.error(`[Create CompanyX] Parse error for ${type}:`, parseError)
+        // Don't fail the request if parsing fails - user can still review manually
+      }
+    }
+
     const response: any = {
       success: true,
       redirectTo: getCompanyXRedirectPath(type as ContextType, result.id),
@@ -85,6 +98,11 @@ export async function POST(
     const idField = idFieldMap[result.modelName]
     if (idField) {
       response[idField] = result.id
+    }
+
+    // Include parsed model if available
+    if (parsedModel) {
+      response.model = parsedModel
     }
 
     return NextResponse.json(response)

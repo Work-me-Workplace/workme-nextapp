@@ -140,27 +140,25 @@ export default function AddWorkforceStuffPage() {
         setCreatedRedirectTo(data.redirectTo)
       }
 
-      if (selectedType === 'training') {
-        const hydrateRes = await api.post('/api/workstuff/ingest/training-hydrate', {
-          trainingId: created,
-        })
+      // Parsed model is now returned directly from create endpoint
+      if (data.model) {
+        setParsedData(data.model)
+      } else if (selectedType === 'training' || selectedType === 'impact_event') {
+        // Fallback: if model not returned, try hydrate (backwards compatibility)
+        try {
+          const hydrateEndpoint = selectedType === 'training' 
+            ? '/api/workstuff/ingest/training-hydrate'
+            : '/api/workstuff/ingest/impact-event-hydrate'
+          const hydrateRes = await api.post(hydrateEndpoint, {
+            [selectedType === 'training' ? 'trainingId' : 'impactEventId']: created,
+          })
 
-        if (hydrateRes.data.success && hydrateRes.data.model) {
-          setParsedData(hydrateRes.data.model)
-        } else {
-          setError(hydrateRes.data.error || 'Failed to parse training fields')
-          return
-        }
-      } else if (selectedType === 'impact_event') {
-        const hydrateRes = await api.post('/api/workstuff/ingest/impact-event-hydrate', {
-          impactEventId: created,
-        })
-
-        if (hydrateRes.data.success && hydrateRes.data.model) {
-          setParsedData(hydrateRes.data.model)
-        } else {
-          setError(hydrateRes.data.error || 'Failed to parse impact event fields')
-          return
+          if (hydrateRes.data.success && hydrateRes.data.model) {
+            setParsedData(hydrateRes.data.model)
+          }
+        } catch (hydrateError) {
+          console.error('Hydrate fallback error:', hydrateError)
+          // Continue anyway - user can review manually
         }
       }
 
