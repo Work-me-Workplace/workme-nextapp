@@ -1,30 +1,23 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { getAuth } from 'firebase/auth'
+import { onAuthStateChanged } from 'firebase/auth'
+import { auth } from '@/lib/firebase'
 import { getWorkMe, refreshWorkMe, type WorkMe } from '@/lib/workme.client'
 
 export default function WelcomePage() {
   const router = useRouter()
   const [workMe, setWorkMe] = useState<WorkMe | null>(null)
   const [loading, setLoading] = useState(true)
+  const [authInitialized, setAuthInitialized] = useState(false)
 
-  // Check Firebase auth - only redirect if not authenticated
-  useEffect(() => {
-    const firebaseUser = getAuth().currentUser
-    if (!firebaseUser) {
-      router.replace('/signin')
-      return
-    }
-  }, [router])
+  // Hydrate WorkMe identity using Firebase ID lookup (like GoFast pattern)
+  const hydrateWorkMe = useCallback(async () => {
+    if (typeof window === 'undefined') return
 
-  // Hydrate WorkMe identity once on mount
-  useEffect(() => {
-    const hydrateWorkMe = async () => {
-      if (typeof window === 'undefined') return
-
+    try {
       // Check if we already have WorkMe in localStorage
       const stored = getWorkMe()
       if (stored) {
@@ -33,44 +26,80 @@ export default function WelcomePage() {
         return
       }
 
-      // Fetch full WorkMe object from API
-      try {
-        const refreshed = await refreshWorkMe()
-        if (refreshed) {
-          setWorkMe(refreshed)
-        }
-      } catch (err) {
-        console.error('Failed to hydrate WorkMe:', err)
-      } finally {
-        setLoading(false)
+      // Fetch full WorkMe object from API (uses Firebase ID from token)
+      console.log('🚀 Welcome: Hydrating WorkMe data...')
+      const refreshed = await refreshWorkMe()
+      if (refreshed) {
+        console.log('✅ Welcome: WorkMe hydrated:', refreshed.id)
+        setWorkMe(refreshed)
+      } else {
+        console.error('❌ Welcome: Failed to hydrate WorkMe')
+        router.push('/signin')
+        return
       }
+    } catch (err: any) {
+      console.error('❌ Welcome: Hydration error:', err)
+      
+      // If 401, redirect to signin
+      if (err.response?.status === 401 || err.message?.includes('401') || err.message?.includes('Unauthorized')) {
+        console.log('🚫 Welcome: Unauthorized → redirecting to signin')
+        router.push('/signin')
+        return
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [router])
+
+  // CRITICAL: Wait for Firebase auth to initialize using onAuthStateChanged
+  // DO NOT check auth.currentUser directly - it will be null on page refresh!
+  useEffect(() => {
+    if (!auth) {
+      console.error('❌ Welcome: Firebase auth not initialized')
+      router.push('/signin')
+      return
     }
 
-    hydrateWorkMe()
-  }, [])
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setAuthInitialized(true)
+
+      if (!firebaseUser) {
+        console.log('❌ Welcome: No Firebase user found → redirecting to signin')
+        setLoading(false)
+        router.push('/signin')
+        return
+      }
+
+      // Now we have a Firebase user - proceed with hydration
+      await hydrateWorkMe()
+    })
+
+    return () => unsubscribe()
+  }, [router, hydrateWorkMe])
 
   // Don't auto-redirect - let user stay on welcome page and click continue
-  // Like IgniteBD - "hold on welcome bro" - just show welcome, no yanking
-  // Always go to dashboard - onboarding prompts will handle setup
+  // Company reconciliation: Firebase ID → WorkMe → companyId (simple lookup, company-scoped)
 
   const handleContinue = () => {
     if (typeof window !== 'undefined') {
-      const storedCompanyId = localStorage.getItem('companyId') || localStorage.getItem('companyUnit')
+      // Get companyId from WorkMe (reconciled by Firebase ID)
       const workMeCompanyId = workMe?.companyId || null
-      const companyId = workMeCompanyId || storedCompanyId
 
-      if (companyId) {
-        localStorage.setItem('companyId', companyId)
-        localStorage.setItem('companyUnit', companyId)
-        router.push(`/mycompany/workforcestuff?companyId=${encodeURIComponent(companyId)}`)
+      if (workMeCompanyId) {
+        // Ensure it's saved to localStorage for easy access
+        localStorage.setItem('companyId', workMeCompanyId)
+        localStorage.setItem('companyUnit', workMeCompanyId)
+        router.push(`/mycompany/workforcestuff?companyId=${encodeURIComponent(workMeCompanyId)}`)
         return
       }
     }
 
+    // Fallback to dashboard if no companyId
     router.push('/dashboard')
   }
 
-  if (loading) {
+  // Show loading state while waiting for auth to initialize or hydrating
+  if (loading || !authInitialized) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
