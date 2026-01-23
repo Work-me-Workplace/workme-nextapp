@@ -22,10 +22,11 @@ export default function AddWorkforceStuffPage() {
   const [rawText, setRawText] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [step, setStep] = useState<'input' | 'confirm' | 'review' | 'success'>('input')
+  const [step, setStep] = useState<'input' | 'review' | 'success'>('input')
   const [selectedType, setSelectedType] = useState<string>('')
   const [parsedData, setParsedData] = useState<any>(null)
   const [trainingId, setTrainingId] = useState<string | null>(null)
+  const [impactEventId, setImpactEventId] = useState<string | null>(null)
   const [createdRedirectTo, setCreatedRedirectTo] = useState<string | null>(null)
   const [result, setResult] = useState<{
     type: string
@@ -45,9 +46,8 @@ export default function AddWorkforceStuffPage() {
       return
     }
 
-    // Skip inference, go straight to confirm step
-    setStep('confirm')
-    setError(null)
+    // Skip confirmation, go straight to ingest/parse
+    await handleConfirmAndSave()
   }
 
   async function resolveCompanyId(): Promise<string | null> {
@@ -133,6 +133,9 @@ export default function AddWorkforceStuffPage() {
       if (selectedType === 'training') {
         setTrainingId(created)
       }
+      if (selectedType === 'impact_event') {
+        setImpactEventId(created)
+      }
       if (data.redirectTo) {
         setCreatedRedirectTo(data.redirectTo)
       }
@@ -146,6 +149,17 @@ export default function AddWorkforceStuffPage() {
           setParsedData(hydrateRes.data.model)
         } else {
           setError(hydrateRes.data.error || 'Failed to parse training fields')
+          return
+        }
+      } else if (selectedType === 'impact_event') {
+        const hydrateRes = await api.post('/api/workstuff/ingest/impact-event-hydrate', {
+          impactEventId: created,
+        })
+
+        if (hydrateRes.data.success && hydrateRes.data.model) {
+          setParsedData(hydrateRes.data.model)
+        } else {
+          setError(hydrateRes.data.error || 'Failed to parse impact event fields')
           return
         }
       }
@@ -199,7 +213,167 @@ export default function AddWorkforceStuffPage() {
     }
   }
 
+  async function handleFinalizeImpactEvent() {
+    if (!impactEventId || !parsedData) {
+      setError('Missing impact event data to save')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await api.post('/api/workstuff/ingest/impact-event-save', {
+        impactEventId,
+        ...parsedData,
+      })
+
+      const data = res.data
+      if (!data.success) {
+        setError(data.error || 'Failed to save impact event')
+        return
+      }
+
+      setResult({
+        type: selectedType,
+        confidence: 0,
+        explanation: '',
+        redirectTo: `/mycompany/workforcestuff/impact-event/${impactEventId}`,
+      })
+      setStep('success')
+
+      setTimeout(() => {
+        router.push(`/mycompany/workforcestuff/impact-event/${impactEventId}`)
+      }, 2000)
+    } catch (err: any) {
+      console.error('Impact Event save error:', err)
+      setError(err.message || 'Failed to save impact event')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const reviewContent = useMemo(() => {
+    if (selectedType === 'impact_event') {
+      return (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+            <input
+              type="text"
+              value={parsedData?.title || ''}
+              onChange={(e) => setParsedData({ ...parsedData, title: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea
+              value={parsedData?.description || ''}
+              onChange={(e) => setParsedData({ ...parsedData, description: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md h-32"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Summary</label>
+            <textarea
+              value={parsedData?.summary || ''}
+              onChange={(e) => setParsedData({ ...parsedData, summary: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md h-32"
+              placeholder="Comprehensive summary with all critical details..."
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Effective Date</label>
+              <input
+                type="date"
+                value={parsedData?.effectiveDate || ''}
+                onChange={(e) => setParsedData({ ...parsedData, effectiveDate: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Urgency</label>
+              <input
+                type="text"
+                value={parsedData?.urgency || ''}
+                onChange={(e) => setParsedData({ ...parsedData, urgency: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+                placeholder="e.g., High, Medium, Low"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+            <input
+              type="text"
+              value={parsedData?.location || ''}
+              onChange={(e) => setParsedData({ ...parsedData, location: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Impacted Population</label>
+            <input
+              type="text"
+              value={parsedData?.impactedPopulation || ''}
+              onChange={(e) => setParsedData({ ...parsedData, impactedPopulation: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+              placeholder="Who is affected by this event?"
+            />
+          </div>
+
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Point of Contact</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                <input
+                  type="text"
+                  value={parsedData?.pocFirstName || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocFirstName: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                <input
+                  type="text"
+                  value={parsedData?.pocLastName || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocLastName: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={parsedData?.pocEmail || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocEmail: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                <input
+                  type="tel"
+                  value={parsedData?.pocPhone || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocPhone: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
     if (selectedType !== 'training') {
       return (
         <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -402,7 +576,7 @@ export default function AddWorkforceStuffPage() {
         </div>
       </div>
     )
-  }, [parsedData, selectedType])
+  }, [parsedData, selectedType, createdRedirectTo, router])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -497,71 +671,6 @@ export default function AddWorkforceStuffPage() {
             </>
           )}
 
-          {step === 'confirm' && (
-            <>
-              <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Confirm Type</h2>
-                
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Content Type
-                </label>
-                <select
-                  value={selectedType}
-                  onChange={(e) => setSelectedType(e.target.value)}
-                  className="border border-gray-300 rounded-md px-3 py-2 bg-white w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="training">Training</option>
-                  <option value="career">Career Opportunity</option>
-                  <option value="event">Event</option>
-                  <option value="leader_engagement">Leader Engagement</option>
-                  <option value="campaign">Campaign</option>
-                  <option value="impact_event">Impact Event</option>
-                  <option value="community">Community Engagement</option>
-                  <option value="benefits">Benefits</option>
-                  <option value="employee_cause">Employee Cause</option>
-                </select>
-              </div>
-
-              {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-red-800">Error</p>
-                    <p className="text-sm text-red-700 mt-1">{error}</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-4">
-                <button
-                  onClick={() => {
-                    setStep('input')
-                    setError(null)
-                  }}
-                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
-                >
-                  ← Back
-                </button>
-                <button
-                  onClick={handleConfirmAndSave}
-                  disabled={!selectedType || loading}
-                  className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      Continue
-                    </>
-                  )}
-                </button>
-              </div>
-            </>
-          )}
-
           {step === 'review' && (
             <>
               <div className="mb-6">
@@ -586,29 +695,57 @@ export default function AddWorkforceStuffPage() {
               <div className="flex gap-4">
                 <button
                   onClick={() => {
-                    setStep('confirm')
+                    setStep('input')
                     setError(null)
                   }}
                   className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
                 >
                   ← Back
                 </button>
-                <button
-                  onClick={handleFinalizeTraining}
-                  disabled={loading || selectedType !== 'training'}
-                  className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      Save Training
-                    </>
-                  )}
-                </button>
+                {selectedType === 'training' && (
+                  <button
+                    onClick={handleFinalizeTraining}
+                    disabled={loading}
+                    className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        Save Training
+                      </>
+                    )}
+                  </button>
+                )}
+                {selectedType === 'impact_event' && (
+                  <button
+                    onClick={handleFinalizeImpactEvent}
+                    disabled={loading}
+                    className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        Save Impact Event
+                      </>
+                    )}
+                  </button>
+                )}
+                {selectedType !== 'training' && selectedType !== 'impact_event' && (
+                  <button
+                    disabled
+                    className="flex-1 px-6 py-3 bg-gray-400 text-white rounded-lg font-semibold cursor-not-allowed"
+                  >
+                    Save {formatTypeName(selectedType)} (Coming Soon)
+                  </button>
+                )}
               </div>
             </>
           )}
