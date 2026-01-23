@@ -39,7 +39,7 @@ const productTypeConfig = {
     icon: Mail,
     color: 'blue',
     colorClass: 'text-blue-600',
-    createPath: '/workforce/enduring/email-digest/new',
+    createPath: '/workforce/enduring/email-digest',
     viewPath: (id: string) => `/workforce/enduring/email-digest/${id}`,
   },
   digital_signage: {

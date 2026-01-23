@@ -40,8 +40,8 @@ export default function EmailDigestProductPage({ params }: { params: Promise<{ e
       const response = await api.post(`/api/workforce/enduring/email-digest/${emailDigestId}/editions`)
       const result = response.data
       if (result.success && result.edition) {
-        // Redirect to edition detail page (curation will happen there)
-        window.location.href = `/workforce/enduring/email-digest/${emailDigestId}/editions/${result.edition.id}`
+        // Redirect to curation page to add items
+        window.location.href = `/workforce/enduring/email-digest/${emailDigestId}/editions/${result.edition.id}/curate`
       } else {
         alert('Failed to create edition: ' + (result.error || 'Unknown error'))
         setGenerating(false)
@@ -109,35 +109,51 @@ export default function EmailDigestProductPage({ params }: { params: Promise<{ e
           {product.description && <p className="text-gray-600">{product.description}</p>}
         </div>
 
+        {/* Workflow Guide */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+          <h3 className="text-sm font-semibold text-blue-900 mb-2">📋 Workflow: Build Items → Create Edition</h3>
+          <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+            <li><strong>Build NTK Items:</strong> Create formatted items from workstuff (events, campaigns, trainings, etc.)</li>
+            <li><strong>Create Edition:</strong> Start a new edition for this week</li>
+            <li><strong>Add Items:</strong> Select which items to include in the edition</li>
+            <li><strong>Generate:</strong> Compile items into final email content</li>
+          </ol>
+        </div>
+
         {/* Primary Actions */}
-        <div className="mb-8 flex gap-4">
-          <Link
-            href="/workforce/enduring/email-digest/items/new"
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold inline-flex items-center"
-          >
-            <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Create Item
-          </Link>
-          <Link
-            href="/workforce/enduring/email-digest/items"
-            className="px-6 py-3 border-2 border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition font-semibold inline-flex items-center"
-          >
-            <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-            </svg>
-            Browse Items
-          </Link>
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Step 1: Build NTK Items</h2>
+          <div className="flex gap-4 mb-6">
+            <Link
+              href="/workforce/enduring/email-digest/items/new"
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold inline-flex items-center"
+            >
+              <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Create Item from Workstuff
+            </Link>
+            <Link
+              href="/workforce/enduring/email-digest/items"
+              className="px-6 py-3 border-2 border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition font-semibold inline-flex items-center"
+            >
+              <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+              Browse All Items
+            </Link>
+          </div>
+
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Step 2: Create & Curate Edition</h2>
           <button
             onClick={handleGenerateEdition}
             disabled={generating}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 inline-flex items-center ml-auto"
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50 inline-flex items-center"
           >
             <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            {generating ? 'Generating...' : 'Generate New Edition'}
+            {generating ? 'Creating...' : 'Create New Edition'}
           </button>
         </div>
 
