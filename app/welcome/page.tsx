@@ -112,7 +112,8 @@ export default function WelcomePage() {
         // Ensure it's saved to localStorage for easy access
         localStorage.setItem('companyId', workMeCompanyId)
         localStorage.setItem('companyUnit', workMeCompanyId)
-        router.push(`/mycompany/workforcestuff?companyId=${encodeURIComponent(workMeCompanyId)}`)
+        // Always go to dashboard first, not directly to workforce stuff
+        router.push(`/dashboard?companyId=${encodeURIComponent(workMeCompanyId)}`)
         return
       }
     }

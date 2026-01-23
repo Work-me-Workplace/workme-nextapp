@@ -68,13 +68,16 @@ export async function POST(
 
     // Parse immediately for types that support review UI
     let parsedModel = null
+    let parseError = null
     if (type === 'training' || type === 'impact_event') {
       try {
         const parsed = await parseCompanyXContent(rawText, type as ContextType)
         parsedModel = parsed.data
-      } catch (parseError: any) {
-        console.error(`[Create CompanyX] Parse error for ${type}:`, parseError)
+      } catch (err: any) {
+        parseError = err.message || 'Failed to parse content'
+        console.error(`[Create CompanyX] Parse error for ${type}:`, err)
         // Don't fail the request if parsing fails - user can still review manually
+        // But include error in response so UI can show it
       }
     }
 
@@ -103,6 +106,12 @@ export async function POST(
     // Include parsed model if available
     if (parsedModel) {
       response.model = parsedModel
+    }
+
+    // Include parse error if parsing failed (so UI can show warning)
+    if (parseError) {
+      response.parseError = parseError
+      response.parseWarning = 'Content was saved but parsing failed. You can review and edit manually.'
     }
 
     return NextResponse.json(response)

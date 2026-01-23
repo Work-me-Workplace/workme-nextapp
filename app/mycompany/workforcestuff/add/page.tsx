@@ -140,6 +140,13 @@ export default function AddWorkforceStuffPage() {
         setCreatedRedirectTo(data.redirectTo)
       }
 
+      // Check for parse errors first
+      if (data.parseError) {
+        console.warn('⚠️ Parse error (but record created):', data.parseError)
+        // Show warning but continue - user can review manually
+        setError(data.parseWarning || `Warning: ${data.parseError}. Record created but parsing failed. You can review and edit manually.`)
+      }
+
       // Parsed model is now returned directly from create endpoint
       if (data.model) {
         setParsedData(data.model)
