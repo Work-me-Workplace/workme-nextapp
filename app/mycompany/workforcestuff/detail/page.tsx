@@ -254,6 +254,7 @@ function WorkforceStuffDetailContent() {
           sponsor: data.sponsor || null,
         }
       case 'impact':
+        // Simplified impact event model - only core fields
         return {
           title: data.title || null,
           description: data.description || null,
@@ -261,6 +262,12 @@ function WorkforceStuffDetailContent() {
           effectiveDate: (data.effectiveDate || data.startDate) ? new Date(data.effectiveDate || data.startDate) : null,
           impactedPopulation: data.impactedPopulation || null,
           urgency: data.urgency || null,
+          // Explicitly set POC fields to null to clear them if they exist
+          pocFirstName: null,
+          pocLastName: null,
+          pocEmail: null,
+          pocPhone: null,
+          location: null,
         }
       case 'community':
         return {

@@ -18,15 +18,10 @@ function getOpenAI() {
 
 export interface ImpactEventModel {
   title: string | null
-  description: string | null
-  summary: string | null // COMPREHENSIVE summary - KEEP KEY DETAILS!
+  description: string | null // The impact/deal - what's happening
   effectiveDate: string | null // ISO date string
-  impactedPopulation: string | null
+  impactedPopulation: string | null // Who it affects
   urgency: string | null
-  pocFirstName: string | null
-  pocLastName: string | null
-  pocEmail: string | null
-  pocPhone: string | null
 }
 
 /**
@@ -49,15 +44,10 @@ CRITICAL FOR SUMMARY:
 Return JSON with these exact fields:
 {
   "title": "Impact event title (or null)",
-  "description": "Full description (or null)",
-  "summary": "COMPREHENSIVE summary that KEEPS all critical details: deadlines, codes, requirements, dates, times, pay periods, leave codes, etc. Do NOT abbreviate! (or null)",
+  "description": "The impact/deal - what's happening. Keep all critical details: deadlines, codes, requirements, dates, times, pay periods, leave codes, etc. Do NOT abbreviate! (or null)",
   "effectiveDate": "ISO date string (YYYY-MM-DD) or null",
   "impactedPopulation": "Who is affected (or null)",
-  "urgency": "Urgency level (or null)",
-  "pocFirstName": "First name (or null)",
-  "pocLastName": "Last name (or null)",
-  "pocEmail": "Email address (or null)",
-  "pocPhone": "Phone number (or null)"
+  "urgency": "Urgency level: Low, Medium, High, or Critical (or null)"
 }
 
 Text:
@@ -85,28 +75,18 @@ ${rawText.substring(0, 3000)}`
     return {
       title: parsed.title || null,
       description: parsed.description || null,
-      summary: parsed.summary || null, // COMPREHENSIVE summary with all key details
       effectiveDate: parsed.effectiveDate || null,
       impactedPopulation: parsed.impactedPopulation || null,
       urgency: parsed.urgency || null,
-      pocFirstName: parsed.pocFirstName || null,
-      pocLastName: parsed.pocLastName || null,
-      pocEmail: parsed.pocEmail || null,
-      pocPhone: parsed.pocPhone || null,
     }
   } catch (error) {
     console.error('ImpactEventMapperService error:', error)
     return {
       title: null,
       description: rawText.substring(0, 500),
-      summary: rawText.substring(0, 500), // Fallback - keep raw text
       effectiveDate: null,
       impactedPopulation: null,
       urgency: null,
-      pocFirstName: null,
-      pocLastName: null,
-      pocEmail: null,
-      pocPhone: null,
     }
   }
 }

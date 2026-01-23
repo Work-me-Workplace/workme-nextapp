@@ -259,16 +259,13 @@ export async function saveImpactEvent(context: SaveHandlerContext): Promise<Save
   const updatedRecord = await prisma.companyImpactEvent.update({
     where: { id: ingestResult.id },
     data: {
+      // Simplified model - only core fields
       title: data.title || 'Untitled Impact Event',
       description: data.description,
+      summary: data.description || null, // Use description as summary
       effectiveDate: data.effectiveDate ? new Date(data.effectiveDate) : null,
       impactedPopulation: data.impactedPopulation,
       urgency: data.urgency,
-      pocFirstName: data.pocFirstName,
-      pocLastName: data.pocLastName,
-      pocEmail: data.pocEmail,
-      pocPhone: data.pocPhone,
-      summary: data.summary || data.description || data.title || null,
     },
   })
 
