@@ -8,10 +8,16 @@ export const dynamic = 'force-dynamic'
 interface ImpactEventSaveRequest {
   impactEventId: string
   title: string | null
-  description: string | null // The impact/deal
+  description: string | null
+  summary: string | null
   effectiveDate: string | null // ISO date string
-  impactedPopulation: string | null // Who it affects
+  location: string | null
+  impactedPopulation: string | null
   urgency: string | null
+  pocFirstName: string | null
+  pocLastName: string | null
+  pocEmail: string | null
+  pocPhone: string | null
 }
 
 /**
@@ -52,22 +58,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update ONLY the simplified impact event fields
+    // Update ALL impact event fields to match the model
     // DO NOT overwrite ingest fields
     const updated = await prisma.companyImpactEvent.update({
       where: { id: data.impactEventId },
       data: {
-        // Core fields only
+        // Core
         title: data.title || 'Untitled Impact Event',
         description: data.description,
-        summary: data.description || null, // Use description as summary
+        summary: data.summary || data.description || null,
         
-        // Date
+        // Date / Location
         effectiveDate: data.effectiveDate ? new Date(data.effectiveDate) : null,
+        location: data.location,
         
         // Impact Details
         impactedPopulation: data.impactedPopulation,
         urgency: data.urgency,
+        
+        // POC
+        pocFirstName: data.pocFirstName,
+        pocLastName: data.pocLastName,
+        pocEmail: data.pocEmail,
+        pocPhone: data.pocPhone,
 
         // ingestRawText remains unchanged
       },

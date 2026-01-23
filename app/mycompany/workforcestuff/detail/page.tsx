@@ -170,14 +170,20 @@ function WorkforceStuffDetailContent() {
   }
 
   function buildInitialForm(source: WorkforceStuffItem) {
-    // Simplified form for impact events - just the essentials
+    // Full form for impact events matching the model
     if (source.type === 'impact') {
       return {
         title: source.title || '',
-        description: source.description || source.summary || '',
+        description: source.description || '',
+        summary: source.summary || '',
         effectiveDate: toDateInput(source.startDate || source.effectiveDate),
+        location: source.location || '',
         impactedPopulation: source.impactedPopulation || '',
         urgency: source.urgency || '',
+        pocFirstName: source.pocFirstName || '',
+        pocLastName: source.pocLastName || '',
+        pocEmail: source.pocEmail || '',
+        pocPhone: source.pocPhone || '',
       }
     }
 
@@ -254,20 +260,19 @@ function WorkforceStuffDetailContent() {
           sponsor: data.sponsor || null,
         }
       case 'impact':
-        // Simplified impact event model - only core fields
+        // Full impact event model matching schema
         return {
           title: data.title || null,
           description: data.description || null,
-          summary: data.description || null, // Use description as summary
+          summary: data.summary || data.description || null,
           effectiveDate: (data.effectiveDate || data.startDate) ? new Date(data.effectiveDate || data.startDate) : null,
+          location: data.location || null,
           impactedPopulation: data.impactedPopulation || null,
           urgency: data.urgency || null,
-          // Explicitly set POC fields to null to clear them if they exist
-          pocFirstName: null,
-          pocLastName: null,
-          pocEmail: null,
-          pocPhone: null,
-          location: null,
+          pocFirstName: data.pocFirstName || null,
+          pocLastName: data.pocLastName || null,
+          pocEmail: data.pocEmail || null,
+          pocPhone: data.pocPhone || null,
         }
       case 'community':
         return {
@@ -470,27 +475,70 @@ function WorkforceStuffDetailContent() {
 
               {!isEditing && item.type === 'impact' && (
                 <div className="mb-6 space-y-4 p-4 bg-gray-50 rounded-lg">
-                  {item.startDate && (
-                    <div className="flex items-center">
-                      <Calendar className="h-5 w-5 text-gray-500 mr-2" />
-                      <div>
-                        <p className="text-sm text-gray-600">Effective Date</p>
-                        <p className="font-semibold text-gray-900">{new Date(item.startDate).toLocaleDateString()}</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    {item.startDate && (
+                      <div className="flex items-center">
+                        <Calendar className="h-5 w-5 text-gray-500 mr-2" />
+                        <div>
+                          <p className="text-sm text-gray-600">Effective Date</p>
+                          <p className="font-semibold text-gray-900">{new Date(item.startDate).toLocaleDateString()}</p>
+                        </div>
                       </div>
+                    )}
+                    {item.location && (
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Location</p>
+                        <p className="font-semibold text-gray-900">{item.location}</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {item.impactedPopulation && (
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Who It Affects</p>
+                        <p className="font-semibold text-gray-900">{item.impactedPopulation}</p>
+                      </div>
+                    )}
+                    {item.urgency && (
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Urgency</p>
+                        <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded">
+                          {item.urgency}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  {item.summary && (
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Summary</p>
+                      <p className="text-gray-900 whitespace-pre-wrap">{item.summary}</p>
                     </div>
                   )}
-                  {item.impactedPopulation && (
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">Who It Affects</p>
-                      <p className="font-semibold text-gray-900">{item.impactedPopulation}</p>
-                    </div>
-                  )}
-                  {item.urgency && (
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">Urgency</p>
-                      <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded">
-                        {item.urgency}
-                      </span>
+                  {(item.pocFirstName || item.pocLastName || item.pocEmail || item.pocPhone) && (
+                    <div className="border-t pt-4">
+                      <p className="text-sm font-semibold text-gray-900 mb-2">Point of Contact</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        {(item.pocFirstName || item.pocLastName) && (
+                          <div>
+                            <p className="text-sm text-gray-600">Name</p>
+                            <p className="font-semibold text-gray-900">
+                              {[item.pocFirstName, item.pocLastName].filter(Boolean).join(' ') || 'N/A'}
+                            </p>
+                          </div>
+                        )}
+                        {item.pocEmail && (
+                          <div>
+                            <p className="text-sm text-gray-600">Email</p>
+                            <p className="font-semibold text-gray-900">{item.pocEmail}</p>
+                          </div>
+                        )}
+                        {item.pocPhone && (
+                          <div>
+                            <p className="text-sm text-gray-600">Phone</p>
+                            <p className="font-semibold text-gray-900">{item.pocPhone}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -600,38 +648,102 @@ function WorkforceStuffDetailContent() {
 
                   {item.type === 'impact' && (
                     <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Effective Date</label>
-                        <input
-                          type="date"
-                          value={formData.effectiveDate || formData.startDate || ''}
-                          onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value, startDate: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Effective Date</label>
+                          <input
+                            type="date"
+                            value={formData.effectiveDate || formData.startDate || ''}
+                            onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value, startDate: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                          <input
+                            type="text"
+                            value={formData.location || ''}
+                            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Who It Affects</label>
+                          <input
+                            type="text"
+                            value={formData.impactedPopulation || ''}
+                            onChange={(e) => setFormData({ ...formData, impactedPopulation: e.target.value })}
+                            placeholder="e.g., All D.C. area employees, Remote workers, etc."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Urgency</label>
+                          <select
+                            value={formData.urgency || ''}
+                            onChange={(e) => setFormData({ ...formData, urgency: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          >
+                            <option value="">Select urgency</option>
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                          </select>
+                        </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Who It Affects</label>
-                        <input
-                          type="text"
-                          value={formData.impactedPopulation || ''}
-                          onChange={(e) => setFormData({ ...formData, impactedPopulation: e.target.value })}
-                          placeholder="e.g., All D.C. area employees, Remote workers, etc."
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Summary</label>
+                        <textarea
+                          value={formData.summary || ''}
+                          onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                          rows={3}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          placeholder="Comprehensive summary with all critical details..."
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Urgency</label>
-                        <select
-                          value={formData.urgency || ''}
-                          onChange={(e) => setFormData({ ...formData, urgency: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        >
-                          <option value="">Select urgency</option>
-                          <option value="Low">Low</option>
-                          <option value="Medium">Medium</option>
-                          <option value="High">High</option>
-                          <option value="Critical">Critical</option>
-                        </select>
+                      <div className="border-t pt-4">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-3">Point of Contact</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                            <input
+                              type="text"
+                              value={formData.pocFirstName || ''}
+                              onChange={(e) => setFormData({ ...formData, pocFirstName: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                            <input
+                              type="text"
+                              value={formData.pocLastName || ''}
+                              onChange={(e) => setFormData({ ...formData, pocLastName: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input
+                              type="email"
+                              value={formData.pocEmail || ''}
+                              onChange={(e) => setFormData({ ...formData, pocEmail: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                            <input
+                              type="tel"
+                              value={formData.pocPhone || ''}
+                              onChange={(e) => setFormData({ ...formData, pocPhone: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}

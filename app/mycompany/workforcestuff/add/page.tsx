@@ -273,49 +273,113 @@ export default function AddWorkforceStuffPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">The Impact / Deal</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
             <textarea
               value={parsedData?.description || ''}
               onChange={(e) => setParsedData({ ...parsedData, description: e.target.value })}
               className="w-full p-2 border border-gray-300 rounded-md h-32"
-              placeholder="What's happening? Keep all critical details..."
+              placeholder="The impact/deal - what's happening..."
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Effective Date</label>
-            <input
-              type="date"
-              value={parsedData?.effectiveDate || ''}
-              onChange={(e) => setParsedData({ ...parsedData, effectiveDate: e.target.value })}
-              className="w-full p-2 border border-gray-300 rounded-md"
+            <label className="block text-sm font-medium text-gray-700 mb-2">Summary</label>
+            <textarea
+              value={parsedData?.summary || ''}
+              onChange={(e) => setParsedData({ ...parsedData, summary: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md h-32"
+              placeholder="Comprehensive summary with all critical details..."
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Who It Affects</label>
-            <input
-              type="text"
-              value={parsedData?.impactedPopulation || ''}
-              onChange={(e) => setParsedData({ ...parsedData, impactedPopulation: e.target.value })}
-              className="w-full p-2 border border-gray-300 rounded-md"
-              placeholder="e.g., All D.C. area employees, Remote workers, etc."
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Effective Date</label>
+              <input
+                type="date"
+                value={parsedData?.effectiveDate || ''}
+                onChange={(e) => setParsedData({ ...parsedData, effectiveDate: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <input
+                type="text"
+                value={parsedData?.location || ''}
+                onChange={(e) => setParsedData({ ...parsedData, location: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Urgency</label>
-            <select
-              value={parsedData?.urgency || ''}
-              onChange={(e) => setParsedData({ ...parsedData, urgency: e.target.value })}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            >
-              <option value="">Select urgency</option>
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-              <option value="Critical">Critical</option>
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Who It Affects</label>
+              <input
+                type="text"
+                value={parsedData?.impactedPopulation || ''}
+                onChange={(e) => setParsedData({ ...parsedData, impactedPopulation: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+                placeholder="e.g., All D.C. area employees, Remote workers, etc."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Urgency</label>
+              <select
+                value={parsedData?.urgency || ''}
+                onChange={(e) => setParsedData({ ...parsedData, urgency: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              >
+                <option value="">Select urgency</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Point of Contact</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                <input
+                  type="text"
+                  value={parsedData?.pocFirstName || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocFirstName: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                <input
+                  type="text"
+                  value={parsedData?.pocLastName || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocLastName: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={parsedData?.pocEmail || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocEmail: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                <input
+                  type="tel"
+                  value={parsedData?.pocPhone || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocPhone: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+            </div>
           </div>
         </div>
       )
