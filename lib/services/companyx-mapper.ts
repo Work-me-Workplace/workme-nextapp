@@ -99,22 +99,15 @@ export async function createCompanyXWithIngest(
     workMeId: workMeId,
   }
 
-  // Add ingest fields for models that support them
+  // Add ingest fields - ALL CompanyX models have ingestRawText field
+  // This preserves the original raw text for AI generation and reference
+  baseData.ingestRawText = rawText
+  
+  // Training has additional ingest metadata fields
   if (type === 'training') {
-    baseData.ingestRawText = rawText
     baseData.ingestType = type
     baseData.ingestStatus = 'pending'
     baseData.ingestCreatedAt = new Date()
-  } else if (type === 'career') {
-    baseData.ingestRawText = rawText
-  } else if (type === 'benefits') {
-    baseData.ingestRawText = rawText
-  } else if (type === 'employee_cause') {
-    baseData.ingestRawText = rawText
-  } else {
-    // For other types, store raw text in a summary or description field if available
-    // Most CompanyX models don't have ingestRawText, so we'll store it in description
-    baseData.description = rawText.substring(0, 500) // Truncate for description field
   }
 
   // Create the CompanyX model

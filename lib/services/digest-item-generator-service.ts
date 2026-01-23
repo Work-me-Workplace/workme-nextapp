@@ -209,6 +209,41 @@ Return ONLY valid JSON with this structure:
 }`
   }
   
+  // Special prompt for Impact Events
+  if (rule === 'HIGH_URGENCY_IMPACT' || rule === 'MEDIUM_URGENCY_IMPACT') {
+    return `You are a workforce communications expert formatting impact event notifications for email digests.
+
+STYLE GUIDELINES:
+- Use AP Style
+- Keep paragraphs concise and scannable
+- Use emoji sparingly (only when appropriate)
+- Make content actionable and clear
+- Focus on WHAT workers need to know and DO
+
+FORMAT REQUIREMENTS FOR IMPACT EVENTS:
+* Title: ${ruleConfig.titlePrefix} Clear, urgent title that states the impact
+* POC Line: Format as "POC: Name at email@example.com" (EMPHASIZE THIS)
+* Body Structure (CRITICAL - follow this order):
+  1. First paragraph: WHAT IS THE IMPACT? (What's happening/changing - e.g., "Winter storm expected", "System maintenance", "Policy change")
+  2. Second paragraph: WHO IS IMPACTED? (Specific populations/groups affected - e.g., "NAVSEA personnel", "D.C. area employees")
+  3. Third paragraph: WHAT MITIGATIONS/GUIDANCE ARE PROVIDED? (What should workers do/know - THIS IS CRITICAL! Extract specific actions, procedures, guidance)
+  4. Fourth paragraph (if applicable): WHEN/DEADLINES (Effective dates, deadlines, timeframes)
+* CTA: ${ruleConfig.ctaStrength === 'STRONG' ? 'Strong action verb (Complete, Register, Respond, Contact)' : 'Soft invitation (Learn more, Explore)'}
+
+⚠️ CRITICAL FOR IMPACT EVENTS:
+- Clearly state WHAT the impact is (what's happening/changing)
+- Explicitly state WHAT MITIGATIONS/GUIDANCE workers should follow (what they need to do - this is the most important part!)
+- Include WHO is impacted (specific groups, locations, populations)
+- Include WHEN it takes effect (dates, deadlines, timeframes)
+- Extract all guidance, procedures, and action items from the source material
+
+Return ONLY valid JSON with this structure:
+{
+  "title": "string (for searchability, e.g., '*IMPORTANT*: WINTER STORM PREPAREDNESS')",
+  "content": "string (the COMPLETE formatted item - title, POC line, body paragraphs with impact/mitigation/guidance, CTA all together as one piece of content ready to publish. Use \\n\\n for paragraph breaks)"
+}`
+  }
+  
   return `You are a workforce communications expert creating engaging email digest items.
 
 STYLE GUIDELINES:
@@ -268,6 +303,13 @@ function buildUserPrompt(sourceType: CompanyXType, sourceData: any): string {
   }
   
   if (sourceType === 'CompanyImpactEvent') {
+    lines.push(`\n🎯 IMPACT EVENT - Extract the following:`)
+    lines.push(`1. WHAT IS THE IMPACT? (What's happening/changing)`)
+    lines.push(`2. WHO IS IMPACTED? (Specific populations/groups)`)
+    lines.push(`3. WHAT MITIGATIONS/GUIDANCE ARE PROVIDED? (What should workers do/know)`)
+    lines.push(`4. WHEN DOES IT TAKE EFFECT? (Effective dates/deadlines)`)
+    lines.push(`\n---`)
+    
     if (sourceData.urgency) {
       lines.push(`⚠️ URGENCY LEVEL: ${sourceData.urgency}`)
     }
@@ -275,14 +317,21 @@ function buildUserPrompt(sourceType: CompanyXType, sourceData: any): string {
       lines.push(`Effective Date: ${new Date(sourceData.effectiveDate).toLocaleDateString()}`)
     }
     if (sourceData.impactedPopulation) {
-      lines.push(`Impacted: ${sourceData.impactedPopulation}`)
+      lines.push(`Impacted Population: ${sourceData.impactedPopulation}`)
+    }
+    if (sourceData.location) {
+      lines.push(`Location: ${sourceData.location}`)
     }
     
-    // SPECIAL: Timekeeping gets full raw text
-    if (sourceData.ingestRawText && (sourceData.title?.toLowerCase().includes('timekeeping') || sourceData.description?.toLowerCase().includes('timekeeping'))) {
-      lines.push(`\n📋 FULL TIMEKEEPING GUIDANCE (extract deadlines, leave codes, pay periods):`)
+    // Include full raw text for Impact Events to ensure we capture all details
+    if (sourceData.ingestRawText) {
+      lines.push(`\n📋 FULL IMPACT EVENT DETAILS (extract impact, mitigations, guidance, deadlines):`)
       lines.push(sourceData.ingestRawText)
-      lines.push(`\n🎯 EXTRACT AND FORMAT:`)
+    }
+    
+    // SPECIAL: Timekeeping gets additional extraction guidance
+    if (sourceData.ingestRawText && (sourceData.title?.toLowerCase().includes('timekeeping') || sourceData.description?.toLowerCase().includes('timekeeping'))) {
+      lines.push(`\n🎯 TIMEKEEPING-SPECIFIC EXTRACTION:`)
       lines.push(`1. Leave codes (e.g., LH for holiday)`)
       lines.push(`2. Employee deadline (date + time)`)
       lines.push(`3. Supervisor deadline (date + time)`)

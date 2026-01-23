@@ -47,6 +47,7 @@ export async function GET(req: NextRequest) {
               registrationLink: true,
               pocEmail: true,
               pocPhone: true,
+              ingestRawText: true, // Include raw text for AI generation
               createdAt: true,
             },
             orderBy: { createdAt: 'desc' },
@@ -72,6 +73,7 @@ export async function GET(req: NextRequest) {
               pocLastName: true,
               pocEmail: true,
               pocPhone: true,
+              ingestRawText: true, // Include raw text for AI generation
               createdAt: true,
             },
             orderBy: { createdAt: 'desc' },
@@ -91,6 +93,7 @@ export async function GET(req: NextRequest) {
               pocFirstName: true,
               pocLastName: true,
               pocEmail: true,
+              ingestRawText: true, // Include raw text for AI generation
               createdAt: true,
             },
             orderBy: { createdAt: 'desc' },
@@ -106,6 +109,7 @@ export async function GET(req: NextRequest) {
               description: true,
               windowStart: true,
               windowEnd: true,
+              ingestRawText: true, // Include raw text for AI generation
               createdAt: true,
             },
             orderBy: { createdAt: 'desc' },
@@ -145,6 +149,7 @@ export async function GET(req: NextRequest) {
               pocFirstName: true,
               pocLastName: true,
               pocEmail: true,
+              ingestRawText: true, // Include raw text for AI generation
               createdAt: true,
             },
             orderBy: { createdAt: 'desc' },
@@ -158,6 +163,7 @@ export async function GET(req: NextRequest) {
               id: true,
               title: true,
               description: true,
+              ingestRawText: true, // Include raw text for AI generation
               createdAt: true,
             },
             orderBy: { createdAt: 'desc' },
@@ -173,6 +179,7 @@ export async function GET(req: NextRequest) {
               description: true,
               windowStart: true,
               windowEnd: true,
+              ingestRawText: true, // Include raw text for AI generation
               createdAt: true,
             },
             orderBy: { createdAt: 'desc' },
@@ -186,6 +193,8 @@ export async function GET(req: NextRequest) {
           )
       }
 
+      console.log(`[CompanyX Items API] Returning ${items.length} items for type ${type}`)
+      
       return NextResponse.json({
         success: true,
         items: { [type]: items },
