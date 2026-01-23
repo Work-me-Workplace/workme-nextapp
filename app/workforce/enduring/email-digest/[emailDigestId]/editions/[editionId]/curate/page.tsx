@@ -5,6 +5,7 @@ import { use, useState, useEffect } from 'react'
 import api from '@/lib/api'
 import { useAuth } from '@/lib/providers/AuthProvider'
 import { useSearchParams } from 'next/navigation'
+import EmailDigestSidebar from '@/components/workforce/EmailDigestSidebar'
 
 export default function CurateEditionPage({
   params,
@@ -371,6 +372,7 @@ export default function CurateEditionPage({
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
     </div>

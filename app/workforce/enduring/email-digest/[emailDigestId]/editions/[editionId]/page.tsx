@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { use, useState, useEffect } from 'react'
 import { getEmailDigestEdition } from '@/lib/actions/email-digest'
+import EmailDigestSidebar from '@/components/workforce/EmailDigestSidebar'
 
 export default function EmailDigestEditionPage({
   params,
@@ -64,7 +65,10 @@ export default function EmailDigestEditionPage({
         </div>
       </nav>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex">
+        <EmailDigestSidebar />
+        <div className="flex-1">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link
           href={`/workforce/enduring/email-digest/${emailDigestId}/editions`}
           className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm"
@@ -101,6 +105,7 @@ export default function EmailDigestEditionPage({
               )}
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

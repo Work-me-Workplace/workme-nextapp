@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { use, useState, useEffect } from 'react'
 import api from '@/lib/api'
 import { useAuth } from '@/lib/providers/AuthProvider'
+import EmailDigestSidebar from '@/components/workforce/EmailDigestSidebar'
 
 export default function EmailDigestProductPage({ params }: { params: Promise<{ emailDigestId: string }> }) {
   const { emailDigestId } = use(params)
@@ -99,7 +100,10 @@ export default function EmailDigestProductPage({ params }: { params: Promise<{ e
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex">
+        <EmailDigestSidebar />
+        <div className="flex-1">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link href="/workforce/enduring/email-digest" className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm">
           ← Back to Products
         </Link>
@@ -186,6 +190,7 @@ export default function EmailDigestProductPage({ params }: { params: Promise<{ e
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

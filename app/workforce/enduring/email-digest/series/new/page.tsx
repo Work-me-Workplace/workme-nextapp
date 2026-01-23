@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import api from '@/lib/api'
 import { useAuth } from '@/lib/providers/AuthProvider'
+import EmailDigestSidebar from '@/components/workforce/EmailDigestSidebar'
 
 export default function NewEmailDigestPage() {
   const router = useRouter()
@@ -77,7 +78,10 @@ export default function NewEmailDigestPage() {
         </div>
       </nav>
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex">
+        <EmailDigestSidebar />
+        <div className="flex-1">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link href="/workforce/enduring/email-digest" className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm">
           ← Back to Email Digest Series
         </Link>
@@ -149,6 +153,8 @@ export default function NewEmailDigestPage() {
               </Link>
             </div>
           </form>
+        </div>
+          </div>
         </div>
       </div>
     </div>

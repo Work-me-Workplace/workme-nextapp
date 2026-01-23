@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { use, useState, useEffect } from 'react'
 import { getEmailDigestProduct } from '@/lib/actions/email-digest'
+import EmailDigestSidebar from '@/components/workforce/EmailDigestSidebar'
 
 export default function EmailDigestEditionsPage({ params }: { params: Promise<{ emailDigestId: string }> }) {
   const { emailDigestId } = use(params)
@@ -58,7 +59,10 @@ export default function EmailDigestEditionsPage({ params }: { params: Promise<{ 
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex">
+        <EmailDigestSidebar />
+        <div className="flex-1">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link href={`/workforce/enduring/email-digest/${emailDigestId}`} className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm">
           ← Back to Product
         </Link>
@@ -93,6 +97,8 @@ export default function EmailDigestEditionsPage({ params }: { params: Promise<{ 
           ) : (
             <p className="text-gray-500 text-sm">No editions yet.</p>
           )}
+        </div>
+          </div>
         </div>
       </div>
     </div>

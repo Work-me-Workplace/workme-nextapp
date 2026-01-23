@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/providers/AuthProvider'
 import api from '@/lib/api'
+import EmailDigestSidebar from '@/components/workforce/EmailDigestSidebar'
 
 export default function CreateItemPage() {
   const router = useRouter()
@@ -204,7 +205,10 @@ export default function CreateItemPage() {
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex">
+        <EmailDigestSidebar />
+        <div className="flex-1">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link
           href="/workforce/enduring/email-digest/items"
           className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm"
@@ -602,6 +606,7 @@ export default function CreateItemPage() {
               </button>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

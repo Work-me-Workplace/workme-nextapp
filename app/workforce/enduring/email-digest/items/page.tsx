@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/providers/AuthProvider'
 import api from '@/lib/api'
+import EmailDigestSidebar from '@/components/workforce/EmailDigestSidebar'
 
 export default function ItemCataloguePage() {
   const { session, loading: authLoading } = useAuth()
@@ -72,7 +73,10 @@ export default function ItemCataloguePage() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex">
+        <EmailDigestSidebar />
+        <div className="flex-1">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link
           href="/workforce/enduring/email-digest"
           className="text-blue-600 hover:text-blue-700 mb-4 inline-block text-sm"
@@ -213,6 +217,8 @@ export default function ItemCataloguePage() {
             })}
           </div>
         )}
+          </div>
+        </div>
       </div>
     </div>
   )

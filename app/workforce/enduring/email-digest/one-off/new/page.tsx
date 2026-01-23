@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import api from '@/lib/api'
 import { useAuth } from '@/lib/providers/AuthProvider'
+import EmailDigestSidebar from '@/components/workforce/EmailDigestSidebar'
 
 export default function NewOneOffEmailPage() {
   const router = useRouter()
@@ -61,7 +62,10 @@ export default function NewOneOffEmailPage() {
         </div>
       </nav>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex">
+        <EmailDigestSidebar />
+        <div className="flex-1">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link
           href="/workforce/enduring/email-digest"
           className="text-purple-600 hover:text-purple-700 mb-4 inline-block text-sm"
@@ -165,6 +169,8 @@ export default function NewOneOffEmailPage() {
               </button>
             </div>
           </form>
+        </div>
+          </div>
         </div>
       </div>
     </div>

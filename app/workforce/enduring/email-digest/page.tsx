@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import api from '@/lib/api'
 import { useAuth } from '@/lib/providers/AuthProvider'
+import EmailDigestSidebar from '@/components/workforce/EmailDigestSidebar'
 
 export default function EmailDigestListPage() {
   const { session, loading: authLoading } = useAuth()
@@ -65,7 +66,10 @@ export default function EmailDigestListPage() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex">
+        <EmailDigestSidebar />
+        <div className="flex-1">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">📧 Email Digest Builder</h1>
@@ -208,6 +212,8 @@ export default function EmailDigestListPage() {
             <p className="text-gray-500 text-lg">No email series yet. Create your first one above!</p>
           </div>
         )}
+          </div>
+        </div>
       </div>
     </div>
   )
