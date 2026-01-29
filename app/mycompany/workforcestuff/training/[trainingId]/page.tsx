@@ -18,6 +18,8 @@ interface CompanyTraining {
   trainingDate: string | null
   startTime: string | null
   endTime: string | null
+  completionDeadline: string | null
+  isSelfPaced: boolean
   location: string | null
   format: 'in-person' | 'virtual' | 'hybrid' | null
   link: string | null
@@ -170,45 +172,67 @@ export default function TrainingDetailPage() {
               )}
 
               {/* Date & Time */}
-              {(training.trainingDate || training.startTime || training.endTime) && (
+              {(training.trainingDate || training.startTime || training.endTime || training.completionDeadline || training.isSelfPaced) && (
                 <div className="mb-6 border-t pt-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <Calendar className="h-5 w-5 mr-2" />
-                    Schedule
+                    {training.isSelfPaced ? 'Self-Paced Training' : 'Schedule'}
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {training.trainingDate && (
-                      <div>
-                        <p className="text-sm text-gray-500 mb-1">Training Date</p>
-                        <p className="text-gray-900 font-medium">
-                          {new Date(training.trainingDate).toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })}
-                        </p>
+                  {training.isSelfPaced ? (
+                    <div className="space-y-4">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-sm text-blue-800 font-medium mb-2">📚 Self-Paced Training</p>
+                        <p className="text-sm text-blue-700">This training can be completed at your own pace.</p>
                       </div>
-                    )}
-                    {training.startTime && (
-                      <div>
-                        <p className="text-sm text-gray-500 mb-1">Start Time</p>
-                        <p className="text-gray-900 font-medium flex items-center">
-                          <Clock className="h-4 w-4 mr-1" />
-                          {training.startTime}
-                        </p>
-                      </div>
-                    )}
-                    {training.endTime && (
-                      <div>
-                        <p className="text-sm text-gray-500 mb-1">End Time</p>
-                        <p className="text-gray-900 font-medium flex items-center">
-                          <Clock className="h-4 w-4 mr-1" />
-                          {training.endTime}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                      {training.completionDeadline && (
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">Complete By (Deadline)</p>
+                          <p className="text-gray-900 font-medium text-lg">
+                            {new Date(training.completionDeadline).toLocaleDateString('en-US', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {training.trainingDate && (
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">Training Date</p>
+                          <p className="text-gray-900 font-medium">
+                            {new Date(training.trainingDate).toLocaleDateString('en-US', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}
+                          </p>
+                        </div>
+                      )}
+                      {training.startTime && (
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">Start Time</p>
+                          <p className="text-gray-900 font-medium flex items-center">
+                            <Clock className="h-4 w-4 mr-1" />
+                            {training.startTime}
+                          </p>
+                        </div>
+                      )}
+                      {training.endTime && (
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">End Time</p>
+                          <p className="text-gray-900 font-medium flex items-center">
+                            <Clock className="h-4 w-4 mr-1" />
+                            {training.endTime}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

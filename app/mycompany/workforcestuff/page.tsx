@@ -649,7 +649,16 @@ export default function WorkforceStuffPage() {
                             {item.startDate && (
                               <div className="flex items-center text-xs text-gray-500">
                                 <Calendar className="h-4 w-4 mr-1" />
-                                {item.type === 'training' ? 'Training Date' : 'Starts'} {new Date(item.startDate).toLocaleDateString()}
+                                {item.type === 'training' && (item as any).isSelfPaced 
+                                  ? 'Complete By' 
+                                  : item.type === 'training' 
+                                    ? 'Training Date' 
+                                    : 'Starts'} {new Date(item.startDate).toLocaleDateString()}
+                              </div>
+                            )}
+                            {item.type === 'training' && (item as any).isSelfPaced && (
+                              <div className="text-xs text-blue-600 font-medium">
+                                📚 Self-Paced
                               </div>
                             )}
                             {item.type === 'training' && item.location && (

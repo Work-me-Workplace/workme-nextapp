@@ -460,35 +460,61 @@ export default function AddWorkforceStuffPage() {
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="mb-4">
+          <label className="flex items-center space-x-2 mb-2">
+            <input
+              type="checkbox"
+              checked={parsedData?.isSelfPaced || false}
+              onChange={(e) => setParsedData({ ...parsedData, isSelfPaced: e.target.checked })}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm font-medium text-gray-700">Self-paced training</span>
+          </label>
+          <p className="text-xs text-gray-500 ml-6">Check if training can be completed anytime (no fixed schedule)</p>
+        </div>
+
+        {parsedData?.isSelfPaced ? (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Training Date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Complete By (Deadline)</label>
             <input
               type="date"
-              value={parsedData?.trainingDate || ''}
-              onChange={(e) => setParsedData({ ...parsedData, trainingDate: e.target.value })}
+              value={parsedData?.completionDeadline || ''}
+              onChange={(e) => setParsedData({ ...parsedData, completionDeadline: e.target.value })}
               className="w-full p-2 border border-gray-300 rounded-md"
             />
+            <p className="text-xs text-gray-500 mt-1">Deadline for completing this self-paced training</p>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
-            <input
-              type="time"
-              value={parsedData?.startTime || ''}
-              onChange={(e) => setParsedData({ ...parsedData, startTime: e.target.value })}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            />
+        ) : (
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Training Date</label>
+              <input
+                type="date"
+                value={parsedData?.trainingDate || ''}
+                onChange={(e) => setParsedData({ ...parsedData, trainingDate: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+              <input
+                type="time"
+                value={parsedData?.startTime || ''}
+                onChange={(e) => setParsedData({ ...parsedData, startTime: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+              <input
+                type="time"
+                value={parsedData?.endTime || ''}
+                onChange={(e) => setParsedData({ ...parsedData, endTime: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
-            <input
-              type="time"
-              value={parsedData?.endTime || ''}
-              onChange={(e) => setParsedData({ ...parsedData, endTime: e.target.value })}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            />
-          </div>
-        </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>

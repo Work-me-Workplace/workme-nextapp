@@ -560,9 +560,11 @@ model CompanyTraining {
   mandatory        Boolean @default(false)
   sponsoringOffice String?
 
-  trainingDate DateTime?
-  startTime    String?
-  endTime      String?
+  trainingDate      DateTime? // For scheduled training events
+  startTime         String?
+  endTime           String?
+  completionDeadline DateTime? // For self-paced training: deadline to complete by
+  isSelfPaced       Boolean @default(false) // True if training is self-paced (no fixed schedule)
 
   location String?
   format   String?
@@ -593,6 +595,45 @@ model CompanyTraining {
   @@index([workMeId])
   @@index([status])
 }
+
+// ============================================
+// PROPOSED: CompanyMandatoryStuff (optional)
+// ============================================
+// Use this if you want deadlines/compliance as a first-class concept separate from
+// "training opportunities." Uncomment and run migration when ready.
+//
+// enum MandatoryStuffType {
+//   TRAINING_COMPLETION  // "Complete this training by X"
+//   FORM_SUBMISSION      // "Submit form by X"
+//   POLICY_ACKNOWLEDGMENT
+//   OTHER
+// }
+//
+// model CompanyMandatoryStuff {
+//   id        String               @id @default(cuid())
+//   createdAt DateTime             @default(now())
+//   status    WorkforceStuffStatus @default(ACTIVE)
+//
+//   title            String?
+//   description      String?
+//   dueDate          DateTime?   // Deadline: complete/submit by this date
+//   type             String?    // MandatoryStuffType: TRAINING_COMPLETION, FORM_SUBMISSION, etc.
+//   sponsoringOffice String?
+//   link             String?
+//
+//   companyTrainingId String?   // Optional: link to CompanyTraining when type = TRAINING_COMPLETION
+//   companyTraining   CompanyTraining? @relation(fields: [companyTrainingId], references: [id], onDelete: SetNull)
+//
+//   companyId String?
+//   company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+//   workMeId  String   @db.Uuid
+//   workMe    WorkMe   @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+//
+//   @@index([companyId])
+//   @@index([workMeId])
+//   @@index([dueDate])
+//   @@index([type])
+// }
 
 model CompanyEvent {
   id        String               @id @default(cuid())
@@ -2048,6 +2089,28 @@ model CompanyProductInnovation {
   @@index([name])
   @@index([impactArea])
   @@index([maturityLevel])
+}
+
+// ============================================
+// COMPANY PRODUCT SHAREPOINT MODEL
+// ============================================
+model CompanyProductSharepoint {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name        String
+  description String?
+  siteUrl     String? // SharePoint site URL
+  siteType    String? // "Team Site", "Communication Site", "Hub Site", etc.
+  owner       String? // Site owner/administrator
+  accessLevel String? // "Public", "Private", "Restricted", etc.
+  lastSyncDate DateTime?
+  notes       String?
+
+  @@index([name])
+  @@index([siteType])
+  @@index([owner])
 }
 
 // ============================================

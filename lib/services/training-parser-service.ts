@@ -22,9 +22,11 @@ export interface TrainingModel {
   mandatory: boolean
   topic: string | null
   sponsoringOffice: string | null
-  trainingDate: string | null // ISO date string
+  trainingDate: string | null // ISO date string - for scheduled training events
   startTime: string | null // "09:00"
   endTime: string | null // "10:30"
+  completionDeadline: string | null // ISO date string - for self-paced training: deadline to complete by
+  isSelfPaced: boolean // True if training is self-paced (no fixed schedule)
   location: string | null
   format: 'in-person' | 'virtual' | 'hybrid' | null
   link: string | null // First livestream link
@@ -45,6 +47,12 @@ export async function parseTraining(rawText: string): Promise<TrainingModel> {
 
   const prompt = `Extract structured training information from this NAVSEA workforce communication text.
 
+IMPORTANT: Distinguish between:
+- Scheduled training events: Has a specific date/time when training occurs (use trainingDate, startTime, endTime)
+- Self-paced training with deadlines: Training can be completed anytime, but has a completion deadline (use completionDeadline, isSelfPaced: true)
+- Look for phrases like "complete by", "must complete by", "deadline", "due by" to identify completion deadlines
+- If there's no start/end time mentioned and text mentions "self-paced", "complete by", or similar, it's likely self-paced
+
 Return JSON with these exact fields:
 {
   "title": "Training title or name (or null)",
@@ -52,9 +60,11 @@ Return JSON with these exact fields:
   "mandatory": true or false,
   "topic": "Training topic/subject (or null)",
   "sponsoringOffice": "Office or organization sponsoring (or null)",
-  "trainingDate": "ISO date string (YYYY-MM-DD) or null",
-  "startTime": "Time string in HH:MM format (e.g., '09:00') or null",
-  "endTime": "Time string in HH:MM format (e.g., '10:30') or null",
+  "trainingDate": "ISO date string (YYYY-MM-DD) for scheduled training events, or null",
+  "startTime": "Time string in HH:MM format (e.g., '09:00') for scheduled events, or null",
+  "endTime": "Time string in HH:MM format (e.g., '10:30') for scheduled events, or null",
+  "completionDeadline": "ISO date string (YYYY-MM-DD) for self-paced training deadlines, or null",
+  "isSelfPaced": true if training is self-paced (no fixed schedule), false if scheduled event,
   "location": "Physical location or venue (or null)",
   "format": "in-person" or "virtual" or "hybrid" or null,
   "link": "First livestream/registration link found (or null)",
@@ -89,6 +99,8 @@ ${rawText.substring(0, 3000)}`
     const parsed = JSON.parse(response.choices[0].message.content || '{}')
 
     // Validate and normalize
+    const isSelfPaced = parsed.isSelfPaced === true || parsed.isSelfPaced === 'true'
+    
     return {
       title: parsed.title || null,
       description: parsed.description || null,
@@ -98,6 +110,8 @@ ${rawText.substring(0, 3000)}`
       trainingDate: parsed.trainingDate || null,
       startTime: parsed.startTime || null,
       endTime: parsed.endTime || null,
+      completionDeadline: parsed.completionDeadline || null,
+      isSelfPaced: isSelfPaced,
       location: parsed.location || null,
       format: ['in-person', 'virtual', 'hybrid'].includes(parsed.format) ? parsed.format : null,
       link: parsed.link || null,
@@ -120,6 +134,8 @@ ${rawText.substring(0, 3000)}`
       trainingDate: null,
       startTime: null,
       endTime: null,
+      completionDeadline: null,
+      isSelfPaced: false,
       location: null,
       format: null,
       link: null,

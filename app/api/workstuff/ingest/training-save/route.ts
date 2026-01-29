@@ -12,9 +12,11 @@ interface TrainingSaveRequest {
   mandatory: boolean
   topic: string | null
   sponsoringOffice: string | null
-  trainingDate: string | null // ISO date string
+  trainingDate: string | null // ISO date string - for scheduled training events
   startTime: string | null
   endTime: string | null
+  completionDeadline: string | null // ISO date string - for self-paced training deadlines
+  isSelfPaced: boolean // True if training is self-paced
   location: string | null
   format: 'in-person' | 'virtual' | 'hybrid' | null
   link: string | null
@@ -89,6 +91,8 @@ export async function POST(request: NextRequest) {
         trainingDate: data.trainingDate ? new Date(data.trainingDate) : null,
         startTime: data.startTime,
         endTime: data.endTime,
+        completionDeadline: data.completionDeadline ? new Date(data.completionDeadline) : null,
+        isSelfPaced: data.isSelfPaced || false,
 
         // Format / Location
         location: data.location,

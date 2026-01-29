@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, Suspense } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
-import { Package, Ship, Factory, Sparkles, Plus, Cpu, Layers, Network, BarChart3 } from 'lucide-react'
+import { Package, Ship, Factory, Sparkles, Plus, Cpu, Layers, Network, BarChart3, Share2 } from 'lucide-react'
 
 interface PlatformProduct {
   id: string
@@ -28,6 +28,13 @@ interface InnovationProduct {
   maturityLevel: string | null
 }
 
+interface SharepointProduct {
+  id: string
+  name: string
+  siteUrl: string | null
+  siteType: string | null
+}
+
 function ProductsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -36,6 +43,7 @@ function ProductsPageContent() {
   const [platformProducts, setPlatformProducts] = useState<PlatformProduct[]>([])
   const [capacityProducts, setCapacityProducts] = useState<CapacityProduct[]>([])
   const [innovationProducts, setInnovationProducts] = useState<InnovationProduct[]>([])
+  const [sharepointProducts, setSharepointProducts] = useState<SharepointProduct[]>([])
   const [loading, setLoading] = useState(true)
 
   // Get companyId from URL params or load from WorkMe API
@@ -95,20 +103,23 @@ function ProductsPageContent() {
       
       console.log('📞 Fetching company products from API:', { companyId })
       
-      const [platformRes, capacityRes, innovationRes] = await Promise.all([
+      const [platformRes, capacityRes, innovationRes, sharepointRes] = await Promise.all([
         api.get(`/api/company/products/platform/list?companyId=${companyId}`).catch(() => ({ data: { products: [] } })),
         api.get(`/api/company/products/capacity/list?companyId=${companyId}`).catch(() => ({ data: { products: [] } })),
-        api.get(`/api/company/products/innovation/list?companyId=${companyId}`).catch(() => ({ data: { products: [] } }))
+        api.get(`/api/company/products/innovation/list?companyId=${companyId}`).catch(() => ({ data: { products: [] } })),
+        api.get(`/api/company/products/sharepoint/list?companyId=${companyId}`).catch(() => ({ data: { products: [] } }))
       ])
 
       setPlatformProducts(platformRes.data.products || [])
       setCapacityProducts(capacityRes.data.products || [])
       setInnovationProducts(innovationRes.data.products || [])
+      setSharepointProducts(sharepointRes.data.products || [])
       
       console.log('✅ Loaded products:', {
         platform: platformRes.data.products?.length || 0,
         capacity: capacityRes.data.products?.length || 0,
         innovation: innovationRes.data.products?.length || 0,
+        sharepoint: sharepointRes.data.products?.length || 0,
       })
     } catch (error) {
       console.error('Failed to load products:', error)
@@ -146,7 +157,7 @@ function ProductsPageContent() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Company Products</h1>
-          <p className="text-gray-600 mt-2">Manage platform products, capacity, and innovation</p>
+          <p className="text-gray-600 mt-2">Manage platform products, capacity, innovation, and SharePoint</p>
         </div>
 
         {/* SECTION A — Platform Products */}
@@ -314,7 +325,62 @@ function ProductsPageContent() {
           )}
         </section>
 
-        {/* SECTION D — Future Product Families (static placeholders) */}
+        {/* SECTION D — SharePoint Products */}
+        <section className="mb-12">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <Share2 className="h-6 w-6 text-orange-600 mr-2" />
+              <h2 className="text-xl font-bold text-gray-900">SharePoint Products</h2>
+              {sharepointProducts.length > 0 && (
+                <span className="ml-3 text-sm text-gray-500">({sharepointProducts.length})</span>
+              )}
+            </div>
+            <Link
+              href={`/company/products/sharepoint/new${companyId ? `?companyId=${companyId}` : ''}`}
+              className="flex items-center text-sm text-orange-600 hover:text-orange-700 font-medium"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Create SharePoint
+            </Link>
+          </div>
+
+          {sharepointProducts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {sharepointProducts.map(product => (
+                <Link
+                  key={product.id}
+                  href={`/company/products/sharepoint/${product.id}${companyId ? `?companyId=${companyId}` : ''}`}
+                  className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-all border border-gray-200 hover:border-orange-300"
+                >
+                  <div className="flex items-center mb-3">
+                    <Share2 className="h-5 w-5 text-orange-600 mr-2" />
+                    <span className="text-xs font-medium text-gray-500 uppercase">SharePoint</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
+                  {product.siteType && (
+                    <p className="text-sm text-gray-600 mb-1">Type: {product.siteType}</p>
+                  )}
+                  {product.siteUrl && (
+                    <p className="text-sm text-gray-500 truncate">{product.siteUrl}</p>
+                  )}
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-sm p-8 text-center border-2 border-dashed border-gray-200">
+              <Share2 className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-600 mb-4">No SharePoint products yet</p>
+              <Link
+                href={`/company/products/sharepoint/new${companyId ? `?companyId=${companyId}` : ''}`}
+                className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
+              >
+                Create SharePoint Product
+              </Link>
+            </div>
+          )}
+        </section>
+
+        {/* SECTION E — Future Product Families (static placeholders) */}
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-4">Future Product Families</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
