@@ -1,11 +1,11 @@
 /**
  * Apollo API Client for Company Enrichment
  * 
- * Uses Apollo's mixed_data/company endpoint to enrich company information
- * Note: This endpoint exists at /v1 (legacy path), not /api/v1
+ * Uses Apollo's API to search and enrich company information
+ * Apollo API only requires X-Api-Key header (no Firebase auth needed)
  */
 
-const APOLLO_API_URL = 'https://api.apollo.io/v1';
+const APOLLO_API_URL = 'https://api.apollo.io/api/v1';
 
 export interface ApolloCompanyResponse {
   company?: {
@@ -75,25 +75,68 @@ export async function enrichCompanyApollo(companyName: string): Promise<ApolloCo
   }
 
   try {
-    const resp = await fetch(`${APOLLO_API_URL}/mixed_data/company`, {
+    // Use Apollo's organization search endpoint
+    const resp = await fetch(`${APOLLO_API_URL}/mixed_companies/search`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Api-Key': apiKey,
       },
       body: JSON.stringify({
-        name: companyName,
-        enrich_people: true,
+        q_keywords: companyName,
+        per_page: 1,
       }),
     });
 
     if (!resp.ok) {
       const errorText = await resp.text();
-      throw new Error(`Apollo enrichment failed: ${resp.status} - ${errorText}`);
+      throw new Error(`Apollo API error: ${resp.status} - ${errorText}`);
     }
 
-    const data: ApolloCompanyResponse = await resp.json();
-    return data;
+    const searchData = await resp.json();
+    
+    // Apollo search returns { organizations: [...] }
+    const organizations = searchData.organizations || []
+    if (organizations.length === 0) {
+      throw new Error(`No company found matching "${companyName}"`)
+    }
+
+    const org = organizations[0]
+    
+    // Normalize to ApolloCompanyResponse format
+    const data: ApolloCompanyResponse = {
+      company: {
+        id: org.id,
+        name: org.name,
+        description: org.description,
+        estimated_num_employees: org.estimated_num_employees,
+        industry: org.industry,
+        website_url: org.website_url,
+        domain: org.primary_domain,
+        linkedin_url: org.linkedin_url,
+        twitter_url: org.twitter_url,
+        facebook_url: org.facebook_url,
+        phone: org.phone_numbers?.[0]?.sanitized_number,
+        address: org.primary_location ? {
+          city: org.primary_location.city,
+          state: org.primary_location.state,
+          country: org.primary_location.country,
+        } : undefined,
+        keywords: org.keywords,
+        logo_url: org.logo_url,
+        employees: org.people ? org.people.map((p: any) => ({
+          id: p.id,
+          first_name: p.first_name,
+          last_name: p.last_name,
+          name: p.name,
+          title: p.title,
+          seniority: p.seniority,
+          department: p.department,
+        })) : [],
+      },
+    }
+    
+    return data
   } catch (error: any) {
     console.error('❌ Apollo enrichCompanyApollo error:', error);
     throw error;
