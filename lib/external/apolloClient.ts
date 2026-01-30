@@ -4,7 +4,7 @@
  * Uses Apollo's mixed_data/company endpoint to enrich company information
  */
 
-const APOLLO_API_URL = 'https://api.apollo.io/v1';
+const APOLLO_API_URL = 'https://api.apollo.io/api/v1';
 
 export interface ApolloCompanyResponse {
   company?: {
@@ -68,14 +68,9 @@ export interface ApolloCompanyResponse {
  */
 export async function enrichCompanyApollo(companyName: string): Promise<ApolloCompanyResponse> {
   const apiKey = process.env.APOLLO_API_KEY;
-  const token = process.env.APOLLO_API_TOKEN;
 
   if (!apiKey) {
     throw new Error('APOLLO_API_KEY environment variable is not set');
-  }
-
-  if (!token) {
-    throw new Error('APOLLO_API_TOKEN environment variable is not set');
   }
 
   try {
@@ -84,7 +79,6 @@ export async function enrichCompanyApollo(companyName: string): Promise<ApolloCo
       headers: {
         'Content-Type': 'application/json',
         'X-Api-Key': apiKey,
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
         name: companyName,
