@@ -87,7 +87,7 @@ export default function SeniorLeaderBuildPage() {
         if (person) {
           // Auto-populate form with Apollo data
           const fullName = person.name || `${person.first_name || ''} ${person.last_name || ''}`.trim()
-          alert(`Found: ${fullName} - Review the data below and save when ready`)
+          // Form auto-populated - no alert needed, data is visible below
         } else {
           alert('Apollo returned data but no person found')
         }

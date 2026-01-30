@@ -55,7 +55,7 @@ export default function NewSeniorLeaderPage() {
             companyUnit: '',
             role: formData.role,
           })
-          alert(`Found: ${fullName} - Review the data below and save when ready`)
+          // Form auto-populated - no alert needed, data is visible below
         } else {
           alert('Apollo returned data but no person found')
         }
