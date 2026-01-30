@@ -2,9 +2,10 @@
  * Apollo API Client for Company Enrichment
  * 
  * Uses Apollo's mixed_data/company endpoint to enrich company information
+ * Note: This endpoint exists at /v1 (legacy path), not /api/v1
  */
 
-const APOLLO_API_URL = 'https://api.apollo.io/api/v1';
+const APOLLO_API_URL = 'https://api.apollo.io/v1';
 
 export interface ApolloCompanyResponse {
   company?: {
