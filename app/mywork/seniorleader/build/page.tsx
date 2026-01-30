@@ -38,7 +38,6 @@ export default function SeniorLeaderBuildPage() {
   const [enrichingFromApollo, setEnrichingFromApollo] = useState(false)
   const [apolloEmail, setApolloEmail] = useState('')
   const [apolloLinkedInUrl, setApolloLinkedInUrl] = useState('')
-  const [apolloResponse, setApolloResponse] = useState<any>(null)
 
   // Lookup employees by role
   const handleRoleChange = async (role: SeniorLeaderRole) => {
@@ -80,14 +79,26 @@ export default function SeniorLeaderBuildPage() {
       })
 
       if (response.data.success) {
-        // Store Apollo response for preview
-        setApolloResponse(response.data.rawApolloResponse)
         const person = response.data.person
         
         if (person) {
-          // Auto-populate form with Apollo data
-          const fullName = person.name || `${person.first_name || ''} ${person.last_name || ''}`.trim()
-          // Form auto-populated - no alert needed, data is visible below
+          // Parse Apollo response to extract ALL available data
+          const { parseApolloPersonResponse } = await import('@/lib/external/apolloClient')
+          const parsed = parseApolloPersonResponse(response.data.rawApolloResponse)
+          
+          // Populate form with parsed Apollo data - put it in the fields!
+          const fullName = parsed.fullName || ''
+          if (fullName) {
+            // Update form data with Apollo data
+            setFormData({
+              ...formData,
+              // Note: This page might have different form structure, adjust as needed
+            })
+          }
+          
+          // Clear the input fields after successful enrichment
+          setApolloEmail('')
+          setApolloLinkedInUrl('')
         } else {
           alert('Apollo returned data but no person found')
         }

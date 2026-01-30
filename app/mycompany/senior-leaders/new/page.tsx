@@ -16,7 +16,6 @@ export default function NewSeniorLeaderPage() {
   const [enrichingFromApollo, setEnrichingFromApollo] = useState(false)
   const [apolloEmail, setApolloEmail] = useState('')
   const [apolloLinkedInUrl, setApolloLinkedInUrl] = useState('')
-  const [apolloResponse, setApolloResponse] = useState<any>(null)
   const [formData, setFormData] = useState({
     fullName: '',
     title: '',
@@ -40,8 +39,6 @@ export default function NewSeniorLeaderPage() {
       })
 
       if (response.data.success) {
-        // Store Apollo response for preview
-        setApolloResponse(response.data.rawApolloResponse)
         const person = response.data.person
         
         if (person) {
@@ -49,8 +46,7 @@ export default function NewSeniorLeaderPage() {
           const { parseApolloPersonResponse } = await import('@/lib/external/apolloClient')
           const parsed = parseApolloPersonResponse(response.data.rawApolloResponse)
           
-          // Populate form with parsed Apollo data (use whatever we found)
-          // Even if Apollo returns mostly nulls, use what we have
+          // Populate form with parsed Apollo data - put it in the fields!
           setFormData({
             fullName: parsed.fullName || '',
             title: parsed.title || '',
@@ -60,8 +56,9 @@ export default function NewSeniorLeaderPage() {
             role: formData.role,
           })
           
-          // Log what we parsed for debugging
-          console.log('✅ Form populated with Apollo data:', parsed)
+          // Clear the input fields after successful enrichment
+          setApolloEmail('')
+          setApolloLinkedInUrl('')
         } else {
           alert('Apollo returned data but no person found')
         }
@@ -177,14 +174,6 @@ export default function NewSeniorLeaderPage() {
                     {enrichingFromApollo ? 'Enriching...' : 'Enrich from Apollo'}
                   </button>
                 </div>
-                {apolloResponse && (
-                  <div className="mt-4 p-3 bg-white border border-gray-200 rounded text-xs">
-                    <div className="font-semibold mb-2">Apollo Response:</div>
-                    <pre className="overflow-auto max-h-40 text-xs">
-                      {JSON.stringify(apolloResponse, null, 2)}
-                    </pre>
-                  </div>
-                )}
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
