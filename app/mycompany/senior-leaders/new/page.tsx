@@ -22,37 +22,40 @@ export default function NewSeniorLeaderPage() {
     companyUnit: '',
     role: '' as SeniorLeaderRole | '',
   })
-  const [apolloSearchName, setApolloSearchName] = useState('')
 
   const handleEnrichFromApollo = async () => {
-    if (!apolloSearchName.trim()) {
-      alert('Please enter a name to search')
+    if (!apolloEmail.trim() && !apolloLinkedInUrl.trim()) {
+      alert('Please enter an email address or LinkedIn URL')
       return
     }
 
     try {
       setEnrichingFromApollo(true)
-      const response = await api.post('/api/employee/enrich-from-apollo', {
-        fullName: apolloSearchName.trim(),
-        role: formData.role || undefined,
+      const response = await api.post('/api/employee/ingest', {
+        email: apolloEmail.trim() || undefined,
+        linkedinUrl: apolloLinkedInUrl.trim() || undefined,
       })
 
       if (response.data.success) {
-        const employee = response.data.employee
-        const apolloData = response.data.apolloData
+        // Store Apollo response for preview
+        setApolloResponse(response.data.rawApolloResponse)
+        const person = response.data.person
         
-        // Populate form with Apollo data
-        setFormData({
-          fullName: employee.fullName,
-          title: apolloData.title || employee.title || '',
-          email: employee.email || '',
-          phone: '',
-          companyUnit: employee.companyUnit || '',
-          role: formData.role,
-        })
-        
-        setApolloSearchName('')
-        alert(`Successfully enriched: ${employee.fullName}`)
+        if (person) {
+          // Populate form with Apollo data
+          const fullName = person.name || `${person.first_name || ''} ${person.last_name || ''}`.trim()
+          setFormData({
+            fullName: fullName,
+            title: person.title || '',
+            email: person.email || apolloEmail.trim() || '',
+            phone: person.phone_numbers?.[0]?.sanitized_number || '',
+            companyUnit: '',
+            role: formData.role,
+          })
+          alert(`Found: ${fullName} - Review the data below and save when ready`)
+        } else {
+          alert('Apollo returned data but no person found')
+        }
       } else {
         alert(response.data.error || 'Failed to enrich from Apollo')
       }
@@ -138,25 +141,41 @@ export default function NewSeniorLeaderPage() {
                   <span className="text-sm font-medium text-gray-700">Enrich from Apollo</span>
                 </div>
                 <p className="text-xs text-gray-600 mb-3">
-                  Search Apollo to auto-populate employee data
+                  Enter email or LinkedIn URL to find and enrich person data
                 </p>
-                <div className="flex gap-2">
+                <div className="space-y-2">
                   <input
-                    type="text"
-                    value={apolloSearchName}
-                    onChange={(e) => setApolloSearchName(e.target.value)}
-                    placeholder="Enter full name to search..."
-                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    type="email"
+                    value={apolloEmail}
+                    onChange={(e) => setApolloEmail(e.target.value)}
+                    placeholder="Email address (or use LinkedIn URL below)"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <div className="text-xs text-gray-500 text-center">OR</div>
+                  <input
+                    type="url"
+                    value={apolloLinkedInUrl}
+                    onChange={(e) => setApolloLinkedInUrl(e.target.value)}
+                    placeholder="LinkedIn URL (e.g., https://linkedin.com/in/...)"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <button
                     type="button"
                     onClick={handleEnrichFromApollo}
-                    disabled={enrichingFromApollo || !apolloSearchName.trim()}
-                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={enrichingFromApollo || (!apolloEmail.trim() && !apolloLinkedInUrl.trim())}
+                    className="w-full px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {enrichingFromApollo ? 'Enriching...' : 'Enrich'}
+                    {enrichingFromApollo ? 'Enriching...' : 'Enrich from Apollo'}
                   </button>
                 </div>
+                {apolloResponse && (
+                  <div className="mt-4 p-3 bg-white border border-gray-200 rounded text-xs">
+                    <div className="font-semibold mb-2">Apollo Response:</div>
+                    <pre className="overflow-auto max-h-40 text-xs">
+                      {JSON.stringify(apolloResponse, null, 2)}
+                    </pre>
+                  </div>
+                )}
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">

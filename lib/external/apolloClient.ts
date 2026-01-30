@@ -1,11 +1,24 @@
 /**
- * Apollo API Client for Company Enrichment
+ * Apollo API Client for Company and Person Enrichment
  * 
- * Uses Apollo's API to search and enrich company information
+ * Uses Apollo's API to search and enrich company/person information
  * Apollo API only requires X-Api-Key header (no Firebase auth needed)
+ * 
+ * For person enrichment: requires email OR linkedinUrl (not just name)
  */
 
 const APOLLO_API_URL = 'https://api.apollo.io/api/v1';
+
+/**
+ * Get Apollo API key (lazy evaluation to avoid build-time execution)
+ */
+function getApolloApiKey() {
+  const apiKey = process.env.APOLLO_API_KEY;
+  if (!apiKey) {
+    throw new Error('APOLLO_API_KEY environment variable is not set');
+  }
+  return apiKey;
+}
 
 export interface ApolloCompanyResponse {
   company?: {
@@ -139,6 +152,126 @@ export async function enrichCompanyApollo(companyName: string): Promise<ApolloCo
     return data
   } catch (error: any) {
     console.error('❌ Apollo enrichCompanyApollo error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Apollo Person Response Interface
+ */
+export interface ApolloPersonResponse {
+  person?: {
+    id?: string;
+    first_name?: string;
+    last_name?: string;
+    name?: string;
+    email?: string;
+    title?: string;
+    seniority?: string;
+    department?: string;
+    linkedin_url?: string;
+    phone_numbers?: Array<{ raw_number?: string; sanitized_number?: string }>;
+    city?: string;
+    state?: string;
+    country?: string;
+    organization?: {
+      name?: string;
+      website_url?: string;
+      primary_domain?: string;
+      employees?: number;
+      estimated_num_employees?: number;
+    };
+    photo_url?: string;
+    employment_history?: Array<{
+      started_at?: string;
+      ended_at?: string | null;
+      title?: string;
+      organization_name?: string;
+      organization?: {
+        name?: string;
+      };
+      company_name?: string;
+    }>;
+  };
+}
+
+/**
+ * Normalize LinkedIn URL for Apollo API
+ */
+function normalizeLinkedInUrl(linkedinUrl: string): string {
+  let normalizedUrl = linkedinUrl.trim();
+  if (!normalizedUrl.startsWith('http')) {
+    normalizedUrl = `https://${normalizedUrl}`;
+  }
+
+  // Validate LinkedIn URL
+  try {
+    const url = new URL(normalizedUrl);
+    if (!url.hostname.includes('linkedin.com')) {
+      throw new Error('Invalid LinkedIn URL');
+    }
+  } catch {
+    throw new Error('Invalid LinkedIn URL format');
+  }
+
+  return normalizedUrl;
+}
+
+/**
+ * Enrich person data using Apollo API
+ * 
+ * Requires email OR linkedinUrl (not just name)
+ * 
+ * @param options - { linkedinUrl?: string, email?: string }
+ * @returns Promise<ApolloPersonResponse> - Apollo API response
+ */
+export async function enrichPerson(options: { linkedinUrl?: string; email?: string }): Promise<ApolloPersonResponse> {
+  const { linkedinUrl, email } = options;
+  const apiKey = getApolloApiKey();
+
+  if (!linkedinUrl && !email) {
+    throw new Error('Either linkedinUrl or email is required');
+  }
+
+  if (email && !email.includes('@')) {
+    throw new Error('Valid email address is required');
+  }
+
+  // Prepare request body
+  const requestBody: any = {};
+  if (linkedinUrl) {
+    requestBody.linkedin_url = normalizeLinkedInUrl(linkedinUrl);
+  }
+  if (email) {
+    requestBody.email = email.trim().toLowerCase();
+  }
+
+  try {
+    const response = await fetch(`${APOLLO_API_URL}/people/enrich`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Api-Key': apiKey,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `Apollo API error: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        const errorText = await response.text();
+        errorMessage = errorText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data: ApolloPersonResponse = await response.json();
+    return data;
+  } catch (error: any) {
+    console.error('❌ Apollo enrichPerson error:', error);
     throw error;
   }
 }

@@ -36,7 +36,9 @@ export default function SeniorLeaderBuildPage() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
   const [loadingEmployees, setLoadingEmployees] = useState(false)
   const [enrichingFromApollo, setEnrichingFromApollo] = useState(false)
-  const [apolloSearchName, setApolloSearchName] = useState('')
+  const [apolloEmail, setApolloEmail] = useState('')
+  const [apolloLinkedInUrl, setApolloLinkedInUrl] = useState('')
+  const [apolloResponse, setApolloResponse] = useState<any>(null)
 
   // Lookup employees by role
   const handleRoleChange = async (role: SeniorLeaderRole) => {
@@ -65,30 +67,30 @@ export default function SeniorLeaderBuildPage() {
 
   // Enrich from Apollo
   const handleEnrichFromApollo = async () => {
-    if (!apolloSearchName.trim()) {
-      alert('Please enter a name to search')
-      return
-    }
-
-    if (!selectedRole) {
-      alert('Please select a role first')
+    if (!apolloEmail.trim() && !apolloLinkedInUrl.trim()) {
+      alert('Please enter an email address or LinkedIn URL')
       return
     }
 
     try {
       setEnrichingFromApollo(true)
-      const response = await api.post('/api/employee/enrich-from-apollo', {
-        fullName: apolloSearchName.trim(),
-        role: selectedRole,
+      const response = await api.post('/api/employee/ingest', {
+        email: apolloEmail.trim() || undefined,
+        linkedinUrl: apolloLinkedInUrl.trim() || undefined,
       })
 
       if (response.data.success) {
-        const employee = response.data.employee
-        setSelectedEmployee(employee)
-        setFormData({ ...formData, companyEmployeeId: employee.id })
-        setEmployees([...employees, employee])
-        setApolloSearchName('')
-        alert(`Successfully enriched and created employee: ${employee.fullName}`)
+        // Store Apollo response for preview
+        setApolloResponse(response.data.rawApolloResponse)
+        const person = response.data.person
+        
+        if (person) {
+          // Auto-populate form with Apollo data
+          const fullName = person.name || `${person.first_name || ''} ${person.last_name || ''}`.trim()
+          alert(`Found: ${fullName} - Review the data below and save when ready`)
+        } else {
+          alert('Apollo returned data but no person found')
+        }
       } else {
         alert(response.data.error || 'Failed to enrich from Apollo')
       }
@@ -334,25 +336,41 @@ export default function SeniorLeaderBuildPage() {
                             <span className="text-sm font-medium text-gray-700">Enrich from Apollo</span>
                           </div>
                           <p className="text-xs text-gray-600 mb-3">
-                            If the person isn't in the list, search and enrich from Apollo
+                            Enter email or LinkedIn URL to find and enrich person data
                           </p>
-                          <div className="flex gap-2">
+                          <div className="space-y-2">
                             <input
-                              type="text"
-                              value={apolloSearchName}
-                              onChange={(e) => setApolloSearchName(e.target.value)}
-                              placeholder="Enter full name..."
-                              className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              type="email"
+                              value={apolloEmail}
+                              onChange={(e) => setApolloEmail(e.target.value)}
+                              placeholder="Email address (or use LinkedIn URL below)"
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            <div className="text-xs text-gray-500 text-center">OR</div>
+                            <input
+                              type="url"
+                              value={apolloLinkedInUrl}
+                              onChange={(e) => setApolloLinkedInUrl(e.target.value)}
+                              placeholder="LinkedIn URL (e.g., https://linkedin.com/in/...)"
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                             <button
                               type="button"
                               onClick={handleEnrichFromApollo}
-                              disabled={enrichingFromApollo || !apolloSearchName.trim()}
-                              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={enrichingFromApollo || (!apolloEmail.trim() && !apolloLinkedInUrl.trim())}
+                              className="w-full px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              {enrichingFromApollo ? 'Enriching...' : 'Enrich'}
+                              {enrichingFromApollo ? 'Enriching...' : 'Enrich from Apollo'}
                             </button>
                           </div>
+                          {apolloResponse && (
+                            <div className="mt-4 p-3 bg-white border border-gray-200 rounded text-xs">
+                              <div className="font-semibold mb-2">Apollo Response:</div>
+                              <pre className="overflow-auto max-h-40 text-xs">
+                                {JSON.stringify(apolloResponse, null, 2)}
+                              </pre>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}

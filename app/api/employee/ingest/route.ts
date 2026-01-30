@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
-import { enrichCompanyApollo } from '@/lib/external/apolloClient'
+import { enrichPerson } from '@/lib/external/apolloClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,9 +11,11 @@ export const dynamic = 'force-dynamic'
  * Returns raw Apollo JSON response for frontend preview
  * 
  * Body: {
- *   companyName: string, // Company name to search
- *   fullName?: string,    // Optional - filter by person name
+ *   email?: string,        // Email address (required if no linkedinUrl)
+ *   linkedinUrl?: string,  // LinkedIn URL (required if no email)
  * }
+ * 
+ * NOTE: Apollo requires email OR linkedinUrl - cannot search by name alone
  */
 export async function POST(request: NextRequest) {
   try {
@@ -28,11 +30,19 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { companyName, fullName } = body
+    const { email, linkedinUrl } = body
 
-    if (!companyName || typeof companyName !== 'string' || companyName.trim().length === 0) {
+    // Validate: must have email OR linkedinUrl
+    if (!email && !linkedinUrl) {
       return NextResponse.json(
-        { success: false, error: 'companyName is required' },
+        { success: false, error: 'Either email or linkedinUrl is required' },
+        { status: 400 }
+      )
+    }
+
+    if (email && !email.includes('@')) {
+      return NextResponse.json(
+        { success: false, error: 'Valid email address is required' },
         { status: 400 }
       )
     }
@@ -40,7 +50,7 @@ export async function POST(request: NextRequest) {
     // 2. Call Apollo API directly (no Firebase auth needed - just API key)
     let apolloData
     try {
-      apolloData = await enrichCompanyApollo(companyName.trim())
+      apolloData = await enrichPerson({ email, linkedinUrl })
     } catch (error: any) {
       console.error('❌ Apollo API error:', error)
       return NextResponse.json(
@@ -53,28 +63,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 3. If fullName provided, try to find matching person
-    let matchingPerson = null
-    if (fullName) {
-      const allPeople = [
-        ...(apolloData.company?.employees || []),
-        ...(apolloData.people || []),
-      ]
-
-      const nameParts = fullName.toLowerCase().split(/\s+/)
-      matchingPerson = allPeople.find((person) => {
-        const personName = (person.name || `${person.first_name || ''} ${person.last_name || ''}`).toLowerCase()
-        return nameParts.every((part: string) => personName.includes(part))
-      })
-    }
-
-    // 4. Return raw Apollo response + matching person if found
+    // 3. Return raw Apollo response
     return NextResponse.json({
       success: true,
       rawApolloResponse: apolloData, // Full Apollo JSON
-      matchingPerson: matchingPerson || null,
-      company: apolloData.company || null,
-      people: apolloData.people || [],
+      person: apolloData.person || null,
       message: 'Apollo data ingested successfully. Review and save to persist.',
     })
   } catch (error: any) {
