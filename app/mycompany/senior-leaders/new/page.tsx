@@ -14,6 +14,9 @@ export default function NewSeniorLeaderPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [enrichingFromApollo, setEnrichingFromApollo] = useState(false)
+  const [apolloEmail, setApolloEmail] = useState('')
+  const [apolloLinkedInUrl, setApolloLinkedInUrl] = useState('')
+  const [apolloResponse, setApolloResponse] = useState<any>(null)
   const [formData, setFormData] = useState({
     fullName: '',
     title: '',
