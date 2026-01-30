@@ -374,14 +374,6 @@ export default function SeniorLeaderBuildPage() {
                               {enrichingFromApollo ? 'Enriching...' : 'Enrich from Apollo'}
                             </button>
                           </div>
-                          {apolloResponse && (
-                            <div className="mt-4 p-3 bg-white border border-gray-200 rounded text-xs">
-                              <div className="font-semibold mb-2">Apollo Response:</div>
-                              <pre className="overflow-auto max-h-40 text-xs">
-                                {JSON.stringify(apolloResponse, null, 2)}
-                              </pre>
-                            </div>
-                          )}
                         </div>
                       </div>
                     )}
