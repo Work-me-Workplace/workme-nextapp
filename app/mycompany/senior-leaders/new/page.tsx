@@ -45,17 +45,23 @@ export default function NewSeniorLeaderPage() {
         const person = response.data.person
         
         if (person) {
-          // Populate form with Apollo data
-          const fullName = person.name || `${person.first_name || ''} ${person.last_name || ''}`.trim()
+          // Parse Apollo response to extract ALL available data
+          const { parseApolloPersonResponse } = await import('@/lib/external/apolloClient')
+          const parsed = parseApolloPersonResponse(response.data.rawApolloResponse)
+          
+          // Populate form with parsed Apollo data (use whatever we found)
+          // Even if Apollo returns mostly nulls, use what we have
           setFormData({
-            fullName: fullName,
-            title: person.title || '',
-            email: person.email || apolloEmail.trim() || '',
-            phone: person.phone_numbers?.[0]?.sanitized_number || '',
-            companyUnit: '',
+            fullName: parsed.fullName || '',
+            title: parsed.title || '',
+            email: parsed.email || apolloEmail.trim() || '',
+            phone: parsed.phone || '',
+            companyUnit: parsed.companyName || '',
             role: formData.role,
           })
-          // Form auto-populated - no alert needed, data is visible below
+          
+          // Log what we parsed for debugging
+          console.log('✅ Form populated with Apollo data:', parsed)
         } else {
           alert('Apollo returned data but no person found')
         }
