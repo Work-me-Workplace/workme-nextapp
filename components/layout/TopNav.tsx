@@ -89,9 +89,16 @@ export default function TopNav() {
         { name: 'Workforce Stuff', path: '/mycompany/workforcestuff', icon: Users },
         { name: 'Milestones', path: '/mycompany/milestones', icon: TrendingUp },
         { name: 'Highlights', path: '/mycompany/highlights', icon: Award },
-        { name: 'Senior Leaders', path: '/mycompany/senior-leaders', icon: UserPlus },
         { name: 'Products', path: '/mycompany/products', icon: Package },
         { name: 'Pressures', path: '/mycompany/external-pressures', icon: AlertTriangle },
+      ],
+    },
+    {
+      name: 'My Organization',
+      icon: UserPlus,
+      items: [
+        { name: 'Senior Leaders', path: '/mycompany/senior-leaders', icon: UserPlus },
+        { name: 'Team Members', path: '/mywork/team', icon: Users },
       ],
     },
     {
