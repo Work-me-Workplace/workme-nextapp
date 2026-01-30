@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       const nameParts = fullName.toLowerCase().split(/\s+/)
       matchingPerson = allPeople.find((person) => {
         const personName = (person.name || `${person.first_name || ''} ${person.last_name || ''}`).toLowerCase()
-        return nameParts.every(part => personName.includes(part))
+        return nameParts.every((part: string) => personName.includes(part))
       })
     }
 
