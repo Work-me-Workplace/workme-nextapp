@@ -6,7 +6,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import api from '@/lib/api'
-import { Monitor, ArrowLeft, CheckCircle2, X, Package, Loader2, Archive } from 'lucide-react'
+import { Monitor, ArrowLeft, CheckCircle2, X, Package, Loader2, Archive, FileText, ExternalLink, Download } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,6 +52,12 @@ interface DigitalSignage {
     perks: string[]
     registrationLink?: string | null
   } | null
+  // Gamma deck generation
+  gammaStatus?: string | null
+  gammaDeckUrl?: string | null
+  gammaPptxUrl?: string | null
+  gammaGenerationId?: string | null
+  gammaError?: string | null
 }
 
 function DigitalSignageViewContent() {
@@ -69,6 +75,12 @@ function DigitalSignageViewContent() {
   const [assignError, setAssignError] = useState<string | null>(null)
   const [archiving, setArchiving] = useState(false)
   const [archiveError, setArchiveError] = useState<string | null>(null)
+  const [buildingDeck, setBuildingDeck] = useState(false)
+  const [gammaStatus, setGammaStatus] = useState<string | null>(null)
+  const [gammaDeckUrl, setGammaDeckUrl] = useState<string | null>(null)
+  const [gammaPptxUrl, setGammaPptxUrl] = useState<string | null>(null)
+  const [gammaGenerationId, setGammaGenerationId] = useState<string | null>(null)
+  const [showDeckStatus, setShowDeckStatus] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -91,6 +103,35 @@ function DigitalSignageViewContent() {
     }
   }, [router, signageId, searchParams])
 
+  // Poll Gamma deck status when generating
+  useEffect(() => {
+    if (gammaStatus !== 'generating' || !gammaGenerationId || !signageId) return
+    const interval = setInterval(async () => {
+      try {
+        const res = await api.get(
+          `/api/decks/status/${gammaGenerationId}?digitalSignId=${signageId}`
+        )
+        if (res.data.success) {
+          if (res.data.status === 'ready') {
+            setGammaStatus('ready')
+            setGammaDeckUrl(res.data.url ?? null)
+            setGammaPptxUrl(res.data.pptxUrl ?? null)
+            clearInterval(interval)
+            return
+          }
+          if (res.data.status === 'error' || res.data.status === 'failed') {
+            setGammaStatus('error')
+            clearInterval(interval)
+          }
+        }
+      } catch {
+        setGammaStatus('error')
+        clearInterval(interval)
+      }
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [gammaStatus, gammaGenerationId, signageId])
+
   async function loadSignage() {
     if (!signageId) return
 
@@ -99,7 +140,13 @@ function DigitalSignageViewContent() {
       const response = await api.get(`/api/digital-signage/${signageId}`)
       
       if (response.data.success && response.data.signage) {
-        setSignage(response.data.signage)
+        const s = response.data.signage
+        setSignage(s)
+        setGammaStatus(s.gammaStatus ?? null)
+        setGammaDeckUrl(s.gammaDeckUrl ?? null)
+        setGammaPptxUrl(s.gammaPptxUrl ?? null)
+        setGammaGenerationId(s.gammaGenerationId ?? null)
+        if (s.gammaStatus || s.gammaDeckUrl || s.gammaPptxUrl) setShowDeckStatus(true)
       } else {
         setError(response.data.error || 'Failed to load digital signage')
       }
@@ -136,6 +183,41 @@ function DigitalSignageViewContent() {
       setAssignError(err.response?.data?.error || err.message || 'Failed to create design work package')
     } finally {
       setAssigning(false)
+    }
+  }
+
+  async function handleGenerateDeck() {
+    if (!signageId) return
+    setBuildingDeck(true)
+    setShowDeckStatus(true)
+    setError(null)
+    try {
+      const res = await api.post('/api/decks/digital-signage/generate', {
+        digitalSignId: signageId,
+      })
+      if (res.data.success) {
+        if (res.data.status === 'ready') {
+          setGammaStatus('ready')
+          setGammaDeckUrl(res.data.deckUrl ?? null)
+          setGammaPptxUrl(res.data.pptxUrl ?? null)
+        } else if (res.data.status === 'generating' && res.data.generationId) {
+          setGammaStatus('generating')
+          setGammaGenerationId(res.data.generationId)
+        }
+      } else {
+        setGammaStatus('error')
+        setError(res.data.error ?? res.data.details ?? 'Failed to generate deck')
+      }
+    } catch (err: any) {
+      setGammaStatus('error')
+      setError(
+        err.response?.data?.error ??
+          err.response?.data?.details ??
+          err.message ??
+          'Failed to generate deck'
+      )
+    } finally {
+      setBuildingDeck(false)
     }
   }
 
@@ -231,6 +313,54 @@ function DigitalSignageViewContent() {
               </div>
 
               <div className="px-8 py-6">
+                {showDeckStatus && (gammaStatus || gammaDeckUrl || gammaPptxUrl) && (
+                  <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                    <h3 className="text-sm font-semibold text-blue-900 mb-2">
+                      {gammaStatus === 'ready'
+                        ? 'Deck ready'
+                        : gammaStatus === 'generating'
+                          ? 'Generating deck...'
+                          : 'Deck generation failed'}
+                    </h3>
+                    {gammaStatus === 'ready' && (
+                      <div className="flex flex-wrap gap-3">
+                        {gammaDeckUrl && (
+                          <a
+                            href={gammaDeckUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            View deck (Gamma)
+                          </a>
+                        )}
+                        {gammaPptxUrl && (
+                          <a
+                            href={gammaPptxUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            className="inline-flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+                          >
+                            <Download className="h-4 w-4" />
+                            Download PPTX
+                          </a>
+                        )}
+                      </div>
+                    )}
+                    {gammaStatus === 'generating' && (
+                      <p className="text-sm text-blue-700">
+                        Gamma is generating your presentation. This may take a minute.
+                      </p>
+                    )}
+                    {gammaStatus === 'error' && (
+                      <p className="text-sm text-red-700">
+                        Deck generation failed. Please try again.
+                      </p>
+                    )}
+                  </div>
+                )}
                 {showSuccess && (
                   <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
                     <div className="flex items-center">
@@ -436,7 +566,24 @@ function DigitalSignageViewContent() {
                       <p>Created {new Date(signage.createdAt).toLocaleDateString()}</p>
                       {signage.companyUnit && <p>Unit: {signage.companyUnit}</p>}
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <button
+                        onClick={handleGenerateDeck}
+                        disabled={buildingDeck || gammaStatus === 'generating'}
+                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {buildingDeck || gammaStatus === 'generating' ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Generating deck...
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Generate deck (Gamma)
+                          </>
+                        )}
+                      </button>
                       <button
                         onClick={handleAssignToDesignPackage}
                         disabled={assigning}

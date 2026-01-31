@@ -44,6 +44,8 @@ export async function GET(
     const trainingResponse = {
       ...training,
       trainingDate: training.trainingDate ? training.trainingDate.toISOString() : null,
+      completionDeadline: training.completionDeadline ? training.completionDeadline.toISOString() : null,
+      registrationDeadline: training.registrationDeadline ? training.registrationDeadline.toISOString() : null,
       createdAt: training.createdAt.toISOString(),
     }
 

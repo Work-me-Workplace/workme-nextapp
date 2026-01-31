@@ -6,7 +6,9 @@ import Link from 'next/link'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { auth } from '@/lib/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
-import { Loader2, ArrowRight } from 'lucide-react'
+import { Loader2, ArrowRight, Plus, Trash2 } from 'lucide-react'
+
+type TimeSlotItem = { date?: string; startTime: string; endTime: string; label?: string }
 
 interface TrainingModel {
   title: string | null
@@ -17,6 +19,7 @@ interface TrainingModel {
   trainingDate: string | null
   startTime: string | null
   endTime: string | null
+  timeSlots: TimeSlotItem[] | null
   location: string | null
   format: 'in-person' | 'virtual' | 'hybrid' | null
   link: string | null
@@ -46,6 +49,7 @@ export default function TrainingIngestPage() {
     trainingDate: null,
     startTime: null,
     endTime: null,
+    timeSlots: null,
     location: null,
     format: null,
     link: null,
@@ -103,7 +107,13 @@ export default function TrainingIngestPage() {
       })
 
       if (response.data.success && response.data.model) {
-        setFormData(response.data.model)
+        const model = response.data.model as TrainingModel
+        const timeSlots = Array.isArray(model.timeSlots) && model.timeSlots.length > 0
+          ? model.timeSlots
+          : model.startTime || model.endTime
+            ? [{ startTime: model.startTime || '', endTime: model.endTime || '', date: model.trainingDate || undefined }]
+            : [{ startTime: '', endTime: '' }]
+        setFormData({ ...model, timeSlots })
       } else {
         alert('Failed to hydrate: ' + (response.data.error || 'Unknown error'))
       }
@@ -125,9 +135,11 @@ export default function TrainingIngestPage() {
     try {
       const { default: api } = await import('@/lib/api')
 
+      const timeSlots = formData.timeSlots?.filter((s) => s.startTime || s.endTime) || null
       const response = await api.post('/api/workstuff/ingest/training-save', {
         trainingId,
         ...formData,
+        timeSlots: timeSlots?.length ? timeSlots : null,
       })
 
       if (response.data.success) {
@@ -237,40 +249,92 @@ export default function TrainingIngestPage() {
               />
             </div>
 
-            {/* Date / Time */}
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Training Date
+            {/* Training Date */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Training Date
+              </label>
+              <input
+                type="date"
+                value={formData.trainingDate || ''}
+                onChange={(e) => setFormData({ ...formData, trainingDate: e.target.value || null })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            {/* Times — add more times */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Times (when this training is held)
                 </label>
-                <input
-                  type="date"
-                  value={formData.trainingDate || ''}
-                  onChange={(e) => setFormData({ ...formData, trainingDate: e.target.value || null })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const slots = formData.timeSlots ?? [{ startTime: '', endTime: '' }]
+                    setFormData({
+                      ...formData,
+                      timeSlots: [...slots, { startTime: '', endTime: '' }],
+                    })
+                  }}
+                  className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add more times
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Start Time
-                </label>
-                <input
-                  type="time"
-                  value={formData.startTime || ''}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value || null })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  End Time
-                </label>
-                <input
-                  type="time"
-                  value={formData.endTime || ''}
-                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value || null })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+              <div className="space-y-3">
+                {(formData.timeSlots ?? [{ startTime: formData.startTime || '', endTime: formData.endTime || '' }]).map((slot, i) => (
+                  <div key={i} className="flex flex-wrap items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <input
+                      type="time"
+                      value={slot.startTime}
+                      onChange={(e) => {
+                        const slots = [...(formData.timeSlots ?? [{ startTime: '', endTime: '' }])]
+                        slots[i] = { ...slot, startTime: e.target.value }
+                        setFormData({ ...formData, timeSlots: slots })
+                      }}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Start"
+                    />
+                    <span className="text-gray-500">to</span>
+                    <input
+                      type="time"
+                      value={slot.endTime}
+                      onChange={(e) => {
+                        const slots = [...(formData.timeSlots ?? [{ startTime: '', endTime: '' }])]
+                        slots[i] = { ...slot, endTime: e.target.value }
+                        setFormData({ ...formData, timeSlots: slots })
+                      }}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="End"
+                    />
+                    <input
+                      type="text"
+                      value={slot.label ?? ''}
+                      onChange={(e) => {
+                        const slots = [...(formData.timeSlots ?? [{ startTime: '', endTime: '' }])]
+                        slots[i] = { ...slot, label: e.target.value || undefined }
+                        setFormData({ ...formData, timeSlots: slots })
+                      }}
+                      className="flex-1 min-w-[120px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Label (optional)"
+                    />
+                    {(formData.timeSlots ?? [{ startTime: '', endTime: '' }]).length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const slots = (formData.timeSlots ?? [{ startTime: '', endTime: '' }]).filter((_, j) => j !== i)
+                          setFormData({ ...formData, timeSlots: slots.length ? slots : null })
+                        }}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                        aria-label="Remove time slot"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 

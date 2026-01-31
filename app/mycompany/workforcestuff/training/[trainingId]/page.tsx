@@ -8,6 +8,9 @@ import SidebarNav from '@/components/mywork/SidebarNav'
 import { Calendar, Clock, MapPin, User, Mail, Phone, AlertCircle, CheckCircle } from 'lucide-react'
 import api from '@/lib/api'
 
+export type RegistrationLinkItem = { label?: string; url: string }
+export type TimeSlotItem = { date?: string; startTime: string; endTime: string; label?: string }
+
 interface CompanyTraining {
   id: string
   title: string | null
@@ -18,11 +21,14 @@ interface CompanyTraining {
   trainingDate: string | null
   startTime: string | null
   endTime: string | null
+  timeSlots: TimeSlotItem[] | null
   completionDeadline: string | null
   isSelfPaced: boolean
+  registrationDeadline: string | null
   location: string | null
   format: 'in-person' | 'virtual' | 'hybrid' | null
   link: string | null
+  registrationLinks: RegistrationLinkItem[] | null
   pocFirstName: string | null
   pocLastName: string | null
   pocEmail: string | null
@@ -140,9 +146,17 @@ export default function TrainingDetailPage() {
                         </span>
                       )}
                       {training.ingestStatus === 'pending' && (
-                        <span className="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
-                          Pending Review
-                        </span>
+                        <>
+                          <span className="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
+                            Pending Review
+                          </span>
+                          <Link
+                            href={`/mycompany/workforcestuff/training/ingest/${training.id}`}
+                            className="text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded"
+                          >
+                            Review & Save →
+                          </Link>
+                        </>
                       )}
                       {training.ingestStatus === 'saved' && (
                         <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
@@ -172,7 +186,7 @@ export default function TrainingDetailPage() {
               )}
 
               {/* Date & Time */}
-              {(training.trainingDate || training.startTime || training.endTime || training.completionDeadline || training.isSelfPaced) && (
+              {(training.trainingDate || training.startTime || training.endTime || (Array.isArray(training.timeSlots) && training.timeSlots.length > 0) || training.completionDeadline || training.isSelfPaced) && (
                 <div className="mb-6 border-t pt-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <Calendar className="h-5 w-5 mr-2" />
@@ -197,6 +211,40 @@ export default function TrainingDetailPage() {
                           </p>
                         </div>
                       )}
+                    </div>
+                  ) : Array.isArray(training.timeSlots) && training.timeSlots.length > 0 ? (
+                    <div className="space-y-4">
+                      {training.trainingDate && (
+                        <p className="text-sm text-gray-500 mb-1">Training Date</p>
+                      )}
+                      {training.trainingDate && (
+                        <p className="text-gray-900 font-medium mb-4">
+                          {new Date(training.trainingDate).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </p>
+                      )}
+                      <p className="text-sm text-gray-500 mb-2">Times</p>
+                      <ul className="space-y-2">
+                        {training.timeSlots.map((slot, i) => (
+                          <li key={i} className="flex items-center gap-2 text-gray-900">
+                            <Clock className="h-4 w-4 text-gray-400 shrink-0" />
+                            {slot.date && (
+                              <span>
+                                {new Date(slot.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                {' — '}
+                              </span>
+                            )}
+                            <span>
+                              {slot.startTime}–{slot.endTime}
+                              {slot.label ? ` (${slot.label})` : ''}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -256,20 +304,51 @@ export default function TrainingDetailPage() {
                 </div>
               )}
 
-              {/* Link */}
-              {training.link && (
+              {/* Registration deadline */}
+              {training.registrationDeadline && (
                 <div className="mb-6 border-t pt-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-2">Registration Link</h2>
-                  <a
-                    href={training.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-700 underline"
-                  >
-                    {training.link}
-                  </a>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-2">Registration Deadline</h2>
+                  <p className="text-gray-700">
+                    {new Date(training.registrationDeadline).toLocaleDateString(undefined, {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </p>
                 </div>
               )}
+
+              {/* Registration links: multiple (registrationLinks) or single (link) */}
+              {(() => {
+                const links = Array.isArray(training.registrationLinks) && training.registrationLinks.length > 0
+                  ? training.registrationLinks
+                  : training.link
+                    ? [{ url: training.link } as RegistrationLinkItem]
+                    : []
+                if (links.length === 0) return null
+                return (
+                  <div className="mb-6 border-t pt-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                      {links.length === 1 ? 'Registration Link' : 'Registration Links'}
+                    </h2>
+                    <ul className="space-y-2">
+                      {links.map((item, i) => (
+                        <li key={i}>
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-700 underline"
+                          >
+                            {item.label ? `${item.label} — register here` : item.url}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )
+              })()}
 
               {/* Point of Contact */}
               {(pocName || training.pocEmail || training.pocPhone || training.pocRankOrTitle) && (

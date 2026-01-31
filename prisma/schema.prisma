@@ -560,15 +560,18 @@ model CompanyTraining {
   mandatory        Boolean @default(false)
   sponsoringOffice String?
 
-  trainingDate      DateTime? // For scheduled training events
-  startTime         String?
+  trainingDate      DateTime? // For scheduled training events (primary date when timeSlots omit date)
+  startTime         String?   // Legacy single slot; use timeSlots for multiple
   endTime           String?
+  timeSlots         Json?     // Array of { date?: string, startTime: string, endTime: string, label?: string } — "add more times"
   completionDeadline DateTime? // For self-paced training: deadline to complete by
   isSelfPaced       Boolean @default(false) // True if training is self-paced (no fixed schedule)
+  registrationDeadline DateTime? // Deadline to register (e.g. "Registration deadline is Feb. 9")
 
   location String?
   format   String?
-  link     String?
+  link     String? // Primary/legacy registration or livestream link
+  registrationLinks Json? // Array of { label?: string, url: string } for multiple registration links (e.g. civilians/military vs contractors)
 
   pocFirstName   String?
   pocLastName    String?
@@ -1199,6 +1202,14 @@ model ProductDigitalSign {
 
   // Design work packages linked to this digital sign
   designPackages DesignWorkPackage[]
+
+  // Gamma deck generation (presentation/PPT from signage content)
+  gammaBlob         String?
+  gammaDeckUrl      String?
+  gammaError        String?
+  gammaPptxUrl      String?
+  gammaStatus       String?
+  gammaGenerationId String?
 
   @@index([companyUnit])
   @@index([createdByWorkMeId])
@@ -2789,7 +2800,7 @@ model LinkedInPost {
 // Represents a durable capability (e.g. Narrative Development, Trust Preservation)
 // Stable across roles, orgs, and time. Used for growth reflection and portability assessment.
 model SkillTopic {
-  id          String  @id @default(uuid())
+  id          String  @id @default(uuid()) @db.Uuid
   workMeId    String  @db.Uuid
   title       String // e.g. "Narrative Development", "Trust Preservation"
   description String? // Human-readable explanation of what this capability means

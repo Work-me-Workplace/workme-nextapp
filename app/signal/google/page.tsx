@@ -70,9 +70,12 @@ export default function GoogleScanPage() {
       })
 
       if (response.data.success) {
-        const successMsg = `Article ingested as ${response.data.inferredType}`
         setError(null)
-        alert(successMsg)
+        if (response.data.redirectTo) {
+          router.push(response.data.redirectTo)
+        } else {
+          alert(`Article ingested as ${response.data.inferredType}`)
+        }
       } else {
         setError(response.data.error || 'Failed to ingest article')
       }

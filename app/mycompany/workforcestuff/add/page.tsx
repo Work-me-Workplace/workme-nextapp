@@ -91,6 +91,27 @@ export default function AddWorkforceStuffPage() {
     setError(null)
 
     try {
+      // Training and impact_event: parse only (no DB write). Everything stays in React state until Save.
+      if (selectedType === 'training' || selectedType === 'impact_event') {
+        const res = await api.post(`/api/workstuff/ingest/${selectedType}/parse`, {
+          rawText: rawText.trim(),
+        })
+        const data = res.data
+        if (!data.success) {
+          setError(data.error || data.parseError || 'Failed to parse content')
+          return
+        }
+        if (data.model) {
+          setParsedData(data.model)
+        } else {
+          setError('No parsed data returned')
+          return
+        }
+        setStep('review')
+        return
+      }
+
+      // Other types: legacy flow (create pending record, then user can finalize elsewhere)
       const companyId = await resolveCompanyId()
       if (!companyId) {
         setError('No companyId found. Please set your company first.')
@@ -98,7 +119,6 @@ export default function AddWorkforceStuffPage() {
         return
       }
 
-      // Step 2: Create ingest snapshot only (no parsing, no save)
       const res = await api.post(`/api/workstuff/ingest/${selectedType}/create`, {
         selectedType,
         rawText: rawText.trim(),
@@ -140,20 +160,16 @@ export default function AddWorkforceStuffPage() {
         setCreatedRedirectTo(data.redirectTo)
       }
 
-      // Check for parse errors first
       if (data.parseError) {
         console.warn('⚠️ Parse error (but record created):', data.parseError)
-        // Show warning but continue - user can review manually
         setError(data.parseWarning || `Warning: ${data.parseError}. Record created but parsing failed. You can review and edit manually.`)
       }
 
-      // Parsed model is now returned directly from create endpoint
       if (data.model) {
         setParsedData(data.model)
       } else if (selectedType === 'training' || selectedType === 'impact_event') {
-        // Fallback: if model not returned, try hydrate (backwards compatibility)
         try {
-          const hydrateEndpoint = selectedType === 'training' 
+          const hydrateEndpoint = selectedType === 'training'
             ? '/api/workstuff/ingest/training-hydrate'
             : '/api/workstuff/ingest/impact-event-hydrate'
           const hydrateRes = await api.post(hydrateEndpoint, {
@@ -165,7 +181,6 @@ export default function AddWorkforceStuffPage() {
           }
         } catch (hydrateError) {
           console.error('Hydrate fallback error:', hydrateError)
-          // Continue anyway - user can review manually
         }
       }
 
@@ -179,7 +194,7 @@ export default function AddWorkforceStuffPage() {
   }
 
   async function handleFinalizeTraining() {
-    if (!trainingId || !parsedData) {
+    if (!parsedData) {
       setError('Missing training data to save')
       return
     }
@@ -188,8 +203,16 @@ export default function AddWorkforceStuffPage() {
     setError(null)
 
     try {
-      const res = await api.post('/api/workstuff/ingest/training-save', {
-        trainingId,
+      const companyId = await resolveCompanyId()
+      if (!companyId) {
+        setError('No companyId found. Please set your company first.')
+        setLoading(false)
+        return
+      }
+
+      const res = await api.post('/api/workstuff/ingest/training-create', {
+        companyId,
+        ingestRawText: rawText.trim() || null,
         ...parsedData,
       })
 
@@ -199,16 +222,17 @@ export default function AddWorkforceStuffPage() {
         return
       }
 
+      const newTrainingId = data.trainingId
       setResult({
         type: selectedType,
         confidence: 0,
         explanation: '',
-        redirectTo: `/mycompany/workforcestuff/training/${trainingId}`,
+        redirectTo: `/mycompany/workforcestuff/training/${newTrainingId}`,
       })
       setStep('success')
 
       setTimeout(() => {
-        router.push(`/mycompany/workforcestuff/training/${trainingId}`)
+        router.push(`/mycompany/workforcestuff/training/${newTrainingId}`)
       }, 2000)
     } catch (err: any) {
       console.error('Training save error:', err)
@@ -219,7 +243,7 @@ export default function AddWorkforceStuffPage() {
   }
 
   async function handleFinalizeImpactEvent() {
-    if (!impactEventId || !parsedData) {
+    if (!parsedData) {
       setError('Missing impact event data to save')
       return
     }
@@ -228,8 +252,16 @@ export default function AddWorkforceStuffPage() {
     setError(null)
 
     try {
-      const res = await api.post('/api/workstuff/ingest/impact-event-save', {
-        impactEventId,
+      const companyId = await resolveCompanyId()
+      if (!companyId) {
+        setError('No companyId found. Please set your company first.')
+        setLoading(false)
+        return
+      }
+
+      const res = await api.post('/api/workstuff/ingest/impact-event-create', {
+        companyId,
+        ingestRawText: rawText.trim() || null,
         ...parsedData,
       })
 
@@ -239,16 +271,17 @@ export default function AddWorkforceStuffPage() {
         return
       }
 
+      const newImpactEventId = data.impactEventId
       setResult({
         type: selectedType,
         confidence: 0,
         explanation: '',
-        redirectTo: `/mycompany/workforcestuff/impact-event/${impactEventId}`,
+        redirectTo: `/mycompany/workforcestuff/impact-event/${newImpactEventId}`,
       })
       setStep('success')
 
       setTimeout(() => {
-        router.push(`/mycompany/workforcestuff/impact-event/${impactEventId}`)
+        router.push(`/mycompany/workforcestuff/impact-event/${newImpactEventId}`)
       }, 2000)
     } catch (err: any) {
       console.error('Impact Event save error:', err)

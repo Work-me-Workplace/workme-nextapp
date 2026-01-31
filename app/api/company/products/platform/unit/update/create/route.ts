@@ -4,14 +4,35 @@ import { processNewsArticle } from '@/lib/services/platform-update-service'
 
 export async function POST(request: Request) {
   try {
-    const { platformUnitId, rawText, sourceUrl } = await request.json()
+    const {
+      platformUnitId,
+      rawText,
+      sourceUrl,
+      statementId, // Optional: if creating update from existing statement
+      // CompanyPlatformUnitUpdate fields
+      statusUpdate,
+      percentComplete,
+      scheduleNote,
+      industrialBaseNote,
+      leadershipQuote,
+      keelLaidDate,
+      seaTrialsStartDate,
+      deliveryDate,
+      commissioningDate,
+      narrativeSummary,
+      tags,
+    } = await request.json()
 
-    if (!platformUnitId || !rawText) {
+    if (!platformUnitId) {
       return NextResponse.json(
-        { success: false, error: 'Platform Unit ID and raw text are required' },
+        { success: false, error: 'Platform Unit ID is required' },
         { status: 400 }
       )
     }
+
+    // Statement is OPTIONAL - update can exist independently
+    // Only validate rawText/statementId if user is trying to create/link a statement
+    // But update itself doesn't require either
 
     // Get the unit to find its platform product
     const unit = await prisma.companyPlatformUnit.findUnique({
@@ -26,33 +47,62 @@ export async function POST(request: Request) {
       )
     }
 
-    // Create statement for the unit
-    const statement = await prisma.companyPlatformUnitStatement.create({
-      data: {
-        platformUnitId,
-        rawText,
-        sourceUrl: sourceUrl || null,
-        sourceName: null, // Could be extracted from URL or text
-        headline: null, // Could be extracted from text
-      },
-    })
+    // Statement is OPTIONAL - bolt on for provenance
+    // Only create/link statement if rawText or statementId provided
+    let statementIdToLink: string | null = null
+    
+    if (statementId) {
+      // Use existing statement (verify it belongs to this unit)
+      const statement = await prisma.companyPlatformUnitStatement.findUnique({
+        where: { id: statementId },
+      })
+      if (!statement || statement.platformUnitId !== platformUnitId) {
+        return NextResponse.json(
+          { success: false, error: 'Statement not found or does not belong to this unit' },
+          { status: 404 }
+        )
+      }
+      statementIdToLink = statementId
+    } else if (rawText) {
+      // Create new statement (optional - just for provenance)
+      const statement = await prisma.companyPlatformUnitStatement.create({
+        data: {
+          platformUnitId,
+          rawText,
+          sourceUrl: sourceUrl || null,
+          sourceName: null, // Could be extracted from URL or text
+          headline: null, // Could be extracted from text
+        },
+      })
+      statementIdToLink = statement.id
+    }
+    // If neither statementId nor rawText provided, that's fine - update exists independently
 
-    // Create a basic update - in a real implementation, you'd parse this with AI
+    // Create update - statementId is OPTIONAL (bolt on for provenance)
+    // Update can exist independently with just the fields provided
     const update = await prisma.companyPlatformUnitUpdate.create({
       data: {
-        platformUnitId,
-        statementId: statement.id,
-        narrativeSummary: rawText.substring(0, 500), // Simplified - should use AI parsing
+        platformUnitId, // REQUIRED - must belong to a unit
+        statementId: statementIdToLink, // OPTIONAL - bolt on for provenance
+        // All update fields are optional - include only what's provided
+        statusUpdate: statusUpdate || null,
+        percentComplete: percentComplete !== null && percentComplete !== undefined ? parseInt(String(percentComplete)) : null,
+        scheduleNote: scheduleNote || null,
+        industrialBaseNote: industrialBaseNote || null,
+        leadershipQuote: leadershipQuote || null,
+        keelLaidDate: keelLaidDate ? new Date(keelLaidDate) : null,
+        seaTrialsStartDate: seaTrialsStartDate ? new Date(seaTrialsStartDate) : null,
+        deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
+        commissioningDate: commissioningDate ? new Date(commissioningDate) : null,
+        narrativeSummary: narrativeSummary || null,
+        tags: Array.isArray(tags) ? tags : [],
       },
     })
-
-    // Check if milestones should be created from the update
-    // This would be enhanced with AI parsing to detect milestone events
 
     return NextResponse.json({
       success: true,
       update,
-      statement,
+      statementId: statementIdToLink, // Return statementId if one was created/linked
     })
   } catch (error: any) {
     console.error('Failed to create unit update:', error)

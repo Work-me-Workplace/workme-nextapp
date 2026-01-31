@@ -20,10 +20,10 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams
-    const artifactType = searchParams.get('artifactType')
-    const sentiment = searchParams.get('sentiment')
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
+    const artifactType = searchParams.get('artifactType')
+    const sentiment = searchParams.get('sentiment')
 
     // Build where clause
     const where: any = {
@@ -39,27 +39,40 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all artifacts for company
-    const artifacts = await prisma.companyNewsArtifact.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      skip: offset,
-      select: {
-        id: true,
-        headline: true,
-        sourceName: true,
-        sourceUrl: true,
-        artifactType: true,
-        sentiment: true,
-        aiSummary: true,
-        rawText: true, // Include for parsing
-        createdAt: true,
-        humanElements: true,
-        noteworthyItems: true,
-      },
-    })
-
-    const total = await prisma.companyNewsArtifact.count({ where })
+    const [artifacts, total] = await Promise.all([
+      prisma.companyNewsArtifact.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+        select: {
+          id: true,
+          sourceName: true,
+          sourceUrl: true,
+          headline: true,
+          rawText: true,
+          aiSummary: true,
+          artifactType: true,
+          sentiment: true,
+          createdAt: true,
+          // Check if already linked to unit statements
+          platformUnitStatements: {
+            select: {
+              id: true,
+              platformUnitId: true,
+              platformUnit: {
+                select: {
+                  id: true,
+                  hullNumber: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.companyNewsArtifact.count({ where }),
+    ])
 
     return NextResponse.json({
       success: true,
@@ -71,9 +84,9 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error: any) {
-    console.error('❌ GET /api/utils/news-artifact/list error:', error)
+    console.error('❌ GET /api/company/articles/list error:', error)
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to list artifacts' },
+      { success: false, error: error.message || 'Failed to list articles' },
       { status: 500 }
     )
   }

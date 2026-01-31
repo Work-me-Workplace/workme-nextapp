@@ -71,45 +71,55 @@ You will extract:
 
 Be precise and factual. Do not invent information.`
 
-    const userPrompt = `Analyze this article and return structured intelligence as JSON.
+    const userPrompt = `Analyze this article about a platform unit and extract data that maps DIRECTLY to CompanyPlatformUnitUpdate model fields.
 
 ARTICLE:
 ${text.substring(0, 6000)}
 
-Return JSON with these fields:
+Return JSON with these fields that map to CompanyPlatformUnitUpdate:
 
 {
+  "statusUpdate": "Current status update string (e.g., 'Builder's Trials', 'Sea Trials', 'Keel Laid', 'Construction 60% complete', 'Under Construction') or null",
+  "percentComplete": "Construction/progress percentage (0-100 integer) if mentioned, or null",
+  "scheduleNote": "Schedule-related note if mentioned (e.g., 'Delivery delayed from July 2025 to March 2027', 'On schedule', 'Ahead of schedule') or null",
+  "industrialBaseNote": "Industrial base issues if mentioned (e.g., 'Labor shortage', 'supplier delays', 'material constraints', 'technology integration challenges') or null",
+  "leadershipQuote": "Relevant quote from leadership or key personnel (actual quote text) or null",
+  "keelLaidDate": "Keel laid date in YYYY-MM-DD format if mentioned, or null",
+  "seaTrialsStartDate": "Sea trials start date in YYYY-MM-DD format if mentioned, or null",
+  "deliveryDate": "Delivery date in YYYY-MM-DD format if mentioned, or null",
+  "commissioningDate": "Commissioning date in YYYY-MM-DD format if mentioned, or null",
+  "narrativeSummary": "2-3 sentence factual summary of what this update reports",
+  "tags": ["Array of relevant tags", "e.g.", "builder's trials", "delivery", "schedule", "sea trials"]
+}
+
+ADDITIONAL METADATA (for news artifact, not update model):
+{
   "artifactType": "unit_update" | "milestone" | "workforce" | "leadership" | "industrial_base" | "contract" | "general",
-  "aiSummary": "One paragraph (3-5 sentences) factual summary of the article",
   "sentiment": "positive" | "negative" | "neutral",
+  "articleStyle": "factual_reporting" | "inferred_fault" | "capability_highlight" | "mixed",
   "humanElements": {
     "sponsor": "Name of ship sponsor if mentioned (or null)",
-    "leaders": ["Array of leadership names mentioned"],
-    "attendees": ["Array of other notable attendees/people"],
-    "roles": {"person name": "their role/title"}
-  },
-  "noteworthyItems": {
-    "keyFacts": ["Array of 3-5 most important facts"],
-    "dates": ["Array of significant dates mentioned (YYYY-MM-DD format)"],
-    "milestones": ["Array of milestones mentioned (e.g., 'Keel Laid', 'Sea Trials')"],
-    "locations": ["Array of locations mentioned"]
-  },
-  "leaderStatement": {
-    "statement": "The actual quote text (or null if no significant leadership quote)",
-    "leader": "Name of person who said it (or null)",
-    "role": "Their role/title (or null)"
+    "leaders": ["Array of ACTUAL leadership names - CEOs, Admirals, Program Managers, Senior Executives ONLY. NOT spokespeople"],
+    "spokespeople": ["Array of spokespeople, PR representatives, media contacts, or public affairs officers mentioned"]
   }
 }
 
-RULES:
-- artifactType: Best guess at what this article is primarily about
-- aiSummary: Focus on facts, outcomes, and significance
-- sentiment: Overall tone (positive = good news, negative = problems/delays, neutral = informational)
-- humanElements: Extract all people mentioned with context
-- noteworthyItems: What actually matters in this article
-- leaderStatement: Only include if there's a meaningful quote from leadership
-- Dates should be in YYYY-MM-DD format when possible
-- Return null for fields where information is not present
+CRITICAL RULES - Map to CompanyPlatformUnitUpdate fields:
+- statusUpdate: Current status of the unit (e.g., "Builder's Trials", "Sea Trials", "Keel Laid"). This is what's happening NOW.
+- percentComplete: Only if article mentions a specific percentage (0-100 integer)
+- scheduleNote: Schedule-related information (delays, on-time, ahead, etc.)
+- industrialBaseNote: Industrial base, supply chain, or technical challenges mentioned
+- leadershipQuote: Actual quote text from leadership (not spokespeople)
+- keelLaidDate, seaTrialsStartDate, deliveryDate, commissioningDate: Extract dates ONLY if explicitly mentioned in YYYY-MM-DD format
+- narrativeSummary: Brief factual summary (2-3 sentences)
+- tags: Relevant tags for filtering/searching
+
+For your JFK article example:
+- statusUpdate: "Builder's Trials"
+- seaTrialsStartDate: "2026-01-28"
+- deliveryDate: "2027-03-01" (March 2027)
+- scheduleNote: "Delivery delayed from July 2025 to March 2027 due to new technology integration"
+- narrativeSummary: "USS John F. Kennedy (CVN-79) departed for builder's trials on January 28, 2026. Delivery scheduled for March 2027, delayed from original July 2025 date to incorporate F-35C and Enterprise Air Surveillance Radar capabilities."
 
 Return ONLY valid JSON.`
 
@@ -140,12 +150,28 @@ Return ONLY valid JSON.`
     return NextResponse.json({
       success: true,
       data: {
+        // Artifact metadata (for CompanyNewsArtifact)
         artifactType: parsed.artifactType || 'general',
-        aiSummary: parsed.aiSummary || null,
         sentiment: parsed.sentiment || 'neutral',
+        articleStyle: parsed.articleStyle || 'factual_reporting',
         humanElements: parsed.humanElements || null,
         noteworthyItems: parsed.noteworthyItems || null,
         leaderStatement: parsed.leaderStatement || null,
+        narrativeSummary: parsed.narrativeSummary || null,
+        
+        // CompanyPlatformUnitUpdate fields (if artifactType is unit_update)
+        // These are extracted but artifact is saved globally first
+        statusUpdate: parsed.statusUpdate || null,
+        percentComplete: parsed.percentComplete || null,
+        scheduleNote: parsed.scheduleNote || null,
+        industrialBaseNote: parsed.industrialBaseNote || null,
+        leadershipQuote: parsed.leadershipQuote || null,
+        keelLaidDate: parsed.keelLaidDate || null,
+        seaTrialsStartDate: parsed.seaTrialsStartDate || null,
+        deliveryDate: parsed.deliveryDate || null,
+        commissioningDate: parsed.commissioningDate || null,
+        tags: Array.isArray(parsed.tags) ? parsed.tags : [],
+        
         // Include original metadata for saving
         rawText: text,
         headline: headline || null,

@@ -70,11 +70,12 @@ export default function NoteLookupPage() {
       })
 
       if (response.data.success) {
-        // Show success message briefly
-        const successMsg = `Article ingested as ${response.data.inferredType}`
         setError(null)
-        // You could add a success toast here
-        alert(successMsg)
+        if (response.data.redirectTo) {
+          router.push(response.data.redirectTo)
+        } else {
+          alert(`Article ingested as ${response.data.inferredType}`)
+        }
       } else {
         setError(response.data.error || 'Failed to ingest article')
       }

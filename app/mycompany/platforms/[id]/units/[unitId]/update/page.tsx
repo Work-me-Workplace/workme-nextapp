@@ -8,29 +8,33 @@ import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { refreshWorkMe } from '@/lib/workme.client'
 import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { RefreshCw, ArrowLeft, Wand2, Loader2, CheckCircle, Link as LinkIcon, Newspaper, AlertCircle } from 'lucide-react'
+import { RefreshCw, ArrowLeft, Wand2, Loader2, CheckCircle, Link as LinkIcon, Newspaper, AlertCircle, Archive, Plus } from 'lucide-react'
 
 interface IngestedData {
-  artifactType: string
-  aiSummary: string
-  sentiment: string
-  humanElements: {
+  // CompanyPlatformUnitUpdate fields (direct mapping)
+  statusUpdate?: string | null
+  percentComplete?: number | null
+  scheduleNote?: string | null
+  industrialBaseNote?: string | null
+  leadershipQuote?: string | null
+  keelLaidDate?: string | null
+  seaTrialsStartDate?: string | null
+  deliveryDate?: string | null
+  commissioningDate?: string | null
+  narrativeSummary?: string | null
+  tags?: string[]
+  
+  // Additional metadata (for context)
+  artifactType?: string
+  sentiment?: string
+  articleStyle?: string | null
+  humanElements?: {
     sponsor?: string | null
     leaders?: string[]
-    attendees?: string[]
-    roles?: Record<string, string>
+    spokespeople?: string[]
   } | null
-  noteworthyItems: {
-    keyFacts?: string[]
-    dates?: string[]
-    milestones?: string[]
-    locations?: string[]
-  } | null
-  leaderStatement: {
-    statement?: string | null
-    leader?: string | null
-    role?: string | null
-  } | null
+  
+  // Original article data
   rawText: string
   headline?: string | null
   sourceUrl?: string | null
@@ -51,6 +55,10 @@ export default function UpdatePage({ params }: { params: Promise<{ id: string; u
   const [inputMode, setInputMode] = useState<'url' | 'text'>('url')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [viewMode, setViewMode] = useState<'new' | 'bank'>('bank') // 'new' = new article, 'bank' = artifact bank
+  const [statements, setStatements] = useState<any[]>([])
+  const [loadingStatements, setLoadingStatements] = useState(false)
+  const [selectedStatementId, setSelectedStatementId] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -84,6 +92,76 @@ export default function UpdatePage({ params }: { params: Promise<{ id: string; u
 
     return () => unsubscribe()
   }, [router])
+
+  // Load statements (artifact bank) when component mounts
+  useEffect(() => {
+    if (workMeId && unitId) {
+      loadStatements()
+    }
+  }, [workMeId, unitId])
+
+  async function loadStatements() {
+    try {
+      setLoadingStatements(true)
+      // Get unit details which includes statements
+      const response = await api.get(`/api/company/products/platform/unit/${unitId}`)
+      if (response.data.success && response.data.unit) {
+        setStatements(response.data.unit.statements || [])
+      }
+    } catch (error: any) {
+      console.error('Failed to load statements:', error)
+    } finally {
+      setLoadingStatements(false)
+    }
+  }
+
+  async function handleSelectStatement(statementId: string) {
+    try {
+      setLoadingStatements(true)
+      setError(null)
+      // Find the statement in our loaded statements
+      const statement = statements.find(s => s.id === statementId)
+      if (statement) {
+        // Parse the statement to extract update fields
+        await handleAIParseFromText(statement.rawText, statement.sourceUrl || undefined)
+        setSelectedStatementId(statementId)
+        setViewMode('new') // Switch to new view to show parsed data
+      } else {
+        setError('Statement not found')
+      }
+    } catch (error: any) {
+      console.error('Failed to load statement:', error)
+      setError('Failed to load statement: ' + (error.response?.data?.error || error.message))
+    } finally {
+      setLoadingStatements(false)
+    }
+  }
+
+  async function handleAIParseFromText(text: string, sourceUrl?: string) {
+    try {
+      setParsing(true)
+      setError(null)
+      const response = await api.post('/api/utils/news-artifact/ingest', { 
+        text: text,
+        sourceUrl: sourceUrl || undefined,
+        headline: text.split('\n')[0]?.substring(0, 200) || undefined,
+      })
+
+      if (response.data.success && response.data.data) {
+        setReviewData(response.data.data)
+        setAiText(text) // Set the text so user can see it
+        setUrl(sourceUrl || '')
+        setError(null)
+      } else {
+        setError('Failed to parse: ' + (response.data.error || 'Unknown error'))
+      }
+    } catch (error: any) {
+      console.error('Failed to parse with AI:', error)
+      setError('Failed to parse: ' + (error.response?.data?.error || error.message))
+    } finally {
+      setParsing(false)
+    }
+  }
 
   async function handleFetchUrl() {
     if (!url.trim()) {
@@ -132,17 +210,46 @@ export default function UpdatePage({ params }: { params: Promise<{ id: string; u
     try {
       setParsing(true)
       setError(null)
-      const response = await api.post('/api/utils/news-artifact/ingest', { 
+      
+      // Step 1: Ingest and parse article (determines artifactType)
+      const ingestResponse = await api.post('/api/utils/news-artifact/ingest', { 
         text: aiText,
         sourceUrl: url || undefined,
         headline: aiText.split('\n')[0]?.substring(0, 200) || undefined,
       })
 
-      if (response.data.success && response.data.data) {
-        setReviewData(response.data.data)
+      if (!ingestResponse.data.success) {
+        setError('Failed to parse: ' + (ingestResponse.data.error || 'Unknown error'))
+        return
+      }
+
+      const parsedData = ingestResponse.data.data
+      
+      // Step 2: Save as CompanyNewsArtifact (GLOBAL - company-level)
+      const artifactResponse = await api.post('/api/utils/news-artifact/create', {
+        rawText: parsedData.rawText,
+        sourceUrl: parsedData.sourceUrl,
+        headline: parsedData.headline,
+        sourceName: parsedData.sourceName,
+        aiSummary: parsedData.narrativeSummary,
+        artifactType: parsedData.artifactType,
+        sentiment: parsedData.sentiment,
+        humanElements: parsedData.humanElements,
+        noteworthyItems: parsedData.noteworthyItems,
+        leaderStatement: parsedData.leadershipQuote ? {
+          statement: parsedData.leadershipQuote,
+          leader: parsedData.humanElements?.leaders?.[0] || null,
+          role: null,
+        } : null,
+      })
+
+      if (artifactResponse.data.success) {
+        // Now we have the artifact saved globally
+        // Set review data for creating unit update
+        setReviewData(parsedData)
         setError(null)
       } else {
-        setError('Failed to parse: ' + (response.data.error || 'Unknown error'))
+        setError('Failed to save artifact: ' + (artifactResponse.data.error || 'Unknown error'))
       }
     } catch (error: any) {
       console.error('Failed to parse with AI:', error)
@@ -152,7 +259,7 @@ export default function UpdatePage({ params }: { params: Promise<{ id: string; u
     }
   }
 
-  async function handleSaveArtifact() {
+  async function handleCreateUpdate() {
     if (!reviewData) {
       setError('No data to save')
       return
@@ -162,28 +269,38 @@ export default function UpdatePage({ params }: { params: Promise<{ id: string; u
       setLoading(true)
       setError(null)
       
-      // Save as CompanyNewsArtifact with full intelligence
-      const response = await api.post('/api/utils/news-artifact/create', {
-        rawText: reviewData.rawText,
-        aiSummary: reviewData.aiSummary,
-        artifactType: reviewData.artifactType,
-        sentiment: reviewData.sentiment,
-        humanElements: reviewData.humanElements,
-        noteworthyItems: reviewData.noteworthyItems,
-        leaderStatement: reviewData.leaderStatement,
-        sourceUrl: reviewData.sourceUrl,
-        sourceName: reviewData.sourceName,
-        headline: reviewData.headline,
+      // Create Update - statementId is OPTIONAL (bolt on for provenance)
+      // Update can exist independently - only platformUnitId is required
+      const response = await api.post('/api/company/products/platform/unit/update/create', {
+        platformUnitId: unitId, // REQUIRED - update must belong to a unit
+        // Optional: link to statement if we have one (provenance)
+        statementId: selectedStatementId || null,
+        rawText: selectedStatementId ? null : reviewData.rawText, // Only send rawText if creating new statement
+        sourceUrl: reviewData.sourceUrl || null,
+        // CompanyPlatformUnitUpdate fields (all optional)
+        statusUpdate: reviewData.statusUpdate || null,
+        percentComplete: reviewData.percentComplete || null,
+        scheduleNote: reviewData.scheduleNote || null,
+        industrialBaseNote: reviewData.industrialBaseNote || null,
+        leadershipQuote: reviewData.leadershipQuote || null,
+        keelLaidDate: reviewData.keelLaidDate || null,
+        seaTrialsStartDate: reviewData.seaTrialsStartDate || null,
+        deliveryDate: reviewData.deliveryDate || null,
+        commissioningDate: reviewData.commissioningDate || null,
+        narrativeSummary: reviewData.narrativeSummary || null,
+        tags: reviewData.tags || [],
       })
 
       if (response.data.success) {
         setSuccess(true)
+        // Reload statements to show the new one
+        await loadStatements()
       } else {
-        setError('Failed to save artifact: ' + response.data.error)
+        setError('Failed to create update: ' + response.data.error)
       }
     } catch (error: any) {
-      console.error('Failed to save artifact:', error)
-      setError('Failed to save artifact: ' + (error.response?.data?.error || error.message))
+      console.error('Failed to create update:', error)
+      setError('Failed to create update: ' + (error.response?.data?.error || error.message))
     } finally {
       setLoading(false)
     }
@@ -228,19 +345,129 @@ export default function UpdatePage({ params }: { params: Promise<{ id: string; u
             </Link>
 
             <div className="bg-white rounded-lg shadow-sm p-8">
-              <div className="flex items-center mb-6">
-                <RefreshCw className="h-8 w-8 text-blue-600 mr-3" />
-                <h1 className="text-3xl font-bold text-gray-900">Add Update</h1>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                  <RefreshCw className="h-8 w-8 text-blue-600 mr-3" />
+                  <h1 className="text-3xl font-bold text-gray-900">Add Update</h1>
+                </div>
+                {/* View Mode Toggle */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setViewMode('bank')
+                      setReviewData(null)
+                      setSelectedStatementId(null)
+                    }}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      viewMode === 'bank'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Archive className="w-4 h-4 inline mr-2" />
+                    Artifact Bank
+                  </button>
+                  <button
+                    onClick={() => {
+                      setViewMode('new')
+                      setReviewData(null)
+                    }}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      viewMode === 'new'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Plus className="w-4 h-4 inline mr-2" />
+                    New Article
+                  </button>
+                </div>
               </div>
 
-              {success ? (
+              {viewMode === 'bank' ? (
+                /* Artifact Bank View */
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Article Bank</h2>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Select an existing article to create an update from it, or add a new article.
+                    </p>
+                  </div>
+
+                  {loadingStatements ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    </div>
+                  ) : statements.length === 0 ? (
+                    <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-lg">
+                      <Archive className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600 mb-4">No articles yet</p>
+                      <button
+                        onClick={() => setViewMode('new')}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                      >
+                        Add First Article
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {statements.map((statement) => (
+                        <div
+                          key={statement.id}
+                          className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                            selectedStatementId === statement.id
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                          onClick={() => handleSelectStatement(statement.id)}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              {statement.headline && (
+                                <h3 className="font-medium text-gray-900 mb-1">{statement.headline}</h3>
+                              )}
+                              {statement.sourceName && (
+                                <p className="text-sm text-gray-600 mb-2">{statement.sourceName}</p>
+                              )}
+                              <p className="text-sm text-gray-500 line-clamp-2">
+                                {statement.rawText.substring(0, 200)}...
+                              </p>
+                              <p className="text-xs text-gray-400 mt-2">
+                                {new Date(statement.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            {selectedStatementId === statement.id && (
+                              <CheckCircle className="h-5 w-5 text-blue-600 ml-2" />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : success ? (
                 <div className="space-y-6">
                   <div className="bg-green-50 border border-green-200 rounded-lg p-6">
                     <div className="flex items-center mb-4">
                       <CheckCircle className="h-6 w-6 text-green-600 mr-2" />
-                      <h2 className="text-xl font-semibold text-green-900">Update Saved Successfully!</h2>
+                      <h2 className="text-xl font-semibold text-green-900">Update Created Successfully!</h2>
                     </div>
+                    <p className="text-sm text-gray-700 mb-4">
+                      The update has been created from {selectedStatementId ? 'the selected article' : 'the new article'}.
+                    </p>
                     <div className="flex items-center justify-end space-x-4">
+                      <button
+                        onClick={() => {
+                          setSuccess(false)
+                          setReviewData(null)
+                          setSelectedStatementId(null)
+                          setViewMode('bank')
+                          loadStatements()
+                        }}
+                        className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                      >
+                        Create Another Update
+                      </button>
                       <Link
                         href={`/mycompany/platforms/${platformId}/units/${unitId}`}
                         className="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
@@ -392,108 +619,157 @@ export default function UpdatePage({ params }: { params: Promise<{ id: string; u
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {/* Article Intelligence Summary */}
+                  {/* Platform Unit Update Fields - Direct Mapping */}
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Article Intelligence</h2>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Platform Unit Update</h2>
                     
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <p className="text-sm text-gray-600">Type</p>
-                        <p className="font-medium text-gray-900">{reviewData.artifactType?.replace('_', ' ').toUpperCase()}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Sentiment</p>
-                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                          reviewData.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
-                          reviewData.sentiment === 'negative' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {reviewData.sentiment?.toUpperCase()}
-                        </span>
-                      </div>
-                    </div>
+                    <div className="space-y-4">
+                      {/* Status Update */}
+                      {reviewData.statusUpdate && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Status Update</label>
+                          <input
+                            type="text"
+                            value={reviewData.statusUpdate}
+                            onChange={(e) => setReviewData({ ...reviewData, statusUpdate: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="e.g., Builder's Trials, Sea Trials, Keel Laid"
+                          />
+                        </div>
+                      )}
 
-                    <div>
-                      <p className="text-sm text-gray-600 mb-2">AI Summary</p>
-                      <textarea
-                        rows={4}
-                        value={reviewData.aiSummary}
-                        onChange={(e) => setReviewData({ ...reviewData, aiSummary: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
+                      {/* Percent Complete */}
+                      {reviewData.percentComplete !== null && reviewData.percentComplete !== undefined && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Percent Complete</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={reviewData.percentComplete}
+                            onChange={(e) => setReviewData({ ...reviewData, percentComplete: parseInt(e.target.value) || null })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      )}
 
-                  {/* Human Elements */}
-                  {reviewData.humanElements && (
-                    <div className="bg-white border border-gray-200 rounded-lg p-6">
-                      <h3 className="text-md font-semibold text-gray-900 mb-3">Human Elements</h3>
-                      <div className="space-y-2 text-sm">
-                        {reviewData.humanElements.sponsor && (
-                          <p><span className="font-medium">Sponsor:</span> {reviewData.humanElements.sponsor}</p>
-                        )}
-                        {reviewData.humanElements.leaders && reviewData.humanElements.leaders.length > 0 && (
-                          <p><span className="font-medium">Leaders:</span> {reviewData.humanElements.leaders.join(', ')}</p>
-                        )}
-                        {reviewData.humanElements.attendees && reviewData.humanElements.attendees.length > 0 && (
-                          <p><span className="font-medium">Attendees:</span> {reviewData.humanElements.attendees.join(', ')}</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                      {/* Schedule Note */}
+                      {reviewData.scheduleNote && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Schedule Note</label>
+                          <textarea
+                            rows={2}
+                            value={reviewData.scheduleNote}
+                            onChange={(e) => setReviewData({ ...reviewData, scheduleNote: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="e.g., Delivery delayed from July 2025 to March 2027"
+                          />
+                        </div>
+                      )}
 
-                  {/* Noteworthy Items */}
-                  {reviewData.noteworthyItems && (
-                    <div className="bg-white border border-gray-200 rounded-lg p-6">
-                      <h3 className="text-md font-semibold text-gray-900 mb-3">Noteworthy Items</h3>
-                      <div className="space-y-3">
-                        {reviewData.noteworthyItems.keyFacts && reviewData.noteworthyItems.keyFacts.length > 0 && (
+                      {/* Industrial Base Note */}
+                      {reviewData.industrialBaseNote && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Industrial Base Note</label>
+                          <textarea
+                            rows={2}
+                            value={reviewData.industrialBaseNote}
+                            onChange={(e) => setReviewData({ ...reviewData, industrialBaseNote: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="e.g., Technology integration challenges, supplier delays"
+                          />
+                        </div>
+                      )}
+
+                      {/* Leadership Quote */}
+                      {reviewData.leadershipQuote && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Leadership Quote</label>
+                          <textarea
+                            rows={3}
+                            value={reviewData.leadershipQuote}
+                            onChange={(e) => setReviewData({ ...reviewData, leadershipQuote: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 italic"
+                            placeholder="Quote from leadership"
+                          />
+                        </div>
+                      )}
+
+                      {/* Dates */}
+                      <div className="grid grid-cols-2 gap-4">
+                        {reviewData.keelLaidDate && (
                           <div>
-                            <p className="text-sm font-medium text-gray-700 mb-1">Key Facts</p>
-                            <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                              {reviewData.noteworthyItems.keyFacts.map((fact, i) => (
-                                <li key={i}>{fact}</li>
-                              ))}
-                            </ul>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Keel Laid Date</label>
+                            <input
+                              type="date"
+                              value={reviewData.keelLaidDate}
+                              onChange={(e) => setReviewData({ ...reviewData, keelLaidDate: e.target.value })}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
                           </div>
                         )}
-                        {reviewData.noteworthyItems.milestones && reviewData.noteworthyItems.milestones.length > 0 && (
+                        {reviewData.seaTrialsStartDate && (
                           <div>
-                            <p className="text-sm font-medium text-gray-700 mb-1">Milestones</p>
-                            <div className="flex flex-wrap gap-2">
-                              {reviewData.noteworthyItems.milestones.map((m, i) => (
-                                <span key={i} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">{m}</span>
-                              ))}
-                            </div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Sea Trials Start Date</label>
+                            <input
+                              type="date"
+                              value={reviewData.seaTrialsStartDate}
+                              onChange={(e) => setReviewData({ ...reviewData, seaTrialsStartDate: e.target.value })}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
                           </div>
                         )}
-                        {reviewData.noteworthyItems.dates && reviewData.noteworthyItems.dates.length > 0 && (
+                        {reviewData.deliveryDate && (
                           <div>
-                            <p className="text-sm font-medium text-gray-700 mb-1">Dates</p>
-                            <div className="flex flex-wrap gap-2">
-                              {reviewData.noteworthyItems.dates.map((d, i) => (
-                                <span key={i} className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-sm">{d}</span>
-                              ))}
-                            </div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Date</label>
+                            <input
+                              type="date"
+                              value={reviewData.deliveryDate}
+                              onChange={(e) => setReviewData({ ...reviewData, deliveryDate: e.target.value })}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        )}
+                        {reviewData.commissioningDate && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Commissioning Date</label>
+                            <input
+                              type="date"
+                              value={reviewData.commissioningDate}
+                              onChange={(e) => setReviewData({ ...reviewData, commissioningDate: e.target.value })}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
                           </div>
                         )}
                       </div>
-                    </div>
-                  )}
 
-                  {/* Leader Statement */}
-                  {reviewData.leaderStatement && reviewData.leaderStatement.statement && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
-                      <h3 className="text-md font-semibold text-gray-900 mb-3">Leader Statement</h3>
-                      <blockquote className="italic text-gray-700 mb-2">"{reviewData.leaderStatement.statement}"</blockquote>
-                      {reviewData.leaderStatement.leader && (
-                        <p className="text-sm text-gray-600">
-                          — {reviewData.leaderStatement.leader}
-                          {reviewData.leaderStatement.role && `, ${reviewData.leaderStatement.role}`}
-                        </p>
+                      {/* Narrative Summary */}
+                      {reviewData.narrativeSummary && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Narrative Summary</label>
+                          <textarea
+                            rows={4}
+                            value={reviewData.narrativeSummary}
+                            onChange={(e) => setReviewData({ ...reviewData, narrativeSummary: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="2-3 sentence summary"
+                          />
+                        </div>
+                      )}
+
+                      {/* Tags */}
+                      {reviewData.tags && reviewData.tags.length > 0 && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+                          <div className="flex flex-wrap gap-2">
+                            {reviewData.tags.map((tag, i) => (
+                              <span key={i} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">{tag}</span>
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </div>
-                  )}
+                  </div>
 
                   {/* Action Buttons */}
                   <div className="border-t pt-6">
@@ -509,18 +785,11 @@ export default function UpdatePage({ params }: { params: Promise<{ id: string; u
                         Start Over
                       </button>
                       <button
-                        onClick={handleSaveArtifact}
+                        onClick={handleCreateUpdate}
                         disabled={loading}
                         className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {loading ? 'Saving...' : 'Save as News Artifact'}
-                      </button>
-                      <button
-                        disabled
-                        className="px-6 py-2 bg-gray-300 text-gray-500 rounded-lg font-semibold cursor-not-allowed"
-                        title="Coming soon"
-                      >
-                        Bolt to Unit Update
+                        {loading ? 'Creating Update...' : 'Create Unit Update'}
                       </button>
                       <button
                         disabled

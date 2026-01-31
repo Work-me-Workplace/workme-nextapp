@@ -33,6 +33,8 @@ export async function GET(
       },
     })
 
+    // Return all fields - the API returns everything, frontend decides what to display
+
     if (!product) {
       return NextResponse.json(
         { success: false, error: 'Platform product not found' },

@@ -12,14 +12,17 @@ interface TrainingSaveRequest {
   mandatory: boolean
   topic: string | null
   sponsoringOffice: string | null
-  trainingDate: string | null // ISO date string - for scheduled training events
+  trainingDate: string | null
   startTime: string | null
   endTime: string | null
-  completionDeadline: string | null // ISO date string - for self-paced training deadlines
-  isSelfPaced: boolean // True if training is self-paced
+  completionDeadline: string | null
+  isSelfPaced: boolean
+  registrationDeadline: string | null
   location: string | null
   format: 'in-person' | 'virtual' | 'hybrid' | null
   link: string | null
+  registrationLinks: Array<{ label?: string; url: string }> | null
+  timeSlots: Array<{ date?: string; startTime: string; endTime: string; label?: string }> | null
   poc: {
     name: string | null
     email: string | null
@@ -89,15 +92,18 @@ export async function POST(request: NextRequest) {
 
         // Date / Time
         trainingDate: data.trainingDate ? new Date(data.trainingDate) : null,
-        startTime: data.startTime,
-        endTime: data.endTime,
+        startTime: data.timeSlots?.length ? data.timeSlots[0].startTime : data.startTime,
+        endTime: data.timeSlots?.length ? data.timeSlots[0].endTime : data.endTime,
+        timeSlots: data.timeSlots ?? undefined,
         completionDeadline: data.completionDeadline ? new Date(data.completionDeadline) : null,
         isSelfPaced: data.isSelfPaced || false,
+        registrationDeadline: data.registrationDeadline ? new Date(data.registrationDeadline) : null,
 
         // Format / Location
         location: data.location,
         format: data.format,
         link: data.link,
+        registrationLinks: data.registrationLinks ?? undefined,
 
         // POC
         pocFirstName,

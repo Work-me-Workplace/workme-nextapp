@@ -133,29 +133,30 @@ export async function POST(request: Request) {
     let createdRecord: any
 
     // Use the same creation logic as workforcestuff/add
+    // Training and impact_event: create DRAFT ONLY (raw text + pending). No parsed data saved until user reviews and clicks Save.
     switch (parsed.type) {
       case 'training': {
-        const data = parsed.data
         createdRecord = await prisma.companyTraining.create({
           data: {
-            title: data.title || title || 'Untitled Training',
-            description: data.description,
-            topic: data.topic,
-            mandatory: data.mandatory,
-            sponsoringOffice: data.sponsoringOffice,
-            trainingDate: data.trainingDate ? new Date(data.trainingDate) : null,
-            startTime: data.startTime,
-            endTime: data.endTime,
-            location: data.location,
-            format: data.format,
-            link: data.link || url || null,
-            pocFirstName: data.poc.name ? data.poc.name.split(' ')[0] : null,
-            pocLastName: data.poc.name ? data.poc.name.split(' ').slice(1).join(' ') : null,
-            pocEmail: data.poc.email,
-            pocPhone: data.poc.phone,
-            pocRankOrTitle: data.poc.rankOrTitle,
+            title: null,
+            description: null,
+            topic: null,
+            mandatory: false,
+            sponsoringOffice: null,
+            trainingDate: null,
+            startTime: null,
+            endTime: null,
+            location: null,
+            format: null,
+            link: null,
+            pocFirstName: null,
+            pocLastName: null,
+            pocEmail: null,
+            pocPhone: null,
+            pocRankOrTitle: null,
             ingestRawText: rawText,
-            summary: data.description || data.title || title || null,
+            ingestStatus: 'pending',
+            summary: null,
             companyId,
             workMeId: workMeId,
           },
@@ -244,14 +245,13 @@ export async function POST(request: Request) {
       }
 
       case 'impact_event': {
-        const data = parsed.data
         createdRecord = await prisma.companyImpactEvent.create({
           data: {
-            title: data.title || title || 'Untitled Impact Event',
-            description: data.description,
-            effectiveDate: data.eventDate ? new Date(data.eventDate) : null,
+            title: 'Draft',
+            description: null,
+            effectiveDate: null,
             ingestRawText: rawText,
-            summary: data.description || data.title || title || null,
+            summary: null,
             companyId,
             workMeId: workMeId,
           },
@@ -376,6 +376,14 @@ export async function POST(request: Request) {
       modelName,
     })
 
+    const isDraftOnly = inferredType === 'training' || inferredType === 'impact_event'
+    const redirectTo =
+      inferredType === 'training'
+        ? `/mycompany/workforcestuff/training/ingest/${createdRecord.id}`
+        : inferredType === 'impact_event'
+          ? `/mycompany/workforcestuff/impact-event/${createdRecord.id}`
+          : undefined
+
     return NextResponse.json({
       success: true,
       inferredType,
@@ -384,6 +392,7 @@ export async function POST(request: Request) {
         type: inferredType,
         title: createdRecord.title,
       },
+      ...(isDraftOnly && { draftOnly: true, redirectTo }),
     })
   } catch (error: any) {
     console.error('❌ POST /api/signalingest/clip/parse error:', error)

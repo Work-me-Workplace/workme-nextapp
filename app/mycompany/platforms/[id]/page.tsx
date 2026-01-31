@@ -6,7 +6,7 @@ import { use, useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Ship, Plus, ArrowLeft, FileText, TrendingUp, Calendar, Package } from 'lucide-react'
+import { Ship, Plus, ArrowLeft, FileText, TrendingUp, Calendar, Package, ChevronDown, ChevronUp } from 'lucide-react'
 import NewsProcessor from '@/components/platform/NewsProcessor'
 
 interface PlatformUnit {
@@ -53,10 +53,24 @@ interface Platform {
   description: string | null
   whySpecial: string | null
   payloadNotes: string | null
+  productionNotes: string | null
   intendedTotalUnits: number | null
   programStatus: string | null
   currentProgressEstimate: number | null
   knownShipsInClass: string[]
+  alternativeNames: string[]
+  totalLength: string | null
+  totalBeam: string | null
+  totalDisplacementSubmerged: string | null
+  totalManpowerNeeds: string | null
+  totalTimeToBuild: string | null
+  totalEstimatedCostPerUnit: string | null
+  sensors: string[]
+  defenseBuilders: string[]
+  unitsInSeries: string[]
+  classStartDate: string | null
+  nextDeliveryExpected: string | null
+  lastDeliveryDate: string | null
   units: PlatformUnit[]
   statements: PlatformStatement[]
   updates: PlatformUpdate[]
@@ -183,6 +197,20 @@ export default function PlatformDetailPage({ params }: { params: Promise<{ id: s
                     </div>
                   )}
 
+                  {platform.payloadNotes && (
+                    <div className="mt-4">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">Payload Notes</h3>
+                      <p className="text-sm text-gray-700">{platform.payloadNotes}</p>
+                    </div>
+                  )}
+
+                  {platform.productionNotes && (
+                    <div className="mt-4">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">Production Notes</h3>
+                      <p className="text-sm text-gray-700">{platform.productionNotes}</p>
+                    </div>
+                  )}
+
                   {platform.knownShipsInClass.length > 0 && (
                     <div className="mt-4">
                       <h3 className="text-sm font-semibold text-gray-900 mb-2">Known Ships</h3>
@@ -226,6 +254,9 @@ export default function PlatformDetailPage({ params }: { params: Promise<{ id: s
                       </div>
                     )}
                   </div>
+
+                  {/* Expandable Full Details Section */}
+                  <FullPlatformDetails platform={platform} />
                 </div>
               </div>
 
@@ -424,6 +455,157 @@ export default function PlatformDetailPage({ params }: { params: Promise<{ id: s
           </div>
         </main>
       </div>
+    </div>
+  )
+}
+
+function FullPlatformDetails({ platform }: { platform: Platform }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  const hasAdditionalDetails = 
+    platform.alternativeNames?.length > 0 ||
+    platform.totalLength ||
+    platform.totalBeam ||
+    platform.totalDisplacementSubmerged ||
+    platform.totalManpowerNeeds ||
+    platform.totalTimeToBuild ||
+    platform.totalEstimatedCostPerUnit ||
+    platform.sensors?.length > 0 ||
+    platform.defenseBuilders?.length > 0 ||
+    platform.unitsInSeries?.length > 0 ||
+    platform.classStartDate ||
+    platform.nextDeliveryExpected ||
+    platform.lastDeliveryDate ||
+    platform.productionNotes
+
+  if (!hasAdditionalDetails) {
+    return null
+  }
+
+  return (
+    <div className="mt-6 pt-6 border-t border-gray-200">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center justify-between w-full text-sm font-medium text-gray-700 hover:text-gray-900"
+      >
+        <span>View Full Platform Details</span>
+        {isExpanded ? (
+          <ChevronUp className="h-4 w-4" />
+        ) : (
+          <ChevronDown className="h-4 w-4" />
+        )}
+      </button>
+
+      {isExpanded && (
+        <div className="mt-4 space-y-4 text-sm">
+          {platform.alternativeNames?.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-1">Alternative Names</h4>
+              <div className="flex flex-wrap gap-2">
+                {platform.alternativeNames.map((name, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700"
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(platform.totalLength || platform.totalBeam || platform.totalDisplacementSubmerged) && (
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-2">Physical Specifications</h4>
+              <div className="grid grid-cols-1 gap-2 text-gray-700">
+                {platform.totalLength && <p>Length: {platform.totalLength}</p>}
+                {platform.totalBeam && <p>Beam: {platform.totalBeam}</p>}
+                {platform.totalDisplacementSubmerged && (
+                  <p>Displacement (Submerged): {platform.totalDisplacementSubmerged}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {(platform.totalManpowerNeeds || platform.totalTimeToBuild || platform.totalEstimatedCostPerUnit) && (
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-2">Program Details</h4>
+              <div className="grid grid-cols-1 gap-2 text-gray-700">
+                {platform.totalManpowerNeeds && <p>Crew: {platform.totalManpowerNeeds}</p>}
+                {platform.totalTimeToBuild && <p>Build Time: {platform.totalTimeToBuild}</p>}
+                {platform.totalEstimatedCostPerUnit && (
+                  <p>Cost per Unit: {platform.totalEstimatedCostPerUnit}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {platform.sensors?.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-1">Sensors</h4>
+              <div className="flex flex-wrap gap-2">
+                {platform.sensors.map((sensor, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800"
+                  >
+                    {sensor}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {platform.defenseBuilders?.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-1">Defense Builders</h4>
+              <div className="flex flex-wrap gap-2">
+                {platform.defenseBuilders.map((builder, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2 py-1 text-xs font-medium rounded bg-green-100 text-green-800"
+                  >
+                    {builder}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {platform.unitsInSeries?.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-1">Units in Series</h4>
+              <div className="flex flex-wrap gap-2">
+                {platform.unitsInSeries.map((unit, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2 py-1 text-xs font-medium rounded bg-purple-100 text-purple-800"
+                  >
+                    {unit}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(platform.classStartDate || platform.nextDeliveryExpected || platform.lastDeliveryDate) && (
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-2">Key Dates</h4>
+              <div className="grid grid-cols-1 gap-2 text-gray-700">
+                {platform.classStartDate && (
+                  <p>Class Start: {new Date(platform.classStartDate).toLocaleDateString()}</p>
+                )}
+                {platform.nextDeliveryExpected && (
+                  <p>Next Delivery Expected: {new Date(platform.nextDeliveryExpected).toLocaleDateString()}</p>
+                )}
+                {platform.lastDeliveryDate && (
+                  <p>Last Delivery: {new Date(platform.lastDeliveryDate).toLocaleDateString()}</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
