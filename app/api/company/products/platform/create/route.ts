@@ -1,8 +1,23 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireWorkMeAuth } from '@/lib/server/requireWorkMeAuth'
 import { prisma } from '@/lib/prisma'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    // Auth - get workMeId and companyId
+    const auth = await requireWorkMeAuth(request)
+    const workMe = await prisma.workMe.findUnique({
+      where: { id: auth.id },
+      select: { companyId: true },
+    })
+
+    if (!workMe?.companyId) {
+      return NextResponse.json(
+        { success: false, error: 'Company ID is required. Please set your company affiliation.' },
+        { status: 400 }
+      )
+    }
+
     const {
       name,
       category,
@@ -24,6 +39,8 @@ export async function POST(request: Request) {
 
     const product = await prisma.companyPlatformProduct.create({
       data: {
+        companyId: workMe.companyId,
+        workMeId: auth.id,
         name,
         category,
         platformSeries: platformSeries || null,

@@ -4,7 +4,7 @@ import { getWorkMeContext } from '@/lib/server/getWorkMeContext'
 
 export async function POST(request: NextRequest) {
   try {
-    // Get WorkMe context for companyId
+    // Get WorkMe context for companyId and workMeId
     const workMeContext = await getWorkMeContext(request)
     
     if (!workMeContext.companyId) {
@@ -14,8 +14,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // TypeScript: companyId is now guaranteed to be string after the check above
+    if (!workMeContext.workMeId) {
+      return NextResponse.json(
+        { success: false, error: 'WorkMe ID is required for authentication.' },
+        { status: 401 }
+      )
+    }
+
+    // TypeScript: companyId and workMeId are now guaranteed to be string after the checks above
     const companyId: string = workMeContext.companyId
+    const workMeId: string = workMeContext.workMeId
 
     const { platform, units, milestones } = await request.json()
 
@@ -29,6 +37,8 @@ export async function POST(request: NextRequest) {
     // Create platform product
     const product = await prisma.companyPlatformProduct.create({
       data: {
+        companyId: companyId,
+        workMeId: workMeId,
         name: platform.name,
         category: platform.category,
         platformSeries: platform.platformSeries || null,

@@ -1,0 +1,2 @@
+-- This migration was already applied in 20260128083524_add_sharepoint_products
+-- This file exists to satisfy Prisma migration tracking

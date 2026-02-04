@@ -1,0 +1,2 @@
+-- This migration was already applied in 20260128090000_add_training_deadline_selfpaced
+-- This file exists to satisfy Prisma migration tracking

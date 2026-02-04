@@ -66,6 +66,7 @@ model WorkMe {
   companyCareers             CompanyCareer[]                    @relation("CompanyCareerWorkMe")
   companyBenefits            CompanyBenefits[]                  @relation("CompanyBenefitsWorkMe")
   companyEmployeeCauses      CompanyEmployeeCause[]             @relation("CompanyEmployeeCauseWorkMe")
+  createdPlatformProducts    CompanyPlatformProduct[]           @relation("CompanyPlatformProductWorkMe")
   createdDigitalSignProducts ProductDigitalSign[]               @relation("ProductDigitalSignCreator")
   createdEmployeeHighlights  CompanyEmployeeHighlight[]         @relation("CompanyEmployeeHighlightCreator")
   createdCompanyEmployees    CompanyEmployee[]                  @relation("CompanyEmployeeCreator")
@@ -300,6 +301,7 @@ model Company {
   careers           CompanyCareer[]            @relation("CompanyCareerCompany")
   employeeCauses    CompanyEmployeeCause[]     @relation("CompanyEmployeeCauseCompany")
   productFamilies   ProductFamily[]
+  platformProducts  CompanyPlatformProduct[]
   newsArtifacts     CompanyNewsArtifact[]
   externalEnv       CompanyExternalEnv[]
   companyWork       CompanyWork[]
@@ -1820,6 +1822,14 @@ model CompanyPlatformProduct {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Ownership - Company owns the platform product
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Authorship - Who created this platform product
+  workMeId String?  @db.Uuid
+  workMe   WorkMe?  @relation("CompanyPlatformProductWorkMe", fields: [workMeId], references: [id], onDelete: SetNull)
+
   name             String // "Virginia-class"
   alternativeNames String[] @default([]) // "SSN", "Attack Submarine", "VCS"
   category         String? // "Submarine", "Surface Combatant"
@@ -1872,6 +1882,8 @@ model CompanyPlatformProduct {
   @@index([name])
   @@index([platformSeries])
   @@index([category])
+  @@index([companyId])
+  @@index([workMeId])
 }
 
 model CompanyPlatformUnit {

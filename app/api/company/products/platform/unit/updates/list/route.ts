@@ -22,10 +22,13 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const statusUpdate = searchParams.get('statusUpdate')
 
-    // TODO: CompanyPlatformProduct doesn't have companyId field yet
-    // For now, get all platform units (schema update needed to filter by company)
-    // See docs/WORKME_ID_PARAMS_IMPLEMENTATION.md for schema migration plan
+    // Get platform units filtered by company through platformProduct
     const units = await prisma.companyPlatformUnit.findMany({
+      where: {
+        platformProduct: {
+          companyId,
+        },
+      },
       select: {
         id: true,
       },

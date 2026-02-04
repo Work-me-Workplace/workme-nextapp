@@ -68,8 +68,10 @@ export async function POST(request: NextRequest) {
     const { buffer, contentType, filename } = await downloadImage(dvidsData.imageUrl)
 
     // Step 3: Upload to blob storage
+    // Convert Buffer to Uint8Array for Blob compatibility
     const blobKey = `assets/dvids/${crypto.randomUUID()}-${filename}`
-    const blob = new Blob([buffer], { type: contentType })
+    const uint8Array = new Uint8Array(buffer)
+    const blob = new Blob([uint8Array], { type: contentType })
     const { url } = await put(blobKey, blob, { access: 'public' })
 
     // Step 4: Save asset in database
