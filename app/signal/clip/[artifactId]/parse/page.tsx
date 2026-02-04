@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
-import { use, useEffect, useState } from 'react'
+import { use, useEffect, useState, Suspense } from 'react'
 import { getAuth } from 'firebase/auth'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { refreshWorkMe } from '@/lib/workme.client'
@@ -49,7 +49,7 @@ interface NewsArtifact {
   artifactType: string | null
 }
 
-export default function ParsePage({ params }: { params: Promise<{ artifactId: string }> }) {
+function ParsePageContent({ params }: { params: Promise<{ artifactId: string }> }) {
   const { artifactId } = use(params)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -836,5 +836,17 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
         </main>
       </div>
     </div>
+  )
+}
+
+export default function ParsePage({ params }: { params: Promise<{ artifactId: string }> }) {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <ParsePageContent params={params} />
+    </Suspense>
   )
 }

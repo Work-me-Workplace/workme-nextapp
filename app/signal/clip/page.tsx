@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { getAuth } from 'firebase/auth'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { refreshWorkMe } from '@/lib/workme.client'
@@ -10,7 +10,7 @@ import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { Newspaper, Loader2, AlertCircle, CheckCircle, Link as LinkIcon } from 'lucide-react'
 
-export default function ClipPage() {
+function ClipPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
@@ -347,6 +347,18 @@ export default function ClipPage() {
         </main>
       </div>
     </div>
+  )
+}
+
+export default function ClipPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <ClipPageContent />
+    </Suspense>
   )
 }
 
