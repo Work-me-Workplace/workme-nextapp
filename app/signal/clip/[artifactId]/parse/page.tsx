@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { use, useEffect, useState } from 'react'
 import { getAuth } from 'firebase/auth'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
@@ -51,6 +51,7 @@ interface NewsArtifact {
 export default function ParsePage({ params }: { params: Promise<{ artifactId: string }> }) {
   const { artifactId } = use(params)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [authReady, setAuthReady] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -67,6 +68,12 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
 
   useEffect(() => {
     if (typeof window === 'undefined') return
+
+    // Read query params for dual compatibility (from unit page)
+    const unitIdParam = searchParams?.get('unitId')
+    const platformIdParam = searchParams?.get('platformId')
+    if (unitIdParam) setUnitId(unitIdParam)
+    if (platformIdParam) setPlatformProductId(platformIdParam)
 
     const auth = getAuth()
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -97,7 +104,7 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
     })
 
     return () => unsubscribe()
-  }, [router, artifactId])
+  }, [router, artifactId, searchParams])
 
   async function loadArtifact() {
     try {

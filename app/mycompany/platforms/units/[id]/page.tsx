@@ -6,7 +6,7 @@ import { use, useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Ship, ArrowLeft, Plus, Calendar, TrendingUp, FileText, User, Heart } from 'lucide-react'
+import { Ship, ArrowLeft, Plus, Calendar, TrendingUp, FileText, User, Heart, Archive } from 'lucide-react'
 
 interface Milestone {
   id: string
@@ -252,6 +252,32 @@ export default function UnitDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
               )}
 
+              {/* Quick Actions */}
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <Archive className="h-4 w-4 text-gray-500" />
+                  <p className="text-sm font-medium text-gray-700">Quick Actions</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href={`/signal/clip?unitId=${unit.id}&platformId=${unit.platformProduct.id}`}
+                    className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition"
+                    title="Ingest article to create global artifact"
+                  >
+                    <FileText className="h-3 w-3 mr-1" />
+                    Ingest Article
+                  </Link>
+                  <Link
+                    href="/mycompany/articles"
+                    className="inline-flex items-center px-3 py-1.5 bg-gray-600 text-white rounded-lg text-xs font-medium hover:bg-gray-700 transition"
+                    title="View all global artifacts"
+                  >
+                    <Archive className="h-3 w-3 mr-1" />
+                    Global Artifacts
+                  </Link>
+                </div>
+              </div>
+
               {/* Namesake and Living Homage Section */}
               <div className="mt-6 pt-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-gray-50 rounded-lg p-4">
@@ -381,13 +407,23 @@ export default function UnitDetailPage({ params }: { params: Promise<{ id: strin
                   <h2 className="text-xl font-bold text-gray-900">
                     Updates ({unit.updates.length})
                   </h2>
-                  <Link
-                    href={`/mycompany/platforms/${unit.platformProduct.id}/units/${unit.id}/update`}
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Update
-                  </Link>
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/signal/clip?unitId=${unit.id}&platformId=${unit.platformProduct.id}`}
+                      className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition text-sm"
+                      title="Ingest article to create global artifact"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Ingest Article
+                    </Link>
+                    <Link
+                      href={`/mycompany/platforms/${unit.platformProduct.id}/units/${unit.id}/update`}
+                      className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Update
+                    </Link>
+                  </div>
                 </div>
 
                 {unit.updates.length > 0 ? (

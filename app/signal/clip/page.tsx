@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getAuth } from 'firebase/auth'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
@@ -12,6 +12,7 @@ import { Newspaper, Loader2, AlertCircle, CheckCircle, Link as LinkIcon } from '
 
 export default function ClipPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [authReady, setAuthReady] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -22,9 +23,17 @@ export default function ClipPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [artifactId, setArtifactId] = useState<string | null>(null)
+  const [unitId, setUnitId] = useState<string | null>(null)
+  const [platformId, setPlatformId] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
+
+    // Read query params for dual compatibility
+    const unitIdParam = searchParams?.get('unitId')
+    const platformIdParam = searchParams?.get('platformId')
+    if (unitIdParam) setUnitId(unitIdParam)
+    if (platformIdParam) setPlatformId(platformIdParam)
 
     const auth = getAuth()
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -54,7 +63,7 @@ export default function ClipPage() {
     })
 
     return () => unsubscribe()
-  }, [router])
+  }, [router, searchParams])
 
   async function handleFetchUrl() {
     if (!url.trim()) {
@@ -122,8 +131,12 @@ export default function ClipPage() {
         setArtifactId(response.data.data.id)
         setSuccess(true)
         // Navigate to parse page after a brief delay
+        // Pass unitId/platformId for dual compatibility routing
         setTimeout(() => {
-          router.push(`/signal/clip/${response.data.data.id}/parse`)
+          const parseUrl = new URL(`/signal/clip/${response.data.data.id}/parse`, window.location.origin)
+          if (unitId) parseUrl.searchParams.set('unitId', unitId)
+          if (platformId) parseUrl.searchParams.set('platformId', platformId)
+          router.push(parseUrl.pathname + parseUrl.search)
         }, 1000)
       } else {
         setError(response.data.error || 'Failed to save article')
@@ -182,6 +195,11 @@ export default function ClipPage() {
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">Clip Ingest Wizard</h1>
                   <p className="text-gray-600 mt-1">Step 1: Enter URL or paste article text</p>
+                  {unitId && (
+                    <p className="text-sm text-blue-600 mt-1">
+                      Creating global artifact (can be routed to unit update after parsing)
+                    </p>
+                  )}
                 </div>
               </div>
 

@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { RefreshCw, Plus, Ship, Calendar, Filter } from 'lucide-react'
+import { RefreshCw, Plus, Ship, Calendar, Filter, Monitor, Loader2 } from 'lucide-react'
 
 interface UnitUpdate {
   id: string
@@ -39,6 +39,7 @@ export default function PlatformUnitUpdatesPage() {
   const [updates, setUpdates] = useState<UnitUpdate[]>([])
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [generatingSignId, setGeneratingSignId] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -67,6 +68,28 @@ export default function PlatformUnitUpdatesPage() {
       console.error('Failed to load updates:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleCreateDigitalSignage(updateId: string, e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    try {
+      setGeneratingSignId(updateId)
+      const response = await api.post(`/api/company/products/platform/unit/update/${updateId}/generate-digital-signage`)
+      
+      if (response.data.success && response.data.digitalSign) {
+        // Navigate to the digital signage view page
+        router.push(`/mywork/digital-signage/${response.data.digitalSign.id}`)
+      } else {
+        alert(response.data.error || 'Failed to create digital signage')
+      }
+    } catch (error: any) {
+      console.error('Failed to create digital signage:', error)
+      alert(error.response?.data?.error || error.message || 'Failed to create digital signage')
+    } finally {
+      setGeneratingSignId(null)
     }
   }
 
@@ -146,13 +169,15 @@ export default function PlatformUnitUpdatesPage() {
             ) : (
               <div className="space-y-4">
                 {updates.map((update) => (
-                  <Link
+                  <div
                     key={update.id}
-                    href={`/mycompany/platforms/${update.platformUnit.platformProduct.id}/units/${update.platformUnit.id}`}
-                    className="block bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition"
+                    className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition"
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
+                    <div className="flex items-start justify-between gap-4">
+                      <Link
+                        href={`/mycompany/platforms/${update.platformUnit.platformProduct.id}/units/${update.platformUnit.id}`}
+                        className="flex-1"
+                      >
                         <div className="flex items-center gap-3 mb-2">
                           <Ship className="h-5 w-5 text-blue-600" />
                           <h3 className="text-lg font-semibold text-gray-900">
@@ -190,9 +215,28 @@ export default function PlatformUnitUpdatesPage() {
                           )}
                           <span>{new Date(update.createdAt).toLocaleDateString()}</span>
                         </div>
-                      </div>
+                      </Link>
+                      
+                      <button
+                        onClick={(e) => handleCreateDigitalSignage(update.id, e)}
+                        disabled={generatingSignId === update.id}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition whitespace-nowrap"
+                        title="Create digital signage from this update"
+                      >
+                        {generatingSignId === update.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Creating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Monitor className="h-4 w-4" />
+                            <span>Create Sign</span>
+                          </>
+                        )}
+                      </button>
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             )}

@@ -8,7 +8,7 @@ import { getDashboard, refreshDashboard } from '@/lib/dashboard.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import api from '@/lib/api'
 import { DigitalSignType } from '@prisma/client'
-import { Award, CheckCircle2, FileText, Sparkles, RefreshCw, Loader2, Image as ImageIcon } from 'lucide-react'
+import { Award, CheckCircle2, FileText, Sparkles, RefreshCw, Loader2, Image as ImageIcon, Ship, Flag } from 'lucide-react'
 import { AssetUploader } from '@/components/assets/AssetUploader'
 
 export const dynamic = 'force-dynamic'
@@ -43,11 +43,21 @@ function DigitalSignageBuilderContent() {
   const source = searchParams?.get('source')
   const [highlight, setHighlight] = useState<Highlight | null>(null)
   const [showHighlightSelector, setShowHighlightSelector] = useState(false)
+  const [showMilestoneSelector, setShowMilestoneSelector] = useState(false)
+  const [showPlatformUpdateSelector, setShowPlatformUpdateSelector] = useState(false)
   const [showSourceSelection, setShowSourceSelection] = useState(false)
   const [availableHighlights, setAvailableHighlights] = useState<any[]>([])
+  const [availableMilestones, setAvailableMilestones] = useState<any[]>([])
+  const [availablePlatformUpdates, setAvailablePlatformUpdates] = useState<any[]>([])
   const [loadingHighlights, setLoadingHighlights] = useState(false)
+  const [loadingMilestones, setLoadingMilestones] = useState(false)
+  const [loadingPlatformUpdates, setLoadingPlatformUpdates] = useState(false)
   const [highlightsLoadError, setHighlightsLoadError] = useState(false)
-  const [entryMode, setEntryMode] = useState<'highlight' | 'manual' | 'ai' | null>(null)
+  const [milestonesLoadError, setMilestonesLoadError] = useState(false)
+  const [platformUpdatesLoadError, setPlatformUpdatesLoadError] = useState(false)
+  const [selectedMilestone, setSelectedMilestone] = useState<any | null>(null)
+  const [selectedPlatformUpdate, setSelectedPlatformUpdate] = useState<any | null>(null)
+  const [entryMode, setEntryMode] = useState<'highlight' | 'milestone' | 'platformUpdate' | 'manual' | 'ai' | null>(null)
 
   // Form state - Workforce Achievement
   const [personName, setPersonName] = useState('')
@@ -120,6 +130,14 @@ function DigitalSignageBuilderContent() {
           setShowHighlightSelector(true)
           setEntryMode('highlight')
           loadHighlights()
+        } else if (source === 'milestone') {
+          setShowMilestoneSelector(true)
+          setEntryMode('milestone')
+          loadMilestones()
+        } else if (source === 'platformUpdate') {
+          setShowPlatformUpdateSelector(true)
+          setEntryMode('platformUpdate')
+          loadPlatformUpdates()
         } else if (source === 'manual') {
           setEntryMode('manual')
         } else if (source === 'ai') {
@@ -195,6 +213,112 @@ function DigitalSignageBuilderContent() {
       setAvailableHighlights([])
     } finally {
       setLoadingHighlights(false)
+    }
+  }
+
+  async function loadMilestones() {
+    try {
+      setLoadingMilestones(true)
+      setMilestonesLoadError(false)
+      
+      const response = await api.get('/api/company/milestones/list')
+      
+      if (response.data.success && response.data.milestones) {
+        setAvailableMilestones(response.data.milestones)
+      } else {
+        setAvailableMilestones([])
+        setMilestonesLoadError(true)
+      }
+    } catch (error: any) {
+      console.error('Failed to load milestones:', error)
+      setMilestonesLoadError(true)
+      setAvailableMilestones([])
+    } finally {
+      setLoadingMilestones(false)
+    }
+  }
+
+  async function loadPlatformUpdates() {
+    try {
+      setLoadingPlatformUpdates(true)
+      setPlatformUpdatesLoadError(false)
+      
+      const response = await api.get('/api/company/products/platform/unit/updates/list')
+      
+      if (response.data.success && response.data.updates) {
+        setAvailablePlatformUpdates(response.data.updates)
+      } else {
+        setAvailablePlatformUpdates([])
+        setPlatformUpdatesLoadError(true)
+      }
+    } catch (error: any) {
+      console.error('Failed to load platform updates:', error)
+      setPlatformUpdatesLoadError(true)
+      setAvailablePlatformUpdates([])
+    } finally {
+      setLoadingPlatformUpdates(false)
+    }
+  }
+
+  async function handleSelectMilestone(milestone: any) {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Generate digital signage from milestone
+      const response = await api.post(`/api/company/milestones/${milestone.id}/generate-digital-product`)
+      
+      if (response.data.success && response.data.digitalSign) {
+        // Pre-fill form with generated data
+        const sign = response.data.digitalSign
+        if (sign.companyNews) {
+          setHeadline(sign.companyNews.headline || '')
+          setSubheadline(sign.companyNews.subheadline || '')
+          setBody(sign.companyNews.body || '')
+          setLink(sign.companyNews.link || '')
+        }
+        setSelectedMilestone(milestone)
+        setShowMilestoneSelector(false)
+        setEntryMode('manual') // Switch to manual mode to show/edit the form
+      } else {
+        setError(response.data.error || 'Failed to generate digital signage from milestone')
+      }
+    } catch (err: any) {
+      console.error('Failed to generate digital signage from milestone:', err)
+      setError(err.response?.data?.error || err.message || 'Failed to generate digital signage')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSelectPlatformUpdate(update: any) {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Generate digital signage from platform unit update
+      const response = await api.post(`/api/company/products/platform/unit/update/${update.id}/generate-digital-signage`)
+      
+      if (response.data.success && response.data.digitalSign) {
+        // Pre-fill form with generated data
+        const sign = response.data.digitalSign
+        if (sign.companyNews) {
+          setHeadline(sign.companyNews.headline || '')
+          setSubheadline(sign.companyNews.subheadline || '')
+          setBody(sign.companyNews.body || '')
+          setLink(sign.companyNews.link || '')
+        }
+        setSelectedPlatformUpdate(update)
+        setShowPlatformUpdateSelector(false)
+        setEntryMode('manual') // Switch to manual mode to show/edit the form
+      } else {
+        setError(response.data.error || 'Failed to generate digital signage from platform update')
+      }
+    } catch (err: any) {
+      console.error('Failed to generate digital signage from platform update:', err)
+      setError(err.response?.data?.error || err.message || 'Failed to generate digital signage')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -539,20 +663,52 @@ function DigitalSignageBuilderContent() {
             {showSourceSelection && !entryMode && (
               <div className="mb-6 bg-white rounded-lg shadow-md p-6 border-2 border-blue-200">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">How do you want to create this?</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <button
-                    onClick={() => {
-                      setShowSourceSelection(false)
-                      setShowHighlightSelector(true)
-                      setEntryMode('highlight')
-                      loadHighlights()
-                    }}
-                    className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition text-left"
-                  >
-                    <Award className="h-8 w-8 text-purple-600 mb-2" />
-                    <h3 className="font-semibold text-gray-900 mb-1">From Highlight</h3>
-                    <p className="text-sm text-gray-600">Use existing employee highlight</p>
-                  </button>
+                <div className={`grid grid-cols-1 ${signType === 'COMPANY_NEWS' ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4`}>
+                  {signType === 'COMPANY_NEWS' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          setShowSourceSelection(false)
+                          setShowMilestoneSelector(true)
+                          setEntryMode('milestone')
+                          loadMilestones()
+                        }}
+                        className="p-4 border-2 border-gray-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition text-left"
+                      >
+                        <Flag className="h-8 w-8 text-orange-600 mb-2" />
+                        <h3 className="font-semibold text-gray-900 mb-1">From Milestone</h3>
+                        <p className="text-sm text-gray-600">Use company milestone</p>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowSourceSelection(false)
+                          setShowPlatformUpdateSelector(true)
+                          setEntryMode('platformUpdate')
+                          loadPlatformUpdates()
+                        }}
+                        className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition text-left"
+                      >
+                        <Ship className="h-8 w-8 text-blue-600 mb-2" />
+                        <h3 className="font-semibold text-gray-900 mb-1">From Platform Update</h3>
+                        <p className="text-sm text-gray-600">Use platform unit update</p>
+                      </button>
+                    </>
+                  )}
+                  {signType === 'WORKFORCE_ACHIEVEMENT' && (
+                    <button
+                      onClick={() => {
+                        setShowSourceSelection(false)
+                        setShowHighlightSelector(true)
+                        setEntryMode('highlight')
+                        loadHighlights()
+                      }}
+                      className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition text-left"
+                    >
+                      <Award className="h-8 w-8 text-purple-600 mb-2" />
+                      <h3 className="font-semibold text-gray-900 mb-1">From Highlight</h3>
+                      <p className="text-sm text-gray-600">Use existing employee highlight</p>
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setShowSourceSelection(false)
@@ -576,6 +732,231 @@ function DigitalSignageBuilderContent() {
                     <p className="text-sm text-gray-600">Let AI create it</p>
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* Inline Milestone Selector */}
+            {showMilestoneSelector && (
+              <div className="mb-6 bg-white rounded-lg shadow-md p-6 border-2 border-orange-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <Flag className="h-6 w-6 text-orange-600 mr-2" />
+                    <h2 className="text-xl font-semibold text-gray-900">Select Company Milestone</h2>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {(milestonesLoadError || availableMilestones.length === 0) && (
+                      <button
+                        onClick={() => loadMilestones()}
+                        disabled={loadingMilestones}
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Refresh milestones"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${loadingMilestones ? 'animate-spin' : ''}`} />
+                        {loadingMilestones ? 'Loading...' : 'Refresh'}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setShowMilestoneSelector(false)
+                        router.push(`/mywork/digital-signage/builder/new?type=${signType}&source=manual`)
+                      }}
+                      className="text-sm text-gray-600 hover:text-gray-900"
+                    >
+                      Or enter manually →
+                    </button>
+                  </div>
+                </div>
+                
+                {availableMilestones.length > 0 ? (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {availableMilestones.map((milestone: any) => {
+                      const isSelected = selectedMilestone?.id === milestone.id
+                      
+                      return (
+                        <button
+                          key={milestone.id}
+                          onClick={() => handleSelectMilestone(milestone)}
+                          disabled={loading}
+                          className={`w-full text-left p-4 rounded-lg border-2 transition ${
+                            isSelected
+                              ? 'border-orange-500 bg-orange-50'
+                              : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center mb-2">
+                                {isSelected && <CheckCircle2 className="h-5 w-5 text-orange-600 mr-2" />}
+                                <h3 className="font-semibold text-gray-900">
+                                  {milestone.title}
+                                </h3>
+                                {milestone.category && (
+                                  <span className="ml-3 text-sm text-gray-600">• {milestone.category}</span>
+                                )}
+                              </div>
+                              {milestone.description && (
+                                <p className="text-sm text-gray-700 mb-2 line-clamp-2">{milestone.description}</p>
+                              )}
+                              {milestone.platformUnit && (
+                                <div className="flex items-center gap-2 text-xs text-gray-600">
+                                  <Ship className="h-3 w-3" />
+                                  <span>{milestone.platformUnit.name || milestone.platformUnit.hullNumber}</span>
+                                  {milestone.platformUnit.platformProduct?.name && (
+                                    <span>• {milestone.platformUnit.platformProduct.name}</span>
+                                  )}
+                                </div>
+                              )}
+                              {milestone.date && (
+                                <span className="text-xs text-gray-600">
+                                  {new Date(milestone.date).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Flag className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600 mb-4">
+                      {loadingMilestones ? 'Loading milestones...' : milestonesLoadError ? 'Failed to load milestones' : 'No milestones available'}
+                    </p>
+                    <div className="flex items-center justify-center gap-3">
+                      {milestonesLoadError && (
+                        <button
+                          onClick={() => loadMilestones()}
+                          disabled={loadingMilestones}
+                          className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <RefreshCw className={`h-4 w-4 ${loadingMilestones ? 'animate-spin' : ''}`} />
+                          {loadingMilestones ? 'Loading...' : 'Retry'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          setShowMilestoneSelector(false)
+                          router.push(`/mywork/digital-signage/builder/new?type=${signType}&source=manual`)
+                        }}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                      >
+                        Enter Manually
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Inline Platform Update Selector */}
+            {showPlatformUpdateSelector && (
+              <div className="mb-6 bg-white rounded-lg shadow-md p-6 border-2 border-blue-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <Ship className="h-6 w-6 text-blue-600 mr-2" />
+                    <h2 className="text-xl font-semibold text-gray-900">Select Platform Unit Update</h2>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {(platformUpdatesLoadError || availablePlatformUpdates.length === 0) && (
+                      <button
+                        onClick={() => loadPlatformUpdates()}
+                        disabled={loadingPlatformUpdates}
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Refresh platform updates"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${loadingPlatformUpdates ? 'animate-spin' : ''}`} />
+                        {loadingPlatformUpdates ? 'Loading...' : 'Refresh'}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setShowPlatformUpdateSelector(false)
+                        router.push(`/mywork/digital-signage/builder/new?type=${signType}&source=manual`)
+                      }}
+                      className="text-sm text-gray-600 hover:text-gray-900"
+                    >
+                      Or enter manually →
+                    </button>
+                  </div>
+                </div>
+                
+                {availablePlatformUpdates.length > 0 ? (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {availablePlatformUpdates.map((update: any) => {
+                      const unit = update.platformUnit
+                      const isSelected = selectedPlatformUpdate?.id === update.id
+                      
+                      return (
+                        <button
+                          key={update.id}
+                          onClick={() => handleSelectPlatformUpdate(update)}
+                          disabled={loading}
+                          className={`w-full text-left p-4 rounded-lg border-2 transition ${
+                            isSelected
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center mb-2">
+                                {isSelected && <CheckCircle2 className="h-5 w-5 text-blue-600 mr-2" />}
+                                <h3 className="font-semibold text-gray-900">
+                                  {unit?.name || unit?.hullNumber || 'Unknown Unit'}
+                                </h3>
+                                {unit?.platformProduct?.name && (
+                                  <span className="ml-3 text-sm text-gray-600">• {unit.platformProduct.name}</span>
+                                )}
+                              </div>
+                              {update.statusUpdate && (
+                                <div className="mb-2">
+                                  <span className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full font-medium">
+                                    {update.statusUpdate}
+                                  </span>
+                                </div>
+                              )}
+                              {update.narrativeSummary && (
+                                <p className="text-sm text-gray-700 mb-2 line-clamp-2">{update.narrativeSummary}</p>
+                              )}
+                              {update.percentComplete !== null && (
+                                <span className="text-xs text-gray-600">Progress: {update.percentComplete}%</span>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Ship className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600 mb-4">
+                      {loadingPlatformUpdates ? 'Loading platform updates...' : platformUpdatesLoadError ? 'Failed to load platform updates' : 'No platform updates available'}
+                    </p>
+                    <div className="flex items-center justify-center gap-3">
+                      {platformUpdatesLoadError && (
+                        <button
+                          onClick={() => loadPlatformUpdates()}
+                          disabled={loadingPlatformUpdates}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <RefreshCw className={`h-4 w-4 ${loadingPlatformUpdates ? 'animate-spin' : ''}`} />
+                          {loadingPlatformUpdates ? 'Loading...' : 'Retry'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          setShowPlatformUpdateSelector(false)
+                          router.push(`/mywork/digital-signage/builder/new?type=${signType}&source=manual`)
+                        }}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                      >
+                        Enter Manually
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -766,8 +1147,96 @@ function DigitalSignageBuilderContent() {
               </div>
             )}
 
-            {/* Only show form if entry mode is selected or highlight is loaded */}
-            {(!showSourceSelection && (entryMode || highlight)) && (
+            {/* Show selected milestone info */}
+            {selectedMilestone && !showMilestoneSelector && (
+              <div className="mb-6 bg-orange-50 border border-orange-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <CheckCircle2 className="h-5 w-5 text-orange-600 mr-2" />
+                    <span className="text-sm font-medium text-orange-900">
+                      Using milestone: {selectedMilestone.title}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedMilestone(null)
+                      setShowMilestoneSelector(true)
+                      // Clear form fields
+                      setHeadline('')
+                      setSubheadline('')
+                      setBody('')
+                      setLink('')
+                    }}
+                    className="text-sm text-orange-600 hover:text-orange-700"
+                  >
+                    Change
+                  </button>
+                </div>
+                
+                {/* Show milestone details */}
+                <div className="space-y-2 text-sm">
+                  {selectedMilestone.description && (
+                    <div>
+                      <span className="font-medium text-gray-700">Description:</span>
+                      <p className="text-gray-900 mt-1 line-clamp-3">{selectedMilestone.description}</p>
+                    </div>
+                  )}
+                  {selectedMilestone.category && (
+                    <div>
+                      <span className="font-medium text-gray-700">Category:</span>{' '}
+                      <span className="text-gray-900">{selectedMilestone.category}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Show selected platform update info */}
+            {selectedPlatformUpdate && !showPlatformUpdateSelector && (
+              <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <CheckCircle2 className="h-5 w-5 text-blue-600 mr-2" />
+                    <span className="text-sm font-medium text-blue-900">
+                      Using platform update: {selectedPlatformUpdate.platformUnit?.name || selectedPlatformUpdate.platformUnit?.hullNumber || 'Unknown'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedPlatformUpdate(null)
+                      setShowPlatformUpdateSelector(true)
+                      // Clear form fields
+                      setHeadline('')
+                      setSubheadline('')
+                      setBody('')
+                      setLink('')
+                    }}
+                    className="text-sm text-blue-600 hover:text-blue-700"
+                  >
+                    Change
+                  </button>
+                </div>
+                
+                {/* Show update details */}
+                <div className="space-y-2 text-sm">
+                  {selectedPlatformUpdate.statusUpdate && (
+                    <div>
+                      <span className="font-medium text-gray-700">Status:</span>{' '}
+                      <span className="text-gray-900">{selectedPlatformUpdate.statusUpdate}</span>
+                    </div>
+                  )}
+                  {selectedPlatformUpdate.narrativeSummary && (
+                    <div>
+                      <span className="font-medium text-gray-700">Summary:</span>
+                      <p className="text-gray-900 mt-1 line-clamp-3">{selectedPlatformUpdate.narrativeSummary}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Only show form if entry mode is selected or highlight/milestone/platform update is loaded */}
+            {(!showSourceSelection && (entryMode || highlight || selectedMilestone || selectedPlatformUpdate)) && (
               <>
             {entryMode === 'ai' ? (
               <div className="bg-white rounded-lg shadow-md p-6">
