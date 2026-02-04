@@ -62,22 +62,9 @@ export default function ArticlesPage() {
   }
 
   function getRouteForArtifact(artifact: Artifact) {
-    // Route based on artifactType
-    switch (artifact.artifactType) {
-      case 'unit_update':
-        // Need to parse to determine unit - for now, go to parse page
-        return `/signal/clip/${artifact.id}/parse`
-      case 'milestone':
-        return `/mycompany/milestones/new?artifactId=${artifact.id}`
-      case 'external_pressure':
-        return `/mycompany/external-env/new?artifactId=${artifact.id}`
-      case 'workforce':
-        return `/mycompany/workforcestuff/add?artifactId=${artifact.id}`
-      case 'platform':
-        return `/mycompany/platforms/create?artifactId=${artifact.id}`
-      default:
-        return `/signal/clip/${artifact.id}/parse` // Generic parse page
-    }
+    // Always route to parse page - let user choose what to parse it as
+    // The parse page has a model type selector dropdown (similar to workforcestuff)
+    return `/signal/clip/${artifact.id}/parse`
   }
 
   if (!workMeId || loading) {

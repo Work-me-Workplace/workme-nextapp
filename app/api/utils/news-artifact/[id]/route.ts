@@ -58,6 +58,7 @@ export async function GET(
         rawText: artifact.rawText,
         sourceUrl: artifact.sourceUrl,
         sourceName: artifact.sourceName,
+        artifactType: artifact.artifactType,
         createdAt: artifact.createdAt,
       },
     })

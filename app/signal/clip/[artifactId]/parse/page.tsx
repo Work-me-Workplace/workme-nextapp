@@ -46,6 +46,7 @@ interface NewsArtifact {
   rawText: string
   sourceUrl: string | null
   sourceName: string | null
+  artifactType: string | null
 }
 
 export default function ParsePage({ params }: { params: Promise<{ artifactId: string }> }) {
@@ -58,7 +59,8 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
   const [parsing, setParsing] = useState(false)
   const [reviewData, setReviewData] = useState<any>(null)
   const [artifact, setArtifact] = useState<NewsArtifact | null>(null)
-  const [modelType, setModelType] = useState<ParseableModelType>('platform_unit_update')
+  const [modelType, setModelType] = useState<ParseableModelType | ''>('')
+  const [suggestedType, setSuggestedType] = useState<ParseableModelType | null>(null)
   const [unitId, setUnitId] = useState('')
   const [platformProductId, setPlatformProductId] = useState('')
   const [success, setSuccess] = useState(false)
@@ -106,6 +108,22 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
     return () => unsubscribe()
   }, [router, artifactId, searchParams])
 
+  // Map artifactType to modelType for suggestions
+  function getSuggestedModelType(artifactType: string | null): ParseableModelType | null {
+    if (!artifactType) return null
+    
+    const mapping: Record<string, ParseableModelType> = {
+      'unit_update': 'platform_unit_update',
+      'milestone': 'milestone',
+      'external_pressure': 'external_env',
+      'workforce': 'training', // Default to training for workforce
+      'platform': 'platform_product',
+      'leadership': 'milestone', // Could be milestone or other
+    }
+    
+    return mapping[artifactType] || null
+  }
+
   async function loadArtifact() {
     try {
       setLoading(true)
@@ -113,8 +131,16 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
       const response = await api.get(`/api/utils/news-artifact/${artifactId}`)
 
       if (response.data.success && response.data.data) {
-        setArtifact(response.data.data)
-        setEditableText(response.data.data.rawText)
+        const artifactData = response.data.data
+        setArtifact(artifactData)
+        setEditableText(artifactData.rawText)
+        
+        // Suggest model type based on artifactType, but user can still change it
+        const suggested = getSuggestedModelType(artifactData.artifactType)
+        setSuggestedType(suggested)
+        if (suggested && !modelType) {
+          setModelType(suggested)
+        }
       } else {
         setError(response.data.error || 'Failed to load article')
       }
@@ -133,8 +159,8 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
       return
     }
 
-    if (!modelType) {
-      setError('Please select a model type')
+    if (!modelType || modelType === '') {
+      setError('Please select a model type first')
       return
     }
 
@@ -280,8 +306,8 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
               <div className="flex items-center mb-6">
                 <Wand2 className="h-8 w-8 text-blue-600 mr-3" />
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Parse for Update Model</h1>
-                  <p className="text-gray-600 mt-1">Step 2: Review parsed data and save</p>
+                  <h1 className="text-3xl font-bold text-gray-900">Parse & Route Article</h1>
+                  <p className="text-gray-600 mt-1">How would you like to parse this article?</p>
                 </div>
               </div>
 
@@ -307,20 +333,26 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                 </div>
               ) : !reviewData ? (
                 <div className="space-y-6">
-                  {/* Model Type Selection */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Select Model Type <span className="text-red-500">*</span>
+                  {/* Model Type Selection - Prominent */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <label className="block text-base font-semibold text-gray-900 mb-3">
+                      Parse for what? <span className="text-red-500">*</span>
                     </label>
+                    {suggestedType && artifact?.artifactType && (
+                      <div className="mb-3 p-2 bg-blue-100 border border-blue-300 rounded text-sm text-blue-800">
+                        💡 Suggested: <strong>{artifact.artifactType.replace('_', ' ')}</strong> → <strong>{suggestedType.replace(/_/g, ' ')}</strong> (you can change this)
+                      </div>
+                    )}
                     <select
                       value={modelType}
                       onChange={(e) => {
                         setModelType(e.target.value as ParseableModelType)
                         setReviewData(null) // Reset parsed data when model changes
                       }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 font-medium"
                       disabled={parsing}
                     >
+                      <option value="">-- Select how to parse this article --</option>
                       <optgroup label="Platform Models">
                         <option value="platform_unit_update">Platform Unit Update</option>
                         <option value="platform_unit_statement">Platform Unit Statement</option>
@@ -328,10 +360,10 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                         <option value="platform_product">Platform Product</option>
                       </optgroup>
                       <optgroup label="Company Models">
-                        <option value="milestone">Milestone</option>
-                        <option value="external_env">External Environment</option>
+                        <option value="milestone">Company Milestone</option>
+                        <option value="external_env">External Environment / Pressure</option>
                       </optgroup>
-                      <optgroup label="CompanyX Models">
+                      <optgroup label="Workforce Models">
                         <option value="training">Training</option>
                         <option value="event">Event</option>
                         <option value="career">Career</option>
@@ -342,8 +374,8 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                         <option value="employee_cause">Employee Cause</option>
                       </optgroup>
                     </select>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Choose the model type to parse this article into
+                    <p className="text-sm text-gray-600 mt-2">
+                      Select the type of record you want to create from this article. The AI will parse it accordingly.
                     </p>
                   </div>
 
@@ -399,7 +431,7 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                   <div className="flex justify-end">
                     <button
                       onClick={handleAIParse}
-                      disabled={parsing || !modelType}
+                      disabled={parsing || !modelType || modelType === ''}
                       className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                     >
                       {parsing ? (
