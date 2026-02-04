@@ -30,6 +30,7 @@ import {
   Monitor,
   Archive,
   RefreshCw,
+  Download,
 } from 'lucide-react'
 
 export default function SidebarNav() {
@@ -71,6 +72,7 @@ export default function SidebarNav() {
     if (path === '/mywork/plans') return pathname?.startsWith(path)
     if (path === '/mywork/active') return pathname === path
     if (path === '/mywork/events') return pathname?.startsWith(path)
+    if (path === '/assets/import/dvids') return pathname?.startsWith(path)
     if (path === '/workops/daily') return pathname === path
     if (path === '/workops/overall') return pathname === path
     if (path === '/workops/boss-briefing') return pathname === path
@@ -114,6 +116,7 @@ export default function SidebarNav() {
         { name: 'Plans', path: '/mywork/plans', icon: ClipboardList },
         { name: "Stuff I'm Working On", path: '/mywork/active', icon: CheckSquare },
         { name: 'Events', path: '/mywork/events', icon: Calendar },
+        { name: 'Import from DVIDS', path: '/assets/import/dvids', icon: Download },
       ],
     },
     {

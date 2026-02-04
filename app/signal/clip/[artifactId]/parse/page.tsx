@@ -59,7 +59,7 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
   const [parsing, setParsing] = useState(false)
   const [reviewData, setReviewData] = useState<any>(null)
   const [artifact, setArtifact] = useState<NewsArtifact | null>(null)
-  const [modelType, setModelType] = useState<ParseableModelType | ''>('')
+  const [modelType, setModelType] = useState<ParseableModelType | '' | null>(null)
   const [suggestedType, setSuggestedType] = useState<ParseableModelType | null>(null)
   const [unitId, setUnitId] = useState('')
   const [platformProductId, setPlatformProductId] = useState('')
@@ -159,7 +159,7 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
       return
     }
 
-    if (!modelType || modelType === '') {
+    if (!modelType) {
       setError('Please select a model type first')
       return
     }
@@ -344,9 +344,10 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                       </div>
                     )}
                     <select
-                      value={modelType}
+                      value={modelType || ''}
                       onChange={(e) => {
-                        setModelType(e.target.value as ParseableModelType)
+                        const value = e.target.value
+                        setModelType(value ? (value as ParseableModelType) : null)
                         setReviewData(null) // Reset parsed data when model changes
                       }}
                       className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 font-medium"
@@ -431,7 +432,7 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                   <div className="flex justify-end">
                     <button
                       onClick={handleAIParse}
-                      disabled={parsing || !modelType || modelType === ''}
+                      disabled={parsing || !modelType}
                       className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                     >
                       {parsing ? (
