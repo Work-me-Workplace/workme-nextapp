@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { digitalSignId } = body
+    const { digitalSignId, detailsForGamma } = body as { digitalSignId: string; detailsForGamma?: string }
 
     if (!digitalSignId) {
       return NextResponse.json(
@@ -65,8 +65,10 @@ export async function POST(request: Request) {
       })
     }
 
-    const deckSpec = digitalSignageToDeckSpec(signage)
-    const blob = buildGammaBlob(deckSpec)
+    const blob =
+      typeof detailsForGamma === 'string' && detailsForGamma.trim().length > 0
+        ? detailsForGamma.trim()
+        : buildGammaBlob(digitalSignageToDeckSpec(signage))
 
     await prisma.productDigitalSign.update({
       where: { id: digitalSignId },

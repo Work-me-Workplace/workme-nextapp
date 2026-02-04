@@ -1,0 +1,4 @@
+-- Migration: Remove auto-creation logic for CompanyMilestone from unit updates
+-- platformUnitId field remains optional for manual creation of huge company-wide events
+-- This migration is a placeholder - no schema changes needed
+-- The fix is in application code: removing auto-creation logic

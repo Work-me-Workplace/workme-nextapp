@@ -108,8 +108,9 @@ export async function POST(request: NextRequest) {
           description: description || null,
           sourceUrl: sourceUrl || null,
           newsArtifactId: newsArtifactId || null,
-          // CRITICAL: No platformUnitId - big picture milestones are company-wide, not platform-specific
-          platformUnitId: null,
+          // CRITICAL: platformUnitId is optional - only for HUGE company-wide events involving a specific unit
+          // Do NOT auto-create company milestones from unit updates - manual creation only
+          platformUnitId: null, // Update endpoint doesn't accept platformUnitId - use create endpoint
         },
         include: {
           newsArtifact: {
@@ -141,8 +142,9 @@ export async function POST(request: NextRequest) {
           description: description || null,
           sourceUrl: sourceUrl || null,
           newsArtifactId: newsArtifactId || null,
-          // CRITICAL: No platformUnitId - big picture milestones are company-wide, not platform-specific
-          platformUnitId: null,
+          // CRITICAL: platformUnitId is optional - only for HUGE company-wide events involving a specific unit
+          // Do NOT auto-create company milestones from unit updates - manual creation only
+          platformUnitId: null, // Upsert endpoint doesn't accept platformUnitId - use create endpoint
         },
         include: {
           newsArtifact: {

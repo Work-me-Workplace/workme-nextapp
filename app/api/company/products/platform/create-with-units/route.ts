@@ -66,68 +66,10 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Create milestones if provided
-    if (Array.isArray(milestones) && milestones.length > 0) {
-      // Get unit IDs if we created units
-      let unitMap: Record<string, string> = {}
-      if (units && units.length > 0) {
-        const createdUnits = await prisma.companyPlatformUnit.findMany({
-          where: { platformProductId: product.id },
-        })
-        unitMap = createdUnits.reduce((acc, unit, idx) => {
-          if (units[idx]) {
-            acc[units[idx].hullNumber] = unit.id
-          }
-          return acc
-        }, {} as Record<string, string>)
-      }
-
-      await Promise.all(
-        milestones
-          .filter((milestone: any) => {
-            // Only create milestones that have both a unit and a valid milestoneType
-            return (
-              milestone.unitHullNumber &&
-              unitMap[milestone.unitHullNumber] &&
-              milestone.milestoneType &&
-              ['CONTRACT_AWARDED', 'KEEL_LAYING', 'HULL_COMPLETION', 'LAUNCH', 'SEA_TRIALS', 'DELIVERY', 'COMMISSIONING'].includes(milestone.milestoneType)
-            )
-          })
-          .map(async (milestone: any) => {
-            const platformUnitId = unitMap[milestone.unitHullNumber]
-            
-            // Look up platform unit to generate title
-            const platformUnit = await prisma.companyPlatformUnit.findUnique({
-              where: { id: platformUnitId },
-              select: {
-                hullNumber: true,
-                name: true,
-              },
-            })
-
-            // Generate title from unit info and milestone type
-            let milestoneTitle = milestone.title
-            if (!milestoneTitle) {
-              const unitName = platformUnit?.name || platformUnit?.hullNumber || milestone.unitHullNumber
-              const milestoneTypeLabel = milestone.milestoneType.replace(/_/g, ' ').toLowerCase()
-                .replace(/\b\w/g, (l: string) => l.toUpperCase())
-              milestoneTitle = `${unitName} ${milestoneTypeLabel}`
-            }
-
-            return prisma.companyMilestone.create({
-              data: {
-                title: milestoneTitle,
-                companyId,
-                category: 'Platform',
-                description: milestone.description || undefined,
-                date: milestone.date ? new Date(milestone.date) : undefined,
-                milestoneType: milestone.milestoneType || undefined,
-                platformUnitId: platformUnitId || undefined,
-              },
-            })
-          })
-      )
-    }
+    // NOTE: We NO LONGER create CompanyMilestone from platform unit milestones
+    // Platform unit milestones should be tracked via CompanyPlatformUnitUpdate, not CompanyMilestone
+    // CompanyMilestone is ONLY for big picture company-wide milestones
+    // If milestones are provided, they're just for reference - we don't create CompanyMilestone records
 
     return NextResponse.json({
       success: true,

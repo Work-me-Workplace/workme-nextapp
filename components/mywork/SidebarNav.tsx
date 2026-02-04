@@ -29,6 +29,7 @@ import {
   Monitor,
   LayoutDashboard,
   Archive,
+  RefreshCw,
 } from 'lucide-react'
 
 export default function SidebarNav() {
@@ -58,6 +59,7 @@ export default function SidebarNav() {
     if (path === '/mycompany/workforcestuff') return pathname?.startsWith(path)
     if (path === '/mycompany/milestones') return pathname?.startsWith(path)
     if (path === '/mycompany/products') return pathname?.startsWith(path) || pathname?.startsWith('/mycompany/platforms')
+    if (path === '/mycompany/platforms/updates') return pathname?.startsWith(path)
     if (path === '/mycompany/articles') return pathname?.startsWith(path)
     if (path === '/mycompany/external-pressures') return pathname?.startsWith(path)
     if (path === '/myorganization/senior-leaders') return pathname?.startsWith(path) || pathname?.startsWith('/mycompany/senior-leaders')
@@ -90,6 +92,7 @@ export default function SidebarNav() {
         { name: 'Workforce Stuff', path: '/mycompany/workforcestuff', icon: Users },
         { name: 'Company Milestones', path: '/mycompany/milestones', icon: TrendingUp },
         { name: 'Company Products', path: '/mycompany/products', icon: Package },
+        { name: 'Platform Unit Updates', path: '/mycompany/platforms/updates', icon: RefreshCw },
         { name: 'External Company Pressures', path: '/mycompany/external-pressures', icon: AlertTriangle },
         { name: 'Global Artifacts', path: '/mycompany/articles', icon: Archive },
       ],

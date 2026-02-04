@@ -81,6 +81,8 @@ function DigitalSignageViewContent() {
   const [gammaPptxUrl, setGammaPptxUrl] = useState<string | null>(null)
   const [gammaGenerationId, setGammaGenerationId] = useState<string | null>(null)
   const [showDeckStatus, setShowDeckStatus] = useState(false)
+  const [gammaDetails, setGammaDetails] = useState('')
+  const [loadingPreview, setLoadingPreview] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -186,6 +188,23 @@ function DigitalSignageViewContent() {
     }
   }
 
+  async function handleLoadPreview() {
+    if (!signageId) return
+    setLoadingPreview(true)
+    try {
+      const res = await api.get(
+        `/api/decks/digital-signage/preview?digitalSignId=${signageId}`
+      )
+      if (res.data.success && res.data.preview) {
+        setGammaDetails(res.data.preview)
+      }
+    } catch {
+      setError('Could not load preview from signage')
+    } finally {
+      setLoadingPreview(false)
+    }
+  }
+
   async function handleGenerateDeck() {
     if (!signageId) return
     setBuildingDeck(true)
@@ -194,6 +213,7 @@ function DigitalSignageViewContent() {
     try {
       const res = await api.post('/api/decks/digital-signage/generate', {
         digitalSignId: signageId,
+        ...(gammaDetails.trim() ? { detailsForGamma: gammaDetails.trim() } : {}),
       })
       if (res.data.success) {
         if (res.data.status === 'ready') {
@@ -313,6 +333,53 @@ function DigitalSignageViewContent() {
               </div>
 
               <div className="px-8 py-6">
+                {/* Gamma: details + send */}
+                <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                    Details for Gamma generation
+                  </h3>
+                  <p className="text-xs text-gray-600 mb-3">
+                    Edit the content below to customize what Gamma uses, or leave blank to use this signage&apos;s content automatically.
+                  </p>
+                  <textarea
+                    value={gammaDetails}
+                    onChange={(e) => setGammaDetails(e.target.value)}
+                    placeholder="Leave blank to use signage content, or enter presentation title and bullet points..."
+                    rows={6}
+                    className="mb-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={handleLoadPreview}
+                      disabled={loadingPreview}
+                      className="flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      {loadingPreview ? (
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      ) : null}
+                      Load from signage
+                    </button>
+                    <button
+                      onClick={handleGenerateDeck}
+                      disabled={buildingDeck || gammaStatus === 'generating'}
+                      className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {buildingDeck || gammaStatus === 'generating' ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Send to Gamma
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
                 {showDeckStatus && (gammaStatus || gammaDeckUrl || gammaPptxUrl) && (
                   <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
                     <h3 className="text-sm font-semibold text-blue-900 mb-2">
@@ -567,23 +634,6 @@ function DigitalSignageViewContent() {
                       {signage.companyUnit && <p>Unit: {signage.companyUnit}</p>}
                     </div>
                     <div className="flex items-center gap-3 flex-wrap">
-                      <button
-                        onClick={handleGenerateDeck}
-                        disabled={buildingDeck || gammaStatus === 'generating'}
-                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {buildingDeck || gammaStatus === 'generating' ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Generating deck...
-                          </>
-                        ) : (
-                          <>
-                            <FileText className="h-4 w-4 mr-2" />
-                            Generate deck (Gamma)
-                          </>
-                        )}
-                      </button>
                       <button
                         onClick={handleAssignToDesignPackage}
                         disabled={assigning}

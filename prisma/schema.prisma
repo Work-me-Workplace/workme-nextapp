@@ -2197,12 +2197,14 @@ model CompanyPlatformUnitLivingHomage {
 //
 // OWNERSHIP: CompanyMilestone is owned by Company (companyId REQUIRED)
 // 
-// CONTEXT: platformUnitId is DEPRECATED - big picture milestones are company-wide, not platform-specific
+// CONTEXT: platformUnitId is OPTIONAL - only for HUGE company-wide events that happen to involve a specific unit
+// Examples: "Carrier flew its first mission", "First submarine completed circumnavigation"
+// CRITICAL: Do NOT auto-create company milestones from unit updates - only manual creation
 // PROVENANCE: updateId is OPTIONAL - links back to the update that triggered this milestone
 // 
 // Milestones may exist:
 // - without updates (manual creation)
-// - without platform units (all big picture milestones are company-wide)
+// - with or without platformUnitId (company-wide milestones can reference a unit if it's a huge event)
 // 
 // INFERENCE RULE (future enforcement):
 // If milestoneType === KEEL_LAYING, the platform unit should have a CompanyPlatformUnitLivingHomage.
@@ -2233,7 +2235,9 @@ model CompanyMilestone {
   description   String?
   sourceUrl     String?
 
-  // Optional contextual linkage (not ownership)
+  // Optional contextual linkage (for HUGE company-wide events that happen to involve a specific unit)
+  // e.g., "Carrier flew its first mission" - this is a company milestone, but involves a specific unit
+  // CRITICAL: Do NOT auto-create company milestones from unit updates - only manual creation
   platformUnitId String?
   platformUnit   CompanyPlatformUnit? @relation(fields: [platformUnitId], references: [id], onDelete: SetNull)
 

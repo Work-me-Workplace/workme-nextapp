@@ -29,9 +29,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
     const milestoneType = searchParams.get('milestoneType')
-    const platformUnitId = searchParams.get('platformUnitId')
 
     // Build where clause
+    // CRITICAL: CompanyMilestone is for BIG PICTURE company-wide milestones
+    // platformUnitId is optional - only for huge company-wide events involving a specific unit
+    // We show ALL company milestones (with or without platformUnitId)
     const where: any = {
       companyId,
     }
@@ -42,10 +44,6 @@ export async function GET(request: NextRequest) {
 
     if (milestoneType) {
       where.milestoneType = milestoneType
-    }
-
-    if (platformUnitId) {
-      where.platformUnitId = platformUnitId
     }
 
     // Fetch milestones

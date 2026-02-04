@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { TrendingUp, Plus, Sparkles, FileText, Calendar, ExternalLink, MapPin } from 'lucide-react'
+import { TrendingUp, Plus, Sparkles, FileText, Calendar, ExternalLink, MapPin, Trash2 } from 'lucide-react'
 import api from '@/lib/api'
 
 interface Milestone {
@@ -36,6 +36,7 @@ export default function CompanyMilestonesPage() {
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [milestones, setMilestones] = useState<Milestone[]>([])
   const [loading, setLoading] = useState(true)
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -59,6 +60,52 @@ export default function CompanyMilestonesPage() {
       }
     } catch (error) {
       console.error('Failed to load milestones:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleDelete(milestoneId: string, e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (!confirm('Are you sure you want to delete this milestone? This cannot be undone.')) {
+      return
+    }
+
+    try {
+      setDeletingIds(prev => new Set(prev).add(milestoneId))
+      const response = await api.delete(`/api/company/milestones/${milestoneId}`)
+      
+      if (response.data.success) {
+        setMilestones(prev => prev.filter(m => m.id !== milestoneId))
+      } else {
+        alert('Failed to delete milestone: ' + response.data.error)
+      }
+    } catch (error: any) {
+      console.error('Failed to delete milestone:', error)
+      alert('Failed to delete milestone: ' + (error.response?.data?.error || error.message))
+    } finally {
+      setDeletingIds(prev => {
+        const next = new Set(prev)
+        next.delete(milestoneId)
+        return next
+      })
+    }
+  }
+
+  async function handleDeleteAll() {
+    if (!confirm(`Are you sure you want to delete ALL ${milestones.length} milestones? This cannot be undone.`)) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      await Promise.all(milestones.map(m => api.delete(`/api/company/milestones/${m.id}`)))
+      setMilestones([])
+    } catch (error: any) {
+      console.error('Failed to delete milestones:', error)
+      alert('Failed to delete some milestones. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -108,25 +155,53 @@ export default function CompanyMilestonesPage() {
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Company Milestones</h1>
-                <p className="text-gray-600 mt-2">External achievements, press releases, and company news</p>
+                <p className="text-gray-600 mt-2">
+                  Big picture company-wide milestones only. For platform unit updates, see{' '}
+                  <Link href="/mycompany/platforms/updates" className="text-blue-600 hover:text-blue-700 underline">
+                    Platform Unit Updates
+                  </Link>
+                </p>
               </div>
-              <Link
-                href="/mycompany/milestones/new"
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Add Milestone
-              </Link>
+              <div className="flex items-center gap-3">
+                {milestones.length > 0 && (
+                  <button
+                    onClick={handleDeleteAll}
+                    disabled={loading}
+                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition disabled:opacity-50"
+                  >
+                    <Trash2 className="h-5 w-5 mr-2" />
+                    Delete All
+                  </button>
+                )}
+                <Link
+                  href="/mycompany/milestones/new"
+                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Add Milestone
+                </Link>
+              </div>
             </div>
 
             {milestones.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {milestones.map(milestone => (
-                  <Link
+                  <div
                     key={milestone.id}
-                    href={`/mycompany/milestones/${milestone.id}`}
-                    className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition"
+                    className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition relative group"
                   >
+                    <button
+                      onClick={(e) => handleDelete(milestone.id, e)}
+                      disabled={deletingIds.has(milestone.id)}
+                      className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-600 transition opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                      title="Delete milestone"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                    <Link
+                      href={`/mycompany/milestones/${milestone.id}`}
+                      className="block"
+                    >
                     <div className="flex items-center gap-2 mb-3 flex-wrap">
                       {milestone.category && (
                         <span className="inline-block px-2 py-1 text-xs font-semibold text-blue-600 bg-blue-50 rounded">
@@ -151,19 +226,15 @@ export default function CompanyMilestonesPage() {
                     {milestone.description && (
                       <p className="text-sm text-gray-600 line-clamp-2 mb-3">{milestone.description}</p>
                     )}
-                    {milestone.platformUnit && (
-                      <div className="flex items-center text-xs text-gray-500 mb-2">
-                        <MapPin className="h-3 w-3 mr-1" />
-                        {milestone.platformUnit.name || milestone.platformUnit.hullNumber}
-                      </div>
-                    )}
+                    {/* Platform unit info removed - company milestones are company-wide only */}
                     {milestone.newsArtifact && (
                       <div className="flex items-center text-xs text-gray-400">
                         <ExternalLink className="h-3 w-3 mr-1" />
                         {milestone.newsArtifact.sourceName || 'News Article'}
                       </div>
                     )}
-                  </Link>
+                    </Link>
+                  </div>
                 ))}
               </div>
             ) : (

@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     // TypeScript: companyId is now guaranteed to be string after the check above
     const companyId: string = workMeContext.companyId
 
-    const { description, date, milestoneType, platformUnitId, title, category } = await request.json()
+    const { description, date, milestoneType, title, category, platformUnitId } = await request.json()
 
     if (!title) {
       return NextResponse.json(
@@ -26,45 +26,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Look up platform unit to generate title if not provided and platformUnitId exists
-    let milestoneTitle = title
-    if (!milestoneTitle && platformUnitId) {
-      const platformUnit = await prisma.companyPlatformUnit.findUnique({
-        where: { id: platformUnitId },
-        select: {
-          hullNumber: true,
-          name: true,
-          platformProduct: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      })
-
-      if (platformUnit) {
-        const unitName = platformUnit.name || platformUnit.hullNumber
-        if (milestoneType) {
-          const milestoneTypeLabel = milestoneType.replace(/_/g, ' ').toLowerCase()
-            .replace(/\b\w/g, (l: string) => l.toUpperCase())
-          milestoneTitle = `${unitName} ${milestoneTypeLabel}`
-        } else {
-          milestoneTitle = `${unitName} Milestone`
-        }
-      } else {
-        milestoneTitle = milestoneType ? `${milestoneType.replace(/_/g, ' ')} Milestone` : 'Company Milestone'
-      }
-    }
-
+    // CRITICAL: CompanyMilestone is for BIG PICTURE company-wide milestones
+    // platformUnitId is OPTIONAL - only for HUGE company-wide events that happen to involve a specific unit
+    // Examples: "Carrier flew its first mission", "First submarine completed circumnavigation"
+    // Do NOT auto-create company milestones from unit updates - this is manual creation only
     const milestone = await prisma.companyMilestone.create({
       data: {
-        title: milestoneTitle,
+        title,
         companyId,
         category: category || undefined,
         milestoneType: milestoneType || undefined,
         description: description || undefined,
         date: date ? new Date(date) : undefined,
-        platformUnitId: platformUnitId || undefined,
+        platformUnitId: platformUnitId || undefined, // Optional - only for huge company-wide events
       },
     })
 

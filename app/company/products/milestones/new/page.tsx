@@ -11,14 +11,15 @@ function CreateMilestoneForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const platformUnitId = searchParams.get('platformUnitId')
-  const platformProductId = searchParams.get('platformProductId')
 
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
+    title: '',
     description: '',
     date: '',
-    milestoneType: 'DELIVERY' as 'CONTRACT_AWARDED' | 'KEEL_LAYING' | 'HULL_COMPLETION' | 'LAUNCH' | 'SEA_TRIALS' | 'DELIVERY' | 'COMMISSIONING',
+    milestoneType: '',
+    category: '',
     platformUnitId: platformUnitId || '',
   })
 
@@ -35,30 +36,27 @@ function CreateMilestoneForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!formData.platformUnitId) {
-      alert('Platform Unit ID is required')
-      return
-    }
-
-    if (!formData.milestoneType) {
-      alert('Milestone Type is required')
+    if (!formData.title) {
+      alert('Title is required')
       return
     }
 
     try {
       setLoading(true)
       const response = await api.post('/api/company/products/milestones/create', {
-        ...formData,
+        title: formData.title,
+        description: formData.description || null,
         date: formData.date || null,
+        milestoneType: formData.milestoneType || null,
+        category: formData.category || null,
+        platformUnitId: formData.platformUnitId || null, // Optional - only for HUGE company-wide events
       })
 
       if (response.data.success) {
         if (platformUnitId) {
           router.push(`/company/products/platform/unit/${platformUnitId}`)
-        } else if (platformProductId) {
-          router.push(`/company/products/platform/${platformProductId}`)
         } else {
-          router.push('/company/products')
+          router.push('/mycompany/milestones')
         }
       } else {
         alert('Failed to create milestone: ' + response.data.error)
@@ -99,7 +97,7 @@ function CreateMilestoneForm() {
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link
-          href={platformUnitId ? `/company/products/platform/unit/${platformUnitId}` : '/company/products'}
+          href={platformUnitId ? `/company/products/platform/unit/${platformUnitId}` : '/mycompany/milestones'}
           className="flex items-center text-blue-600 hover:text-blue-700 mb-6 text-sm"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -109,47 +107,83 @@ function CreateMilestoneForm() {
         <div className="bg-white rounded-lg shadow-sm p-8">
           <div className="flex items-center mb-6">
             <Calendar className="h-8 w-8 text-blue-600 mr-3" />
-            <h1 className="text-3xl font-bold text-gray-900">Create Milestone</h1>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Create Company Milestone</h1>
+              <p className="text-sm text-gray-600 mt-1">
+                Big picture company-wide milestones. For routine unit events (keel laying, delivery, etc.), use{' '}
+                <Link href="/mycompany/platforms/updates" className="text-blue-600 hover:text-blue-700 underline">
+                  Platform Unit Updates
+                </Link>
+                . Only use this for HUGE company-wide events (e.g., "Carrier flew its first mission").
+              </p>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="milestoneType" className="block text-sm font-medium text-gray-700 mb-2">
-                Milestone Type *
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                Title *
+              </label>
+              <input
+                type="text"
+                id="title"
+                required
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., Major Company Reorganization"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+                Category
               </label>
               <select
-                id="milestoneType"
-                required
-                value={formData.milestoneType}
-                onChange={(e) => setFormData({ ...formData, milestoneType: e.target.value as any })}
+                id="category"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="CONTRACT_AWARDED">Contract Awarded</option>
-                <option value="KEEL_LAYING">Keel Laying</option>
-                <option value="HULL_COMPLETION">Hull Completion</option>
-                <option value="LAUNCH">Launch</option>
-                <option value="SEA_TRIALS">Sea Trials</option>
-                <option value="DELIVERY">Delivery</option>
-                <option value="COMMISSIONING">Commissioning</option>
+                <option value="">Select category</option>
+                <option value="BUSINESS">Business</option>
+                <option value="STRATEGY">Strategy</option>
+                <option value="ACHIEVEMENT">Achievement</option>
+                <option value="REORGANIZATION">Reorganization</option>
+                <option value="MERGER">Merger</option>
+                <option value="CONTRACT">Contract</option>
               </select>
             </div>
 
             <div>
+              <label htmlFor="milestoneType" className="block text-sm font-medium text-gray-700 mb-2">
+                Milestone Type
+              </label>
+              <input
+                type="text"
+                id="milestoneType"
+                value={formData.milestoneType}
+                onChange={(e) => setFormData({ ...formData, milestoneType: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., Major Contract Award, Strategic Initiative"
+              />
+            </div>
+
+            <div>
               <label htmlFor="platformUnitId" className="block text-sm font-medium text-gray-700 mb-2">
-                Platform Unit ID *
+                Platform Unit ID (Optional - Only for HUGE company-wide events involving a specific unit)
               </label>
               <input
                 type="text"
                 id="platformUnitId"
-                required
                 value={formData.platformUnitId}
                 onChange={(e) => setFormData({ ...formData, platformUnitId: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Unit ID"
+                placeholder="e.g., Only if this is a massive company-wide event like 'Carrier flew first mission'"
                 disabled={!!platformUnitId}
               />
               {platformUnitId && (
-                <p className="text-xs text-gray-500 mt-1">Linked to current unit</p>
+                <p className="text-xs text-gray-500 mt-1">Linked to unit - only use for HUGE company-wide events</p>
               )}
             </div>
 
@@ -182,7 +216,7 @@ function CreateMilestoneForm() {
 
             <div className="flex items-center justify-end space-x-4">
               <Link
-                href={platformUnitId ? `/company/products/platform/unit/${platformUnitId}` : '/company/products'}
+                href={platformUnitId ? `/company/products/platform/unit/${platformUnitId}` : '/mycompany/milestones'}
                 className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
               >
                 Cancel

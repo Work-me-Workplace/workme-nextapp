@@ -135,7 +135,13 @@ export default function NewMilestonePage() {
 
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900">Add Company Milestone</h1>
-              <p className="text-gray-600 mt-2">Company-wide milestones only (reorganizations, major contracts, strategic initiatives)</p>
+              <p className="text-gray-600 mt-2">
+                Big picture company-wide milestones only. For platform unit updates (ship commissioning, keel laying, etc.), use{' '}
+                <Link href="/mycompany/platforms/updates" className="text-blue-600 hover:text-blue-700 underline">
+                  Platform Unit Updates
+                </Link>
+                {' '}instead.
+              </p>
               <p className="text-sm text-gray-500 mt-1">For platform-specific events (ship commissioning, keel laying, etc.), use platform updates instead</p>
             </div>
 
