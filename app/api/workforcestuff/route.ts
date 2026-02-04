@@ -5,30 +5,33 @@
  * and returns them in a unified format for the dashboard
  * 
  * AUTH: WorkMe-only (Firebase → WorkMe)
- * SCOPE: companyId from query parameter (NOT from WorkMe)
+ * SCOPE: companyId from authenticated user's WorkMe (secure, verified)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { requireWorkMeAuth } from '@/lib/server/requireWorkMeAuth'
+import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    // AUTH: WorkMe-only
-    await requireWorkMeAuth(request)
-
-    // SCOPE: companyId from query parameter
-    const { searchParams } = new URL(request.url)
-    const companyId = searchParams.get('companyId')
+    // Auth - Verify Firebase token
+    const { firebaseId } = await verifyAuth(request)
+    
+    // Load WorkMe identity to get companyId (source of truth - secure, verified)
+    const workMe = await loadWorkMe(firebaseId)
+    const { companyId } = workMe
 
     if (!companyId) {
       return NextResponse.json(
-        { success: false, error: 'companyId query parameter is required' },
+        { success: false, error: 'Company ID not set on your account. Please contact support.' },
         { status: 400 }
       )
     }
+
+    console.log('[API GET /api/workforcestuff] Using companyId from authenticated user:', companyId)
 
     // Fetch all CompanyX models scoped by companyId
     const [trainings, events, campaigns, impactEvents, community, benefits, careers] = await Promise.all([

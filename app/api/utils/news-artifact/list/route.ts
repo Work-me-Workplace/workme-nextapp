@@ -7,19 +7,20 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    // Auth
+    // Auth - Verify Firebase token
     const { firebaseId } = await verifyAuth(request)
+    
+    // Load WorkMe identity to get companyId (source of truth)
     const workMe = await loadWorkMe(firebaseId)
     const { companyId } = workMe
-
+    
     if (!companyId) {
       return NextResponse.json(
-        { success: false, error: 'Not authenticated or companyId not set' },
-        { status: 401 }
+        { success: false, error: 'Company ID not set on your account. Please contact support.' },
+        { status: 400 }
       )
     }
 
-    const searchParams = request.nextUrl.searchParams
     const artifactType = searchParams.get('artifactType')
     const sentiment = searchParams.get('sentiment')
     const limit = parseInt(searchParams.get('limit') || '50')

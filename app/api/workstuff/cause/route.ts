@@ -6,7 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { requireWorkMeAuth } from '@/lib/server/requireWorkMeAuth'
+import { verifyAuth } from '@/lib/server/verifyAuth'
+import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
 import { createCompanyXWithIngest } from '@/lib/services/companyx-mapper'
 
@@ -14,14 +15,16 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    await requireWorkMeAuth(request)
-
-    const { searchParams } = new URL(request.url)
-    const companyId = searchParams.get('companyId')
+    // Auth - Verify Firebase token
+    const { firebaseId } = await verifyAuth(request)
+    
+    // Load WorkMe identity to get companyId (source of truth - secure, verified)
+    const workMe = await loadWorkMe(firebaseId)
+    const { companyId } = workMe
 
     if (!companyId) {
       return NextResponse.json(
-        { success: false, error: 'companyId query parameter is required' },
+        { success: false, error: 'Company ID not set on your account. Please contact support.' },
         { status: 400 }
       )
     }
@@ -46,18 +49,24 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const workMe = await requireWorkMeAuth(request)
-    const { id: workMeId } = workMe
-
-    const body = await request.json()
-    const { companyId, data, rawText } = body
+    // Auth - Verify Firebase token
+    const { firebaseId } = await verifyAuth(request)
+    
+    // Load WorkMe identity to get companyId (source of truth - secure, verified)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyId } = workMe
 
     if (!companyId) {
       return NextResponse.json(
-        { success: false, error: 'companyId is required' },
+        { success: false, error: 'Company ID not set on your account. Please contact support.' },
         { status: 400 }
       )
     }
+
+    const body = await request.json()
+    const { data, rawText } = body
+    
+    // Use authenticated user's companyId (ignore any companyId in body for security)
 
     // If rawText provided, use ingest flow
     if (rawText) {
