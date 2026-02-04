@@ -38,24 +38,45 @@ export default function ArticlesPage() {
         return
       }
       setWorkMeId(id)
+    }
+  }, [router])
+
+  useEffect(() => {
+    if (workMeId) {
       loadArtifacts()
     }
-  }, [router, filterType, filterSentiment])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workMeId, filterType, filterSentiment])
 
   async function loadArtifacts() {
+    if (!workMeId) return
+    
     try {
       setLoading(true)
       const params = new URLSearchParams()
       if (filterType !== 'all') params.append('artifactType', filterType)
       if (filterSentiment !== 'all') params.append('sentiment', filterSentiment)
       
+      console.log('[ArticlesPage] Loading artifacts with params:', params.toString())
       const response = await api.get(`/api/utils/news-artifact/list?${params.toString()}`)
+      
+      console.log('[ArticlesPage] API response:', {
+        success: response.data.success,
+        artifactsCount: response.data.data?.artifacts?.length || 0,
+        total: response.data.data?.total || 0,
+      })
       
       if (response.data.success && response.data.data) {
         setArtifacts(response.data.data.artifacts || [])
+      } else {
+        console.error('Failed to load artifacts:', response.data.error)
+        setArtifacts([])
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load artifacts:', error)
+      console.error('Error details:', error.response?.data || error.message)
+      setArtifacts([])
+      // Don't show error to user, just log it
     } finally {
       setLoading(false)
     }

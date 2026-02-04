@@ -38,6 +38,16 @@ export async function GET(request: NextRequest) {
       where.sentiment = sentiment
     }
 
+    console.log('[API GET /api/utils/news-artifact/list] Querying with:', {
+      workMeId: workMe.id,
+      companyId,
+      artifactType,
+      sentiment,
+      limit,
+      offset,
+      whereClause: where,
+    })
+
     // Get all artifacts for company
     const artifacts = await prisma.companyNewsArtifact.findMany({
       where,
@@ -60,6 +70,24 @@ export async function GET(request: NextRequest) {
     })
 
     const total = await prisma.companyNewsArtifact.count({ where })
+
+    // Debug: Check if there are any artifacts with different companyIds
+    const allArtifactsCount = await prisma.companyNewsArtifact.count({})
+    const matchingCompanyIdCount = await prisma.companyNewsArtifact.count({ 
+      where: { companyId } 
+    })
+
+    console.log('[API GET /api/utils/news-artifact/list] Found:', {
+      artifactsCount: artifacts.length,
+      total,
+      allArtifactsInDB: allArtifactsCount,
+      artifactsWithMatchingCompanyId: matchingCompanyIdCount,
+      queriedCompanyId: companyId,
+      sampleArtifactIds: artifacts.slice(0, 3).map(a => ({ 
+        id: a.id, 
+        headline: a.headline?.substring(0, 50),
+      })),
+    })
 
     return NextResponse.json({
       success: true,

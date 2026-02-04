@@ -13,15 +13,34 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    // Auth
+    // Auth - Verify Firebase token
     const { firebaseId } = await verifyAuth(request)
+    
+    // Load WorkMe identity (includes companyId)
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId, companyId } = workMe
 
-    if (!workMeId || !companyId) {
+    // CRITICAL: Ensure companyId is set - required for company-scoped artifacts
+    if (!workMeId) {
+      console.error('[API POST /api/utils/news-artifact/create] Missing workMeId', { firebaseId })
       return NextResponse.json(
-        { success: false, error: 'Not authenticated or companyId not set' },
+        { success: false, error: 'Not authenticated - WorkMe ID not found' },
         { status: 401 }
+      )
+    }
+
+    if (!companyId) {
+      console.error('[API POST /api/utils/news-artifact/create] Missing companyId', { 
+        workMeId, 
+        firebaseId,
+        workMeEmail: workMe.email 
+      })
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Company ID not set on your account. Please contact support to set your company.' 
+        },
+        { status: 400 }
       )
     }
 
@@ -46,19 +65,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('[API POST /api/utils/news-artifact/create]', {
+    console.log('[API POST /api/utils/news-artifact/create] Creating artifact', {
       workMeId,
       companyId,
       hasUrl: !!sourceUrl,
       hasHeadline: !!headline,
       artifactType,
       sentiment,
+      rawTextLength: rawText.trim().length,
     })
 
+    // CRITICAL: Ensure companyId is set before creating artifact
+    if (!companyId) {
+      throw new Error('CompanyId is required but was not set')
+    }
+
     // Create CompanyNewsArtifact with full intelligence
+    // companyId is REQUIRED - ensures artifact is scoped to correct company
     const artifact = await prisma.companyNewsArtifact.create({
       data: {
-        companyId,
+        companyId, // REQUIRED - from authenticated user's WorkMe record
         sourceUrl: sourceUrl || null,
         sourceName: sourceName || null,
         headline: headline || null,
@@ -71,6 +97,12 @@ export async function POST(request: NextRequest) {
         leaderStatement: leaderStatement || null,
         createdByWorkMeId: workMeId,
       },
+    })
+
+    console.log('[API POST /api/utils/news-artifact/create] SUCCESS', {
+      artifactId: artifact.id,
+      companyId: artifact.companyId,
+      headline: artifact.headline,
     })
 
     return NextResponse.json({
