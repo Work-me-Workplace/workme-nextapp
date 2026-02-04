@@ -475,11 +475,13 @@ export default function ParsePage({ params }: { params: Promise<{ artifactId: st
                   </div>
 
                   {/* Model Type Display */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                    <p className="text-sm font-medium text-gray-700">
-                      Parsing as: <span className="text-blue-600 capitalize">{modelType.replace(/_/g, ' ')}</span>
-                    </p>
-                  </div>
+                  {modelType && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                      <p className="text-sm font-medium text-gray-700">
+                        Parsing as: <span className="text-blue-600 capitalize">{modelType.replace(/_/g, ' ')}</span>
+                      </p>
+                    </div>
+                  )}
 
                   {/* Unit/Product ID Input - Conditional based on model type */}
                   {(modelType === 'platform_unit_update' || modelType === 'platform_unit_statement') && (
