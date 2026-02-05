@@ -36,23 +36,9 @@ import {
 export default function SidebarNav() {
   const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
 
-  const getCompanyId = () => {
-    if (typeof window === 'undefined') return null
-    const urlCompanyId = new URL(window.location.href).searchParams.get('companyId')
-    if (urlCompanyId) {
-      localStorage.setItem('companyId', urlCompanyId)
-      return urlCompanyId
-    }
-    return localStorage.getItem('companyId') || localStorage.getItem('companyUnit')
-  }
-
-  const companyId = getCompanyId()
-
+  // Company scoped via firebaseid - no params needed
   const buildHref = (path: string) => {
-    if (!companyId) return path
-    if (!path.startsWith('/mycompany')) return path
-    const separator = path.includes('?') ? '&' : '?'
-    return `${path}${separator}companyId=${encodeURIComponent(companyId)}`
+    return path
   }
 
   const isActive = (path: string) => {
@@ -73,14 +59,13 @@ export default function SidebarNav() {
     if (path === '/mywork/active') return pathname === path
     if (path === '/mywork/events') return pathname?.startsWith(path)
     if (path === '/assets/import/dvids') return pathname?.startsWith(path)
-    if (path === '/workops/daily') return pathname === path
-    if (path === '/workops/overall') return pathname === path
-    if (path === '/workops/boss-briefing') return pathname === path
-    if (path === '/workops/captures') return pathname === path
-    if (path === '/workops/downstream') return pathname === path
-    if (path === '/mycareer/track') return pathname === path
-    if (path === '/mycareer/achievements') return pathname === path
-    if (path === '/mycareer/reflections') return pathname === path
+    if (path === '/workops/daily') return pathname === path || pathname?.startsWith('/workops/daily')
+    if (path === '/workops/overall') return pathname === path || pathname?.startsWith('/workops/overall')
+    if (path === '/workops/boss-briefing') return pathname === path || pathname?.startsWith('/workops/boss-briefing')
+    if (path === '/workops/captures') return pathname === path || pathname?.startsWith('/workops/captures')
+    if (path === '/workops/downstream') return pathname === path || pathname?.startsWith('/workops/downstream')
+    if (path === '/workops') return pathname?.startsWith('/workops')
+    if (path === '/mycareer') return pathname?.startsWith('/mycareer')
     if (path === '/mynetwork/connections') return pathname === path
     if (path === '/mynetwork/suggestions') return pathname === path
     if (path === '/signal') return pathname?.startsWith(path)
@@ -150,9 +135,7 @@ export default function SidebarNav() {
     {
       name: 'mycareer',
       items: [
-        { name: 'Career Track', path: '/mycareer/track', icon: Target },
-        { name: 'Achievements', path: '/mycareer/achievements', icon: Award },
-        { name: 'Reflections', path: '/mycareer/reflections', icon: BookOpen },
+        { name: 'My Career', path: '/mycareer/track', icon: Target },
       ],
     },
     {
