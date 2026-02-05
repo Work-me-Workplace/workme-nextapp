@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const searchParams = request.nextUrl.searchParams
     const artifactType = searchParams.get('artifactType')
     const sentiment = searchParams.get('sentiment')
     const limit = parseInt(searchParams.get('limit') || '50')
