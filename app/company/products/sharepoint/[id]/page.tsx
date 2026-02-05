@@ -147,7 +147,7 @@ export default function SharepointProductDetailPage({ params }: { params: Promis
 
             {product.siteType && (
               <div className="flex items-start">
-                <FileText className="h-5 w-5 text-gray-400 mr-2 mt-0.5" />
+                <FileTextIcon className="h-5 w-5 text-gray-400 mr-2 mt-0.5" />
                 <div>
                   <p className="text-sm text-gray-500">Site Type</p>
                   <p className="text-gray-900 font-medium">{product.siteType}</p>
