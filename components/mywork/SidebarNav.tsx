@@ -76,32 +76,9 @@ export default function SidebarNav() {
 
   const navigationGroups = [
     {
-      name: 'mycompany',
+      name: 'mycareer',
       items: [
-        { name: 'Workforce Stuff', path: '/mycompany/workforcestuff', icon: Users },
-        { name: 'Company Milestones', path: '/mycompany/milestones', icon: TrendingUp },
-        { name: 'Company Products', path: '/mycompany/products', icon: Package },
-        { name: 'Platform Unit Updates', path: '/mycompany/platforms/updates', icon: RefreshCw },
-        { name: 'External Company Pressures', path: '/mycompany/external-pressures', icon: AlertTriangle },
-        { name: 'Global Artifacts', path: '/mycompany/articles', icon: Archive },
-      ],
-    },
-    {
-      name: 'MyOrganization',
-      items: [
-        { name: 'Senior Leaders', path: '/mycompany/senior-leaders', icon: UserPlus },
-        { name: 'Team Members', path: '/mywork/team', icon: Users },
-        { name: 'Employee Highlights', path: '/mycompany/highlights', icon: Award },
-      ],
-    },
-    {
-      name: 'Mywork',
-      items: [
-        { name: 'Work Products', path: '/mywork/products', icon: Package },
-        { name: 'Plans', path: '/mywork/plans', icon: ClipboardList },
-        { name: "Stuff I'm Working On", path: '/mywork/active', icon: CheckSquare },
-        { name: 'Events', path: '/mywork/events', icon: Calendar },
-        { name: 'Import from DVIDS', path: '/assets/import/dvids', icon: Download },
+        { name: 'My Career', path: '/mycareer/track', icon: Target },
       ],
     },
     {
@@ -109,42 +86,12 @@ export default function SidebarNav() {
       items: [
         { name: 'Daily Outlook', path: '/workops/daily', icon: Calendar },
         { name: 'Overall Outlook', path: '/workops/overall', icon: BarChart3 },
-        { name: 'Boss Briefing', path: '/workops/boss-briefing', icon: Presentation },
-        { name: 'Outlook Captures', path: '/workops/captures', icon: Camera },
-        { name: 'Downstream Work Generator', path: '/workops/downstream', icon: ArrowDown },
       ],
     },
     {
       name: 'signals',
       items: [
         { name: 'Signals', path: '/signal', icon: Radio },
-        { name: 'Note Lookup', path: '/signal/note', icon: FileText },
-        { name: 'Google Scan', path: '/signal/google', icon: Search },
-        { name: 'X Feed', path: '/signal/x', icon: Twitter },
-        { name: 'Senior Email', path: '/signal/senior', icon: Mail },
-        { name: 'Clip Parser', path: '/signal/clip', icon: Newspaper },
-      ],
-    },
-    {
-      name: 'mynetwork',
-      items: [
-        { name: 'Connections', path: '/mynetwork/connections', icon: Network },
-        { name: 'Suggested Interactions', path: '/mynetwork/suggestions', icon: UserPlus },
-      ],
-    },
-    {
-      name: 'mycareer',
-      items: [
-        { name: 'My Career', path: '/mycareer/track', icon: Target },
-      ],
-    },
-    {
-      name: 'Engage',
-      items: [
-        { name: 'Compose', path: '/engage/compose', icon: MessageSquare },
-        { name: 'Templates', path: '/engage/templates', icon: FileText },
-        { name: 'Highlights', path: '/engage/highlights', icon: Sparkles },
-        { name: 'History', path: '/engage/history', icon: History },
       ],
     },
   ]
