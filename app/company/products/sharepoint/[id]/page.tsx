@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { use, useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
-import { Share2, Globe, User, Lock, Calendar, FileText } from 'lucide-react'
+import { Share2, Globe, User, Lock, Calendar, FileText as FileTextIcon } from 'lucide-react'
 
 interface SharepointProduct {
   id: string
@@ -96,12 +96,21 @@ export default function SharepointProductDetailPage({ params }: { params: Promis
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link
-          href="/company/products"
-          className="text-orange-600 hover:text-orange-700 mb-4 inline-block text-sm"
-        >
-          ← Back to Products
-        </Link>
+        <div className="flex items-center justify-between mb-4">
+          <Link
+            href="/company/products"
+            className="text-orange-600 hover:text-orange-700 inline-block text-sm"
+          >
+            ← Back to Products
+          </Link>
+          <Link
+            href="/company/products/sharepoint/spec-generator"
+            className="flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium"
+          >
+            <FileTextIcon className="h-4 w-4 mr-1" />
+            Generate Spec
+          </Link>
+        </div>
 
         <div className="bg-white rounded-lg shadow-sm p-8">
           <div className="flex items-center mb-6">

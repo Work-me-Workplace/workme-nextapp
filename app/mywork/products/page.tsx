@@ -7,7 +7,7 @@ import SidebarNav from '@/components/mywork/SidebarNav'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { getDashboard, refreshDashboard, type WorkProduct } from '@/lib/dashboard.client'
 import api from '@/lib/api'
-import { Mail, Image, Monitor, FileText, Plus, Eye, MessageSquare } from 'lucide-react'
+import { Mail, Image, Monitor, FileText, Plus, Eye, MessageSquare, Share2 } from 'lucide-react'
 
 // Normalize text - convert all caps to title case, handle underscores (fallback for edge cases)
 function normalizeTitle(text: string | null | undefined): string {
@@ -279,6 +279,15 @@ function ProductsPageContent() {
                     </Link>
                   )
                 })}
+                
+                {/* SharePoint Spec Generator */}
+                <Link
+                  href="/mywork/products/sharepoint-spec-generator"
+                  className="group aspect-square bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all flex flex-col items-center justify-center p-6 text-center"
+                >
+                  <Share2 className="h-10 w-10 mb-3 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                  <span className="text-sm font-medium text-gray-600 group-hover:text-blue-600">SharePoint Spec</span>
+                </Link>
               </div>
             )}
 

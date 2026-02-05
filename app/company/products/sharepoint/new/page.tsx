@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
-import { Share2, ArrowLeft } from 'lucide-react'
+import { Share2, ArrowLeft, FileText } from 'lucide-react'
 
 export default function CreateSharepointPage() {
   const router = useRouter()
@@ -92,13 +92,22 @@ export default function CreateSharepointPage() {
       </nav>
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link
-          href="/company/products"
-          className="flex items-center text-orange-600 hover:text-orange-700 mb-6 text-sm"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Products
-        </Link>
+        <div className="flex items-center justify-between mb-6">
+          <Link
+            href="/company/products"
+            className="flex items-center text-orange-600 hover:text-orange-700 text-sm"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Products
+          </Link>
+          <Link
+            href="/company/products/sharepoint/spec-generator"
+            className="flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium"
+          >
+            <FileText className="h-4 w-4 mr-1" />
+            Generate Spec
+          </Link>
+        </div>
 
         <div className="bg-white rounded-lg shadow-sm p-8">
           <div className="flex items-center mb-6">

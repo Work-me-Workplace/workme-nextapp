@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, Suspense } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
-import { Package, Ship, Factory, Sparkles, Plus, Cpu, Layers, Network, BarChart3, Share2 } from 'lucide-react'
+import { Package, Ship, Factory, Sparkles, Plus, Cpu, Layers, Network, BarChart3, Share2, FileText } from 'lucide-react'
 
 interface PlatformProduct {
   id: string
@@ -335,13 +335,22 @@ function ProductsPageContent() {
                 <span className="ml-3 text-sm text-gray-500">({sharepointProducts.length})</span>
               )}
             </div>
-            <Link
-              href={`/company/products/sharepoint/new${companyId ? `?companyId=${companyId}` : ''}`}
-              className="flex items-center text-sm text-orange-600 hover:text-orange-700 font-medium"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Create SharePoint
-            </Link>
+            <div className="flex items-center space-x-4">
+              <Link
+                href={`/company/products/sharepoint/spec-generator${companyId ? `?companyId=${companyId}` : ''}`}
+                className="flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                <FileText className="h-4 w-4 mr-1" />
+                Generate Spec
+              </Link>
+              <Link
+                href={`/company/products/sharepoint/new${companyId ? `?companyId=${companyId}` : ''}`}
+                className="flex items-center text-sm text-orange-600 hover:text-orange-700 font-medium"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Create SharePoint
+              </Link>
+            </div>
           </div>
 
           {sharepointProducts.length > 0 ? (
