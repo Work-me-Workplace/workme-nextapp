@@ -566,17 +566,17 @@ model CompanyTraining {
   mandatory        Boolean @default(false)
   sponsoringOffice String?
 
-  trainingDate      DateTime? // For scheduled training events (primary date when timeSlots omit date)
-  startTime         String?   // Legacy single slot; use timeSlots for multiple
-  endTime           String?
-  timeSlots         Json?     // Array of { date?: string, startTime: string, endTime: string, label?: string } — "add more times"
-  completionDeadline DateTime? // For self-paced training: deadline to complete by
-  isSelfPaced       Boolean @default(false) // True if training is self-paced (no fixed schedule)
+  trainingDate         DateTime? // For scheduled training events (primary date when timeSlots omit date)
+  startTime            String? // Legacy single slot; use timeSlots for multiple
+  endTime              String?
+  timeSlots            Json? // Array of { date?: string, startTime: string, endTime: string, label?: string } — "add more times"
+  completionDeadline   DateTime? // For self-paced training: deadline to complete by
+  isSelfPaced          Boolean   @default(false) // True if training is self-paced (no fixed schedule)
   registrationDeadline DateTime? // Deadline to register (e.g. "Registration deadline is Feb. 9")
 
-  location String?
-  format   String?
-  link     String? // Primary/legacy registration or livestream link
+  location          String?
+  format            String?
+  link              String? // Primary/legacy registration or livestream link
   registrationLinks Json? // Array of { label?: string, url: string } for multiple registration links (e.g. civilians/military vs contractors)
 
   pocFirstName   String?
@@ -752,6 +752,7 @@ model CompanyLeaderEngagement {
 
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemLeaderEngagement")
   companyWork      CompanyWork[]     @relation
+  myContributions  MyContribution[]
 
   @@index([companyId])
   @@index([workMeId])
@@ -843,6 +844,7 @@ model CompanyBenefits {
 
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemBenefits")
   companyWork      CompanyWork[]     @relation
+  myContributions  MyContribution[]
 
   @@index([companyId])
   @@index([workMeId])
@@ -889,6 +891,7 @@ model CompanyCareer {
 
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemCareer")
   companyWork      CompanyWork[]     @relation
+  myContributions  MyContribution[]
 
   @@index([companyId])
   @@index([workMeId])
@@ -929,6 +932,7 @@ model CompanyEmployeeCause {
 
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemEmployeeCause")
   companyWork      CompanyWork[]     @relation
+  myContributions  MyContribution[]
 
   @@index([companyId])
   @@index([workMeId])
@@ -1775,15 +1779,15 @@ model MyEcosystemContact {
   tags  String[] @default([])
 
   // Relationship tracking (user-specific)
-  stance String? // "favorable", "unfavorable", "neutral", "unknown" - how this person relates to MY organization
+  stance           String? // "favorable", "unfavorable", "neutral", "unknown" - how this person relates to MY organization
   relationshipType String? // "media", "influencer", "analyst", "competitor", "partner", "regulator", etc.
-  
+
   // X Feed integration
   followForXFeed Boolean @default(false) // Include in X feed signals?
-  
+
   // User-specific metadata
   lastInteractedAt DateTime? // When did we last interact with this person?
-  priority Int? // User-assigned priority (1-10)
+  priority         Int? // User-assigned priority (1-10)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1848,8 +1852,8 @@ model CompanyPlatformProduct {
   company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   // Authorship - Who created this platform product
-  workMeId String?  @db.Uuid
-  workMe   WorkMe?  @relation("CompanyPlatformProductWorkMe", fields: [workMeId], references: [id], onDelete: SetNull)
+  workMeId String? @db.Uuid
+  workMe   WorkMe? @relation("CompanyPlatformProductWorkMe", fields: [workMeId], references: [id], onDelete: SetNull)
 
   name             String // "Virginia-class"
   alternativeNames String[] @default([]) // "SSN", "Attack Submarine", "VCS"
@@ -2143,14 +2147,14 @@ model CompanyProductSharepoint {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  name        String
-  description String?
-  siteUrl     String? // SharePoint site URL
-  siteType    String? // "Team Site", "Communication Site", "Hub Site", etc.
-  owner       String? // Site owner/administrator
-  accessLevel String? // "Public", "Private", "Restricted", etc.
+  name         String
+  description  String?
+  siteUrl      String? // SharePoint site URL
+  siteType     String? // "Team Site", "Communication Site", "Hub Site", etc.
+  owner        String? // Site owner/administrator
+  accessLevel  String? // "Public", "Private", "Restricted", etc.
   lastSyncDate DateTime?
-  notes       String?
+  notes        String?
 
   @@index([name])
   @@index([siteType])
@@ -3062,9 +3066,6 @@ model CompanyWork {
   companyLeaderEngagement CompanyLeaderEngagement? @relation(fields: [companyLeaderEngagementId], references: [id], onDelete: SetNull)
   company                 Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  // Personal contributions (user-specific views)
-  contributions MyContribution[]
-
   // SkillItems that reference this work
   skillItems SkillItem[]
 
@@ -3084,8 +3085,8 @@ model CompanyWork {
 // Extracts personal value without claiming ownership
 // FK directly to CompanyX models for easier hydration
 model MyContribution {
-  id            String @id @default(uuid())
-  workMeId      String @db.Uuid
+  id       String @id @default(uuid())
+  workMeId String @db.Uuid
 
   // Polymorphic FK to CompanyX models (one of these will be set)
   // CompanyX models ARE the work stuff - no need for CompanyWork abstraction
@@ -3114,8 +3115,8 @@ model MyContribution {
   completedAt DateTime?
 
   // Relations
-  workMe      WorkMe      @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-  
+  workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+
   // CompanyX relations
   companyEvent            CompanyEvent?            @relation(fields: [companyEventId], references: [id], onDelete: Cascade)
   companyCampaign         CompanyCampaign?         @relation(fields: [companyCampaignId], references: [id], onDelete: Cascade)
@@ -3123,8 +3124,8 @@ model MyContribution {
   companyImpactEvent      CompanyImpactEvent?      @relation(fields: [companyImpactEventId], references: [id], onDelete: Cascade)
   companyCommunity        CompanyCommunity?        @relation(fields: [companyCommunityId], references: [id], onDelete: Cascade)
   companyEmployeeCause    CompanyEmployeeCause?    @relation(fields: [companyEmployeeCauseId], references: [id], onDelete: Cascade)
-  companyBenefits         CompanyBenefits?        @relation(fields: [companyBenefitsId], references: [id], onDelete: Cascade)
-  companyCareer           CompanyCareer?          @relation(fields: [companyCareerId], references: [id], onDelete: Cascade)
+  companyBenefits         CompanyBenefits?         @relation(fields: [companyBenefitsId], references: [id], onDelete: Cascade)
+  companyCareer           CompanyCareer?           @relation(fields: [companyCareerId], references: [id], onDelete: Cascade)
   companyLeaderEngagement CompanyLeaderEngagement? @relation(fields: [companyLeaderEngagementId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
