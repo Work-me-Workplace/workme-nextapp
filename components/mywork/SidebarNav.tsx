@@ -82,10 +82,24 @@ export default function SidebarNav() {
       ],
     },
     {
+      name: 'mywork',
+      items: [
+        { name: 'Work Products', path: '/mywork/products', icon: Package },
+        { name: "Stuff I'm Working On", path: '/mywork/active', icon: CheckSquare },
+      ],
+    },
+    {
       name: 'workops',
       items: [
         { name: 'Daily Outlook', path: '/workops/daily', icon: Calendar },
         { name: 'Overall Outlook', path: '/workops/overall', icon: BarChart3 },
+      ],
+    },
+    {
+      name: 'mycompany',
+      items: [
+        { name: 'Workforce Stuff', path: '/mycompany/workforcestuff', icon: Users },
+        { name: 'Company Products', path: '/mycompany/products', icon: Package },
       ],
     },
     {
