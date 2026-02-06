@@ -11,7 +11,7 @@ import api from '@/lib/api'
 
 export interface WorkProduct {
   id: string
-  type: 'email_digest' | 'digital_signage' | 'flyer_poster' | 'senior_leader_email'
+  type: 'email_digest' | 'digital_signage' | 'flyer_poster' | 'senior_leader_email' | 'comms_plan'
   title: string
   description: string | null
   createdAt: string

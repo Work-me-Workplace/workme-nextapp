@@ -66,6 +66,7 @@ export default function SidebarNav() {
     if (path === '/workops/downstream') return pathname === path || pathname?.startsWith('/workops/downstream')
     if (path === '/workops') return pathname?.startsWith('/workops')
     if (path === '/mycareer') return pathname?.startsWith('/mycareer')
+    if (path === '/career') return pathname?.startsWith('/career')
     if (path === '/mynetwork/connections') return pathname === path
     if (path === '/mynetwork/suggestions') return pathname === path
     if (path === '/signal') return pathname?.startsWith(path)
@@ -135,7 +136,13 @@ export default function SidebarNav() {
     {
       name: 'mycareer',
       items: [
-        { name: 'My Career', path: '/mycareer/track', icon: Target },
+        { name: 'Career Dashboard', path: '/career', icon: Target },
+        { name: 'Goals (North Star)', path: '/career/goals', icon: Target },
+        { name: 'Assessments', path: '/career/assessments', icon: FileText },
+        { name: 'Appraisal Helper', path: '/career/appraisal-helper', icon: CheckSquare },
+        { name: 'Track', path: '/mycareer/track', icon: Target },
+        { name: 'Achievements', path: '/mycareer/achievements', icon: Award },
+        { name: 'Reflections', path: '/mycareer/reflections', icon: BookOpen },
       ],
     },
     {

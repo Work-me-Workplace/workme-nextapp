@@ -107,7 +107,16 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
 
-    // 6. Format products with type information
+    // 6. Fetch Comms Plan Products
+    const commsPlans = await prisma.productCommsPlan.findMany({
+      where: {
+        createdByWorkMeId: workMe.id,
+        archivedAt: null, // Only active items
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    // 7. Format products with type information
     const products = [
       ...emailDigests.map(p => ({
         id: p.id,
@@ -141,6 +150,18 @@ export async function GET(request: NextRequest) {
         metadata: {
           topicsCount: p._count.topics,
           saidBy: p.content?.companyEmployee?.fullName || null,
+        },
+      })),
+      ...commsPlans.map(p => ({
+        id: p.id,
+        type: 'comms_plan',
+        title: p.parsedTitle || 'Comms Plan',
+        description: null,
+        createdAt: p.createdAt.toISOString(),
+        updatedAt: p.updatedAt.toISOString(),
+        metadata: {
+          hasFullText: !!p.fullText,
+          objectivesCount: Array.isArray(p.parsedObjectives) ? p.parsedObjectives.length : 0,
         },
       })),
     ]

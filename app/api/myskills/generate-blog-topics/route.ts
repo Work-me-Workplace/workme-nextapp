@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       skillTopicId,
-      companyWorkId,
+      myContributionId, // Use MyContribution instead of companyWorkId
       recentSkillItemIds,
       marketNeedIds,
       // Market-value-first approach
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       input = {
         workMeId,
         skillTopicId,
-        companyWorkId,
+        myContributionId, // Links to CompanyX work via MyContribution
         recentSkillItemIds,
         marketNeedIds,
       };

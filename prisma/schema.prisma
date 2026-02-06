@@ -89,6 +89,7 @@ model WorkMe {
 
   // Product Relations
   createdSeniorLeaderEmailProducts ProductSeniorLeaderEmail[] @relation("ProductSeniorLeaderEmailCreator")
+  createdCommsPlanProducts         ProductCommsPlan[]         @relation("ProductCommsPlanCreator")
 
   // News Artifact Relations
   createdCompanyNewsArtifacts CompanyNewsArtifact[] @relation("CompanyNewsArtifactCreator")
@@ -511,6 +512,7 @@ model CompanyCampaign {
 
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemCampaign")
   companyWork      CompanyWork[]     @relation
+  myContributions  MyContribution[]
 
   @@index([companyId])
   @@index([workMeId])
@@ -546,6 +548,7 @@ model CompanyImpactEvent {
 
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemImpactEvent")
   companyWork      CompanyWork[]     @relation
+  myContributions  MyContribution[]
 
   @@index([companyId])
   @@index([workMeId])
@@ -596,6 +599,7 @@ model CompanyTraining {
 
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemTraining")
   companyWork      CompanyWork[]     @relation
+  myContributions  MyContribution[]
 
   @@index([companyId])
   @@index([workMeId])
@@ -690,6 +694,7 @@ model CompanyEvent {
   // NOTE: EventItem is deprecated - products now link via CompanyWorkLink
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemEvent")
   companyWork      CompanyWork[]     @relation
+  myContributions  MyContribution[]
 
   @@index([companyId])
   @@index([workMeId])
@@ -796,6 +801,7 @@ model CompanyCommunity {
 
   oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemCommunity")
   companyWork      CompanyWork[]     @relation
+  myContributions  MyContribution[]
 
   @@index([companyId])
   @@index([workMeId])
@@ -2527,6 +2533,37 @@ model ProductSeniorLeaderEmailContent {
 }
 
 // ============================================
+// COMMS PLAN PRODUCT MODEL
+// ============================================
+model ProductCommsPlan {
+  id         String    @id @default(cuid())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archivedAt DateTime? // When archived, null if active
+
+  companyUnit       String?
+  createdByWorkMeId String  @db.Uuid
+  createdBy         WorkMe  @relation("ProductCommsPlanCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+
+  // Raw text input (user pastes raw text)
+  rawText String?
+
+  // Structured parsed fields (from AI parsing)
+  parsedTitle      String?
+  parsedObjectives Json? // Array of objectives
+  parsedMessages   Json? // Array of messages
+  parsedTactics    Json? // Array of tactics
+  parsedTimeline   Json? // Timeline/product matrix structure
+
+  // Full generated comms plan (JSON/text for Word doc export)
+  fullText String? // Generated full comms plan text/JSON
+
+  @@index([companyUnit])
+  @@index([createdByWorkMeId])
+  @@index([archivedAt])
+}
+
+// ============================================
 // PRODUCT FAMILY MODEL
 // ============================================
 // ProductFamily represents a high-level product concept or program
@@ -3043,17 +3080,34 @@ model CompanyWork {
   @@index([companyCampaignId])
 }
 
-// MyContribution = User-specific view of their contribution to CompanyWork
+// MyContribution = User-specific view of their contribution to CompanyX work
 // Extracts personal value without claiming ownership
+// FK directly to CompanyX models for easier hydration
 model MyContribution {
   id            String @id @default(uuid())
   workMeId      String @db.Uuid
-  companyWorkId String
 
-  // Contribution description
-  role             String? // e.g. "Planning", "Messaging", "Execution"
-  description      String? // What the user specifically contributed
-  contributionType String? // "lead", "support", "collaboration", etc.
+  // Polymorphic FK to CompanyX models (one of these will be set)
+  // CompanyX models ARE the work stuff - no need for CompanyWork abstraction
+  companyEventId            String?
+  companyCampaignId         String?
+  companyTrainingId         String?
+  companyImpactEventId      String?
+  companyCommunityId        String?
+  companyEmployeeCauseId    String?
+  companyBenefitsId         String?
+  companyCareerId           String?
+  companyLeaderEngagementId String?
+
+  // Contribution fields
+  title       String? // Contribution title
+  description String? // What the user specifically contributed
+  whatDid     String? // What did you do?
+  results     String? // What were the results/impact?
+
+  // Skills demonstrated (FK to SkillTopic)
+  // Link this contribution to skills you demonstrated
+  skillTopicIds String[] @default([]) // Array of SkillTopic IDs - what skills did you show?
 
   // Time bounds
   startedAt   DateTime?
@@ -3061,15 +3115,34 @@ model MyContribution {
 
   // Relations
   workMe      WorkMe      @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-  companyWork CompanyWork @relation(fields: [companyWorkId], references: [id], onDelete: Cascade)
+  
+  // CompanyX relations
+  companyEvent            CompanyEvent?            @relation(fields: [companyEventId], references: [id], onDelete: Cascade)
+  companyCampaign         CompanyCampaign?         @relation(fields: [companyCampaignId], references: [id], onDelete: Cascade)
+  companyTraining         CompanyTraining?         @relation(fields: [companyTrainingId], references: [id], onDelete: Cascade)
+  companyImpactEvent      CompanyImpactEvent?      @relation(fields: [companyImpactEventId], references: [id], onDelete: Cascade)
+  companyCommunity        CompanyCommunity?        @relation(fields: [companyCommunityId], references: [id], onDelete: Cascade)
+  companyEmployeeCause    CompanyEmployeeCause?    @relation(fields: [companyEmployeeCauseId], references: [id], onDelete: Cascade)
+  companyBenefits         CompanyBenefits?        @relation(fields: [companyBenefitsId], references: [id], onDelete: Cascade)
+  companyCareer           CompanyCareer?          @relation(fields: [companyCareerId], references: [id], onDelete: Cascade)
+  companyLeaderEngagement CompanyLeaderEngagement? @relation(fields: [companyLeaderEngagementId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([workMeId, companyWorkId])
+  @@unique([workMeId, companyEventId])
+  @@unique([workMeId, companyCampaignId])
+  @@unique([workMeId, companyTrainingId])
+  @@unique([workMeId, companyImpactEventId])
+  @@unique([workMeId, companyCommunityId])
+  @@unique([workMeId, companyEmployeeCauseId])
+  @@unique([workMeId, companyBenefitsId])
+  @@unique([workMeId, companyCareerId])
+  @@unique([workMeId, companyLeaderEngagementId])
   @@index([workMeId])
-  @@index([companyWorkId])
-  @@index([contributionType])
+  @@index([companyEventId])
+  @@index([companyCampaignId])
+  @@index([companyTrainingId])
 }
 
 // ============================================

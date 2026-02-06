@@ -111,6 +111,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // At this point, person should exist (either found or created)
+    if (!person) {
+      return NextResponse.json(
+        { success: false, error: 'Person not found or created' },
+        { status: 500 }
+      )
+    }
+
     // If already has xUserId, return early
     if (person.xUserId) {
       return NextResponse.json({

@@ -73,6 +73,11 @@ export async function PUT(
       )
     }
 
+    // Check if status is being changed to ARCHIVED
+    const wasArchived = existing.status === 'ARCHIVED'
+    const willBeArchived = data.status === 'ARCHIVED'
+    const statusChangedToArchived = !wasArchived && willBeArchived
+
     const updated = await prisma.companyEvent.update({
       where: { id },
       data,
@@ -81,6 +86,7 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       event: updated,
+      shouldPromptContribution: statusChangedToArchived, // Flag to trigger contribution prompt
     })
   } catch (error: any) {
     console.error('[WorkStuff Event PUT] Error:', error)

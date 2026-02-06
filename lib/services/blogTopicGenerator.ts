@@ -5,7 +5,7 @@
  * - SkillTopics (durable capabilities)
  * - Market Value Intelligence (where skills matter)
  * - Recent SkillItems (evidence)
- * - CompanyWork references (context)
+ * - MyContribution references (context) - links to CompanyX work
  * 
  * Constraints:
  * - No "tips" or listicles
@@ -34,7 +34,7 @@ const openai = new OpenAI({
 export interface SkillTopicBlogInput {
   workMeId: string;
   skillTopicId: string;
-  companyWorkId?: string;
+  myContributionId?: string; // MyContribution ID (links to CompanyX work)
   recentSkillItemIds?: string[];
   marketNeedIds?: string[];
 }
@@ -62,7 +62,13 @@ export interface BlogTopic {
   marketNeedId?: string; // Market need ID
   evidenceCount?: number; // Number of SkillItems supporting this
   suggestedAngle?: string; // How to frame the blog
-  companyWorkId?: string; // Related CompanyWork (if any)
+  myContributionId?: string; // Related MyContribution (if any)
+  companyXContext?: {
+    type: 'event' | 'campaign' | 'training' | 'impactEvent' | 'community' | 'employeeCause' | 'benefits' | 'career' | 'leaderEngagement';
+    id: string;
+    title: string;
+    description?: string;
+  };
 }
 
 // ============================================
@@ -135,9 +141,6 @@ export async function generateBlogTopicsForSkill(
       skillItems: {
         take: 10,
         orderBy: { occurredAt: 'desc' },
-        include: {
-          companyWork: true,
-        },
       },
       marketValues: {
         include: {
@@ -177,16 +180,88 @@ export async function generateBlogTopicsForSkill(
     );
   }
 
-  // 4. Fetch CompanyWork if provided
-  let companyWork = null;
-  if (input.companyWorkId) {
-    companyWork = await prisma.companyWork.findUnique({
-      where: { id: input.companyWorkId },
+  // 4. Fetch MyContribution if provided (links to CompanyX work + Skills)
+  let myContribution = null;
+  let companyXContext = null;
+  
+  if (input.myContributionId) {
+    myContribution = await prisma.myContribution.findUnique({
+      where: { id: input.myContributionId },
+      include: {
+        companyEvent: {
+          select: { id: true, title: true, description: true }
+        },
+        companyCampaign: {
+          select: { id: true, title: true, description: true }
+        },
+        companyTraining: {
+          select: { id: true, title: true, description: true }
+        },
+        companyImpactEvent: {
+          select: { id: true, title: true, description: true }
+        },
+        companyCommunity: {
+          select: { id: true, title: true, description: true }
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        whatDid: true,
+        results: true,
+        skillTopicIds: true, // Skills demonstrated in this contribution
+        companyEvent: true,
+        companyCampaign: true,
+        companyTraining: true,
+        companyImpactEvent: true,
+        companyCommunity: true,
+      },
     });
+
+    // Extract CompanyX context from MyContribution
+    if (myContribution) {
+      if (myContribution.companyEvent) {
+        companyXContext = {
+          type: 'event' as const,
+          id: myContribution.companyEvent.id,
+          title: myContribution.companyEvent.title,
+          description: myContribution.companyEvent.description || undefined,
+        };
+      } else if (myContribution.companyCampaign) {
+        companyXContext = {
+          type: 'campaign' as const,
+          id: myContribution.companyCampaign.id,
+          title: myContribution.companyCampaign.title,
+          description: myContribution.companyCampaign.description || undefined,
+        };
+      } else if (myContribution.companyTraining) {
+        companyXContext = {
+          type: 'training' as const,
+          id: myContribution.companyTraining.id,
+          title: myContribution.companyTraining.title || 'Untitled Training',
+          description: myContribution.companyTraining.description || undefined,
+        };
+      } else if (myContribution.companyImpactEvent) {
+        companyXContext = {
+          type: 'impactEvent' as const,
+          id: myContribution.companyImpactEvent.id,
+          title: myContribution.companyImpactEvent.title,
+          description: myContribution.companyImpactEvent.description || undefined,
+        };
+      } else if (myContribution.companyCommunity) {
+        companyXContext = {
+          type: 'community' as const,
+          id: myContribution.companyCommunity.id,
+          title: myContribution.companyCommunity.title,
+          description: myContribution.companyCommunity.description || undefined,
+        };
+      }
+    }
   }
 
   // 5. Build context for AI generation
-  const context = buildContext(skillTopic, recentItems, marketValues, companyWork);
+  const context = buildContext(skillTopic, recentItems, marketValues, myContribution, companyXContext);
 
   // 6. Generate blog topics using AI
   const topics = await generateTopicsWithAI(context);
@@ -227,9 +302,6 @@ async function getSkillsByMarketValue(
       skillItems: {
         take: 5,
         orderBy: { occurredAt: 'desc' },
-        include: {
-          companyWork: true,
-        },
       },
       marketValues: {
         where: {
@@ -255,7 +327,8 @@ function buildContext(
   skillTopic: any,
   recentItems: any[],
   marketValues: any[],
-  companyWork: any | null
+  myContribution: any | null,
+  companyXContext: { type: string; id: string; title: string; description?: string } | null
 ) {
   const adjacentTopics = [
     ...skillTopic.pivotFrom.map((p: any) => p.toTopic.title),
@@ -277,14 +350,6 @@ function buildContext(
       description: item.description,
       evidenceType: item.evidenceType,
       occurredAt: item.occurredAt,
-      companyWork: item.companyWork
-        ? {
-            id: item.companyWork.id,
-            title: item.companyWork.title,
-            description: item.companyWork.description,
-            workType: item.companyWork.workType,
-          }
-        : null,
     })),
     marketContexts: marketValues.map((mv: any) => ({
       marketNeedId: mv.marketNeedId,
@@ -295,14 +360,17 @@ function buildContext(
       rationale: mv.rationale,
     })),
     adjacentTopics,
-    companyWork: companyWork
+    myContribution: myContribution
       ? {
-          id: companyWork.id,
-          title: companyWork.title,
-          description: companyWork.description,
-          workType: companyWork.workType,
+          id: myContribution.id,
+          title: myContribution.title,
+          description: myContribution.description,
+          whatDid: myContribution.whatDid,
+          results: myContribution.results,
+          skillTopicIds: myContribution.skillTopicIds || [], // Skills demonstrated
         }
       : null,
+    companyXContext,
   };
 }
 
@@ -362,7 +430,8 @@ Do NOT generate:
         marketNeedId: topic.marketNeedId,
         evidenceCount: context.recentWork.length,
         suggestedAngle: topic.suggestedAngle,
-        companyWorkId: context.companyWork?.id,
+        myContributionId: context.myContribution?.id,
+        companyXContext: context.companyXContext,
       }))
       .filter((topic: BlogTopic) => topic.title.length > 0);
   } catch (error: any) {
@@ -375,7 +444,7 @@ Do NOT generate:
  * Build AI prompt for blog topic generation
  */
 function buildPrompt(context: any): string {
-  const { skillTopic, recentWork, marketContexts, adjacentTopics, companyWork } = context;
+  const { skillTopic, recentWork, marketContexts, adjacentTopics, myContribution, companyXContext } = context;
 
   let prompt = `Generate 5 reflection-based blog topics for a professional with the following context:
 
@@ -391,7 +460,7 @@ ${recentWork.length > 0
   ? recentWork
       .map(
         (item: any, i: number) =>
-          `${i + 1}. ${item.title}${item.description ? `: ${item.description}` : ''} (${item.evidenceType || 'evidence'}, ${item.occurredAt ? new Date(item.occurredAt).toLocaleDateString() : 'recent'})${item.companyWork ? ` - Related to: ${item.companyWork.title}` : ''}`
+          `${i + 1}. ${item.title}${item.description ? `: ${item.description}` : ''} (${item.evidenceType || 'evidence'}, ${item.occurredAt ? new Date(item.occurredAt).toLocaleDateString() : 'recent'})`
       )
       .join('\n')
   : 'No recent evidence available'}
@@ -407,7 +476,8 @@ ${marketContexts.length > 0
   : 'No market contexts defined'}
 
 ${adjacentTopics.length > 0 ? `ADJACENT SKILLS: ${adjacentTopics.join(', ')}\n` : ''}
-${companyWork ? `SPECIFIC COMPANY WORK: ${companyWork.title}${companyWork.description ? ` - ${companyWork.description}` : ''}\n` : ''}
+${myContribution ? `MY CONTRIBUTION: ${myContribution.title || 'Untitled'}${myContribution.description ? ` - ${myContribution.description}` : ''}${myContribution.whatDid ? `\n  What I Did: ${myContribution.whatDid}` : ''}${myContribution.results ? `\n  Results: ${myContribution.results}` : ''}${myContribution.skillTopicIds && myContribution.skillTopicIds.length > 0 ? `\n  Skills Demonstrated: ${myContribution.skillTopicIds.length} skill(s)` : ''}\n` : ''}
+${companyXContext ? `COMPANY WORK CONTEXT: ${companyXContext.title} (${companyXContext.type})${companyXContext.description ? ` - ${companyXContext.description}` : ''}\n` : ''}
 
 Generate 5 blog topics that:
 1. Are REFLECTION-BASED (personal experience, lessons learned, insights)

@@ -201,7 +201,15 @@ export async function GET(request: NextRequest) {
               },
               orderBy: { createdAt: 'desc' },
             }),
-          ]).then(([emailDigests, digitalSignage]) => [
+            // Comms Plan Products
+            prisma.productCommsPlan.findMany({
+              where: {
+                createdByWorkMeId: workMe.id,
+                archivedAt: null, // Only active items
+              },
+              orderBy: { createdAt: 'desc' },
+            }),
+          ]).then(([emailDigests, digitalSignage, commsPlans]) => [
             ...emailDigests.map(p => ({
               id: p.id,
               type: 'email_digest',
@@ -254,6 +262,18 @@ export async function GET(request: NextRequest) {
                 },
               }
             }),
+            ...commsPlans.map(p => ({
+              id: p.id,
+              type: 'comms_plan',
+              title: p.parsedTitle || 'Comms Plan',
+              description: null,
+              createdAt: p.createdAt.toISOString(),
+              updatedAt: p.updatedAt.toISOString(),
+              metadata: {
+                hasFullText: !!p.fullText,
+                objectivesCount: Array.isArray(p.parsedObjectives) ? p.parsedObjectives.length : 0,
+              },
+            })),
           ])
         : [],
     ])
