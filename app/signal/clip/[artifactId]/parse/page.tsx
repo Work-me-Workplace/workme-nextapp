@@ -8,7 +8,7 @@ import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { refreshWorkMe } from '@/lib/workme.client'
 import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Wand2, Loader2, CheckCircle, ArrowLeft, AlertCircle, Edit2, X } from 'lucide-react'
+import { Wand2, Loader2, CheckCircle, ArrowLeft, AlertCircle, Edit2, X, Info } from 'lucide-react'
 
 type ParseableModelType =
   | 'platform_unit_update'
@@ -67,6 +67,67 @@ function ParsePageContent({ params }: { params: Promise<{ artifactId: string }> 
   const [error, setError] = useState<string | null>(null)
   const [editableText, setEditableText] = useState<string>('')
   const [isEditingText, setIsEditingText] = useState(false)
+
+  /**
+   * Parse implementation timeline text and calculate estimated date
+   * Handles patterns like "30 days", "2 weeks", "3 months", "Q2 2026", etc.
+   */
+  function calculateEstimatedDate(timelineText: string | null | undefined): string | null {
+    if (!timelineText) return null
+
+    const text = timelineText.toLowerCase().trim()
+    const now = new Date()
+
+    // Pattern: "X days" or "X day"
+    const daysMatch = text.match(/(\d+)\s*(?:day|days)/i)
+    if (daysMatch) {
+      const days = parseInt(daysMatch[1])
+      const estimated = new Date(now)
+      estimated.setDate(now.getDate() + days)
+      return estimated.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    }
+
+    // Pattern: "X weeks" or "X week"
+    const weeksMatch = text.match(/(\d+)\s*(?:week|weeks)/i)
+    if (weeksMatch) {
+      const weeks = parseInt(weeksMatch[1])
+      const estimated = new Date(now)
+      estimated.setDate(now.getDate() + (weeks * 7))
+      return estimated.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    }
+
+    // Pattern: "X months" or "X month"
+    const monthsMatch = text.match(/(\d+)\s*(?:month|months)/i)
+    if (monthsMatch) {
+      const months = parseInt(monthsMatch[1])
+      const estimated = new Date(now)
+      estimated.setMonth(now.getMonth() + months)
+      return estimated.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    }
+
+    // Pattern: "Q1 2026", "Q2 2026", etc.
+    const quarterMatch = text.match(/q([1-4])\s*(\d{4})/i)
+    if (quarterMatch) {
+      const quarter = parseInt(quarterMatch[1])
+      const year = parseInt(quarterMatch[2])
+      const month = (quarter - 1) * 3 + 1 // Q1 = Jan (1), Q2 = Apr (4), etc.
+      const estimated = new Date(year, month - 1, 1)
+      return estimated.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    }
+
+    // Pattern: "Effective [date]" or dates like "March 2026"
+    const dateMatch = text.match(/(?:effective|starting|beginning)\s+([a-z]+\s+\d{1,2},?\s+\d{4})/i)
+    if (dateMatch) {
+      const dateStr = dateMatch[1]
+      const parsed = new Date(dateStr)
+      if (!isNaN(parsed.getTime())) {
+        return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      }
+    }
+
+    return null
+  }
+
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -381,52 +442,94 @@ function ParsePageContent({ params }: { params: Promise<{ artifactId: string }> 
                   </div>
 
                   {artifact && (
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-medium text-gray-700">Article Text</p>
-                        {!isEditingText ? (
-                          <button
-                            onClick={() => setIsEditingText(true)}
-                            className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
-                          >
-                            <Edit2 className="w-4 h-4 mr-1" />
-                            Edit
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setIsEditingText(false)
-                              setEditableText(artifact.rawText)
-                            }}
-                            className="text-sm text-gray-600 hover:text-gray-700 flex items-center"
-                          >
-                            <X className="w-4 h-4 mr-1" />
-                            Cancel
-                          </button>
-                        )}
-                      </div>
-                      {isEditingText ? (
-                        <textarea
-                          value={editableText}
-                          onChange={(e) => setEditableText(e.target.value)}
-                          rows={8}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
-                          placeholder="Article text..."
-                        />
-                      ) : (
+                    <>
+                      {/* Article Metadata - Prominent Display */}
+                      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                        <h3 className="text-sm font-semibold text-gray-700 mb-3">Article Information</h3>
                         <div className="space-y-2">
                           {artifact.headline && (
-                            <p className="text-sm font-semibold text-gray-900">{artifact.headline}</p>
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Headline</p>
+                              <p className="text-base font-semibold text-gray-900 mt-1">{artifact.headline}</p>
+                            </div>
                           )}
-                          <p className="text-sm text-gray-600 line-clamp-3">
-                            {editableText || artifact.rawText}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {(editableText || artifact.rawText).length} characters
-                          </p>
+                          {(artifact.sourceName || artifact.sourceUrl) && (
+                            <div className="flex flex-wrap gap-4 pt-2 border-t border-gray-100">
+                              {artifact.sourceName && (
+                                <div>
+                                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Source</p>
+                                  <p className="text-sm text-gray-700 mt-1">{artifact.sourceName}</p>
+                                </div>
+                              )}
+                              {artifact.sourceUrl && (
+                                <div>
+                                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">URL</p>
+                                  <a
+                                    href={artifact.sourceUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-blue-600 hover:text-blue-700 hover:underline mt-1 inline-block break-all"
+                                  >
+                                    {artifact.sourceUrl}
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {artifact.artifactType && (
+                            <div className="pt-2 border-t border-gray-100">
+                              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Detected Type</p>
+                              <p className="text-sm text-gray-700 mt-1 capitalize">{artifact.artifactType.replace(/_/g, ' ')}</p>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
+                      </div>
+
+                      {/* Article Text */}
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-medium text-gray-700">Article Text</p>
+                          {!isEditingText ? (
+                            <button
+                              onClick={() => setIsEditingText(true)}
+                              className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                            >
+                              <Edit2 className="w-4 h-4 mr-1" />
+                              Edit
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setIsEditingText(false)
+                                setEditableText(artifact.rawText)
+                              }}
+                              className="text-sm text-gray-600 hover:text-gray-700 flex items-center"
+                            >
+                              <X className="w-4 h-4 mr-1" />
+                              Cancel
+                            </button>
+                          )}
+                        </div>
+                        {isEditingText ? (
+                          <textarea
+                            value={editableText}
+                            onChange={(e) => setEditableText(e.target.value)}
+                            rows={8}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                            placeholder="Article text..."
+                          />
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-sm text-gray-600 line-clamp-3">
+                              {editableText || artifact.rawText}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {(editableText || artifact.rawText).length} characters
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </>
                   )}
 
                   <div className="flex justify-end">
@@ -597,8 +700,16 @@ function ParsePageContent({ params }: { params: Promise<{ artifactId: string }> 
                               value={reviewData.implementationTimeline || ''}
                               onChange={(e) => setReviewData({ ...reviewData, implementationTimeline: e.target.value || null })}
                               className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                              placeholder="When this starts to matter (e.g., 'Effective Q2 2026', 'Rolls out over next 18 months', 'Immediate')"
+                              placeholder="When this starts to matter (e.g., '30 days', 'Effective Q2 2026', 'Rolls out over next 18 months', 'Immediate')"
                             />
+                            {reviewData.implementationTimeline && (
+                              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+                                <span className="text-blue-700 font-medium">Estimated Date: </span>
+                                <span className="text-blue-900">
+                                  {calculateEstimatedDate(reviewData.implementationTimeline) || 'Unable to calculate from timeline text'}
+                                </span>
+                              </div>
+                            )}
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Lead Authority</label>
@@ -616,33 +727,29 @@ function ParsePageContent({ params }: { params: Promise<{ artifactId: string }> 
                       {/* Metadata */}
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">Metadata</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Confidence Level</label>
-                            <select
-                              value={reviewData.confidenceLevel || ''}
-                              onChange={(e) => setReviewData({ ...reviewData, confidenceLevel: e.target.value || null })}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                            >
-                              <option value="">Select...</option>
-                              <option value="low">Low</option>
-                              <option value="medium">Medium</option>
-                              <option value="high">High</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Time Horizon</label>
-                            <select
-                              value={reviewData.timeHorizon || ''}
-                              onChange={(e) => setReviewData({ ...reviewData, timeHorizon: e.target.value || null })}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                            >
-                              <option value="">Select...</option>
-                              <option value="immediate">Immediate</option>
-                              <option value="near-term">Near-term</option>
-                              <option value="long-term">Long-term</option>
-                            </select>
-                          </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                            Source Legitimacy
+                            <div className="group relative">
+                              <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                                How reliable and legitimate is the SOURCE of this information? High = official government/agency releases, Medium = credible news/reports but unconfirmed, Low = rumors/unverified sources
+                              </div>
+                            </div>
+                          </label>
+                          <select
+                            value={reviewData.confidenceLevel || ''}
+                            onChange={(e) => setReviewData({ ...reviewData, confidenceLevel: e.target.value || null })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          >
+                            <option value="">Select...</option>
+                            <option value="low">Low - Rumors/Unverified Sources</option>
+                            <option value="medium">Medium - Credible News/Reports (Unconfirmed)</option>
+                            <option value="high">High - Official Government/Agency Releases</option>
+                          </select>
+                          <p className="text-xs text-gray-500 mt-1">
+                            This reflects the reliability of the SOURCE, not how likely the change is to happen
+                          </p>
                         </div>
                       </div>
                     </div>

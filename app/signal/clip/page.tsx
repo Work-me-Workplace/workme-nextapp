@@ -10,6 +10,47 @@ import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { Newspaper, Loader2, AlertCircle, CheckCircle, Link as LinkIcon } from 'lucide-react'
 
+/**
+ * Normalize article text by cleaning up excessive spacing and line breaks
+ * - Normalizes multiple consecutive line breaks to double line breaks (paragraph breaks)
+ * - Normalizes multiple spaces to single spaces
+ * - Trims each line
+ * - Removes excessive blank lines
+ */
+function normalizeArticleText(text: string): string {
+  if (!text) return text
+  
+  // Replace multiple consecutive line breaks (3+) with double line break (paragraph break)
+  // This preserves paragraph structure while removing excessive spacing
+  let normalized = text.replace(/\n{3,}/g, '\n\n')
+  
+  // Replace multiple spaces with single space (but preserve intentional spacing)
+  normalized = normalized.replace(/[ \t]{2,}/g, ' ')
+  
+  // Split into lines, trim each line, and filter out completely empty lines
+  const lines = normalized.split('\n').map(line => line.trim())
+  
+  // Join lines back, but collapse multiple empty lines into single empty line
+  // This preserves paragraph breaks while removing excessive blank lines
+  const cleanedLines: string[] = []
+  let lastWasEmpty = false
+  
+  for (const line of lines) {
+    if (line === '') {
+      if (!lastWasEmpty) {
+        cleanedLines.push('')
+        lastWasEmpty = true
+      }
+    } else {
+      cleanedLines.push(line)
+      lastWasEmpty = false
+    }
+  }
+  
+  // Join lines and trim final result
+  return cleanedLines.join('\n').trim()
+}
+
 function ClipPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -80,7 +121,9 @@ function ClipPageContent() {
 
       if (response.data.success && response.data.data) {
         const article = response.data.data
-        setText(article.textContent || article.content || '')
+        // Text is already normalized by the API, but normalize again as safety measure
+        const articleText = article.textContent || article.content || ''
+        setText(normalizeArticleText(articleText))
         setUrl(article.url || url)
         setSuccess(true)
       } else {
@@ -280,7 +323,11 @@ function ClipPageContent() {
                   id="text"
                   rows={12}
                   value={text}
-                  onChange={(e) => setText(e.target.value)}
+                  onChange={(e) => {
+                    // Normalize text when user pastes manually
+                    const normalized = normalizeArticleText(e.target.value)
+                    setText(normalized)
+                  }}
                   placeholder={inputMode === 'url' ? 'Click "Fetch" to load article content...' : 'Paste article text here...'}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
                   disabled={fetching || loading}

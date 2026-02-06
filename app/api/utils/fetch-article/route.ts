@@ -24,6 +24,47 @@ export const dynamic = 'force-dynamic'
 // Minimum content length to consider extraction successful
 const MIN_CONTENT_LENGTH = 200
 
+/**
+ * Normalize article text by cleaning up excessive spacing and line breaks
+ * - Normalizes multiple consecutive line breaks to double line breaks (paragraph breaks)
+ * - Normalizes multiple spaces to single spaces
+ * - Trims each line
+ * - Removes excessive blank lines
+ */
+function normalizeArticleText(text: string): string {
+  if (!text) return text
+  
+  // Replace multiple consecutive line breaks (3+) with double line break (paragraph break)
+  // This preserves paragraph structure while removing excessive spacing
+  let normalized = text.replace(/\n{3,}/g, '\n\n')
+  
+  // Replace multiple spaces with single space (but preserve intentional spacing)
+  normalized = normalized.replace(/[ \t]{2,}/g, ' ')
+  
+  // Split into lines, trim each line, and filter out completely empty lines
+  const lines = normalized.split('\n').map(line => line.trim())
+  
+  // Join lines back, but collapse multiple empty lines into single empty line
+  // This preserves paragraph breaks while removing excessive blank lines
+  const cleanedLines: string[] = []
+  let lastWasEmpty = false
+  
+  for (const line of lines) {
+    if (line === '') {
+      if (!lastWasEmpty) {
+        cleanedLines.push('')
+        lastWasEmpty = true
+      }
+    } else {
+      cleanedLines.push(line)
+      lastWasEmpty = false
+    }
+  }
+  
+  // Join lines and trim final result
+  return cleanedLines.join('\n').trim()
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -144,10 +185,11 @@ export async function POST(request: NextRequest) {
       const article = reader.parse()
 
       if (article && article.textContent && article.textContent.trim().length >= MIN_CONTENT_LENGTH) {
+        const normalizedText = normalizeArticleText(article.textContent)
         extractedContent = {
           title: article.title || '',
           content: article.content || '',
-          textContent: article.textContent || '',
+          textContent: normalizedText,
           excerpt: article.excerpt || undefined,
           byline: article.byline || undefined,
           siteName: article.siteName || undefined,
@@ -168,10 +210,11 @@ export async function POST(request: NextRequest) {
         const data = unfluff(html, 'en') as any
 
         if (data && data.text && typeof data.text === 'string' && data.text.trim().length >= MIN_CONTENT_LENGTH) {
+          const normalizedText = normalizeArticleText(data.text)
           extractedContent = {
             title: (data.title || '').trim(),
             content: data.text || '',
-            textContent: data.text || '',
+            textContent: normalizedText,
             excerpt: data.description ? String(data.description).trim() : undefined,
             byline: data.author 
               ? (Array.isArray(data.author) ? data.author.join(', ') : String(data.author)).trim()
