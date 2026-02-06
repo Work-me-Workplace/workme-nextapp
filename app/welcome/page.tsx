@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 import { getWorkMe, refreshWorkMe, type WorkMe } from '@/lib/workme.client'
@@ -112,8 +111,8 @@ export default function WelcomePage() {
         // Ensure it's saved to localStorage for easy access
         localStorage.setItem('companyId', workMeCompanyId)
         localStorage.setItem('companyUnit', workMeCompanyId)
-        // Always go to dashboard first, not directly to workforce stuff
-        router.push(`/dashboard?companyId=${encodeURIComponent(workMeCompanyId)}`)
+        // Go straight to dashboard - company scoped via firebaseid
+        router.push('/dashboard')
         return
       }
     }
