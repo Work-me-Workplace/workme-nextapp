@@ -27,17 +27,6 @@ export async function GET(request: NextRequest) {
     const contributions = await prisma.myContribution.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      include: {
-        companyEvent: {
-          select: { id: true, title: true, eventDate: true }
-        },
-        companyCampaign: {
-          select: { id: true, title: true }
-        },
-        companyTraining: {
-          select: { id: true, title: true, trainingDate: true }
-        },
-      },
       select: {
         id: true,
         title: true,
@@ -52,6 +41,15 @@ export async function GET(request: NextRequest) {
         completedAt: true,
         createdAt: true,
         updatedAt: true,
+        companyEvent: {
+          select: { id: true, title: true, eventDate: true }
+        },
+        companyCampaign: {
+          select: { id: true, title: true }
+        },
+        companyTraining: {
+          select: { id: true, title: true, trainingDate: true }
+        },
       },
     })
 
@@ -160,11 +158,6 @@ export async function POST(request: NextRequest) {
         startedAt: startedAt ? new Date(startedAt) : null,
         completedAt: completedAt ? new Date(completedAt) : null,
       },
-      include: {
-        companyEvent: {
-          select: { id: true, title: true }
-        },
-      },
       select: {
         id: true,
         title: true,
@@ -179,6 +172,9 @@ export async function POST(request: NextRequest) {
         completedAt: true,
         createdAt: true,
         updatedAt: true,
+        companyEvent: {
+          select: { id: true, title: true }
+        },
       },
     })
 
