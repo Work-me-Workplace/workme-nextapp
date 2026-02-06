@@ -16,9 +16,29 @@ export async function GET(request: NextRequest) {
     const { firebaseId } = await verifyAuth(request as Request)
     const workMe = await loadWorkMe(firebaseId)
 
+    const searchParams = request.nextUrl.searchParams
+    const followForXFeed = searchParams.get('followForXFeed')
+    const stance = searchParams.get('stance')
+    const relationshipType = searchParams.get('relationshipType')
+
+    // Build where clause
+    const where: any = { workMeId: workMe.id }
+    
+    if (followForXFeed === 'true') {
+      where.followForXFeed = true
+    }
+    
+    if (stance) {
+      where.stance = stance
+    }
+    
+    if (relationshipType) {
+      where.relationshipType = relationshipType
+    }
+
     // Get all contacts for this user with person data
     const contacts = await prisma.myEcosystemContact.findMany({
-      where: { workMeId: workMe.id },
+      where,
       include: {
         person: {
           include: {

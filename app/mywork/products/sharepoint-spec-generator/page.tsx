@@ -5,20 +5,35 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
-import { Share2, ArrowLeft, FileText, Download, Copy } from 'lucide-react'
+import api from '@/lib/api'
+import { Share2, ArrowLeft, FileText, Download, Copy, Sparkles, Plus, X } from 'lucide-react'
+
+type Mode = 'ai' | 'manual'
+
+interface Page {
+  title: string
+  description: string
+}
+
+interface Spec {
+  name: string
+  description: string
+  rawJson: string
+}
 
 export default function SharePointSpecGeneratorPage() {
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
-  const [specGenerated, setSpecGenerated] = useState(false)
+  const [mode, setMode] = useState<Mode>('ai')
+  const [loading, setLoading] = useState(false)
+  const [spec, setSpec] = useState<Spec | null>(null)
   const [copied, setCopied] = useState(false)
-  const [formData, setFormData] = useState({
-    mainHeader: '',
-    newsAnnouncement: '',
-    buttonText: '',
-    destinationPage: '',
-    additionalNotes: '',
-  })
+  
+  // Form data
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [rawText, setRawText] = useState('')
+  const [pages, setPages] = useState<Page[]>([{ title: '', description: '' }])
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -31,122 +46,99 @@ export default function SharePointSpecGeneratorPage() {
     }
   }, [router])
 
-  function generateSpec() {
-    if (!formData.mainHeader || !formData.newsAnnouncement || !formData.buttonText || !formData.destinationPage) {
-      alert('Please fill in all required fields (Main Header, News Announcement, Button Text, and Destination Page)')
-      return
-    }
-    setSpecGenerated(true)
+  function addPage() {
+    setPages([...pages, { title: '', description: '' }])
   }
 
-  function getSpecMarkdown() {
-    return `# SharePoint Page Specification
+  function removePage(index: number) {
+    if (pages.length > 1) {
+      setPages(pages.filter((_, i) => i !== index))
+    }
+  }
 
-## Overview
-This document outlines the specifications for a SharePoint page component.
+  function updatePage(index: number, field: 'title' | 'description', value: string) {
+    const updated = [...pages]
+    updated[index][field] = value
+    setPages(updated)
+  }
 
-## Page Structure
+  async function generateSpec() {
+    if (!name || !description) {
+      alert('Name and description are required')
+      return
+    }
 
-### Main Header
-**Text:** ${formData.mainHeader}
+    if (mode === 'ai' && !rawText.trim()) {
+      alert('Please enter raw text for AI generation')
+      return
+    }
 
-**Styling:**
-- Font size: Large/H1
-- Font weight: Bold
-- Alignment: Center or Left-aligned (specify preference)
-- Color: SharePoint theme color or custom (specify)
+    if (mode === 'manual') {
+      const hasEmptyPages = pages.some(p => !p.title.trim() || !p.description.trim())
+      if (hasEmptyPages) {
+        alert('Please fill in all page titles and descriptions')
+        return
+      }
+    }
 
----
+    try {
+      setLoading(true)
+      const response = await api.post('/api/mywork/sharepoint-spec/generate', {
+        mode,
+        name,
+        description,
+        rawText: mode === 'ai' ? rawText : undefined,
+        pages: mode === 'manual' ? pages : undefined,
+      })
 
-### News Announcement Section
-**Content:** ${formData.newsAnnouncement}
-
-**Styling:**
-- Font size: Medium/Regular body text
-- Background: Optional highlight box or card
-- Padding: Standard SharePoint spacing
-- Text alignment: Left-aligned
-
----
-
-### Call-to-Action Button
-**Button Text:** ${formData.buttonText}
-
-**Destination:** ${formData.destinationPage}
-
-**Button Specifications:**
-- Style: Primary button (SharePoint default or custom)
-- Size: Standard or Large (specify preference)
-- Position: Below news announcement section
-- Action: Navigate to destination page: \`${formData.destinationPage}\`
-- Hover state: Standard SharePoint button hover effect
-
----
-
-### Additional Notes
-${formData.additionalNotes || 'None specified'}
-
----
-
-## Technical Requirements
-
-### SharePoint Component Type
-- **Recommended:** SharePoint Framework (SPFx) Web Part or Modern Page Section
-- **Alternative:** SharePoint List/Page with embedded content
-
-### Implementation Notes
-1. Header should be prominently displayed at the top of the page
-2. News announcement should be clearly readable and accessible
-3. Button should be visually distinct and easily clickable
-4. Navigation should be seamless to the destination page
-5. Ensure responsive design for mobile and tablet views
-6. Follow SharePoint accessibility guidelines (WCAG 2.1 AA)
-
-### Content Management
-- Consider if content should be editable by site owners
-- Determine if this is a one-time setup or dynamic content
-- Specify who has permissions to edit this content
-
----
-
-## Design Mockup Reference
-- Header: Top section
-- News Announcement: Middle section
-- Button: Below announcement, centered or left-aligned
-
----
-
-## Testing Checklist
-- [ ] Header displays correctly on all screen sizes
-- [ ] News announcement text is readable and properly formatted
-- [ ] Button is clickable and navigates to correct destination
-- [ ] Page is accessible (keyboard navigation, screen readers)
-- [ ] Responsive design works on mobile devices
-- [ ] Content can be edited by authorized users (if applicable)
-
----
-
-**Generated:** ${new Date().toLocaleString()}
-**Spec Version:** 1.0
-`
+      if (response.data.success) {
+        setSpec(response.data.spec)
+      } else {
+        alert('Failed to generate spec: ' + (response.data.error || 'Unknown error'))
+      }
+    } catch (error: any) {
+      console.error('Failed to generate spec:', error)
+      alert('Failed to generate spec: ' + (error.response?.data?.error || error.message))
+    } finally {
+      setLoading(false)
+    }
   }
 
   function copyToClipboard() {
-    navigator.clipboard.writeText(getSpecMarkdown())
+    if (!spec) return
+    navigator.clipboard.writeText(spec.rawJson)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
   function downloadSpec() {
-    const blob = new Blob([getSpecMarkdown()], { type: 'text/markdown' })
+    if (!spec) return
+    const blob = new Blob([spec.rawJson], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `sharepoint-spec-${Date.now()}.md`
+    a.download = `sharepoint-spec-${Date.now()}.json`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  }
+
+  function resetForm() {
+    setName('')
+    setDescription('')
+    setRawText('')
+    setPages([{ title: '', description: '' }])
+    setSpec(null)
+  }
+
+  function formatJsonDisplay(jsonString: string) {
+    try {
+      const parsed = JSON.parse(jsonString)
+      return parsed
+    } catch {
+      return jsonString
+    }
   }
 
   if (!workMeId) {
@@ -194,113 +186,174 @@ ${formData.additionalNotes || 'None specified'}
                 <h1 className="text-3xl font-bold text-gray-900">SharePoint Spec Generator</h1>
               </div>
 
-              <p className="text-gray-600 mb-6">
-                Fill in the details below to generate a specification document for your SharePoint page.
-              </p>
+              {/* Mode Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Choose your input method:
+                </label>
+                <div className="flex space-x-4">
+                  <button
+                    onClick={() => {
+                      setMode('ai')
+                      resetForm()
+                    }}
+                    className={`flex-1 px-6 py-3 rounded-lg border-2 font-medium transition ${
+                      mode === 'ai'
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    }`}
+                  >
+                    <Sparkles className="h-5 w-5 inline mr-2" />
+                    Build with AI
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMode('manual')
+                      resetForm()
+                    }}
+                    className={`flex-1 px-6 py-3 rounded-lg border-2 font-medium transition ${
+                      mode === 'manual'
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    }`}
+                  >
+                    <FileText className="h-5 w-5 inline mr-2" />
+                    Manual Entry
+                  </button>
+                </div>
+              </div>
 
-              <form onSubmit={(e) => { e.preventDefault(); generateSpec(); }} className="space-y-6">
+              {/* Common Fields */}
+              <div className="space-y-6">
                 <div>
-                  <label htmlFor="mainHeader" className="block text-sm font-medium text-gray-700 mb-2">
-                    Main Header <span className="text-red-500">*</span>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                    Name/Title <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    id="mainHeader"
+                    id="name"
                     required
-                    value={formData.mainHeader}
-                    onChange={(e) => setFormData({ ...formData, mainHeader: e.target.value })}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g., Company News & Updates"
+                    placeholder="e.g., Q4 Company Updates Site"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="newsAnnouncement" className="block text-sm font-medium text-gray-700 mb-2">
-                    News Announcement <span className="text-red-500">*</span>
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                    Description <span className="text-red-500">*</span>
                   </label>
                   <textarea
-                    id="newsAnnouncement"
+                    id="description"
                     required
-                    rows={6}
-                    value={formData.newsAnnouncement}
-                    onChange={(e) => setFormData({ ...formData, newsAnnouncement: e.target.value })}
+                    rows={3}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter the news announcement text that will appear on the SharePoint page..."
+                    placeholder="Overall description of the SharePoint build..."
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="buttonText" className="block text-sm font-medium text-gray-700 mb-2">
-                    Button Text <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="buttonText"
-                    required
-                    value={formData.buttonText}
-                    onChange={(e) => setFormData({ ...formData, buttonText: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g., Learn More, Read Full Article, View Details"
-                  />
-                </div>
+                {/* AI Mode */}
+                {mode === 'ai' && (
+                  <div>
+                    <label htmlFor="rawText" className="block text-sm font-medium text-gray-700 mb-2">
+                      Raw Text Input <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      id="rawText"
+                      required
+                      rows={8}
+                      value={rawText}
+                      onChange={(e) => setRawText(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                      placeholder='Example: "This is a SharePoint build for main page and new associated pages. We need a homepage with company updates, a products page showcasing our new offerings, and a contact page with team information."'
+                    />
+                    <p className="mt-2 text-sm text-gray-500">
+                      Describe your SharePoint build in natural language. AI will infer the pages and structure.
+                    </p>
+                  </div>
+                )}
 
-                <div>
-                  <label htmlFor="destinationPage" className="block text-sm font-medium text-gray-700 mb-2">
-                    Destination Page URL <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="url"
-                    id="destinationPage"
-                    required
-                    value={formData.destinationPage}
-                    onChange={(e) => setFormData({ ...formData, destinationPage: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="https://company.sharepoint.com/sites/... or relative path like /pages/news"
-                  />
-                </div>
+                {/* Manual Mode */}
+                {mode === 'manual' && (
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Pages <span className="text-red-500">*</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={addPage}
+                        className="flex items-center text-sm text-blue-600 hover:text-blue-700"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Page
+                      </button>
+                    </div>
+                    <div className="space-y-4">
+                      {pages.map((page, index) => (
+                        <div key={index} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-medium text-gray-700">Page {index + 1}</span>
+                            {pages.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removePage(index)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                          <div className="space-y-3">
+                            <input
+                              type="text"
+                              required
+                              value={page.title}
+                              onChange={(e) => updatePage(index, 'title', e.target.value)}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Page title..."
+                            />
+                            <textarea
+                              required
+                              rows={3}
+                              value={page.description}
+                              onChange={(e) => updatePage(index, 'description', e.target.value)}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Page description..."
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                <div>
-                  <label htmlFor="additionalNotes" className="block text-sm font-medium text-gray-700 mb-2">
-                    Additional Notes (Optional)
-                  </label>
-                  <textarea
-                    id="additionalNotes"
-                    rows={4}
-                    value={formData.additionalNotes}
-                    onChange={(e) => setFormData({ ...formData, additionalNotes: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Any additional requirements, styling preferences, or notes..."
-                  />
-                </div>
-
-                <div className="flex items-center justify-end space-x-4">
+                {/* Actions */}
+                <div className="flex items-center justify-end space-x-4 pt-4 border-t">
                   <button
                     type="button"
-                    onClick={() => {
-                      setFormData({
-                        mainHeader: '',
-                        newsAnnouncement: '',
-                        buttonText: '',
-                        destinationPage: '',
-                        additionalNotes: '',
-                      })
-                      setSpecGenerated(false)
-                    }}
+                    onClick={resetForm}
                     className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                   >
                     Clear
                   </button>
                   <button
-                    type="submit"
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+                    type="button"
+                    onClick={generateSpec}
+                    disabled={loading}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Generate Spec
+                    {loading ? 'Generating...' : 'Generate Spec'}
                   </button>
                 </div>
-              </form>
+              </div>
             </div>
 
-            {specGenerated && (
+            {/* Generated Spec Display */}
+            {spec && (
               <div className="bg-white rounded-lg shadow-sm p-8">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-2xl font-bold text-gray-900">Generated Specification</h2>
@@ -321,10 +374,48 @@ ${formData.additionalNotes || 'None specified'}
                     </button>
                   </div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-6 overflow-auto max-h-96">
-                  <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
-                    {getSpecMarkdown()}
-                  </pre>
+
+                {/* Formatted Display */}
+                <div className="mb-6 bg-gray-50 rounded-lg p-6">
+                  {(() => {
+                    const parsed = formatJsonDisplay(spec.rawJson)
+                    if (typeof parsed === 'string') {
+                      return <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">{parsed}</pre>
+                    }
+                    return (
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">{parsed.title}</h3>
+                          <p className="text-gray-700">{parsed.executiveSummary}</p>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900 mb-2">Content Pages:</h4>
+                          <div className="space-y-3">
+                            {parsed.contentPages?.map((page: any, index: number) => (
+                              <div key={index} className="border-l-4 border-blue-500 pl-4">
+                                <h5 className="font-medium text-gray-900">{page.title}</h5>
+                                <p className="text-sm text-gray-600 mt-1">{page.description}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900 mb-2">Conclusion:</h4>
+                          <p className="text-gray-700">{parsed.conclusion}</p>
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </div>
+
+                {/* Raw JSON */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Raw JSON:</h3>
+                  <div className="bg-gray-50 rounded-lg p-4 overflow-auto max-h-96">
+                    <pre className="whitespace-pre-wrap text-xs text-gray-800 font-mono">
+                      {spec.rawJson}
+                    </pre>
+                  </div>
                 </div>
               </div>
             )}

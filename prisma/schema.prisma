@@ -176,6 +176,7 @@ enum WorkforceStuffStatus {
 
 enum PressureSource {
   CONGRESS
+  EXECUTIVE_BRANCH
   OSD
   NAVSEA_LEADERSHIP
   PEO
@@ -1767,6 +1768,17 @@ model MyEcosystemContact {
   notes String?
   tags  String[] @default([])
 
+  // Relationship tracking (user-specific)
+  stance String? // "favorable", "unfavorable", "neutral", "unknown" - how this person relates to MY organization
+  relationshipType String? // "media", "influencer", "analyst", "competitor", "partner", "regulator", etc.
+  
+  // X Feed integration
+  followForXFeed Boolean @default(false) // Include in X feed signals?
+  
+  // User-specific metadata
+  lastInteractedAt DateTime? // When did we last interact with this person?
+  priority Int? // User-assigned priority (1-10)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1776,6 +1788,9 @@ model MyEcosystemContact {
   @@unique([workMeId, personId])
   @@index([workMeId])
   @@index([personId])
+  @@index([stance])
+  @@index([followForXFeed])
+  @@index([relationshipType])
 }
 
 // ============================================

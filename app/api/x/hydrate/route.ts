@@ -94,8 +94,42 @@ export async function POST(request: NextRequest) {
     let tweets: Tweet[] = []
 
     try {
-      // Fetch profile data using X API v2 (users/by)
-      if (searchUserId) {
+      // Use v2 endpoints that work with Basic tier
+      // Basic tier supports: /2/users/by/username/:username (not /2/users/:id)
+      const cleanHandle = searchHandle?.replace('@', '') || null
+      
+      if (cleanHandle) {
+        // Fetch profile using username lookup (Basic tier compatible)
+        const profileUrl = `https://api.twitter.com/2/users/by/username/${encodeURIComponent(cleanHandle)}?user.fields=description,profile_image_url,public_metrics,created_at`
+        const profileResponse = await fetch(profileUrl, {
+          headers: {
+            'Authorization': `Bearer ${bearerToken}`,
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (!profileResponse.ok) {
+          const errorText = await profileResponse.text()
+          console.error(`❌ X API profile error (${profileResponse.status}):`, errorText)
+          
+          // If 403, it's an access level issue
+          if (profileResponse.status === 403) {
+            throw new Error(`X API access level insufficient. Error: ${errorText}`)
+          }
+        } else {
+          const profileJson = await profileResponse.json()
+          profileData = profileJson.data
+          
+          // Store xUserId if we got it
+          if (profileData?.id && !person.xUserId) {
+            await prisma.ecosystemPerson.update({
+              where: { id: personId },
+              data: { xUserId: profileData.id },
+            })
+          }
+        }
+      } else if (searchUserId) {
+        // If we have userId, try direct lookup (may not work on Basic tier)
         const profileUrl = `https://api.twitter.com/2/users/${searchUserId}?user.fields=description,profile_image_url,public_metrics`
         const profileResponse = await fetch(profileUrl, {
           headers: {
@@ -107,25 +141,20 @@ export async function POST(request: NextRequest) {
         if (profileResponse.ok) {
           const profileJson = await profileResponse.json()
           profileData = profileJson.data
-        }
-      } else if (searchHandle) {
-        // Fallback to v1.1 if we only have handle
-        const profileUrl = `https://api.twitter.com/1.1/users/show.json?screen_name=${encodeURIComponent(searchHandle.replace('@', ''))}`
-        const profileResponse = await fetch(profileUrl, {
-          headers: {
-            'Authorization': `Bearer ${bearerToken}`,
-            'Content-Type': 'application/json',
-          },
-        })
-
-        if (profileResponse.ok) {
-          profileData = await profileResponse.json()
+        } else {
+          const errorText = await profileResponse.text()
+          console.error(`❌ X API profile error (${profileResponse.status}):`, errorText)
+          if (profileResponse.status === 403) {
+            throw new Error(`X API access level insufficient. Try using username instead of user ID. Error: ${errorText}`)
+          }
         }
       }
 
-      // Fetch recent tweets using X API v2
-      if (searchUserId) {
-        const tweetsUrl = `https://api.twitter.com/2/users/${searchUserId}/tweets?max_results=20&tweet.fields=created_at,public_metrics`
+      // Fetch recent tweets - Basic tier supports user timeline endpoint
+      const userIdForTweets = profileData?.id || searchUserId
+      if (userIdForTweets) {
+        // Use /2/users/:id/tweets endpoint (should work on Basic tier)
+        const tweetsUrl = `https://api.twitter.com/2/users/${userIdForTweets}/tweets?max_results=10&tweet.fields=created_at,public_metrics,text`
         const tweetsResponse = await fetch(tweetsUrl, {
           headers: {
             'Authorization': `Bearer ${bearerToken}`,
@@ -133,7 +162,15 @@ export async function POST(request: NextRequest) {
           },
         })
 
-        if (tweetsResponse.ok) {
+        if (!tweetsResponse.ok) {
+          const errorText = await tweetsResponse.text()
+          console.error(`❌ X API tweets error (${tweetsResponse.status}):`, errorText)
+          
+          // If 403, log but don't fail - tweets are optional
+          if (tweetsResponse.status === 403) {
+            console.warn('⚠️ X API tweets endpoint not available on current access tier. Profile data will still be updated.')
+          }
+        } else {
           const tweetsJson = await tweetsResponse.json()
           tweets = (tweetsJson.data || []).map((tweet: any) => ({
             id: tweet.id,
@@ -147,7 +184,14 @@ export async function POST(request: NextRequest) {
       }
     } catch (apiError: any) {
       console.error('❌ X API error during hydration:', apiError)
-      // Continue with partial data if API fails
+      
+      // If it's an access level error, provide helpful message
+      if (apiError.message?.includes('access level')) {
+        throw apiError // Re-throw to surface to user
+      }
+      
+      // For other errors, continue with partial data
+      console.warn('⚠️ Continuing with partial data due to API error')
     }
 
     // Update EcosystemPerson with fresh data
@@ -156,15 +200,16 @@ export async function POST(request: NextRequest) {
     }
 
     if (profileData) {
-      // Extract data based on API version
+      // Extract data from v2 API response
       if (profileData.description) updateData.bio = profileData.description
       if (profileData.profile_image_url) updateData.profileImage = profileData.profile_image_url
-      if (profileData.public_metrics?.followers_count) {
+      if (profileData.public_metrics?.followers_count !== undefined) {
         updateData.followers = profileData.public_metrics.followers_count
       }
-      // For v1.1 API
-      if (profileData.followers_count) updateData.followers = profileData.followers_count
-      if (profileData.profile_image_url_https) updateData.profileImage = profileData.profile_image_url_https
+      // Store xUserId if we got it from the API
+      if (profileData.id && !person.xUserId) {
+        updateData.xUserId = profileData.id
+      }
     }
 
     const updatedPerson = await prisma.ecosystemPerson.update({

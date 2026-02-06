@@ -212,6 +212,7 @@ export function parseApolloPersonResponse(apolloData: ApolloPersonResponse): {
   linkedinUrl?: string;
   companyName?: string;
   photoUrl?: string;
+  xHandle?: string; // X/Twitter handle extracted from Apollo
   [key: string]: any;
 } {
   const person = apolloData.person;
@@ -279,6 +280,16 @@ export function parseApolloPersonResponse(apolloData: ApolloPersonResponse): {
     parsed.photoUrl = person.photo_url;
   }
 
+  // Extract X handle (twitter_url or twitter_handle)
+  if (person.twitter_handle) {
+    parsed.xHandle = person.twitter_handle.replace(/^@/, '').trim();
+  } else if (person.twitter_url) {
+    const match = person.twitter_url.match(/(?:twitter\.com|x\.com)\/([^/?]+)/i);
+    if (match && match[1]) {
+      parsed.xHandle = match[1].replace(/^@/, '').trim();
+    }
+  }
+
   // Log what we found for debugging
   console.log('📊 Parsed Apollo data:', {
     hasFullName: !!parsed.fullName,
@@ -286,6 +297,7 @@ export function parseApolloPersonResponse(apolloData: ApolloPersonResponse): {
     hasTitle: !!parsed.title,
     hasPhone: !!parsed.phone,
     hasCompany: !!parsed.companyName,
+    hasXHandle: !!parsed.xHandle,
     rawPersonKeys: Object.keys(person),
   });
 

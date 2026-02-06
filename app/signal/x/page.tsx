@@ -34,14 +34,14 @@ export default function XFeedLandingPage() {
 
   const xFeedOptions = [
     {
-      name: 'Find People in Ecosystem',
-      description: 'Search for journalists, influencers, and defense experts',
-      path: '/ecosystem/search',
+      name: 'Step 1: Who to Follow',
+      description: 'Manage X handles, organizations, and hashtags to follow',
+      path: '/signal/x/tune',
       icon: Settings,
       color: 'purple',
     },
     {
-      name: 'View Feed',
+      name: 'Step 2: View Feed',
       description: 'Live signals from organizations, people, and hashtags you follow',
       path: '/signal/x/feed',
       icon: Eye,

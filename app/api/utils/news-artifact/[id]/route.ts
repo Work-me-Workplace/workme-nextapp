@@ -79,6 +79,83 @@ export async function GET(
   }
 }
 
+/**
+ * DELETE /api/utils/news-artifact/[id]
+ * 
+ * Delete a CompanyNewsArtifact by ID
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // Auth
+    const { firebaseId } = await verifyAuth(request)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyId } = workMe
+
+    if (!workMeId || !companyId) {
+      return NextResponse.json(
+        { success: false, error: 'Not authenticated or companyId not set' },
+        { status: 401 }
+      )
+    }
+
+    const { id } = await params
+
+    // Get artifact to verify ownership
+    const artifact = await prisma.companyNewsArtifact.findUnique({
+      where: { id },
+    })
+
+    if (!artifact) {
+      return NextResponse.json(
+        { success: false, error: 'News artifact not found' },
+        { status: 404 }
+      )
+    }
+
+    // Verify it belongs to the user's company
+    if (artifact.companyId !== companyId) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 403 }
+      )
+    }
+
+    // Delete the artifact
+    // Note: Prisma will handle cascade deletes based on schema relations
+    await prisma.companyNewsArtifact.delete({
+      where: { id },
+    })
+
+    console.log('[API DELETE /api/utils/news-artifact/[id]] SUCCESS', {
+      artifactId: id,
+      workMeId,
+      companyId,
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'News artifact deleted successfully',
+    })
+  } catch (error: any) {
+    console.error('❌ DELETE /api/utils/news-artifact/[id] error:', error)
+
+    if (error.message?.includes('Unauthorized')) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 401 }
+      )
+    }
+
+    return NextResponse.json(
+      { success: false, error: error.message || 'Failed to delete news artifact' },
+      { status: 500 }
+    )
+  }
+}
+
 
 
 

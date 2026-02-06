@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Newspaper, Archive, Wand2, Loader2, Filter, Plus, ArrowRight } from 'lucide-react'
+import { Newspaper, Archive, Wand2, Loader2, Filter, Plus, ArrowRight, Trash2, AlertCircle } from 'lucide-react'
 
 interface Artifact {
   id: string
@@ -29,6 +29,8 @@ export default function ArticlesPage() {
   const [loading, setLoading] = useState(true)
   const [filterType, setFilterType] = useState<string>('all')
   const [filterSentiment, setFilterSentiment] = useState<string>('all')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -86,6 +88,28 @@ export default function ArticlesPage() {
     // Always route to parse page - let user choose what to parse it as
     // The parse page has a model type selector dropdown (similar to workforcestuff)
     return `/signal/clip/${artifact.id}/parse`
+  }
+
+  async function handleDelete(artifactId: string) {
+    if (!workMeId) return
+
+    try {
+      setDeletingId(artifactId)
+      const response = await api.delete(`/api/utils/news-artifact/${artifactId}`)
+      
+      if (response.data.success) {
+        // Remove from local state
+        setArtifacts(artifacts.filter(a => a.id !== artifactId))
+        setDeleteConfirmId(null)
+      } else {
+        alert('Failed to delete article: ' + (response.data.error || 'Unknown error'))
+      }
+    } catch (error: any) {
+      console.error('Failed to delete article:', error)
+      alert('Failed to delete article: ' + (error.response?.data?.error || error.message || 'Unknown error'))
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   if (!workMeId || loading) {
@@ -172,6 +196,54 @@ export default function ArticlesPage() {
               </div>
             </div>
 
+            {/* Delete Confirmation Modal */}
+            {deleteConfirmId && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+                  <div className="flex items-start mb-4">
+                    <AlertCircle className="h-6 w-6 text-red-600 mr-3 mt-0.5" />
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Article?</h3>
+                      <p className="text-sm text-gray-600">
+                        Are you sure you want to delete this article? This action cannot be undone.
+                      </p>
+                      {artifacts.find(a => a.id === deleteConfirmId)?.headline && (
+                        <p className="text-sm text-gray-500 mt-2 italic">
+                          "{artifacts.find(a => a.id === deleteConfirmId)?.headline}"
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end space-x-3">
+                    <button
+                      onClick={() => setDeleteConfirmId(null)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition text-sm"
+                      disabled={deletingId === deleteConfirmId}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => handleDelete(deleteConfirmId)}
+                      disabled={deletingId === deleteConfirmId}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                    >
+                      {deletingId === deleteConfirmId ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Artifacts List */}
             {artifacts.length === 0 ? (
               <div className="bg-white rounded-lg shadow-sm p-12 text-center">
@@ -238,6 +310,18 @@ export default function ArticlesPage() {
                         >
                           View
                         </Link>
+                        <button
+                          onClick={() => setDeleteConfirmId(artifact.id)}
+                          disabled={deletingId === artifact.id}
+                          className="flex items-center px-4 py-2 border border-red-300 rounded-lg text-red-700 hover:bg-red-50 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Delete article"
+                        >
+                          {deletingId === artifact.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </button>
                       </div>
                     </div>
                   </div>
