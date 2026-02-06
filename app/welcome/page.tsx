@@ -148,39 +148,13 @@ export default function WelcomePage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-          <div className="bg-white/10 border border-white/20 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-2">Career Building</h3>
-            <p className="text-white/80 text-sm mb-4">Personal tools that support your growth.</p>
-            <div className="space-y-2 text-white/90 text-sm">
-              <Link href="/mywork/memos" className="block hover:text-white">Personal Blog</Link>
-              <Link href="/mynetwork/connections" className="block hover:text-white">CRM</Link>
-              <Link href="/mycareer/track" className="block hover:text-white">MySkills</Link>
-            </div>
-          </div>
-          <div className="bg-white/10 border border-white/20 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-2">My Work</h3>
-            <p className="text-white/80 text-sm mb-4">Your outputs, tasks, and momentum.</p>
-            <div className="space-y-2 text-white/90 text-sm">
-              <Link href="/mywork/products" className="block hover:text-white">Work Products</Link>
-              <Link href="/mywork/active" className="block hover:text-white">Stuff I’m Working On</Link>
-              <Link href="/mywork/team" className="block hover:text-white">Team Members</Link>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <p className="text-white/80 text-sm">
-            Everything else is company work.
-          </p>
-          <button
-            onClick={handleContinue}
-            disabled={loading}
-            className="w-full bg-white text-blue-700 py-4 px-8 rounded-xl font-semibold hover:bg-blue-50 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Loading...' : 'Go to Company Work →'}
-          </button>
-        </div>
+        <button
+          onClick={handleContinue}
+          disabled={loading}
+          className="w-full bg-white text-blue-700 py-4 px-8 rounded-xl font-semibold hover:bg-blue-50 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? 'Loading...' : 'Get Started →'}
+        </button>
 
         {workMe?.id && (
           <p className="text-white/60 text-sm">
