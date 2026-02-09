@@ -55,10 +55,10 @@ export async function POST(
       data: {
         rawText: rawText.trim(),
         parsedTitle: parseResult.parsed.title,
-        parsedObjectives: parseResult.parsed.objectives.length > 0 ? parseResult.parsed.objectives : null,
-        parsedMessages: parseResult.parsed.messages.length > 0 ? parseResult.parsed.messages : null,
-        parsedTactics: parseResult.parsed.tactics.length > 0 ? parseResult.parsed.tactics : null,
-        parsedTimeline: parseResult.parsed.timeline,
+        parsedObjectives: parseResult.parsed.objectives.length > 0 ? parseResult.parsed.objectives : undefined,
+        parsedMessages: parseResult.parsed.messages.length > 0 ? parseResult.parsed.messages : undefined,
+        parsedTactics: parseResult.parsed.tactics.length > 0 ? parseResult.parsed.tactics : undefined,
+        parsedTimeline: parseResult.parsed.timeline || undefined,
       },
     })
 

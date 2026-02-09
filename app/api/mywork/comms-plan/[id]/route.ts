@@ -86,14 +86,21 @@ export async function PUT(
     }
 
     // Update fields
+    // For Json fields, use undefined instead of null, and handle empty arrays
     const updated = await prisma.productCommsPlan.update({
       where: { id },
       data: {
         rawText: body.rawText !== undefined ? body.rawText : undefined,
         parsedTitle: body.title !== undefined ? body.title : undefined,
-        parsedObjectives: body.objectives !== undefined ? body.objectives : undefined,
-        parsedMessages: body.messages !== undefined ? body.messages : undefined,
-        parsedTactics: body.tactics !== undefined ? body.tactics : undefined,
+        parsedObjectives: body.objectives !== undefined 
+          ? (body.objectives.length > 0 ? body.objectives : undefined)
+          : undefined,
+        parsedMessages: body.messages !== undefined
+          ? (body.messages.length > 0 ? body.messages : undefined)
+          : undefined,
+        parsedTactics: body.tactics !== undefined
+          ? (body.tactics.length > 0 ? body.tactics : undefined)
+          : undefined,
         parsedTimeline: body.timeline !== undefined ? body.timeline : undefined,
         fullText: body.fullText !== undefined ? body.fullText : undefined,
       },

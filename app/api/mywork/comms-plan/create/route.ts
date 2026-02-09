@@ -61,10 +61,10 @@ export async function POST(request: NextRequest) {
         createdByWorkMeId: auth.id,
         rawText: rawText || null,
         parsedTitle: parsedFields.title,
-        parsedObjectives: parsedFields.objectives.length > 0 ? parsedFields.objectives : null,
-        parsedMessages: parsedFields.messages.length > 0 ? parsedFields.messages : null,
-        parsedTactics: parsedFields.tactics.length > 0 ? parsedFields.tactics : null,
-        parsedTimeline: parsedFields.timeline,
+        parsedObjectives: parsedFields.objectives.length > 0 ? parsedFields.objectives : undefined,
+        parsedMessages: parsedFields.messages.length > 0 ? parsedFields.messages : undefined,
+        parsedTactics: parsedFields.tactics.length > 0 ? parsedFields.tactics : undefined,
+        parsedTimeline: parsedFields.timeline || undefined,
       },
     })
 
