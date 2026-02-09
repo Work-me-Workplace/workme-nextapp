@@ -187,7 +187,13 @@ export async function generateBlogTopicsForSkill(
   if (input.myContributionId) {
     myContribution = await prisma.myContribution.findUnique({
       where: { id: input.myContributionId },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        whatDid: true,
+        results: true,
+        skillTopicIds: true, // Skills demonstrated in this contribution
         companyEvent: {
           select: { id: true, title: true, description: true }
         },
@@ -203,19 +209,6 @@ export async function generateBlogTopicsForSkill(
         companyCommunity: {
           select: { id: true, title: true, description: true }
         },
-      },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        whatDid: true,
-        results: true,
-        skillTopicIds: true, // Skills demonstrated in this contribution
-        companyEvent: true,
-        companyCampaign: true,
-        companyTraining: true,
-        companyImpactEvent: true,
-        companyCommunity: true,
       },
     });
 
