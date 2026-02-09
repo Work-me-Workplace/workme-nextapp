@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireWorkMeAuth } from '@/lib/server/requireWorkMeAuth'
 import { prisma } from '@/lib/prisma'
-import { generateFullCommsPlan } from '@/lib/services/comms-plan-generator'
+import { generateFullCommsPlan, type CommsPlanStructuredFields } from '@/lib/services/comms-plan-generator'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,12 +38,45 @@ export async function POST(
     }
 
     // Build structured fields from product
-    const structuredFields = {
+    // Convert Prisma JsonArray to string[] by filtering and casting
+    const objectives: string[] = Array.isArray(product.parsedObjectives)
+      ? product.parsedObjectives.filter((obj): obj is string => typeof obj === 'string')
+      : []
+    
+    const messages: string[] = Array.isArray(product.parsedMessages)
+      ? product.parsedMessages.filter((msg): msg is string => typeof msg === 'string')
+      : []
+    
+    const tactics: string[] = Array.isArray(product.parsedTactics)
+      ? product.parsedTactics.filter((tactic): tactic is string => typeof tactic === 'string')
+      : []
+    
+    const timeline: CommsPlanStructuredFields['timeline'] = 
+      product.parsedTimeline && 
+      typeof product.parsedTimeline === 'object' && 
+      product.parsedTimeline !== null && 
+      'phases' in product.parsedTimeline
+        ? (product.parsedTimeline as {
+            phases: Array<{
+              name: string
+              startDate?: string
+              endDate?: string
+              products: Array<{
+                name: string
+                channel: string
+                audience: string
+                timing?: string
+              }>
+            }>
+          })
+        : null
+
+    const structuredFields: CommsPlanStructuredFields = {
       title: product.parsedTitle,
-      objectives: Array.isArray(product.parsedObjectives) ? product.parsedObjectives : [],
-      messages: Array.isArray(product.parsedMessages) ? product.parsedMessages : [],
-      tactics: Array.isArray(product.parsedTactics) ? product.parsedTactics : [],
-      timeline: product.parsedTimeline,
+      objectives,
+      messages,
+      tactics,
+      timeline,
     }
 
     // Generate full comms plan
