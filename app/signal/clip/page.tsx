@@ -8,7 +8,8 @@ import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { refreshWorkMe } from '@/lib/workme.client'
 import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Newspaper, Loader2, AlertCircle, CheckCircle, Link as LinkIcon } from 'lucide-react'
+import { Newspaper, Loader2, AlertCircle, CheckCircle, Link as LinkIcon, Search, ExternalLink } from 'lucide-react'
+import type { GoogleScanResponse, SignalSearchResult } from '@/lib/types/signal'
 
 /**
  * Normalize article text by cleaning up excessive spacing and line breaks
@@ -60,12 +61,15 @@ function ClipPageContent() {
   const [fetching, setFetching] = useState(false)
   const [url, setUrl] = useState('')
   const [text, setText] = useState('')
-  const [inputMode, setInputMode] = useState<'url' | 'text'>('url')
+  const [inputMode, setInputMode] = useState<'url' | 'text' | 'search'>('url')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [artifactId, setArtifactId] = useState<string | null>(null)
   const [unitId, setUnitId] = useState<string | null>(null)
   const [platformId, setPlatformId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<SignalSearchResult[]>([])
+  const [searching, setSearching] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -105,6 +109,80 @@ function ClipPageContent() {
 
     return () => unsubscribe()
   }, [router, searchParams])
+
+  async function handleSearch() {
+    if (!searchQuery.trim()) {
+      setError('Please enter a search query')
+      return
+    }
+
+    try {
+      setSearching(true)
+      setError(null)
+      setSuccess(false)
+      setSearchResults([])
+
+      const response = await api.post<GoogleScanResponse>('/api/signalingest/google/scan', {
+        query: searchQuery.trim(),
+      })
+
+      if (response.data.success && response.data.results) {
+        setSearchResults(response.data.results)
+        if (response.data.results.length === 0) {
+          setError('No articles found. Try a different search query.')
+        }
+      } else {
+        setError('Failed to search articles')
+      }
+    } catch (error: any) {
+      console.error('Failed to search articles:', error)
+      setError(error.response?.data?.error || error.message || 'Failed to search articles')
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  async function handleSelectSearchResult(result: SignalSearchResult) {
+    // Set the URL and switch to URL mode, then fetch
+    setUrl(result.url)
+    setInputMode('url')
+    setSearchResults([])
+    setSearchQuery('')
+    setError(null)
+    setSuccess(false)
+    
+    // Automatically fetch the article
+    try {
+      setFetching(true)
+      const response = await api.post('/api/utils/fetch-article', { url: result.url })
+
+      if (response.data.success && response.data.data) {
+        const article = response.data.data
+        // Text is already normalized by the API, but normalize again as safety measure
+        const articleText = article.textContent || article.content || ''
+        setText(normalizeArticleText(articleText))
+        setUrl(article.url || result.url)
+        setSuccess(true)
+      } else {
+        if (response.data.requiresManualPaste) {
+          setError(response.data.error || 'Could not extract article. Please paste the content manually.')
+          setInputMode('text')
+        } else {
+          setError(response.data.error || 'Failed to fetch article')
+        }
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch article:', error)
+      if (error.response?.data?.requiresManualPaste) {
+        setError(error.response.data.error || 'Could not extract article. Please paste the content manually.')
+        setInputMode('text')
+      } else {
+        setError(error.response?.data?.error || error.message || 'Failed to fetch article')
+      }
+    } finally {
+      setFetching(false)
+    }
+  }
 
   async function handleFetchUrl() {
     if (!url.trim()) {
@@ -237,7 +315,7 @@ function ClipPageContent() {
                 <Newspaper className="h-8 w-8 text-blue-600 mr-3" />
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">Clip Ingest Wizard</h1>
-                  <p className="text-gray-600 mt-1">Step 1: Enter URL or paste article text</p>
+                  <p className="text-gray-600 mt-1">Step 1: Search, enter URL, or paste article text</p>
                   {unitId && (
                     <p className="text-sm text-blue-600 mt-1">
                       Creating global artifact (can be routed to unit update after parsing)
@@ -252,6 +330,7 @@ function ClipPageContent() {
                   onClick={() => {
                     setInputMode('url')
                     setError(null)
+                    setSearchResults([])
                   }}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                     inputMode === 'url'
@@ -266,6 +345,7 @@ function ClipPageContent() {
                   onClick={() => {
                     setInputMode('text')
                     setError(null)
+                    setSearchResults([])
                   }}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                     inputMode === 'text'
@@ -276,7 +356,114 @@ function ClipPageContent() {
                   <Newspaper className="w-4 h-4 inline mr-2" />
                   Paste Text
                 </button>
+                <button
+                  onClick={() => {
+                    setInputMode('search')
+                    setError(null)
+                  }}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    inputMode === 'search'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <Search className="w-4 h-4 inline mr-2" />
+                  Search
+                </button>
               </div>
+
+              {/* Search Input */}
+              {inputMode === 'search' && (
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label htmlFor="searchQuery" className="block text-sm font-medium text-gray-700 mb-2">
+                      Search for Articles
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        id="searchQuery"
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleSearch()
+                          }
+                        }}
+                        placeholder="e.g., 'CVN-79 JFK', 'AUKUS submarine', 'defense budget 2026'"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        disabled={searching || loading}
+                      />
+                      <button
+                        onClick={handleSearch}
+                        disabled={searching || loading || !searchQuery.trim()}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
+                      >
+                        {searching ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Searching...
+                          </>
+                        ) : (
+                          <>
+                            <Search className="w-4 h-4 mr-2" />
+                            Search
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Search Results */}
+                  {searchResults.length > 0 && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
+                      <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                        Search Results ({searchResults.length})
+                      </h3>
+                      <div className="space-y-3">
+                        {searchResults.map((result, index) => (
+                          <div
+                            key={index}
+                            className="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-400 hover:shadow-sm transition cursor-pointer"
+                            onClick={() => handleSelectSearchResult(result)}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="text-sm font-semibold text-gray-900 flex-1 pr-2">
+                                {result.title}
+                              </h4>
+                              <ExternalLink className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            </div>
+                            <p className="text-xs text-gray-600 mb-2 line-clamp-2">{result.snippet}</p>
+                            <div className="flex items-center gap-3 text-xs text-gray-500">
+                              <a
+                                href={result.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-blue-600 hover:underline truncate max-w-xs"
+                              >
+                                {result.url}
+                              </a>
+                              {result.source && <span>• {result.source}</span>}
+                              {result.date && <span>• {result.date}</span>}
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleSelectSearchResult(result)
+                              }}
+                              className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              Select & Fetch Article →
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* URL Input */}
               {inputMode === 'url' && (
