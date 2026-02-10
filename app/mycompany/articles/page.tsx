@@ -1,12 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Newspaper, Archive, Wand2, Loader2, Filter, Plus, ArrowRight, Trash2, AlertCircle } from 'lucide-react'
+import { Newspaper, Archive, Wand2, Loader2, Filter, Plus, ArrowRight, Trash2, AlertCircle, FileText } from 'lucide-react'
 
 interface Artifact {
   id: string
@@ -31,6 +31,12 @@ interface Artifact {
 
 export default function ArticlesPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const companyIdParam = searchParams?.get('companyId') ?? ''
+  const addArticleHref = companyIdParam ? `/signal/clip?companyId=${encodeURIComponent(companyIdParam)}` : '/signal/clip'
+  const addArticleNoteLookupHref = companyIdParam
+    ? `/signal/clip?mode=note_lookup&companyId=${encodeURIComponent(companyIdParam)}`
+    : '/signal/clip?mode=note_lookup'
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [artifacts, setArtifacts] = useState<Artifact[]>([])
   const [loading, setLoading] = useState(true)
@@ -99,12 +105,12 @@ export default function ArticlesPage() {
         
         // Filter for unassigned if needed
         if (filterCategory === 'unassigned') {
-          artifactsList = artifactsList.filter(a => !a.categoryId)
+          artifactsList = artifactsList.filter((a: Artifact) => !a.categoryId)
         }
         
         // Sort: unassigned (no category) first if showUnassignedFirst is true and not filtering by category
         if (showUnassignedFirst && filterCategory === 'all') {
-          artifactsList = artifactsList.sort((a, b) => {
+          artifactsList = artifactsList.sort((a: Artifact, b: Artifact) => {
             // Unassigned (no category) first
             if (!a.categoryId && b.categoryId) return -1
             if (a.categoryId && !b.categoryId) return 1
@@ -192,13 +198,23 @@ export default function ArticlesPage() {
                   All articles and news artifacts. Parse to determine what they're about (company, product, unit, leader, process), then create appropriate records.
                 </p>
               </div>
-              <Link
-                href="/signal/clip"
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Article
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={addArticleHref}
+                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Article
+                </Link>
+                <Link
+                  href={addArticleNoteLookupHref}
+                  className="flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition font-medium"
+                  title="Add article by looking up a phrase you heard in a meeting"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Add via Note Lookup
+                </Link>
+              </div>
             </div>
 
             {/* Filters */}
@@ -313,13 +329,22 @@ export default function ArticlesPage() {
                 <Archive className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No Articles Yet</h3>
                 <p className="text-gray-600 mb-6">Start by adding articles from Signals or manually.</p>
-                <Link
-                  href="/signal/clip"
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add First Article
-                </Link>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <Link
+                    href={addArticleHref}
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add First Article
+                  </Link>
+                  <Link
+                    href={addArticleNoteLookupHref}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Add via Note Lookup
+                  </Link>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
