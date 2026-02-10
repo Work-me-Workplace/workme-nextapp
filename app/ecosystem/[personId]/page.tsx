@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import TopNav from '@/components/layout/TopNav'
-import { Twitter, RefreshCw, Loader2, Building2, TrendingUp, Users, Calendar } from 'lucide-react'
+import { Twitter, RefreshCw, Loader2, Building2, TrendingUp, Users, Calendar, Bell, BellOff } from 'lucide-react'
 import api from '@/lib/api'
 
 interface EcosystemPerson {
@@ -50,6 +50,9 @@ export default function ContactDetailPage() {
   const [person, setPerson] = useState<EcosystemPerson | null>(null)
   const [tweets, setTweets] = useState<Tweet[]>([])
   const [refreshing, setRefreshing] = useState(false)
+  const [followForXFeed, setFollowForXFeed] = useState(false)
+  const [updatingFollow, setUpdatingFollow] = useState(false)
+  const [contactId, setContactId] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -74,6 +77,8 @@ export default function ContactDetailPage() {
       
       if (contact?.person) {
         setPerson(contact.person)
+        setFollowForXFeed(contact.followForXFeed || false)
+        setContactId(contact.id)
         
         // If person was hydrated before, load tweets (we could store these separately or reload)
         // For now, we'll trigger a fresh hydration if lastHydratedAt is old (> 1 day)
@@ -139,6 +144,30 @@ export default function ContactDetailPage() {
       alert('Failed to refresh signals: ' + (error.response?.data?.error || error.message))
     } finally {
       setRefreshing(false)
+    }
+  }
+
+  const handleToggleFollowForXFeed = async () => {
+    if (!person || !contactId) return
+
+    try {
+      setUpdatingFollow(true)
+      const newFollowState = !followForXFeed
+
+      const response = await api.patch(`/api/ecosystem/contacts/${contactId}`, {
+        followForXFeed: newFollowState,
+      })
+
+      if (response.data.success) {
+        setFollowForXFeed(newFollowState)
+      } else {
+        throw new Error(response.data.error || 'Failed to update follow status')
+      }
+    } catch (error: any) {
+      console.error('Toggle follow error:', error)
+      alert('Failed to update follow status: ' + (error.response?.data?.error || error.message))
+    } finally {
+      setUpdatingFollow(false)
     }
   }
 
@@ -244,6 +273,48 @@ export default function ContactDetailPage() {
                 </div>
               </div>
             </section>
+
+            {/* X Feed Follow Section */}
+            {person.xHandle && (
+              <section className="bg-white rounded-lg shadow p-6 mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-1">X Feed</h2>
+                    <p className="text-sm text-gray-600">
+                      {followForXFeed 
+                        ? 'Including this contact in your X feed'
+                        : 'Not included in your X feed'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleToggleFollowForXFeed}
+                    disabled={updatingFollow}
+                    className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
+                      followForXFeed
+                        ? 'bg-green-600 text-white hover:bg-green-700'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    } disabled:bg-gray-400 disabled:cursor-not-allowed`}
+                  >
+                    {updatingFollow ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Updating...
+                      </>
+                    ) : followForXFeed ? (
+                      <>
+                        <Bell className="h-4 w-4" />
+                        Following
+                      </>
+                    ) : (
+                      <>
+                        <BellOff className="h-4 w-4" />
+                        Follow for Feed
+                      </>
+                    )}
+                  </button>
+                </div>
+              </section>
+            )}
 
             {/* Signal Intelligence Section */}
             <section className="bg-white rounded-lg shadow p-6 mb-6">

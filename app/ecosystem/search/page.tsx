@@ -42,13 +42,43 @@ export default function EcosystemSearchPage() {
 
     try {
       setSearching(true)
-      const response = await api.get(`/api/x/search?q=${encodeURIComponent(searchQuery.trim())}`)
       
-      if (response.data.success) {
-        setResults(response.data.results || [])
+      // Check if it's a handle (starts with @ or looks like a handle)
+      const query = searchQuery.trim()
+      const isHandle = query.startsWith('@') || /^[a-zA-Z0-9_]+$/.test(query)
+      
+      if (isHandle) {
+        // Manual handle entry - create person directly
+        const handle = query.replace('@', '').trim()
+        const mockResult: XUserSearchResult = {
+          fullName: handle, // Will be updated when we resolve
+          handle: handle,
+          xUserId: '', // Will be resolved
+          profileImage: '',
+          bio: '',
+          followers: 0,
+        }
+        setResults([mockResult])
       } else {
-        alert('Search failed: ' + (response.data.error || 'Unknown error'))
-        setResults([])
+        // Try database search (doesn't use X API)
+        const response = await api.get(`/api/ecosystem/search?q=${encodeURIComponent(query)}`)
+        
+        if (response.data.success) {
+          // Transform EcosystemPerson[] to XUserSearchResult[]
+          const persons = response.data.persons || []
+          const transformedResults: XUserSearchResult[] = persons.map((p: any) => ({
+            fullName: p.fullName,
+            handle: p.xHandle || '',
+            xUserId: p.xUserId || '',
+            profileImage: p.profileImage || '',
+            bio: p.bio || '',
+            followers: p.followers || 0,
+          }))
+          setResults(transformedResults)
+        } else {
+          alert('Search failed: ' + (response.data.error || 'Unknown error'))
+          setResults([])
+        }
       }
     } catch (error: any) {
       console.error('Search error:', error)
@@ -63,26 +93,44 @@ export default function EcosystemSearchPage() {
     if (!workMeId) return
 
     try {
-      setSaving(result.xUserId)
+      setSaving(result.handle || result.xUserId)
       
-      // Save person
+      // Step 1: Save person (with handle)
       const saveResponse = await api.post('/api/ecosystem/savePerson', {
-        fullName: result.fullName,
+        fullName: result.fullName || result.handle,
         xHandle: result.handle,
-        xUserId: result.xUserId,
-        profileImage: result.profileImage,
-        bio: result.bio,
-        followers: result.followers,
+        xUserId: result.xUserId || undefined,
+        profileImage: result.profileImage || undefined,
+        bio: result.bio || undefined,
+        followers: result.followers || undefined,
       })
 
       if (!saveResponse.data.success) {
         throw new Error(saveResponse.data.error || 'Failed to save person')
       }
 
-      const { personId, needsHydration } = saveResponse.data
+      const { personId } = saveResponse.data
 
-      // Trigger hydration immediately
-      if (needsHydration) {
+      // Step 2: Resolve xUserId if we have handle but no xUserId
+      if (result.handle && !result.xUserId) {
+        try {
+          const resolveResponse = await api.post('/api/x/resolve-user-id', {
+            personId,
+            handle: result.handle,
+          })
+          
+          if (resolveResponse.data.success && resolveResponse.data.xUserId) {
+            // Update result with resolved xUserId for hydration
+            result.xUserId = resolveResponse.data.xUserId
+          }
+        } catch (resolveError) {
+          console.error('xUserId resolution error (non-fatal):', resolveError)
+          // Continue even if resolution fails
+        }
+      }
+
+      // Step 3: Hydrate profile data (if we have xUserId)
+      if (result.xUserId || result.handle) {
         try {
           await api.post('/api/x/hydrate', {
             personId,
@@ -94,6 +142,9 @@ export default function EcosystemSearchPage() {
           // Continue even if hydration fails
         }
       }
+
+      // Step 4: Enable feed follow (optional - user can do this later)
+      // For now, just save the contact
 
       // Navigate to contact detail page
       router.push(`/ecosystem/${personId}`)
@@ -137,7 +188,7 @@ export default function EcosystemSearchPage() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Find journalist, influencer, think-tank analyst… (e.g., Justin Katz)"
+                    placeholder="Search by name or enter X handle (e.g., @dfriedmanWFED or dfriedmanWFED)"
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     disabled={searching}
                   />
@@ -169,9 +220,9 @@ export default function EcosystemSearchPage() {
                   Results ({results.length})
                 </h2>
                 
-                {results.map((result) => (
+                {results.map((result, idx) => (
                   <div
-                    key={result.xUserId}
+                    key={result.xUserId || result.handle || idx}
                     className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-lg transition"
                   >
                     <div className="flex items-start gap-4">
@@ -210,10 +261,10 @@ export default function EcosystemSearchPage() {
                       {/* Save Button */}
                       <button
                         onClick={() => handleSaveContact(result)}
-                        disabled={saving === result.xUserId}
+                        disabled={saving === (result.xUserId || result.handle)}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center gap-2"
                       >
-                        {saving === result.xUserId ? (
+                        {saving === (result.xUserId || result.handle) ? (
                           <>
                             <Loader2 className="h-4 w-4 animate-spin" />
                             Adding...

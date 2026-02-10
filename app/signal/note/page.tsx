@@ -131,7 +131,7 @@ export default function NoteLookupPage() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="mb-8">
               <Link href="/signal" className="text-blue-600 hover:text-blue-800 text-sm mb-4 inline-block">
-                ← Back to Signals
+                ← Back to Global Artifacts
               </Link>
               <div className="flex items-center gap-3 mb-2">
                 <FileText className="h-8 w-8 text-blue-600" />

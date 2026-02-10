@@ -71,7 +71,7 @@ export default function SeniorSignalPage() {
               className="flex items-center text-blue-600 hover:text-blue-700 mb-6 text-sm"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Signals
+              Back to Global Artifacts
             </Link>
 
             <div className="bg-white rounded-lg shadow p-8">

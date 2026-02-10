@@ -30,9 +30,14 @@ export async function GET(
 
     const { id } = await params
 
-    // Get artifact
+    // Get artifact with category
     const artifact = await prisma.companyNewsArtifact.findUnique({
       where: { id },
+      include: {
+        category: {
+          select: { id: true, name: true, description: true, color: true },
+        },
+      },
     })
 
     if (!artifact) {
@@ -59,6 +64,8 @@ export async function GET(
         sourceUrl: artifact.sourceUrl,
         sourceName: artifact.sourceName,
         artifactType: artifact.artifactType,
+        categoryId: artifact.categoryId,
+        category: artifact.category,
         createdAt: artifact.createdAt,
       },
     })
@@ -74,6 +81,107 @@ export async function GET(
 
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to get news artifact' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * PATCH /api/utils/news-artifact/[id]
+ *
+ * Update headline, rawText, and/or categoryId
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { firebaseId } = await verifyAuth(request)
+    const workMe = await loadWorkMe(firebaseId)
+    const { id: workMeId, companyId } = workMe
+
+    if (!workMeId || !companyId) {
+      return NextResponse.json(
+        { success: false, error: 'Not authenticated or companyId not set' },
+        { status: 401 }
+      )
+    }
+
+    const { id } = await params
+    const artifact = await prisma.companyNewsArtifact.findUnique({
+      where: { id },
+    })
+
+    if (!artifact) {
+      return NextResponse.json(
+        { success: false, error: 'News artifact not found' },
+        { status: 404 }
+      )
+    }
+
+    if (artifact.companyId !== companyId) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const { headline, rawText, categoryId } = body
+
+    let newCategoryId: string | null = undefined as unknown as string | null
+    if (categoryId !== undefined) {
+      if (categoryId === '' || categoryId === null) {
+        newCategoryId = null
+      } else {
+        const category = await prisma.articleCategory.findUnique({
+          where: { id: categoryId },
+        })
+        if (!category || category.companyId !== companyId) {
+          return NextResponse.json(
+            { success: false, error: 'Category not found or not in your company' },
+            { status: 400 }
+          )
+        }
+        newCategoryId = categoryId
+      }
+    }
+
+    const updated = await prisma.companyNewsArtifact.update({
+      where: { id },
+      data: {
+        ...(headline !== undefined && { headline: headline?.trim() || null }),
+        ...(rawText !== undefined && { rawText: rawText.trim() }),
+        ...(newCategoryId !== undefined && { categoryId: newCategoryId }),
+      },
+      include: {
+        category: {
+          select: { id: true, name: true, description: true, color: true },
+        },
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: updated.id,
+        headline: updated.headline,
+        rawText: updated.rawText,
+        categoryId: updated.categoryId,
+        category: updated.category,
+        updatedAt: updated.updatedAt,
+      },
+    })
+  } catch (error: any) {
+    console.error('❌ PATCH /api/utils/news-artifact/[id] error:', error)
+    if (error.message?.includes('Unauthorized')) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 401 }
+      )
+    }
+    return NextResponse.json(
+      { success: false, error: error.message || 'Failed to update artifact' },
       { status: 500 }
     )
   }

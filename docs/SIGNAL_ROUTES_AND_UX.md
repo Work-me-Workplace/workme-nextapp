@@ -64,7 +64,7 @@ Form-based page to check if a phrase heard in a meeting is publicly verifiable.
     - Source name
     - Date (if available)
 - Error handling with red alert box
-- "Back to Signals" link
+- "Back to Global Artifacts" link
 - Sidebar navigation included
 
 **API Endpoint:**  
@@ -117,7 +117,7 @@ Form-based page for broad keyword-based web/news searches.
     - Source name
     - Date (if available)
 - Error handling with red alert box
-- "Back to Signals" link
+- "Back to Global Artifacts" link
 - Sidebar navigation included
 
 **API Endpoint:**  
@@ -412,7 +412,7 @@ All signal pages should include:
    - Icon (color-coded)
    - Title
    - Description
-   - "Back to Signals" link (for sub-pages)
+   - "Back to Global Artifacts" link (for sub-pages)
 
 4. **Form Section:**
    - White card with shadow

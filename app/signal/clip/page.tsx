@@ -372,7 +372,7 @@ function ClipPageContent() {
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              Back to Signals
+              Back to Global Artifacts
             </Link>
 
             <div className="bg-white rounded-lg shadow-md p-8">
@@ -495,7 +495,7 @@ function ClipPageContent() {
                       </button>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      Check if the phrase is publicly verifiable; select a result to add as an article.
+                      Check if the phrase is publicly verifiable. Select a result to <strong>fetch and ingest</strong> the article here (content is saved to Global Artifacts).
                     </p>
                   </div>
 
@@ -505,6 +505,9 @@ function ClipPageContent() {
                       <h3 className="text-sm font-semibold text-gray-700 mb-3">
                         Verifiable Results ({searchResults.length})
                       </h3>
+                      <p className="text-xs text-gray-500 mb-3">
+                        &quot;Select &amp; Fetch Article&quot; fetches the full article and adds it below; then click Save &amp; Continue to store it in Global Artifacts.
+                      </p>
                       <div className="space-y-3">
                         {searchResults.map((result, index) => (
                           <div
@@ -598,6 +601,9 @@ function ClipPageContent() {
                       <h3 className="text-sm font-semibold text-gray-700 mb-3">
                         Search Results ({searchResults.length})
                       </h3>
+                      <p className="text-xs text-gray-500 mb-3">
+                        &quot;Select &amp; Fetch Article&quot; fetches the full article and adds it below; then click Save &amp; Continue to store it in Global Artifacts.
+                      </p>
                       <div className="space-y-3">
                         {searchResults.map((result, index) => (
                           <div

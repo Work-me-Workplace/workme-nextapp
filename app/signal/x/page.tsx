@@ -85,7 +85,7 @@ export default function XFeedLandingPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="mb-8">
               <Link href="/signal" className="text-purple-600 hover:text-purple-800 text-sm mb-4 inline-block">
-                ← Back to Signals
+                ← Back to Global Artifacts
               </Link>
               <div className="flex items-center gap-3 mb-2">
                 <Twitter className="h-8 w-8 text-purple-600" />
