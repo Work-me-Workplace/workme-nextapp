@@ -204,6 +204,12 @@ enum WorkforceConcernType {
   TRUST_CREDIBILITY
 }
 
+enum CommsPlanType {
+  WORKFORCE_CONCERN // Address workforce concerns/pressures
+  EVENT // Address company events
+  GENERAL // General purpose comms plan
+}
+
 enum PlatformMilestoneType {
   CONTRACT_AWARDED
   KEEL_LAYING
@@ -1834,6 +1840,9 @@ model ExternalCompanyPressure {
 
   workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
 
+  // Comms plans that address this pressure
+  commsPlans ProductCommsPlan[]
+
   @@index([source])
   @@index([workforceConcern])
   @@index([levelOfSeverity])
@@ -2549,6 +2558,16 @@ model ProductCommsPlan {
   createdByWorkMeId String  @db.Uuid
   createdBy         WorkMe  @relation("ProductCommsPlanCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
+  // Comms plan type (what it addresses)
+  type CommsPlanType @default(GENERAL)
+
+  // Link to ExternalCompanyPressure (for WORKFORCE_CONCERN type)
+  externalCompanyPressureId String?
+  externalCompanyPressure   ExternalCompanyPressure? @relation(fields: [externalCompanyPressureId], references: [id], onDelete: SetNull)
+
+  // Background/context section - historical context from linked pressures or manual input
+  background String? // Full historical context/background for the comms plan
+
   // Raw text input (user pastes raw text)
   rawText String?
 
@@ -2565,6 +2584,8 @@ model ProductCommsPlan {
   @@index([companyUnit])
   @@index([createdByWorkMeId])
   @@index([archivedAt])
+  @@index([type])
+  @@index([externalCompanyPressureId])
 }
 
 // ============================================

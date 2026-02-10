@@ -22,6 +22,7 @@ function getOpenAI() {
 
 export interface ParsedCommsPlan {
   title: string | null
+  background: string | null // Background/context section
   objectives: string[]
   messages: string[]
   tactics: string[]
@@ -56,14 +57,16 @@ export async function parseCommsPlan(
 
 Your task is to extract structured information from the provided text and organize it into:
 1. Title - The main title/name of the comms plan
-2. Objectives - Array of communication objectives/goals
-3. Messages - Array of key messages to communicate
-4. Tactics - Array of communication tactics/channels/methods
-5. Timeline - A product matrix structure with phases, products, channels, audiences, and timing
+2. Background - Context, history, or background information that informs the comms plan (if present)
+3. Objectives - Array of communication objectives/goals
+4. Messages - Array of key messages to communicate
+5. Tactics - Array of communication tactics/channels/methods
+6. Timeline - A product matrix structure with phases, products, channels, audiences, and timing
 
 RULES:
 - Extract information that is explicitly stated in the text
 - If information is missing, use null or empty arrays
+- Background should capture historical context, root causes, or situational context that informs why this comms plan is needed
 - Objectives should be clear, measurable goals
 - Messages should be key talking points or themes
 - Tactics should be specific communication methods (email, meetings, posters, etc.)
@@ -73,6 +76,7 @@ RULES:
 Return ONLY valid JSON in this format:
 {
   "title": "Q4 Product Launch Communications Plan",
+  "background": "Recent organizational changes and workforce concerns about job security have created uncertainty. This plan addresses those concerns.",
   "objectives": [
     "Increase awareness of new product features",
     "Drive adoption among target audience"
@@ -179,6 +183,7 @@ ${rawText.substring(0, 8000)}`
     return {
       parsed: {
         title: null,
+        background: null,
         objectives: [],
         messages: [],
         tactics: [],

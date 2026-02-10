@@ -13,6 +13,9 @@ interface CreateCommsPlanRequest {
   tactics?: string[]
   timeline?: any
   companyUnit?: string
+  type?: 'WORKFORCE_CONCERN' | 'EVENT' | 'GENERAL'
+  externalCompanyPressureId?: string // For WORKFORCE_CONCERN type
+  background?: string // Manual background, or will be auto-generated from pressures
 }
 
 /**
@@ -26,11 +29,54 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireWorkMeAuth(request)
     const body: CreateCommsPlanRequest = await request.json()
-    const { rawText, title, objectives, messages, tactics, timeline, companyUnit } = body
+    const { 
+      rawText, 
+      title, 
+      objectives, 
+      messages, 
+      tactics, 
+      timeline, 
+      companyUnit,
+      type = 'GENERAL',
+      externalCompanyPressureId,
+      background: manualBackground
+    } = body
+
+    // Fetch background context if linked to external pressure
+    let backgroundContext = manualBackground || null
+    if (type === 'WORKFORCE_CONCERN' && externalCompanyPressureId) {
+      // Get the specific pressure
+      const pressure = await prisma.externalCompanyPressure.findUnique({
+        where: { id: externalCompanyPressureId },
+      })
+
+      if (pressure) {
+        // Get full history of related pressures (same workforce concern type)
+        const relatedPressures = await prisma.externalCompanyPressure.findMany({
+          where: {
+            workMeId: auth.id,
+            workforceConcern: pressure.workforceConcern,
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10, // Last 10 related pressures
+        })
+
+        // Build background from pressure history
+        const pressureHistory = relatedPressures.map(p => 
+          `- ${p.title} (${p.source}): ${p.summary}${p.impact ? ` Impact: ${p.impact}` : ''} [Severity: ${p.levelOfSeverity}/5]`
+        ).join('\n')
+
+        backgroundContext = `Workforce Concern: ${pressure.workforceConcern}\n\n` +
+          `Current Pressure:\n${pressure.title} (${pressure.source}): ${pressure.summary}${pressure.impact ? `\nImpact: ${pressure.impact}` : ''}\n` +
+          `Severity Level: ${pressure.levelOfSeverity}/5\n\n` +
+          `Historical Context (Related Pressures):\n${pressureHistory}`
+      }
+    }
 
     // If rawText is provided, parse it
     let parsedFields = {
       title: title || null,
+      background: backgroundContext,
       objectives: objectives || [],
       messages: messages || [],
       tactics: tactics || [],
@@ -43,6 +89,7 @@ export async function POST(request: NextRequest) {
         // Merge parsed fields with provided fields (provided fields take precedence)
         parsedFields = {
           title: title || parseResult.parsed.title,
+          background: backgroundContext || parseResult.parsed.background,
           objectives: objectives || parseResult.parsed.objectives,
           messages: messages || parseResult.parsed.messages,
           tactics: tactics || parseResult.parsed.tactics,
@@ -59,6 +106,9 @@ export async function POST(request: NextRequest) {
       data: {
         companyUnit: companyUnit || null,
         createdByWorkMeId: auth.id,
+        type: type as any,
+        externalCompanyPressureId: externalCompanyPressureId || undefined,
+        background: parsedFields.background,
         rawText: rawText || null,
         parsedTitle: parsedFields.title,
         parsedObjectives: parsedFields.objectives.length > 0 ? parsedFields.objectives : undefined,

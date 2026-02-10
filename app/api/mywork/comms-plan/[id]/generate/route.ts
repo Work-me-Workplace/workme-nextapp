@@ -73,6 +73,7 @@ export async function POST(
 
     const structuredFields: CommsPlanStructuredFields = {
       title: product.parsedTitle,
+      background: product.background,
       objectives,
       messages,
       tactics,

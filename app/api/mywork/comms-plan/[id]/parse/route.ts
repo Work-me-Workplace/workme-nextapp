@@ -50,11 +50,18 @@ export async function POST(
     const parseResult = await parseCommsPlan(rawText.trim())
 
     // Update the product with parsed fields
+    // Preserve existing background if not parsed, otherwise use parsed background
+    const existingProduct = await prisma.productCommsPlan.findUnique({
+      where: { id },
+      select: { background: true },
+    })
+
     const updated = await prisma.productCommsPlan.update({
       where: { id },
       data: {
         rawText: rawText.trim(),
         parsedTitle: parseResult.parsed.title,
+        background: parseResult.parsed.background || existingProduct?.background || undefined,
         parsedObjectives: parseResult.parsed.objectives.length > 0 ? parseResult.parsed.objectives : undefined,
         parsedMessages: parseResult.parsed.messages.length > 0 ? parseResult.parsed.messages : undefined,
         parsedTactics: parseResult.parsed.tactics.length > 0 ? parseResult.parsed.tactics : undefined,

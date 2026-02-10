@@ -18,6 +18,7 @@ function getOpenAI() {
 
 export interface CommsPlanStructuredFields {
   title: string | null
+  background: string | null
   objectives: string[]
   messages: string[]
   tactics: string[]
@@ -56,7 +57,7 @@ Your task is to generate a complete, professional communications plan document f
 The output should be:
 - Well-formatted and professional
 - Suitable for export to Word document
-- Include all sections: Title, Objectives, Messages, Tactics, Timeline
+- Include all sections: Background (if provided), Title, Objectives, Messages, Tactics, Timeline
 - Format the timeline as a clear product matrix
 - Use clear headings and structure
 - Be ready for executive review
@@ -67,7 +68,7 @@ Format the output as a comprehensive text document that can be copied into Word.
 
 Title: ${fields.title || 'Untitled Communications Plan'}
 
-Objectives:
+${fields.background ? `Background:\n${fields.background}\n\n` : ''}Objectives:
 ${fields.objectives.map((obj, i) => `${i + 1}. ${obj}`).join('\n') || 'None specified'}
 
 Key Messages:
@@ -137,6 +138,13 @@ function generateFallbackCommsPlan(fields: CommsPlanStructuredFields): string {
 
   if (fields.title) {
     sections.push(`Title: ${fields.title}`)
+    sections.push(``)
+  }
+
+  if (fields.background) {
+    sections.push(`BACKGROUND`)
+    sections.push(`----------`)
+    sections.push(fields.background)
     sections.push(``)
   }
 
