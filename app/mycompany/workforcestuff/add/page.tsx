@@ -25,8 +25,7 @@ export default function AddWorkforceStuffPage() {
   const [step, setStep] = useState<'input' | 'review' | 'success'>('input')
   const [selectedType, setSelectedType] = useState<string>('')
   const [parsedData, setParsedData] = useState<any>(null)
-  const [trainingId, setTrainingId] = useState<string | null>(null)
-  const [impactEventId, setImpactEventId] = useState<string | null>(null)
+  const [createdId, setCreatedId] = useState<string | null>(null)
   const [createdRedirectTo, setCreatedRedirectTo] = useState<string | null>(null)
   const [result, setResult] = useState<{
     type: string
@@ -91,99 +90,21 @@ export default function AddWorkforceStuffPage() {
     setError(null)
 
     try {
-      // Training and impact_event: parse only (no DB write). Everything stays in React state until Save.
-      if (selectedType === 'training' || selectedType === 'impact_event') {
-        const res = await api.post(`/api/workstuff/ingest/${selectedType}/parse`, {
-          rawText: rawText.trim(),
-        })
-        const data = res.data
-        if (!data.success) {
-          setError(data.error || data.parseError || 'Failed to parse content')
-          return
-        }
-        if (data.model) {
-          setParsedData(data.model)
-        } else {
-          setError('No parsed data returned')
-          return
-        }
-        setStep('review')
-        return
-      }
-
-      // Other types: legacy flow (create pending record, then user can finalize elsewhere)
-      const companyId = await resolveCompanyId()
-      if (!companyId) {
-        setError('No companyId found. Please set your company first.')
-        setLoading(false)
-        return
-      }
-
-      const res = await api.post(`/api/workstuff/ingest/${selectedType}/create`, {
-        selectedType,
+      // All types: parse only (no DB write). Everything stays in React state until Save.
+      const res = await api.post(`/api/workstuff/ingest/${selectedType}/parse`, {
         rawText: rawText.trim(),
-        companyId,
       })
-
       const data = res.data
-
       if (!data.success) {
-        setError(data.error || 'Failed to create ingest record')
+        setError(data.error || data.parseError || 'Failed to parse content')
         return
       }
-
-      const idFieldMap: Record<string, string> = {
-        training: 'trainingId',
-        career: 'careerId',
-        event: 'eventId',
-        campaign: 'campaignId',
-        impact_event: 'impactEventId',
-        community: 'communityId',
-        benefits: 'benefitsId',
-        employee_cause: 'employeeCauseId',
-      }
-
-      const idField = idFieldMap[selectedType]
-      const created = idField ? data[idField] : data.id
-      if (!created || typeof created !== 'string') {
-        setError('Server response missing created id')
-        return
-      }
-
-      if (selectedType === 'training') {
-        setTrainingId(created)
-      }
-      if (selectedType === 'impact_event') {
-        setImpactEventId(created)
-      }
-      if (data.redirectTo) {
-        setCreatedRedirectTo(data.redirectTo)
-      }
-
-      if (data.parseError) {
-        console.warn('⚠️ Parse error (but record created):', data.parseError)
-        setError(data.parseWarning || `Warning: ${data.parseError}. Record created but parsing failed. You can review and edit manually.`)
-      }
-
       if (data.model) {
         setParsedData(data.model)
-      } else if (selectedType === 'training' || selectedType === 'impact_event') {
-        try {
-          const hydrateEndpoint = selectedType === 'training'
-            ? '/api/workstuff/ingest/training-hydrate'
-            : '/api/workstuff/ingest/impact-event-hydrate'
-          const hydrateRes = await api.post(hydrateEndpoint, {
-            [selectedType === 'training' ? 'trainingId' : 'impactEventId']: created,
-          })
-
-          if (hydrateRes.data.success && hydrateRes.data.model) {
-            setParsedData(hydrateRes.data.model)
-          }
-        } catch (hydrateError) {
-          console.error('Hydrate fallback error:', hydrateError)
-        }
+      } else {
+        setError('No parsed data returned')
+        return
       }
-
       setStep('review')
     } catch (err: any) {
       console.error('Create ingest error:', err)
@@ -286,6 +207,107 @@ export default function AddWorkforceStuffPage() {
     } catch (err: any) {
       console.error('Impact Event save error:', err)
       setError(err.message || 'Failed to save impact event')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleFinalizeOther() {
+    if (!parsedData) {
+      setError(`Missing ${selectedType} data to save`)
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const companyId = await resolveCompanyId()
+      if (!companyId) {
+        setError('No companyId found. Please set your company first.')
+        setLoading(false)
+        return
+      }
+
+      // First create the record
+      const createRes = await api.post(`/api/workstuff/ingest/${selectedType}/create`, {
+        rawText: rawText.trim(),
+        companyId,
+      })
+
+      const createData = createRes.data
+      if (!createData.success) {
+        setError(createData.error || 'Failed to create record')
+        return
+      }
+
+      const idFieldMap: Record<string, string> = {
+        event: 'eventId',
+        campaign: 'campaignId',
+        community: 'communityId',
+        benefits: 'benefitsId',
+        employee_cause: 'employeeCauseId',
+        leader_engagement: 'leaderEngagementId',
+      }
+
+      const idField = idFieldMap[selectedType]
+      const createdId = idField ? createData[idField] : createData.id
+      if (!createdId || typeof createdId !== 'string') {
+        setError('Server response missing created id')
+        return
+      }
+
+      // Then save the parsed data
+      const saveEndpointMap: Record<string, string> = {
+        event: '/api/workstuff/ingest/event-save',
+        campaign: '/api/workstuff/ingest/campaign-save',
+        community: '/api/workstuff/ingest/community-save',
+        benefits: '/api/workstuff/ingest/benefits-save',
+        employee_cause: '/api/workstuff/ingest/employee-cause-save',
+        leader_engagement: '/api/workstuff/ingest/leader-engagement-save',
+      }
+
+      const saveEndpoint = saveEndpointMap[selectedType]
+      if (!saveEndpoint) {
+        setError(`No save endpoint for type: ${selectedType}`)
+        return
+      }
+
+      const saveRes = await api.post(saveEndpoint, {
+        [idField]: createdId,
+        ...parsedData,
+      })
+
+      const saveData = saveRes.data
+      if (!saveData.success) {
+        setError(saveData.error || 'Failed to save data')
+        return
+      }
+
+      const redirectPathMap: Record<string, string> = {
+        event: `/mycompany/workforcestuff/event/${createdId}`,
+        campaign: `/mycompany/workforcestuff/campaign/${createdId}`,
+        community: `/mycompany/workforcestuff/community/${createdId}`,
+        benefits: `/mycompany/workforcestuff/benefits/${createdId}`,
+        employee_cause: `/mycompany/workforcestuff/employee-cause/${createdId}`,
+        leader_engagement: `/mycompany/workforcestuff/leader-engagement/${createdId}`,
+      }
+
+      const redirectPath = redirectPathMap[selectedType] || `/mycompany/workforcestuff`
+      setResult({
+        type: selectedType,
+        confidence: 0,
+        explanation: '',
+        redirectTo: redirectPath,
+      })
+      setStep('success')
+
+      setTimeout(() => {
+        router.push(redirectPath)
+      }, 2000)
+    } catch (err: any) {
+      console.error(`${selectedType} save error:`, err)
+      setError(err.message || `Failed to save ${selectedType}`)
     } finally {
       setLoading(false)
     }
@@ -418,23 +440,611 @@ export default function AddWorkforceStuffPage() {
       )
     }
 
-    if (selectedType !== 'training') {
+    if (selectedType === 'event') {
       return (
-        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-gray-700">
-            Review UI for {formatTypeName(selectedType)} coming soon. For now, your item is created in pending state.
-          </p>
-          <p className="text-xs text-gray-600 mt-2">
-            We created the ingest snapshot but did not save parsed fields yet.
-          </p>
-          {createdRedirectTo && (
-            <button
-              onClick={() => router.push(createdRedirectTo)}
-              className="mt-4 inline-flex items-center px-4 py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            >
-              View Draft →
-            </button>
-          )}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+            <input
+              type="text"
+              value={parsedData?.title || ''}
+              onChange={(e) => setParsedData({ ...parsedData, title: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
+            <input
+              type="text"
+              value={parsedData?.theme || ''}
+              onChange={(e) => setParsedData({ ...parsedData, theme: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea
+              value={parsedData?.description || ''}
+              onChange={(e) => setParsedData({ ...parsedData, description: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md h-32"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Event Date</label>
+              <input
+                type="date"
+                value={parsedData?.eventDate || ''}
+                onChange={(e) => setParsedData({ ...parsedData, eventDate: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <input
+                type="text"
+                value={parsedData?.location || ''}
+                onChange={(e) => setParsedData({ ...parsedData, location: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+              <input
+                type="time"
+                value={parsedData?.startTime || ''}
+                onChange={(e) => setParsedData({ ...parsedData, startTime: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+              <input
+                type="time"
+                value={parsedData?.endTime || ''}
+                onChange={(e) => setParsedData({ ...parsedData, endTime: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <input
+                type="text"
+                value={parsedData?.eventCategory || ''}
+                onChange={(e) => setParsedData({ ...parsedData, eventCategory: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Audience</label>
+              <input
+                type="text"
+                value={parsedData?.audience || ''}
+                onChange={(e) => setParsedData({ ...parsedData, audience: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Registration Link</label>
+            <input
+              type="url"
+              value={parsedData?.registrationLink || ''}
+              onChange={(e) => setParsedData({ ...parsedData, registrationLink: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Point of Contact</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={parsedData?.pocEmail || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocEmail: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                <input
+                  type="tel"
+                  value={parsedData?.pocPhone || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocPhone: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    if (selectedType === 'campaign') {
+      return (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+            <input
+              type="text"
+              value={parsedData?.title || ''}
+              onChange={(e) => setParsedData({ ...parsedData, title: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea
+              value={parsedData?.description || ''}
+              onChange={(e) => setParsedData({ ...parsedData, description: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md h-32"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Window Start</label>
+              <input
+                type="date"
+                value={parsedData?.windowStart || ''}
+                onChange={(e) => setParsedData({ ...parsedData, windowStart: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Window End</label>
+              <input
+                type="date"
+                value={parsedData?.windowEnd || ''}
+                onChange={(e) => setParsedData({ ...parsedData, windowEnd: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">CTA Link</label>
+            <input
+              type="url"
+              value={parsedData?.ctaLink || ''}
+              onChange={(e) => setParsedData({ ...parsedData, ctaLink: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Sponsor</label>
+            <input
+              type="text"
+              value={parsedData?.sponsor || ''}
+              onChange={(e) => setParsedData({ ...parsedData, sponsor: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Point of Contact</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                <input
+                  type="text"
+                  value={parsedData?.pocFirstName || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocFirstName: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                <input
+                  type="text"
+                  value={parsedData?.pocLastName || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocLastName: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={parsedData?.pocEmail || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocEmail: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                <input
+                  type="tel"
+                  value={parsedData?.pocPhone || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocPhone: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    if (selectedType === 'community') {
+      return (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+            <input
+              type="text"
+              value={parsedData?.title || ''}
+              onChange={(e) => setParsedData({ ...parsedData, title: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea
+              value={parsedData?.description || ''}
+              onChange={(e) => setParsedData({ ...parsedData, description: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md h-32"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Partner Organization</label>
+            <input
+              type="text"
+              value={parsedData?.partnerOrg || ''}
+              onChange={(e) => setParsedData({ ...parsedData, partnerOrg: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+              <input
+                type="date"
+                value={parsedData?.date || ''}
+                onChange={(e) => setParsedData({ ...parsedData, date: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <input
+                type="text"
+                value={parsedData?.location || ''}
+                onChange={(e) => setParsedData({ ...parsedData, location: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+              <input
+                type="time"
+                value={parsedData?.startTime || ''}
+                onChange={(e) => setParsedData({ ...parsedData, startTime: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+              <input
+                type="time"
+                value={parsedData?.endTime || ''}
+                onChange={(e) => setParsedData({ ...parsedData, endTime: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Sign Up Link</label>
+            <input
+              type="url"
+              value={parsedData?.signUpLink || ''}
+              onChange={(e) => setParsedData({ ...parsedData, signUpLink: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Point of Contact</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                <input
+                  type="text"
+                  value={parsedData?.pocFirstName || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocFirstName: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                <input
+                  type="text"
+                  value={parsedData?.pocLastName || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocLastName: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={parsedData?.pocEmail || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocEmail: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                <input
+                  type="tel"
+                  value={parsedData?.pocPhone || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocPhone: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    if (selectedType === 'benefits') {
+      return (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+            <input
+              type="text"
+              value={parsedData?.title || ''}
+              onChange={(e) => setParsedData({ ...parsedData, title: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea
+              value={parsedData?.description || ''}
+              onChange={(e) => setParsedData({ ...parsedData, description: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md h-32"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Employee Benefit Summary</label>
+            <textarea
+              value={parsedData?.employeeBenefitSummary || ''}
+              onChange={(e) => setParsedData({ ...parsedData, employeeBenefitSummary: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md h-24"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Window Start</label>
+              <input
+                type="date"
+                value={parsedData?.windowStart || ''}
+                onChange={(e) => setParsedData({ ...parsedData, windowStart: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Window End</label>
+              <input
+                type="date"
+                value={parsedData?.windowEnd || ''}
+                onChange={(e) => setParsedData({ ...parsedData, windowEnd: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Action Link</label>
+            <input
+              type="url"
+              value={parsedData?.actionLink || ''}
+              onChange={(e) => setParsedData({ ...parsedData, actionLink: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+        </div>
+      )
+    }
+
+    if (selectedType === 'employee_cause') {
+      return (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+            <input
+              type="text"
+              value={parsedData?.title || ''}
+              onChange={(e) => setParsedData({ ...parsedData, title: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea
+              value={parsedData?.description || ''}
+              onChange={(e) => setParsedData({ ...parsedData, description: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md h-32"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Impact Summary</label>
+            <textarea
+              value={parsedData?.impactSummary || ''}
+              onChange={(e) => setParsedData({ ...parsedData, impactSummary: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md h-24"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Partner Organization</label>
+              <input
+                type="text"
+                value={parsedData?.partnerOrg || ''}
+                onChange={(e) => setParsedData({ ...parsedData, partnerOrg: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Sponsoring Department</label>
+              <input
+                type="text"
+                value={parsedData?.sponsoringDepartment || ''}
+                onChange={(e) => setParsedData({ ...parsedData, sponsoringDepartment: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Window Start</label>
+              <input
+                type="date"
+                value={parsedData?.windowStart || ''}
+                onChange={(e) => setParsedData({ ...parsedData, windowStart: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Window End</label>
+              <input
+                type="date"
+                value={parsedData?.windowEnd || ''}
+                onChange={(e) => setParsedData({ ...parsedData, windowEnd: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Link</label>
+            <input
+              type="url"
+              value={parsedData?.link || ''}
+              onChange={(e) => setParsedData({ ...parsedData, link: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+        </div>
+      )
+    }
+
+    if (selectedType === 'leader_engagement') {
+      return (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+            <input
+              type="text"
+              value={parsedData?.title || ''}
+              onChange={(e) => setParsedData({ ...parsedData, title: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea
+              value={parsedData?.description || ''}
+              onChange={(e) => setParsedData({ ...parsedData, description: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md h-32"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Engagement Date</label>
+              <input
+                type="date"
+                value={parsedData?.engagementDate || ''}
+                onChange={(e) => setParsedData({ ...parsedData, engagementDate: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <input
+                type="text"
+                value={parsedData?.location || ''}
+                onChange={(e) => setParsedData({ ...parsedData, location: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+              <input
+                type="time"
+                value={parsedData?.startTime || ''}
+                onChange={(e) => setParsedData({ ...parsedData, startTime: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+              <input
+                type="time"
+                value={parsedData?.endTime || ''}
+                onChange={(e) => setParsedData({ ...parsedData, endTime: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Leader Name</label>
+              <input
+                type="text"
+                value={parsedData?.leaderName || ''}
+                onChange={(e) => setParsedData({ ...parsedData, leaderName: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Leader Title</label>
+              <input
+                type="text"
+                value={parsedData?.leaderTitle || ''}
+                onChange={(e) => setParsedData({ ...parsedData, leaderTitle: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Registration Link</label>
+            <input
+              type="url"
+              value={parsedData?.registrationLink || ''}
+              onChange={(e) => setParsedData({ ...parsedData, registrationLink: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Point of Contact</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={parsedData?.pocEmail || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocEmail: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                <input
+                  type="tel"
+                  value={parsedData?.pocPhone || ''}
+                  onChange={(e) => setParsedData({ ...parsedData, pocPhone: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       )
     }
@@ -808,12 +1418,22 @@ export default function AddWorkforceStuffPage() {
                     )}
                   </button>
                 )}
-                {selectedType !== 'training' && selectedType !== 'impact_event' && (
+                {(selectedType === 'event' || selectedType === 'campaign' || selectedType === 'community' || selectedType === 'benefits' || selectedType === 'employee_cause' || selectedType === 'leader_engagement') && (
                   <button
-                    disabled
-                    className="flex-1 px-6 py-3 bg-gray-400 text-white rounded-lg font-semibold cursor-not-allowed"
+                    onClick={handleFinalizeOther}
+                    disabled={loading}
+                    className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
                   >
-                    Save {formatTypeName(selectedType)} (Coming Soon)
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        Save {formatTypeName(selectedType)}
+                      </>
+                    )}
                   </button>
                 )}
               </div>

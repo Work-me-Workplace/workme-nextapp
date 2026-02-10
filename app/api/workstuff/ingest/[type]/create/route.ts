@@ -66,19 +66,17 @@ export async function POST(
       companyId
     )
 
-    // Parse immediately for types that support review UI
+    // Parse immediately for all types that support review UI
     let parsedModel = null
     let parseError = null
-    if (type === 'training' || type === 'impact_event') {
-      try {
-        const parsed = await parseCompanyXContent(rawText, type as ContextType)
-        parsedModel = parsed.data
-      } catch (err: any) {
-        parseError = err.message || 'Failed to parse content'
-        console.error(`[Create CompanyX] Parse error for ${type}:`, err)
-        // Don't fail the request if parsing fails - user can still review manually
-        // But include error in response so UI can show it
-      }
+    try {
+      const parsed = await parseCompanyXContent(rawText, type as ContextType)
+      parsedModel = parsed.data
+    } catch (err: any) {
+      parseError = err.message || 'Failed to parse content'
+      console.error(`[Create CompanyX] Parse error for ${type}:`, err)
+      // Don't fail the request if parsing fails - user can still review manually
+      // But include error in response so UI can show it
     }
 
     const response: any = {
@@ -96,6 +94,7 @@ export async function POST(
       companyCommunity: 'communityId',
       companyBenefits: 'benefitsId',
       companyEmployeeCause: 'employeeCauseId',
+      companyLeaderEngagement: 'leaderEngagementId',
     }
 
     const idField = idFieldMap[result.modelName]
