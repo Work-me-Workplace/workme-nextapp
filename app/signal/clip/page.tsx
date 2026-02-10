@@ -8,8 +8,8 @@ import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { refreshWorkMe } from '@/lib/workme.client'
 import api from '@/lib/api'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Newspaper, Loader2, AlertCircle, CheckCircle, Link as LinkIcon, Search, ExternalLink } from 'lucide-react'
-import type { GoogleScanResponse, SignalSearchResult } from '@/lib/types/signal'
+import { Newspaper, Loader2, AlertCircle, CheckCircle, Link as LinkIcon, Search, ExternalLink, FileText } from 'lucide-react'
+import type { GoogleScanResponse, NoteLookupResponse, SignalSearchResult } from '@/lib/types/signal'
 
 /**
  * Normalize article text by cleaning up excessive spacing and line breaks
@@ -61,7 +61,8 @@ function ClipPageContent() {
   const [fetching, setFetching] = useState(false)
   const [url, setUrl] = useState('')
   const [text, setText] = useState('')
-  const [inputMode, setInputMode] = useState<'url' | 'text' | 'search'>('url')
+  const [headline, setHeadline] = useState('')
+  const [inputMode, setInputMode] = useState<'url' | 'text' | 'search' | 'note_lookup'>('url')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [artifactId, setArtifactId] = useState<string | null>(null)
@@ -70,6 +71,7 @@ function ClipPageContent() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SignalSearchResult[]>([])
   const [searching, setSearching] = useState(false)
+  const [noteLookupPhrase, setNoteLookupPhrase] = useState('')
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -77,8 +79,10 @@ function ClipPageContent() {
     // Read query params for dual compatibility
     const unitIdParam = searchParams?.get('unitId')
     const platformIdParam = searchParams?.get('platformId')
+    const modeParam = searchParams?.get('mode')
     if (unitIdParam) setUnitId(unitIdParam)
     if (platformIdParam) setPlatformId(platformIdParam)
+    if (modeParam === 'note_lookup') setInputMode('note_lookup')
 
     const auth = getAuth()
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -142,12 +146,46 @@ function ClipPageContent() {
     }
   }
 
+  async function handleNoteLookup() {
+    if (!noteLookupPhrase.trim()) {
+      setError('Please enter a phrase you heard in a meeting')
+      return
+    }
+
+    try {
+      setSearching(true)
+      setError(null)
+      setSuccess(false)
+      setSearchResults([])
+
+      const response = await api.post<NoteLookupResponse>('/api/signalingest/note/lookup', {
+        signal: noteLookupPhrase.trim(),
+      })
+
+      if (response.data.success && response.data.results) {
+        setSearchResults(response.data.results)
+        if (response.data.results.length === 0) {
+          setError('No public results found for this phrase. Try a different phrase.')
+        }
+      } else {
+        setError('Failed to lookup phrase')
+      }
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { error?: string } }; message?: string }
+      console.error('Note lookup error:', e)
+      setError(e.response?.data?.error || (e as Error).message || 'Failed to lookup phrase')
+    } finally {
+      setSearching(false)
+    }
+  }
+
   async function handleSelectSearchResult(result: SignalSearchResult) {
     // Set the URL and switch to URL mode, then fetch
     setUrl(result.url)
     setInputMode('url')
     setSearchResults([])
     setSearchQuery('')
+    setNoteLookupPhrase('')
     setError(null)
     setSuccess(false)
     
@@ -162,6 +200,19 @@ function ClipPageContent() {
         const articleText = article.textContent || article.content || ''
         setText(normalizeArticleText(articleText))
         setUrl(article.url || result.url)
+        // Use search result title if available, otherwise use article title
+        if (result.title && result.title.trim()) {
+          setHeadline(result.title.trim())
+        } else if (article.title && article.title.trim()) {
+          setHeadline(article.title.trim())
+        } else {
+          // Suggest from first line if reasonable
+          const lines = articleText.trim().split('\n')
+          const suggestedHeadline = lines[0]?.trim() || ''
+          if (suggestedHeadline.length > 0 && suggestedHeadline.length < 200) {
+            setHeadline(suggestedHeadline)
+          }
+        }
         setSuccess(true)
       } else {
         if (response.data.requiresManualPaste) {
@@ -203,6 +254,18 @@ function ClipPageContent() {
         const articleText = article.textContent || article.content || ''
         setText(normalizeArticleText(articleText))
         setUrl(article.url || url)
+        // Auto-populate headline from article title if available, otherwise suggest from first line
+        if (article.title && article.title.trim()) {
+          setHeadline(article.title.trim())
+        } else {
+          // Suggest headline from first line (user can edit)
+          const lines = articleText.trim().split('\n')
+          const suggestedHeadline = lines[0]?.trim() || ''
+          // Only set if it's reasonable length (not a blob)
+          if (suggestedHeadline.length > 0 && suggestedHeadline.length < 200) {
+            setHeadline(suggestedHeadline)
+          }
+        }
         setSuccess(true)
       } else {
         if (response.data.requiresManualPaste) {
@@ -231,20 +294,22 @@ function ClipPageContent() {
       return
     }
 
+    if (!headline.trim()) {
+      setError('Please provide a headline/title for the article')
+      return
+    }
+
     try {
       setLoading(true)
       setError(null)
       setSuccess(false)
 
-      // Extract title from text (first line or first 100 chars)
-      const lines = text.trim().split('\n')
-      const headline = lines[0]?.trim() || text.substring(0, 100).trim()
       const sourceName = url ? new URL(url).hostname.replace('www.', '') : null
 
       const response = await api.post('/api/utils/news-artifact/create', {
         sourceUrl: url || null,
         sourceName: sourceName || null,
-        headline: headline,
+        headline: headline.trim(),
         rawText: text.trim(),
       })
 
@@ -315,7 +380,7 @@ function ClipPageContent() {
                 <Newspaper className="h-8 w-8 text-blue-600 mr-3" />
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">Clip Ingest Wizard</h1>
-                  <p className="text-gray-600 mt-1">Step 1: Search, enter URL, or paste article text</p>
+                  <p className="text-gray-600 mt-1">Step 1: Search, enter URL, paste text, or lookup a phrase from a meeting</p>
                   {unitId && (
                     <p className="text-sm text-blue-600 mt-1">
                       Creating global artifact (can be routed to unit update after parsing)
@@ -360,6 +425,7 @@ function ClipPageContent() {
                   onClick={() => {
                     setInputMode('search')
                     setError(null)
+                    setSearchResults([])
                   }}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                     inputMode === 'search'
@@ -370,7 +436,118 @@ function ClipPageContent() {
                   <Search className="w-4 h-4 inline mr-2" />
                   Search
                 </button>
+                <button
+                  onClick={() => {
+                    setInputMode('note_lookup')
+                    setError(null)
+                    setSearchResults([])
+                  }}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    inputMode === 'note_lookup'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <FileText className="w-4 h-4 inline mr-2" />
+                  Note Lookup
+                </button>
               </div>
+
+              {/* Note Lookup Input */}
+              {inputMode === 'note_lookup' && (
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label htmlFor="noteLookupPhrase" className="block text-sm font-medium text-gray-700 mb-2">
+                      Phrase you heard in a meeting
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        id="noteLookupPhrase"
+                        type="text"
+                        value={noteLookupPhrase}
+                        onChange={(e) => setNoteLookupPhrase(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleNoteLookup()
+                          }
+                        }}
+                        placeholder="e.g., 'Portfolio Aqusition Executive', 'JFK C-Trials', 'PAE Fires'"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        disabled={searching || loading}
+                      />
+                      <button
+                        onClick={handleNoteLookup}
+                        disabled={searching || loading || !noteLookupPhrase.trim()}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
+                      >
+                        {searching ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Lookup...
+                          </>
+                        ) : (
+                          <>
+                            <Search className="w-4 h-4 mr-2" />
+                            Lookup
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Check if the phrase is publicly verifiable; select a result to add as an article.
+                    </p>
+                  </div>
+
+                  {/* Note Lookup Results (reuses searchResults) */}
+                  {searchResults.length > 0 && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
+                      <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                        Verifiable Results ({searchResults.length})
+                      </h3>
+                      <div className="space-y-3">
+                        {searchResults.map((result, index) => (
+                          <div
+                            key={index}
+                            className="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-400 hover:shadow-sm transition cursor-pointer"
+                            onClick={() => handleSelectSearchResult(result)}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="text-sm font-semibold text-gray-900 flex-1 pr-2">
+                                {result.title}
+                              </h4>
+                              <ExternalLink className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            </div>
+                            <p className="text-xs text-gray-600 mb-2 line-clamp-2">{result.snippet}</p>
+                            <div className="flex items-center gap-3 text-xs text-gray-500">
+                              <a
+                                href={result.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-blue-600 hover:underline truncate max-w-xs"
+                              >
+                                {result.url}
+                              </a>
+                              {result.source && <span>• {result.source}</span>}
+                              {result.date && <span>• {result.date}</span>}
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleSelectSearchResult(result)
+                              }}
+                              className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              Select & Fetch Article →
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Search Input */}
               {inputMode === 'search' && (
@@ -501,6 +678,25 @@ function ClipPageContent() {
                 </div>
               )}
 
+              {/* Headline/Title Input */}
+              <div className="mb-6">
+                <label htmlFor="headline" className="block text-sm font-medium text-gray-700 mb-2">
+                  Article Headline/Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="headline"
+                  type="text"
+                  value={headline}
+                  onChange={(e) => setHeadline(e.target.value)}
+                  placeholder="Enter article headline or title..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                  disabled={fetching || loading}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {headline.length > 0 ? `${headline.length} characters` : 'Headline will be auto-populated when fetching from URL or search'}
+                </p>
+              </div>
+
               {/* Text Input */}
               <div className="mb-6">
                 <label htmlFor="text" className="block text-sm font-medium text-gray-700 mb-2">
@@ -514,6 +710,15 @@ function ClipPageContent() {
                     // Normalize text when user pastes manually
                     const normalized = normalizeArticleText(e.target.value)
                     setText(normalized)
+                    // If headline is empty and user is pasting, suggest headline from first line
+                    if (!headline.trim() && normalized.trim()) {
+                      const lines = normalized.trim().split('\n')
+                      const suggestedHeadline = lines[0]?.trim() || ''
+                      // Only suggest if reasonable length
+                      if (suggestedHeadline.length > 0 && suggestedHeadline.length < 200) {
+                        setHeadline(suggestedHeadline)
+                      }
+                    }
                   }}
                   placeholder={inputMode === 'url' ? 'Click "Fetch" to load article content...' : 'Paste article text here...'}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"

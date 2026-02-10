@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
       humanElements,
       noteworthyItems,
       leaderStatement,
+      categoryId,
     } = body
 
     if (!rawText || !rawText.trim()) {
@@ -72,12 +73,34 @@ export async function POST(request: NextRequest) {
       hasHeadline: !!headline,
       artifactType,
       sentiment,
+      categoryId,
       rawTextLength: rawText.trim().length,
     })
 
     // CRITICAL: Ensure companyId is set before creating artifact
     if (!companyId) {
       throw new Error('CompanyId is required but was not set')
+    }
+
+    // If categoryId is provided, verify it belongs to the company
+    if (categoryId) {
+      const category = await prisma.articleCategory.findUnique({
+        where: { id: categoryId },
+      })
+
+      if (!category) {
+        return NextResponse.json(
+          { success: false, error: 'Category not found' },
+          { status: 404 }
+        )
+      }
+
+      if (category.companyId !== companyId) {
+        return NextResponse.json(
+          { success: false, error: 'Category does not belong to your company' },
+          { status: 403 }
+        )
+      }
     }
 
     // Create CompanyNewsArtifact with full intelligence
@@ -95,6 +118,7 @@ export async function POST(request: NextRequest) {
         humanElements: humanElements || null,
         noteworthyItems: noteworthyItems || null,
         leaderStatement: leaderStatement || null,
+        categoryId: categoryId || null,
         createdByWorkMeId: workMeId,
       },
     })

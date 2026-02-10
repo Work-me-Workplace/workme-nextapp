@@ -311,6 +311,7 @@ model Company {
   productFamilies   ProductFamily[]
   platformProducts  CompanyPlatformProduct[]
   newsArtifacts     CompanyNewsArtifact[]
+  articleCategories ArticleCategory[]
   externalEnv       CompanyExternalEnv[]
   companyWork       CompanyWork[]
   conceptDrafts     ConceptDraft[]
@@ -2340,6 +2341,32 @@ model EngageMessage {
 }
 
 // ============================================
+// ARTICLE CATEGORY MODEL (Organization for Articles)
+// ============================================
+// Categories to organize articles (e.g., "Shipbuilding", "Portfolio Acquisition Executive")
+// ONE category per article - forces thoughtful organization, prevents chaos/overlap
+// This is NOT tags - it's a single organizational bucket that makes users think
+
+model ArticleCategory {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name        String // "Shipbuilding", "Portfolio Acquisition Executive", etc.
+  description String? // Optional description of what this category is for
+  color       String? // Optional color code for UI (e.g., "#3B82F6" for blue)
+
+  // Relations - one-to-many (one category has many articles)
+  articles CompanyNewsArtifact[]
+
+  @@index([companyId])
+  @@index([name])
+}
+
+// ============================================
 // COMPANY NEWS ARTIFACT MODEL (Universal Article/Press Release Storage)
 // ============================================
 // Universal staging area for news articles and press releases
@@ -2369,6 +2396,10 @@ model CompanyNewsArtifact {
   humanElements   Json? // e.g., {"sponsor": "Pamela Bove", "leaders": ["SECNAV"], "attendees": [...]}
   noteworthyItems Json? // e.g., {"key_facts": [...], "dates": [...], "milestones": [...]}
   leaderStatement Json? // e.g., {"statement": "...", "leader": "SECNAV Del Toro", "role": "Secretary of the Navy"}
+
+  // Organization - ONE category per article (forces thoughtful organization)
+  categoryId String? // Optional category - but if set, only ONE category
+  category   ArticleCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   // Optional: Link to who created/ingested it
   createdByWorkMeId String? @db.Uuid

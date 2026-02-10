@@ -20,6 +20,13 @@ interface Artifact {
   createdAt: string
   humanElements: any
   noteworthyItems: any
+  categoryId: string | null
+  category: {
+    id: string
+    name: string
+    description: string | null
+    color: string | null
+  } | null
 }
 
 export default function ArticlesPage() {
@@ -28,7 +35,9 @@ export default function ArticlesPage() {
   const [artifacts, setArtifacts] = useState<Artifact[]>([])
   const [loading, setLoading] = useState(true)
   const [filterType, setFilterType] = useState<string>('all')
-  const [filterSentiment, setFilterSentiment] = useState<string>('all')
+  const [filterCategory, setFilterCategory] = useState<string>('all')
+  const [showUnassignedFirst, setShowUnassignedFirst] = useState(true)
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; description: string | null; color: string | null }>>([])
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
@@ -45,10 +54,22 @@ export default function ArticlesPage() {
 
   useEffect(() => {
     if (workMeId) {
+      loadCategories()
       loadArtifacts()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workMeId, filterType, filterSentiment])
+  }, [workMeId, filterType, filterCategory])
+
+  async function loadCategories() {
+    try {
+      const response = await api.get('/api/article-category/list')
+      if (response.data.success && response.data.data) {
+        setCategories(response.data.data.categories || [])
+      }
+    } catch (error: any) {
+      console.error('Failed to load categories:', error)
+    }
+  }
 
   async function loadArtifacts() {
     if (!workMeId) return
@@ -57,7 +78,12 @@ export default function ArticlesPage() {
       setLoading(true)
       const params = new URLSearchParams()
       if (filterType !== 'all') params.append('artifactType', filterType)
-      if (filterSentiment !== 'all') params.append('sentiment', filterSentiment)
+      
+      // For "unassigned", we'll filter client-side since API doesn't support null filtering yet
+      // For specific category, use categoryId filter
+      if (filterCategory !== 'all' && filterCategory !== 'unassigned') {
+        params.append('categoryId', filterCategory)
+      }
       
       console.log('[ArticlesPage] Loading artifacts with params:', params.toString())
       const response = await api.get(`/api/utils/news-artifact/list?${params.toString()}`)
@@ -69,7 +95,24 @@ export default function ArticlesPage() {
       })
       
       if (response.data.success && response.data.data) {
-        setArtifacts(response.data.data.artifacts || [])
+        let artifactsList = response.data.data.artifacts || []
+        
+        // Filter for unassigned if needed
+        if (filterCategory === 'unassigned') {
+          artifactsList = artifactsList.filter(a => !a.categoryId)
+        }
+        
+        // Sort: unassigned (no category) first if showUnassignedFirst is true and not filtering by category
+        if (showUnassignedFirst && filterCategory === 'all') {
+          artifactsList = artifactsList.sort((a, b) => {
+            // Unassigned (no category) first
+            if (!a.categoryId && b.categoryId) return -1
+            if (a.categoryId && !b.categoryId) return 1
+            return 0
+          })
+        }
+        
+        setArtifacts(artifactsList)
       } else {
         console.error('Failed to load artifacts:', response.data.error)
         setArtifacts([])
@@ -162,9 +205,9 @@ export default function ArticlesPage() {
             <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
               <div className="flex items-center gap-4">
                 <Filter className="h-5 w-5 text-gray-500" />
-                <div className="flex gap-4">
+                <div className="flex gap-4 flex-1">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Workflow Type</label>
                     <select
                       value={filterType}
                       onChange={(e) => setFilterType(e.target.value)}
@@ -179,21 +222,41 @@ export default function ArticlesPage() {
                       <option value="leadership">Leadership</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Sentiment</label>
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
                     <select
-                      value={filterSentiment}
-                      onChange={(e) => setFilterSentiment(e.target.value)}
-                      className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+                      value={filterCategory}
+                      onChange={(e) => setFilterCategory(e.target.value)}
+                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
                     >
-                      <option value="all">All Sentiments</option>
-                      <option value="positive">Positive</option>
-                      <option value="negative">Negative</option>
-                      <option value="neutral">Neutral</option>
+                      <option value="all">All Categories</option>
+                      <option value="unassigned">Unassigned</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
               </div>
+              {filterCategory === 'all' && (
+                <div className="mt-3 flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="showUnassignedFirst"
+                    checked={showUnassignedFirst}
+                    onChange={(e) => {
+                      setShowUnassignedFirst(e.target.checked)
+                      loadArtifacts()
+                    }}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label htmlFor="showUnassignedFirst" className="text-xs text-gray-600">
+                    Show unassigned articles first
+                  </label>
+                </div>
+              )}
             </div>
 
             {/* Delete Confirmation Modal */}
@@ -270,7 +333,7 @@ export default function ArticlesPage() {
                         {artifact.headline && (
                           <h3 className="text-lg font-semibold text-gray-900 mb-2">{artifact.headline}</h3>
                         )}
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
                           {artifact.sourceName && (
                             <span className="text-sm text-gray-600">{artifact.sourceName}</span>
                           )}
@@ -279,13 +342,16 @@ export default function ArticlesPage() {
                               {artifact.artifactType.replace('_', ' ')}
                             </span>
                           )}
-                          {artifact.sentiment && (
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              artifact.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
-                              artifact.sentiment === 'negative' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {artifact.sentiment}
+                          {artifact.category ? (
+                            <span 
+                              className="px-2 py-1 rounded text-xs font-medium text-white"
+                              style={{ backgroundColor: artifact.category.color || '#6B7280' }}
+                            >
+                              {artifact.category.name}
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs font-medium">
+                              Unassigned
                             </span>
                           )}
                         </div>

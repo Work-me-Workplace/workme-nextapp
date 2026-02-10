@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const artifactType = searchParams.get('artifactType')
     const sentiment = searchParams.get('sentiment')
+    const categoryId = searchParams.get('categoryId')
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
 
@@ -38,6 +39,10 @@ export async function GET(request: NextRequest) {
 
     if (sentiment) {
       where.sentiment = sentiment
+    }
+
+    if (categoryId) {
+      where.categoryId = categoryId
     }
 
     console.log('[API GET /api/utils/news-artifact/list] Querying with:', {
@@ -68,6 +73,15 @@ export async function GET(request: NextRequest) {
         createdAt: true,
         humanElements: true,
         noteworthyItems: true,
+        categoryId: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            color: true,
+          },
+        },
       },
     })
 
