@@ -136,6 +136,7 @@ ${rawText.substring(0, 8000)}`
     // Validate and normalize the response
     const result: ParsedCommsPlan = {
       title: typeof parsed.title === 'string' ? parsed.title.trim() || null : null,
+      background: typeof parsed.background === 'string' ? parsed.background.trim() || null : null,
       objectives: Array.isArray(parsed.objectives)
         ? parsed.objectives
             .filter((obj: any) => typeof obj === 'string' && obj.trim())
