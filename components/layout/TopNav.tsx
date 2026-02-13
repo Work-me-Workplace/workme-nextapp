@@ -102,10 +102,10 @@ export default function TopNav() {
       ],
     },
     {
-      name: 'My Work',
+      name: 'MyWork',
       icon: CheckSquare,
       items: [
-        { name: 'My Work', path: '/mywork', icon: LayoutDashboard },
+        { name: 'MyWork', path: '/mywork', icon: LayoutDashboard },
         { name: 'Products', path: '/mywork/products', icon: Package },
         { name: 'Active', path: '/mywork/active', icon: CheckSquare },
       ],

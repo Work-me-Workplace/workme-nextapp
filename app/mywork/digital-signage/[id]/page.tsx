@@ -58,6 +58,7 @@ interface DigitalSignage {
   gammaPptxUrl?: string | null
   gammaGenerationId?: string | null
   gammaError?: string | null
+  gammaBlob?: string | null
 }
 
 function DigitalSignageViewContent() {
@@ -83,6 +84,7 @@ function DigitalSignageViewContent() {
   const [showDeckStatus, setShowDeckStatus] = useState(false)
   const [gammaDetails, setGammaDetails] = useState('')
   const [loadingPreview, setLoadingPreview] = useState(false)
+  const [lastPayloadChars, setLastPayloadChars] = useState<number | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -149,6 +151,7 @@ function DigitalSignageViewContent() {
         setGammaPptxUrl(s.gammaPptxUrl ?? null)
         setGammaGenerationId(s.gammaGenerationId ?? null)
         if (s.gammaStatus || s.gammaDeckUrl || s.gammaPptxUrl) setShowDeckStatus(true)
+        if (s.gammaBlob != null) setLastPayloadChars(s.gammaBlob.length)
       } else {
         setError(response.data.error || 'Failed to load digital signage')
       }
@@ -216,6 +219,9 @@ function DigitalSignageViewContent() {
         ...(gammaDetails.trim() ? { detailsForGamma: gammaDetails.trim() } : {}),
       })
       if (res.data.success) {
+        if (typeof res.data.payloadChars === 'number') {
+          setLastPayloadChars(res.data.payloadChars)
+        }
         if (res.data.status === 'ready') {
           setGammaStatus('ready')
           setGammaDeckUrl(res.data.deckUrl ?? null)
@@ -333,22 +339,22 @@ function DigitalSignageViewContent() {
               </div>
 
               <div className="px-8 py-6">
-                {/* Gamma: details + send */}
-                <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                    Details for Gamma generation
+                {/* Build a deck from this sign (Gamma) */}
+                <div className="mb-6 rounded-xl border border-gray-200 bg-slate-50 p-5">
+                  <h3 className="text-base font-semibold text-gray-900 mb-1">
+                    Build a presentation from this sign
                   </h3>
-                  <p className="text-xs text-gray-600 mb-3">
-                    Edit the content below to customize what Gamma uses, or leave blank to use this signage&apos;s content automatically.
+                  <p className="text-sm text-gray-600 mb-4">
+                    Turn this digital sign into a Gamma deck or PowerPoint. The text below is what we send to Gamma. Leave it blank to auto-fill from this sign’s content, or edit it first. Then click to send—you’ll see a confirmation that the payload was sent.
                   </p>
                   <textarea
                     value={gammaDetails}
                     onChange={(e) => setGammaDetails(e.target.value)}
-                    placeholder="Leave blank to use signage content, or enter presentation title and bullet points..."
+                    placeholder="Leave blank to use this sign’s content, or enter your own title and bullet points..."
                     rows={6}
-                    className="mb-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="mb-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 bg-white"
                   />
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={handleLoadPreview}
@@ -358,7 +364,7 @@ function DigitalSignageViewContent() {
                       {loadingPreview ? (
                         <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
                       ) : null}
-                      Load from signage
+                      Load from sign
                     </button>
                     <button
                       onClick={handleGenerateDeck}
@@ -377,6 +383,11 @@ function DigitalSignageViewContent() {
                         </>
                       )}
                     </button>
+                    {lastPayloadChars != null && (
+                      <span className="text-xs text-gray-500 ml-1">
+                        Last sent: {lastPayloadChars.toLocaleString()} characters
+                      </span>
+                    )}
                   </div>
                 </div>
 

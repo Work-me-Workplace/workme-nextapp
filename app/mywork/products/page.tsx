@@ -2,12 +2,22 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, useMemo, Suspense } from 'react'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { getDashboard, refreshDashboard, type WorkProduct } from '@/lib/dashboard.client'
 import api from '@/lib/api'
-import { Mail, Image, Monitor, FileText, Plus, Eye, MessageSquare, Share2 } from 'lucide-react'
+import { Mail, Image, Monitor, FileText, Eye, MessageSquare, Share2, Loader2, Flag, Ship, Award, Calendar } from 'lucide-react'
+
+/** One item from workforce that can be turned into a sign, flyer, etc. */
+export type WorkforceFeedItem = {
+  id: string
+  type: 'highlight' | 'event' | 'platform_update' | 'milestone'
+  title: string
+  subtitle?: string | null
+  createdAt: string
+  raw?: any
+}
 
 // Normalize text - convert all caps to title case, handle underscores (fallback for edge cases)
 function normalizeTitle(text: string | null | undefined): string {
@@ -84,7 +94,10 @@ function ProductsPageContent() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'create' | 'review'>('create')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  
+  const [workforceItems, setWorkforceItems] = useState<WorkforceFeedItem[]>([])
+  const [workforceLoading, setWorkforceLoading] = useState(true)
+  const [createSignFromId, setCreateSignFromId] = useState<{ type: 'platform_update' | 'milestone'; id: string } | null>(null)
+
   // Check if we're creating from a source
   const sourceId = searchParams?.get('sourceId')
   const sourceType = searchParams?.get('sourceType')
@@ -97,10 +110,11 @@ function ProductsPageContent() {
         router.push('/signin')
         return
       }
-      
+
       setWorkMeId(id)
       loadProducts()
-      
+      loadWorkforceFeed()
+
       // If we have a source, default to create tab
       if (hasSource) {
         setActiveTab('create')
@@ -153,6 +167,103 @@ function ProductsPageContent() {
       setProducts([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function loadWorkforceFeed() {
+    setWorkforceLoading(true)
+    try {
+      const dashboard = (await refreshDashboard()) ?? getDashboard() ?? undefined
+      const fromHighlights: WorkforceFeedItem[] = (dashboard?.highlights ?? []).slice(0, 20).map((h: any) => ({
+        id: h.id,
+        type: 'highlight' as const,
+        title: h.achievement || h.citationText || 'Employee highlight',
+        subtitle: h.employees?.[0]?.fullName ?? undefined,
+        createdAt: h.createdAt ?? new Date().toISOString(),
+        raw: h,
+      }))
+      const fromEvents: WorkforceFeedItem[] = (dashboard?.events ?? []).slice(0, 20).map((e: any) => ({
+        id: e.id,
+        type: 'event' as const,
+        title: e.title ?? 'Event',
+        subtitle: e.description ?? e.location ?? undefined,
+        createdAt: e.createdAt ?? new Date().toISOString(),
+        raw: e,
+      }))
+
+      let fromUpdates: WorkforceFeedItem[] = []
+      let fromMilestones: WorkforceFeedItem[] = []
+      try {
+        const [updatesRes, milestonesRes] = await Promise.all([
+          api.get('/api/company/products/platform/unit/updates/list'),
+          api.get('/api/company/milestones/list'),
+        ])
+        const updates = updatesRes.data?.updates ?? []
+        fromUpdates = updates.slice(0, 15).map((u: any) => {
+          const unit = u.platformUnit
+          const name = unit?.name || unit?.hullNumber || 'Platform'
+          return {
+            id: u.id,
+            type: 'platform_update' as const,
+            title: u.statusUpdate ? `${name}: ${u.statusUpdate}` : name,
+            subtitle: u.narrativeSummary ?? undefined,
+            createdAt: u.updatedAt ?? u.createdAt ?? new Date().toISOString(),
+            raw: u,
+          }
+        })
+        const milestones = milestonesRes.data?.milestones ?? []
+        fromMilestones = milestones.slice(0, 15).map((m: any) => ({
+          id: m.id,
+          type: 'milestone' as const,
+          title: m.title ?? 'Milestone',
+          subtitle: m.description ?? m.platformUnit?.name ?? undefined,
+          createdAt: m.date ?? m.createdAt ?? new Date().toISOString(),
+          raw: m,
+        }))
+      } catch {
+        // Non-blocking: show highlights + events even if updates/milestones fail
+      }
+
+      const merged = [...fromHighlights, ...fromEvents, ...fromUpdates, ...fromMilestones].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
+      setWorkforceItems(merged.slice(0, 25))
+    } catch (e) {
+      console.error('Failed to load workforce feed:', e)
+      setWorkforceItems([])
+    } finally {
+      setWorkforceLoading(false)
+    }
+  }
+
+  async function handleCreateSignFromItem(item: WorkforceFeedItem) {
+    if (item.type === 'highlight') {
+      router.push(`/mywork/digital-signage/builder/new?type=WORKFORCE_ACHIEVEMENT&highlightId=${item.id}`)
+      return
+    }
+    if (item.type === 'event') {
+      router.push(`/mywork/digital-signage/builder/new?type=COMPANY_EVENT&source=manual`)
+      return
+    }
+    if (item.type === 'platform_update' || item.type === 'milestone') {
+      setCreateSignFromId({ type: item.type, id: item.id })
+      try {
+        const url =
+          item.type === 'platform_update'
+            ? `/api/company/products/platform/unit/update/${item.id}/generate-digital-signage`
+            : `/api/company/milestones/${item.id}/generate-digital-product`
+        const res = await api.post(url, {})
+        const signId = res.data?.digitalSign?.id
+        if (signId) {
+          router.push(`/mywork/digital-signage/${signId}?saved=true`)
+          return
+        }
+      } catch (err: any) {
+        console.error('Create sign from item failed:', err)
+        alert(err.response?.data?.error || err.message || 'Failed to create sign')
+      } finally {
+        setCreateSignFromId(null)
+      }
     }
   }
 
@@ -251,8 +362,69 @@ function ProductsPageContent() {
               </div>
             </div>
 
-            {/* Create New Tab - Only show creation cards */}
+            {/* Create New Tab */}
             {activeTab === 'create' && (
+              <>
+              {/* Latest workforce items – create sign/flyer from hydrated workforce content */}
+              <div className="mb-10">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Latest workforce items</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Create a sign, flyer, or other product from recent workforce content. Pick an item below and choose &quot;Create sign&quot; or &quot;Create flyer&quot;.
+                </p>
+                {workforceLoading ? (
+                  <div className="flex items-center gap-2 text-gray-500 py-6">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span className="text-sm">Loading workforce items…</span>
+                  </div>
+                ) : workforceItems.length === 0 ? (
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-6 text-center text-sm text-gray-600">
+                    No workforce items yet. Add highlights, events, or platform updates in your company, or create a product from scratch below.
+                  </div>
+                ) : (
+                  <ul className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100">
+                    {workforceItems.map((item) => {
+                      const isCreating = createSignFromId?.type === item.type && createSignFromId?.id === item.id
+                      const typeLabel = item.type === 'highlight' ? 'Achievement' : item.type === 'event' ? 'Event' : item.type === 'platform_update' ? 'Platform update' : 'Milestone'
+                      const TypeIcon = item.type === 'highlight' ? Award : item.type === 'event' ? Calendar : item.type === 'platform_update' ? Ship : Flag
+                      return (
+                        <li key={`${item.type}-${item.id}`} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <TypeIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
+                              {item.subtitle && (
+                                <p className="text-xs text-gray-500 truncate">{item.subtitle}</p>
+                              )}
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                {typeLabel} · {new Date(item.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleCreateSignFromItem(item)}
+                              disabled={isCreating}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-md hover:bg-purple-100 disabled:opacity-50"
+                            >
+                              {isCreating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Monitor className="h-3.5 w-3.5" />}
+                              {isCreating ? 'Creating…' : 'Create sign'}
+                            </button>
+                            <Link
+                              href={`/mywork/products/builder/new?type=flyer_poster&sourceType=${item.type}&sourceId=${item.id}`}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100"
+                            >
+                              <Image className="h-3.5 w-3.5" />
+                              Create flyer
+                            </Link>
+                          </div>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
                 {Object.entries(productTypeConfig).map(([type, config]) => {
                   const Icon = config.icon
@@ -289,6 +461,7 @@ function ProductsPageContent() {
                   <span className="text-sm font-medium text-gray-600 group-hover:text-blue-600">SharePoint Spec</span>
                 </Link>
               </div>
+              </>
             )}
 
             {/* Manage Products Tab - Category cards like create, then list on click */}

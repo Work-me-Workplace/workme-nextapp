@@ -62,6 +62,7 @@ export async function POST(request: Request) {
         deckUrl: signage.gammaDeckUrl,
         pptxUrl: signage.gammaPptxUrl ?? undefined,
         message: 'Deck already generated',
+        payloadChars: blob.length,
       })
     }
 
@@ -152,6 +153,7 @@ export async function POST(request: Request) {
           status: 'ready',
           deckUrl,
           pptxUrl: statusResult.pptxUrl ?? undefined,
+          payloadChars: blob.length,
         })
       }
 
@@ -180,6 +182,7 @@ export async function POST(request: Request) {
       success: true,
       status: 'generating',
       generationId,
+      payloadChars: blob.length,
       message: 'Generation started. Poll GET /api/decks/status/{generationId}?digitalSignId=... for status.',
     })
   } catch (error) {

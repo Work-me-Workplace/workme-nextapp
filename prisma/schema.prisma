@@ -69,6 +69,7 @@ model WorkMe {
   createdPlatformProducts    CompanyPlatformProduct[]           @relation("CompanyPlatformProductWorkMe")
   createdDigitalSignProducts ProductDigitalSign[]               @relation("ProductDigitalSignCreator")
   createdEmployeeHighlights  CompanyEmployeeHighlight[]         @relation("CompanyEmployeeHighlightCreator")
+  createdUnitHighlights      CompanyUnitHighlight[]             @relation("CompanyUnitHighlightCreator")
   createdCompanyEmployees    CompanyEmployee[]                  @relation("CompanyEmployeeCreator")
   engageMessages             EngageMessage[]
 
@@ -298,6 +299,7 @@ model Company {
   workplaces        Workplace[]
   employees         CompanyEmployee[]
   highlights        CompanyEmployeeHighlight[]
+  unitHighlights    CompanyUnitHighlight[]
   milestones        CompanyMilestone[]
   campaigns         CompanyCampaign[]          @relation("CompanyCampaignCompany")
   impactEvents      CompanyImpactEvent[]       @relation("CompanyImpactEventCompany")
@@ -1030,6 +1032,38 @@ model CompanyEmployeeHighlight {
   @@index([companyUnitLabel])
   @@index([companyId])
   @@index([employeeId])
+}
+
+// ====================================================
+// COMPANY UNIT HIGHLIGHT (organizational awards/recognition)
+// ====================================================
+model CompanyUnitHighlight {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  unitName String // e.g., "FDRMC", "Forward Deployed Regional Maintenance Center"
+
+  citationText   String
+  achievement    String?
+  narrative      String?
+  classification HighlightClassification?
+
+  awardName       String?
+  categoryOfAward String?
+  awardingAgency  String?
+  awardYear       Int?
+
+  leaderQuote String? // Quote from leadership about the unit
+
+  companyId String?
+  createdByWorkMeId String   @db.Uuid
+  createdBy         WorkMe   @relation("CompanyUnitHighlightCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
+  company           Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([createdByWorkMeId])
+  @@index([companyId])
+  @@index([unitName])
 }
 
 // ============================================

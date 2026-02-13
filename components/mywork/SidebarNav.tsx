@@ -31,6 +31,7 @@ import {
   Archive,
   RefreshCw,
   Download,
+  LayoutDashboard,
 } from 'lucide-react'
 
 export default function SidebarNav() {
@@ -96,8 +97,9 @@ export default function SidebarNav() {
       ],
     },
     {
-      name: 'Mywork',
+      name: 'MyWork',
       items: [
+        { name: 'Dashboard', path: '/mywork', icon: LayoutDashboard },
         { name: 'Work Products', path: '/mywork/products', icon: Package },
         { name: 'Plans', path: '/mywork/plans', icon: ClipboardList },
         { name: "Stuff I'm Working On", path: '/mywork/active', icon: CheckSquare },

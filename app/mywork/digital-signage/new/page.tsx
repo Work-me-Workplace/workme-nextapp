@@ -5,34 +5,70 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, Suspense } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Users, Newspaper, Award, Calendar } from 'lucide-react'
+import { Users, Newspaper, Award, Calendar, PenLine } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
-const signTypes = [
-  { 
-    value: 'WORKFORCE', 
-    name: 'Workforce', 
-    icon: Users, 
-    description: 'General workforce communications and updates' 
+/** Four categories with explainers. Workforce includes both team updates and company events. */
+const categories = [
+  {
+    id: 'workforce',
+    label: 'Workforce & events',
+    explainer: 'Team updates, initiatives, and company events. Use this for anything people-focused: announcements, events, gatherings, or registration.',
+    cards: [
+      {
+        value: 'WORKFORCE',
+        name: 'Workforce update',
+        icon: Users,
+        description: 'General workforce communications, team initiatives, and updates',
+      },
+      {
+        value: 'COMPANY_EVENT',
+        name: 'Company event',
+        icon: Calendar,
+        description: 'Upcoming events, gatherings, and registration',
+      },
+    ],
   },
-  { 
-    value: 'COMPANY_NEWS', 
-    name: 'Company News', 
-    icon: Newspaper, 
-    description: 'Company announcements and news' 
+  {
+    id: 'achievements',
+    label: 'Achievements',
+    explainer: 'Recognize people and awards. Pull from existing employee highlights or enter manually.',
+    cards: [
+      {
+        value: 'WORKFORCE_ACHIEVEMENT',
+        name: 'Employee recognition',
+        icon: Award,
+        description: 'Recognize employee achievements and awards',
+      },
+    ],
   },
-  { 
-    value: 'WORKFORCE_ACHIEVEMENT', 
-    name: 'Employee Recognition', 
-    icon: Award, 
-    description: 'Recognize employee achievements and awards' 
+  {
+    id: 'news',
+    label: 'News',
+    explainer: 'Company announcements and news. You can start from a milestone, platform update, or write your own.',
+    cards: [
+      {
+        value: 'COMPANY_NEWS',
+        name: 'Company news',
+        icon: Newspaper,
+        description: 'Company announcements and news',
+      },
+    ],
   },
-  { 
-    value: 'COMPANY_EVENT', 
-    name: 'Company Event', 
-    icon: Calendar, 
-    description: 'Upcoming events and gatherings' 
+  {
+    id: 'own',
+    label: 'Just add my own',
+    explainer: 'Start from scratch. Enter your own headline and content—no template required.',
+    cards: [
+      {
+        value: 'WORKFORCE',
+        name: 'Start from scratch',
+        icon: PenLine,
+        description: 'Freeform content; we’ll use a simple workforce-style layout',
+        source: 'manual',
+      },
+    ],
   },
 ]
 
@@ -53,14 +89,12 @@ function DigitalSignageNewContent() {
     }
   }, [router])
 
-  const handleTypeSelect = (type: string) => {
-    // Go directly to builder - source selection happens inline
-    if (highlightId && type === 'WORKFORCE_ACHIEVEMENT') {
-      router.push(`/mywork/digital-signage/builder/new?type=${type}&highlightId=${highlightId}`)
-    } else {
-      // Go straight to builder - it will show inline source selection if needed
-      router.push(`/mywork/digital-signage/builder/new?type=${type}`)
-    }
+  const handleSelect = (type: string, source?: string) => {
+    const params = new URLSearchParams()
+    params.set('type', type)
+    if (source) params.set('source', source)
+    if (highlightId && type === 'WORKFORCE_ACHIEVEMENT') params.set('highlightId', highlightId)
+    router.push(`/mywork/digital-signage/builder/new?${params.toString()}`)
   }
 
   if (!workMeId) {
@@ -92,7 +126,7 @@ function DigitalSignageNewContent() {
         <SidebarNav />
 
         <main className="flex-1">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="mb-8">
               <Link
                 href="/mywork"
@@ -101,24 +135,36 @@ function DigitalSignageNewContent() {
                 ← Back to MyWork
               </Link>
               <h1 className="text-3xl font-bold text-gray-900">Create Digital Signage</h1>
-              <p className="text-gray-600 mt-2">What type of information is this?</p>
+              <p className="text-gray-600 mt-2 max-w-xl">
+                Digital signs run on screens around the building. Choose what you’re creating so we can use the right layout and options.
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {signTypes.map(type => {
-                const Icon = type.icon
-                return (
-                  <button
-                    key={type.value}
-                    onClick={() => handleTypeSelect(type.value)}
-                    className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition border-2 border-transparent hover:border-blue-500 text-left"
-                  >
-                    <Icon className="h-10 w-10 text-blue-600 mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{type.name}</h3>
-                    <p className="text-sm text-gray-600">{type.description}</p>
-                  </button>
-                )
-              })}
+            <div className="space-y-10">
+              {categories.map((section) => (
+                <section key={section.id} className="space-y-3">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">{section.label}</h2>
+                    <p className="text-sm text-gray-600 mt-1">{section.explainer}</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {section.cards.map((card) => {
+                      const Icon = card.icon
+                      return (
+                        <button
+                          key={card.value + (card.source ?? '')}
+                          onClick={() => handleSelect(card.value, (card as { source?: string }).source)}
+                          className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition border border-gray-200 hover:border-blue-400 text-left group"
+                        >
+                          <Icon className="h-9 w-9 text-blue-600 mb-3 group-hover:text-blue-700" />
+                          <h3 className="font-semibold text-gray-900 mb-1">{card.name}</h3>
+                          <p className="text-sm text-gray-600">{card.description}</p>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </section>
+              ))}
             </div>
           </div>
         </main>

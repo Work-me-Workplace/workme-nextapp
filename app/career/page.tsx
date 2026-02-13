@@ -168,6 +168,18 @@ export default function CareerDashboardPage() {
                 </li>
                 <li>
                   <Link
+                    href="/career/job-fit"
+                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                      isActive('/career/job-fit')
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    Job Fit
+                  </Link>
+                </li>
+                <li>
+                  <Link
                     href="/mycareer/track"
                     className={`block px-3 py-2 rounded-md text-sm font-medium ${
                       isActive('/mycareer/track')
