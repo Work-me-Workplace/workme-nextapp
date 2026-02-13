@@ -17,6 +17,54 @@ function formatTypeName(type: string | null | undefined): string {
     .join(' ')
 }
 
+const CONTENT_TYPE_OPTIONS: Array<{ value: string; label: string; description: string }> = [
+  {
+    value: 'training',
+    label: 'Training',
+    description: 'Required or optional courses, certifications, and learning opportunities. Include dates, format, and POC.',
+  },
+  {
+    value: 'career',
+    label: 'Career Opportunity',
+    description: 'Job openings, promotions, and internal mobility announcements.',
+  },
+  {
+    value: 'event',
+    label: 'Event',
+    description: 'Ceremonies, observances, celebrations. Mass, holiday events, heritage days, appreciation events. Date, time, location.',
+  },
+  {
+    value: 'impact_event',
+    label: 'Impact Event',
+    description: 'Disruptions, policy changes, or announcements affecting the workforce. Deadlines, leave codes, action required.',
+  },
+  {
+    value: 'campaign',
+    label: 'Campaign',
+    description: 'Time-bound initiatives with a call to action. Enrollment windows, drives, awareness campaigns.',
+  },
+  {
+    value: 'community',
+    label: 'Community Engagement',
+    description: 'Volunteer events, partnerships, and community activities.',
+  },
+  {
+    value: 'benefits',
+    label: 'Benefits',
+    description: 'Health, 401k, open enrollment, and other employee benefits information.',
+  },
+  {
+    value: 'employee_cause',
+    label: 'Employee Cause',
+    description: 'Employee-led initiatives, giving campaigns, and volunteer causes.',
+  },
+  {
+    value: 'leader_engagement',
+    label: 'Leader Engagement',
+    description: 'Town halls, all-hands, leader meet-and-greets, and senior leader events.',
+  },
+]
+
 export default function AddWorkforceStuffPage() {
   const router = useRouter()
   const [rawText, setRawText] = useState('')
@@ -1272,43 +1320,47 @@ export default function AddWorkforceStuffPage() {
             <h1 className="text-3xl font-bold text-gray-900">Add Workforce Item</h1>
           </div>
           <p className="text-gray-600 mt-2">
-            Select the content type and paste your content to create a workforce item
+            Select one content type, then paste your content to create a workforce item
           </p>
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-8">
           {step === 'input' && (
             <>
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Content Type
-                </label>
-                <select
-                  value={selectedType}
-                  onChange={(e) => setSelectedType(e.target.value)}
-                  className="border border-gray-300 rounded-md px-3 py-2 bg-white w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-6"
-                >
-                  <option value="">Select a type...</option>
-                  <option value="training">Training</option>
-                  <option value="career">Career Opportunity</option>
-                  <option value="event">Event</option>
-                  <option value="campaign">Campaign</option>
-                  <option value="impact_event">Impact Event</option>
-                  <option value="community">Community Engagement</option>
-                  <option value="benefits">Benefits</option>
-                  <option value="employee_cause">Employee Cause</option>
-                  <option value="leader_engagement">Leader Engagement</option>
-                </select>
+              <div className="mb-8">
+                <h2 className="text-base font-semibold text-gray-900 mb-3">
+                  Step 1: What kind of content is this?
+                </h2>
+                <p className="text-sm text-gray-600 mb-4">
+                  Select one option below. Descriptions help you choose the right type.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {CONTENT_TYPE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setSelectedType(opt.value)}
+                      className={`text-left p-4 rounded-lg border-2 transition-all ${
+                        selectedType === opt.value
+                          ? 'border-blue-600 bg-blue-50 ring-2 ring-blue-200'
+                          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="block font-medium text-gray-900 mb-1">{opt.label}</span>
+                      <span className="block text-sm text-gray-600">{opt.description}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Paste Content
-                </label>
+                <h2 className="text-base font-semibold text-gray-900 mb-3">
+                  Step 2: Paste your content
+                </h2>
                 <textarea
                   value={rawText}
                   onChange={(e) => setRawText(e.target.value)}
-                  placeholder="Paste any workforce communication content here... events, training announcements, benefits info, campaigns, etc."
+                  placeholder="Paste the full workforce communication here... the full email, announcement, or notice."
                   className="w-full h-64 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm resize-none"
                   disabled={loading}
                 />
@@ -1463,10 +1515,9 @@ export default function AddWorkforceStuffPage() {
         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
           <h3 className="text-sm font-semibold text-blue-900 mb-2">How it works</h3>
           <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Select the content type from the dropdown</li>
+            <li>• Select one content type (read the descriptions to choose)</li>
             <li>• Paste your workforce communication content</li>
-            <li>• The parser extracts and structures all relevant information</li>
-            <li>• Item is created and ready to use</li>
+            <li>• Review and save — the parser extracts and structures the information</li>
           </ul>
         </div>
       </div>
