@@ -2,21 +2,54 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState, useMemo, Suspense } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { getDashboard, refreshDashboard, type WorkProduct } from '@/lib/dashboard.client'
 import api from '@/lib/api'
-import { Mail, Image, Monitor, FileText, Eye, MessageSquare, Share2, Loader2, Flag, Ship, Award, Calendar } from 'lucide-react'
+import { Mail, Image, Monitor, FileText, Eye, MessageSquare, Share2, Loader2, Flag, Ship, Award, Calendar, GraduationCap, Megaphone, Zap, Users, Briefcase, Heart } from 'lucide-react'
 
-/** One item from workforce that can be turned into a sign, flyer, etc. */
-export type WorkforceFeedItem = {
+/** Workstuff types from GET /api/workstuff */
+const WORKSTUFF_TYPES = [
+  'training', 'event', 'campaign', 'impact_event', 'community', 'benefits', 'career', 'employee_cause',
+] as const
+
+/** One item from workstuff or workforce that can be turned into a sign, flyer, digest, etc. */
+export type LatestStuffItem = {
   id: string
-  type: 'highlight' | 'event' | 'platform_update' | 'milestone'
+  type: typeof WORKSTUFF_TYPES[number] | 'highlight' | 'platform_update' | 'milestone'
   title: string
   subtitle?: string | null
   createdAt: string
+  category?: string
   raw?: any
+}
+
+/** Map workstuff type to CompanyX type for email digest API */
+const WORKSTUFF_TO_COMPANYX: Record<string, string> = {
+  training: 'CompanyTraining',
+  event: 'CompanyEvent',
+  campaign: 'CompanyCampaign',
+  impact_event: 'CompanyImpactEvent',
+  community: 'CompanyCommunity',
+  benefits: 'CompanyBenefits',
+  career: 'CompanyCareer',
+  employee_cause: 'CompanyEmployeeCause',
+}
+
+/** Type labels and icons for the feed */
+const TYPE_CONFIG: Record<string, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
+  highlight: { label: 'Achievement', icon: Award },
+  event: { label: 'Event', icon: Calendar },
+  training: { label: 'Training', icon: GraduationCap },
+  campaign: { label: 'Campaign', icon: Megaphone },
+  impact_event: { label: 'Impact Event', icon: Zap },
+  community: { label: 'Community', icon: Users },
+  benefits: { label: 'Benefits', icon: Heart },
+  career: { label: 'Career', icon: Briefcase },
+  employee_cause: { label: 'Employee Cause', icon: Heart },
+  platform_update: { label: 'Platform update', icon: Ship },
+  milestone: { label: 'Milestone', icon: Flag },
 }
 
 // Normalize text - convert all caps to title case, handle underscores (fallback for edge cases)
@@ -94,9 +127,9 @@ function ProductsPageContent() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'create' | 'review'>('create')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [workforceItems, setWorkforceItems] = useState<WorkforceFeedItem[]>([])
-  const [workforceLoading, setWorkforceLoading] = useState(true)
-  const [createSignFromId, setCreateSignFromId] = useState<{ type: 'platform_update' | 'milestone'; id: string } | null>(null)
+  const [latestStuff, setLatestStuff] = useState<LatestStuffItem[]>([])
+  const [latestStuffLoading, setLatestStuffLoading] = useState(true)
+  const [createSignFromId, setCreateSignFromId] = useState<{ type: string; id: string } | null>(null)
 
   // Check if we're creating from a source
   const sourceId = searchParams?.get('sourceId')
@@ -113,7 +146,7 @@ function ProductsPageContent() {
 
       setWorkMeId(id)
       loadProducts()
-      loadWorkforceFeed()
+      loadLatestStuff()
 
       // If we have a source, default to create tab
       if (hasSource) {
@@ -170,11 +203,27 @@ function ProductsPageContent() {
     }
   }
 
-  async function loadWorkforceFeed() {
-    setWorkforceLoading(true)
+  async function loadLatestStuff() {
+    setLatestStuffLoading(true)
     try {
-      const dashboard = (await refreshDashboard()) ?? getDashboard() ?? undefined
-      const fromHighlights: WorkforceFeedItem[] = (dashboard?.highlights ?? []).slice(0, 20).map((h: any) => ({
+      const [workstuffRes, dashboard, updatesRes, milestonesRes] = await Promise.all([
+        api.get('/api/workstuff').catch(() => ({ data: { success: false, items: [] } })),
+        refreshDashboard().then((d) => d ?? getDashboard() ?? undefined),
+        api.get('/api/company/products/platform/unit/updates/list').catch(() => ({ data: { updates: [] } })),
+        api.get('/api/company/milestones/list').catch(() => ({ data: { milestones: [] } })),
+      ])
+
+      const workstuffItems: LatestStuffItem[] = (workstuffRes.data?.items ?? []).map((item: any) => ({
+        id: item.id,
+        type: item.type,
+        title: item.title ?? 'Untitled',
+        subtitle: item.summary ?? undefined,
+        createdAt: item.createdAt ?? new Date().toISOString(),
+        category: item.category,
+        raw: item.raw,
+      }))
+
+      const fromHighlights: LatestStuffItem[] = (dashboard?.highlights ?? []).slice(0, 15).map((h: any) => ({
         id: h.id,
         type: 'highlight' as const,
         title: h.achievement || h.citationText || 'Employee highlight',
@@ -182,88 +231,106 @@ function ProductsPageContent() {
         createdAt: h.createdAt ?? new Date().toISOString(),
         raw: h,
       }))
-      const fromEvents: WorkforceFeedItem[] = (dashboard?.events ?? []).slice(0, 20).map((e: any) => ({
-        id: e.id,
-        type: 'event' as const,
-        title: e.title ?? 'Event',
-        subtitle: e.description ?? e.location ?? undefined,
-        createdAt: e.createdAt ?? new Date().toISOString(),
-        raw: e,
+
+      const updates = updatesRes.data?.updates ?? []
+      const fromUpdates: LatestStuffItem[] = updates.slice(0, 10).map((u: any) => {
+        const unit = u.platformUnit
+        const name = unit?.name || unit?.hullNumber || 'Platform'
+        return {
+          id: u.id,
+          type: 'platform_update' as const,
+          title: u.statusUpdate ? `${name}: ${u.statusUpdate}` : name,
+          subtitle: u.narrativeSummary ?? undefined,
+          createdAt: u.updatedAt ?? u.createdAt ?? new Date().toISOString(),
+          raw: u,
+        }
+      })
+
+      const milestones = milestonesRes.data?.milestones ?? []
+      const fromMilestones: LatestStuffItem[] = milestones.slice(0, 10).map((m: any) => ({
+        id: m.id,
+        type: 'milestone' as const,
+        title: m.title ?? 'Milestone',
+        subtitle: m.description ?? m.platformUnit?.name ?? undefined,
+        createdAt: m.date ?? m.createdAt ?? new Date().toISOString(),
+        raw: m,
       }))
 
-      let fromUpdates: WorkforceFeedItem[] = []
-      let fromMilestones: WorkforceFeedItem[] = []
-      try {
-        const [updatesRes, milestonesRes] = await Promise.all([
-          api.get('/api/company/products/platform/unit/updates/list'),
-          api.get('/api/company/milestones/list'),
-        ])
-        const updates = updatesRes.data?.updates ?? []
-        fromUpdates = updates.slice(0, 15).map((u: any) => {
-          const unit = u.platformUnit
-          const name = unit?.name || unit?.hullNumber || 'Platform'
-          return {
-            id: u.id,
-            type: 'platform_update' as const,
-            title: u.statusUpdate ? `${name}: ${u.statusUpdate}` : name,
-            subtitle: u.narrativeSummary ?? undefined,
-            createdAt: u.updatedAt ?? u.createdAt ?? new Date().toISOString(),
-            raw: u,
-          }
-        })
-        const milestones = milestonesRes.data?.milestones ?? []
-        fromMilestones = milestones.slice(0, 15).map((m: any) => ({
-          id: m.id,
-          type: 'milestone' as const,
-          title: m.title ?? 'Milestone',
-          subtitle: m.description ?? m.platformUnit?.name ?? undefined,
-          createdAt: m.date ?? m.createdAt ?? new Date().toISOString(),
-          raw: m,
-        }))
-      } catch {
-        // Non-blocking: show highlights + events even if updates/milestones fail
-      }
-
-      const merged = [...fromHighlights, ...fromEvents, ...fromUpdates, ...fromMilestones].sort(
+      const merged = [...workstuffItems, ...fromHighlights, ...fromUpdates, ...fromMilestones].sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )
-      setWorkforceItems(merged.slice(0, 25))
+      setLatestStuff(merged.slice(0, 35))
     } catch (e) {
-      console.error('Failed to load workforce feed:', e)
-      setWorkforceItems([])
+      console.error('Failed to load latest stuff:', e)
+      setLatestStuff([])
     } finally {
-      setWorkforceLoading(false)
+      setLatestStuffLoading(false)
     }
   }
 
-  async function handleCreateSignFromItem(item: WorkforceFeedItem) {
-    if (item.type === 'highlight') {
-      router.push(`/mywork/digital-signage/builder/new?type=WORKFORCE_ACHIEVEMENT&highlightId=${item.id}`)
-      return
-    }
-    if (item.type === 'event') {
-      router.push(`/mywork/digital-signage/builder/new?type=COMPANY_EVENT&source=manual`)
-      return
-    }
-    if (item.type === 'platform_update' || item.type === 'milestone') {
-      setCreateSignFromId({ type: item.type, id: item.id })
-      try {
-        const url =
-          item.type === 'platform_update'
-            ? `/api/company/products/platform/unit/update/${item.id}/generate-digital-signage`
-            : `/api/company/milestones/${item.id}/generate-digital-product`
-        const res = await api.post(url, {})
-        const signId = res.data?.digitalSign?.id
-        if (signId) {
-          router.push(`/mywork/digital-signage/${signId}?saved=true`)
-          return
-        }
-      } catch (err: any) {
-        console.error('Create sign from item failed:', err)
-        alert(err.response?.data?.error || err.message || 'Failed to create sign')
-      } finally {
-        setCreateSignFromId(null)
+  function getBuildActions(item: LatestStuffItem) {
+    const actions: { label: string; href?: string; onClick?: () => void; icon: React.ComponentType<{ className?: string }> }[] = []
+    const hasSign = ['highlight', 'event', 'platform_update', 'milestone'].includes(item.type)
+    const hasFlyer = true
+    const hasDigest = WORKSTUFF_TYPES.includes(item.type as any) || item.type === 'event'
+    const companyXType = WORKSTUFF_TO_COMPANYX[item.type]
+
+    if (hasSign) {
+      if (item.type === 'highlight') {
+        actions.push({
+          label: 'Create sign',
+          href: `/mywork/digital-signage/builder/new?type=WORKFORCE_ACHIEVEMENT&highlightId=${item.id}`,
+          icon: Monitor,
+        })
+      } else if (item.type === 'event') {
+        actions.push({
+          label: 'Create sign',
+          href: `/mywork/digital-signage/builder/new?type=COMPANY_EVENT&source=manual`,
+          icon: Monitor,
+        })
+      } else if (item.type === 'platform_update' || item.type === 'milestone') {
+        actions.push({
+          label: 'Create sign',
+          onClick: () => handleCreateSignFromApi(item),
+          icon: Monitor,
+        })
       }
+    }
+    if (hasFlyer) {
+      actions.push({
+        label: 'Create flyer',
+        href: `/mywork/products/builder/new?type=flyer_poster&sourceType=${item.type}&sourceId=${item.id}`,
+        icon: Image,
+      })
+    }
+    if (hasDigest && companyXType) {
+      actions.push({
+        label: 'Add to digest',
+        href: `/workforce/enduring/email-digest/items/new?sourceType=${companyXType}&sourceId=${item.id}`,
+        icon: Mail,
+      })
+    }
+    return actions
+  }
+
+  async function handleCreateSignFromApi(item: LatestStuffItem) {
+    if (item.type !== 'platform_update' && item.type !== 'milestone') return
+    setCreateSignFromId({ type: item.type, id: item.id })
+    try {
+      const url =
+        item.type === 'platform_update'
+          ? `/api/company/products/platform/unit/update/${item.id}/generate-digital-signage`
+          : `/api/company/milestones/${item.id}/generate-digital-product`
+      const res = await api.post(url, {})
+      const signId = res.data?.digitalSign?.id
+      if (signId) {
+        router.push(`/mywork/digital-signage/${signId}?saved=true`)
+      }
+    } catch (err: any) {
+      console.error('Create sign from item failed:', err)
+      alert(err.response?.data?.error || err.message || 'Failed to create sign')
+    } finally {
+      setCreateSignFromId(null)
     }
   }
 
@@ -365,27 +432,31 @@ function ProductsPageContent() {
             {/* Create New Tab */}
             {activeTab === 'create' && (
               <>
-              {/* Latest workforce items – create sign/flyer from hydrated workforce content */}
+              {/* Latest stuff – workstuff + highlights + platform updates + milestones */}
               <div className="mb-10">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">Latest workforce items</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Here&apos;s the latest stuff</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  Create a sign, flyer, or other product from recent workforce content. Pick an item below and choose &quot;Create sign&quot; or &quot;Create flyer&quot;.
+                  Pick an item below and choose how you want to build from it—sign, flyer, digest, or more.
                 </p>
-                {workforceLoading ? (
+                {latestStuffLoading ? (
                   <div className="flex items-center gap-2 text-gray-500 py-6">
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    <span className="text-sm">Loading workforce items…</span>
+                    <span className="text-sm">Loading latest stuff…</span>
                   </div>
-                ) : workforceItems.length === 0 ? (
+                ) : latestStuff.length === 0 ? (
                   <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-6 text-center text-sm text-gray-600">
-                    No workforce items yet. Add highlights, events, or platform updates in your company, or create a product from scratch below.
+                    No items yet. Add events, trainings, campaigns, or other workstuff in{' '}
+                    <Link href="/mycompany/workforcestuff/add" className="text-blue-600 hover:underline">
+                      WorkStuff
+                    </Link>
+                    , or create a product from scratch below.
                   </div>
                 ) : (
                   <ul className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100">
-                    {workforceItems.map((item) => {
+                    {latestStuff.map((item) => {
                       const isCreating = createSignFromId?.type === item.type && createSignFromId?.id === item.id
-                      const typeLabel = item.type === 'highlight' ? 'Achievement' : item.type === 'event' ? 'Event' : item.type === 'platform_update' ? 'Platform update' : 'Milestone'
-                      const TypeIcon = item.type === 'highlight' ? Award : item.type === 'event' ? Calendar : item.type === 'platform_update' ? Ship : Flag
+                      const { label: typeLabel, icon: TypeIcon } = TYPE_CONFIG[item.type] ?? { label: item.type, icon: FileText }
+                      const actions = getBuildActions(item)
                       return (
                         <li key={`${item.type}-${item.id}`} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50">
                           <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -400,23 +471,35 @@ function ProductsPageContent() {
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => handleCreateSignFromItem(item)}
-                              disabled={isCreating}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-md hover:bg-purple-100 disabled:opacity-50"
-                            >
-                              {isCreating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Monitor className="h-3.5 w-3.5" />}
-                              {isCreating ? 'Creating…' : 'Create sign'}
-                            </button>
-                            <Link
-                              href={`/mywork/products/builder/new?type=flyer_poster&sourceType=${item.type}&sourceId=${item.id}`}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100"
-                            >
-                              <Image className="h-3.5 w-3.5" />
-                              Create flyer
-                            </Link>
+                          <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+                            {actions.map((action) => {
+                              const ActionIcon = action.icon
+                              if (action.onClick) {
+                                const creating = action.label === 'Create sign' && isCreating
+                                return (
+                                  <button
+                                    key={action.label}
+                                    type="button"
+                                    onClick={action.onClick}
+                                    disabled={creating}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-md hover:bg-purple-100 disabled:opacity-50"
+                                  >
+                                    {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ActionIcon className="h-3.5 w-3.5" />}
+                                    {creating ? 'Creating…' : action.label}
+                                  </button>
+                                )
+                              }
+                              return (
+                                <Link
+                                  key={action.label}
+                                  href={action.href!}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                                >
+                                  <ActionIcon className="h-3.5 w-3.5" />
+                                  {action.label}
+                                </Link>
+                              )
+                            })}
                           </div>
                         </li>
                       )

@@ -62,7 +62,7 @@ export async function POST(request: Request) {
         deckUrl: signage.gammaDeckUrl,
         pptxUrl: signage.gammaPptxUrl ?? undefined,
         message: 'Deck already generated',
-        payloadChars: blob.length,
+        payloadChars: (signage.gammaBlob ?? '').length,
       })
     }
 

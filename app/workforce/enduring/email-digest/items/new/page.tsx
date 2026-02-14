@@ -2,19 +2,24 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/providers/AuthProvider'
 import api from '@/lib/api'
 import EmailDigestSidebar from '@/components/workforce/EmailDigestSidebar'
 
+const VALID_SOURCE_TYPES = ['CompanyEvent', 'CompanyCampaign', 'CompanyTraining', 'CompanyBenefits', 'CompanyImpactEvent', 'CompanyCommunity', 'CompanyCareer', 'CompanyEmployeeCause']
+
 export default function CreateItemPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { session, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(false)
+  const urlSourceType = searchParams?.get('sourceType')
+  const urlSourceId = searchParams?.get('sourceId')
   const [sourceMode, setSourceMode] = useState<'workforce' | 'manual'>('workforce')
-  const [sourceType, setSourceType] = useState('CompanyEvent')
+  const [sourceType, setSourceType] = useState(urlSourceType && VALID_SOURCE_TYPES.includes(urlSourceType) ? urlSourceType : 'CompanyEvent')
   const [sourceItems, setSourceItems] = useState<any[]>([])
-  const [selectedSourceId, setSelectedSourceId] = useState('')
+  const [selectedSourceId, setSelectedSourceId] = useState(urlSourceId ?? '')
   const [selectedItem, setSelectedItem] = useState<any>(null) // The actual selected item data
   const [manualInput, setManualInput] = useState('')
   
@@ -27,6 +32,15 @@ export default function CreateItemPage() {
     title: '', // For searchability
     content: '', // The ENTIRE formatted item
   })
+
+  // Sync URL params to state when landing from work products "Add to digest"
+  useEffect(() => {
+    if (urlSourceType && VALID_SOURCE_TYPES.includes(urlSourceType)) {
+      setSourceType(urlSourceType)
+      setSourceMode('workforce')
+    }
+    if (urlSourceId) setSelectedSourceId(urlSourceId)
+  }, [urlSourceType, urlSourceId])
 
   useEffect(() => {
     async function fetchWorkForceItems() {
