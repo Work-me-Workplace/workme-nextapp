@@ -4,8 +4,9 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState, Suspense } from 'react'
 import SidebarNav from '@/components/mywork/SidebarNav'
+import { WorkProductContainer } from '@/components/workproduct/WorkProductContainer'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
-import { Calendar, FileText, Plus, Archive, Edit, ArchiveRestore, Save, X, Trash2 } from 'lucide-react'
+import { Calendar, Archive, Edit, ArchiveRestore, Save, X, Trash2 } from 'lucide-react'
 import api from '@/lib/api'
 
 interface WorkforceStuffItem {
@@ -422,6 +423,11 @@ function WorkforceStuffDetailContent() {
               ← Back to Workforce Stuff
             </Link>
 
+            <WorkProductContainer
+              source={item}
+              companyId={companyId || null}
+              layout="stack"
+            >
             <div className="bg-white rounded-lg shadow p-8 mb-6">
               <div className="flex items-start justify-between mb-6">
                 <div>
@@ -792,20 +798,6 @@ function WorkforceStuffDetailContent() {
               )}
 
               <div className="flex flex-wrap gap-4 pt-6 border-t">
-                <Link
-                  href={`/mycompany/workforcestuff/${item.id}/product-gen${companyId ? `?companyId=${companyId}` : ''}`}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-                >
-                  <Plus className="h-5 w-5 mr-2" />
-                  Create Products from This
-                </Link>
-                <Link
-                  href={`/mywork/products?sourceId=${item.id}`}
-                  className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition"
-                >
-                  <FileText className="h-5 w-5 mr-2" />
-                  View Related Outputs
-                </Link>
                 {item.archived ? (
                   <button
                     onClick={() => handleArchive(false)}
@@ -835,6 +827,7 @@ function WorkforceStuffDetailContent() {
                 </button>
               </div>
             </div>
+            </WorkProductContainer>
           </div>
         </main>
       </div>

@@ -5,8 +5,9 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useEffect, useState, Suspense } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Mail, Monitor, Image, FileText, MessageSquare, ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2 } from 'lucide-react'
 import api from '@/lib/api'
+import { WORK_PRODUCT_TYPE_OPTIONS } from '@/lib/workproduct.config'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,44 +23,6 @@ interface WorkforceStuffItem {
   location?: string | null
   [key: string]: any
 }
-
-const productTypes = [
-  {
-    id: 'email_digest',
-    name: 'Email Digest',
-    icon: Mail,
-    description: 'Create a weekly email digest with this impact event',
-    createPath: (sourceId: string, sourceType: string) => `/workforce/enduring/email-digest/new?sourceId=${sourceId}&sourceType=${sourceType}`,
-  },
-  {
-    id: 'digital_signage',
-    name: 'Digital Signage',
-    icon: Monitor,
-    description: 'Create a digital sign to display this impact event',
-    createPath: (sourceId: string, sourceType: string) => `/mywork/digital-signage/new?sourceId=${sourceId}&sourceType=${sourceType}`,
-  },
-  {
-    id: 'flyer_poster',
-    name: 'Flyer / Poster',
-    icon: Image,
-    description: 'Create a flyer or poster for this impact event',
-    createPath: (sourceId: string, sourceType: string) => `/mywork/products/builder/new?type=flyer_poster&sourceId=${sourceId}&sourceType=${sourceType}`,
-  },
-  {
-    id: 'senior_leader_email',
-    name: 'Senior Leader Email',
-    icon: FileText,
-    description: 'Create a senior leader email about this impact event',
-    createPath: (sourceId: string, sourceType: string) => `/mywork/seniorleader/build?sourceId=${sourceId}&sourceType=${sourceType}`,
-  },
-  {
-    id: 'comms_plan',
-    name: 'Comms Plan',
-    icon: MessageSquare,
-    description: 'Create a communications plan for this impact event',
-    createPath: (sourceId: string, sourceType: string) => `/mywork/products/comms-plan/new?sourceId=${sourceId}&sourceType=${sourceType}`,
-  },
-]
 
 function ProductGenContent() {
   const router = useRouter()
@@ -105,10 +68,11 @@ function ProductGenContent() {
     }
   }
 
-  const handleProductSelect = (productType: typeof productTypes[0]) => {
+  const handleProductSelect = (productType: (typeof WORK_PRODUCT_TYPE_OPTIONS)[0]) => {
     if (!item) return
-    const createPath = productType.createPath(item.id, item.type)
-    router.push(createPath)
+    const createPath = productType.createPath(item.id, item.type, companyId ?? undefined)
+    const url = companyId ? `${createPath}${createPath.includes('?') ? '&' : '?'}companyId=${companyId}` : createPath
+    router.push(url)
   }
 
   if (!workMeId || loading) {
@@ -184,7 +148,7 @@ function ProductGenContent() {
               className="flex items-center text-blue-600 hover:text-blue-700 mb-6 text-sm"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Workforce Stuff Detail
+              Back to work item (source + product options)
             </Link>
 
             {/* Workforce Stuff Blurb */}
@@ -247,7 +211,10 @@ function ProductGenContent() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {productTypes.map(productType => {
+              {WORK_PRODUCT_TYPE_OPTIONS.filter((productType) => {
+                if (!productType.allowedSourceTypes) return true
+                return productType.allowedSourceTypes.includes(item.type)
+              }).map((productType) => {
                 const Icon = productType.icon
                 return (
                   <button

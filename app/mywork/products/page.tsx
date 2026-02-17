@@ -7,7 +7,7 @@ import SidebarNav from '@/components/mywork/SidebarNav'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { getDashboard, refreshDashboard, type WorkProduct } from '@/lib/dashboard.client'
 import api from '@/lib/api'
-import { Mail, Image, Monitor, FileText, Eye, MessageSquare, Share2, Loader2, Flag, Ship, Award, Calendar, GraduationCap, Megaphone, Zap, Users, Briefcase, Heart } from 'lucide-react'
+import { Mail, Image, Monitor, FileText, Eye, MessageSquare, Share2, Loader2, Flag, Ship, Award, Calendar, GraduationCap, Megaphone, Zap, Users, Briefcase, Heart, ArrowLeft } from 'lucide-react'
 
 /** Workstuff types from GET /api/workstuff */
 const WORKSTUFF_TYPES = [
@@ -389,11 +389,18 @@ function ProductsPageContent() {
                       ? `Create a product from this ${sourceType === 'impact' ? 'impact event' : sourceType}`
                       : 'Your work outputs and communication products'}
                   </p>
-                  {hasSource && (
-                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  {hasSource && sourceId && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg flex flex-wrap items-center justify-between gap-2">
                       <p className="text-sm text-blue-800">
                         <strong>Creating from source:</strong> {sourceType === 'impact' ? 'Impact Event' : sourceType}
                       </p>
+                      <Link
+                        href={`/mycompany/workforcestuff/${sourceId}`}
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-700 hover:text-blue-800"
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                        View source (work item)
+                      </Link>
                     </div>
                   )}
                 </div>

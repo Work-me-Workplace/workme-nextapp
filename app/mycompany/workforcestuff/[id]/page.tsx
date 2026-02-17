@@ -5,7 +5,8 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Calendar, FileText, Plus, Archive, Edit, ArchiveRestore, Save, X } from 'lucide-react'
+import { WorkProductContainer } from '@/components/workproduct/WorkProductContainer'
+import { Calendar, Archive, Edit, ArchiveRestore, Save, X } from 'lucide-react'
 import api from '@/lib/api'
 
 interface WorkforceStuffItem {
@@ -376,6 +377,11 @@ export default function WorkforceStuffDetailPage() {
               ← Back to Workforce Stuff
             </Link>
 
+            <WorkProductContainer
+              source={item}
+              companyId={searchParams?.get('companyId') ?? null}
+              layout="stack"
+            >
             <div className="bg-white rounded-lg shadow p-8 mb-6">
               <div className="flex items-start justify-between mb-6">
                 <div>
@@ -614,19 +620,6 @@ export default function WorkforceStuffDetailPage() {
 
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-4 pt-6 border-t">
-                <Link
-                  href={`/mycompany/workforcestuff/${item.id}/product-gen`}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-                >
-                  <Plus className="h-5 w-5 mr-2" />
-                  Create Products from This
-                </Link>
-                <Link
-                  href={`/mywork/products?sourceId=${item.id}`}
-                  className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition"
-                >
-                  View Related Outputs
-                </Link>
                 {item.archived ? (
                   <button
                     onClick={() => handleArchive(false)}
@@ -648,6 +641,7 @@ export default function WorkforceStuffDetailPage() {
                 )}
               </div>
             </div>
+            </WorkProductContainer>
           </div>
         </main>
       </div>
