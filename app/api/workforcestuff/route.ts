@@ -1,11 +1,14 @@
 /**
  * API Route: Fetch all Workforce Stuff items
- * 
+ *
  * Fetches all CompanyX models (Events, Training, Campaigns, etc.)
  * and returns them in a unified format for the dashboard
- * 
+ *
  * AUTH: WorkMe-only (Firebase → WorkMe)
- * SCOPE: companyId from authenticated user's WorkMe (secure, verified)
+ * SCOPE: companyId from query param (when allowed) or authenticated user's WorkMe
+ *
+ * When the client passes ?companyId=..., we use it only if the user's WorkMe
+ * has no companyId (e.g. invite link) or the same companyId (so list URL hydrates).
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -17,12 +20,18 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    // Auth - Verify Firebase token
     const { firebaseId } = await verifyAuth(request)
-    
-    // Load WorkMe identity to get companyId (source of truth - secure, verified)
     const workMe = await loadWorkMe(firebaseId)
-    const { companyId } = workMe
+    const workMeCompanyId = workMe.companyId ?? null
+
+    const { searchParams } = new URL(request.url)
+    const queryCompanyId = searchParams.get('companyId')?.trim() || null
+
+    const companyId =
+      queryCompanyId &&
+      (workMeCompanyId === null || workMeCompanyId === queryCompanyId)
+        ? queryCompanyId
+        : workMeCompanyId
 
     if (!companyId) {
       return NextResponse.json(
@@ -31,7 +40,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('[API GET /api/workforcestuff] Using companyId from authenticated user:', companyId)
+    console.log('[API GET /api/workforcestuff] Using companyId:', companyId, queryCompanyId ? '(from query)' : '(from WorkMe)')
 
     // Fetch all CompanyX models scoped by companyId
     const [trainings, events, campaigns, impactEvents, community, benefits, careers] = await Promise.all([
