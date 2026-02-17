@@ -23,6 +23,7 @@ interface GPTEventOutput {
   audience?: EventAudience | null
   vibe?: string | null
   eventItems?: string[] | null
+  perks?: string[] | null // Deprecated: use eventItems
   participation?: string[] | null
 }
 

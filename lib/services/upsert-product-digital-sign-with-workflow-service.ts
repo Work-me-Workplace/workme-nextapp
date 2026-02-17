@@ -77,7 +77,8 @@ export interface UpsertProductDigitalSignWithWorkflowInput {
         endTime?: string | null
         location?: string | null
         description?: string | null
-        perks?: string[] | null
+        eventItems?: string[] | null // Use eventItems (replaces perks)
+        perks?: string[] | null // Deprecated: use eventItems
         registrationLink?: string | null
       }
 

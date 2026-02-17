@@ -58,7 +58,8 @@ interface CreateDigitalSignageRequest {
     endTime?: string
     location?: string
     description?: string
-    perks?: string[]
+    eventItems?: string[] // Use eventItems (replaces perks)
+    perks?: string[] // Deprecated: use eventItems
     registrationLink?: string
   }
 }
