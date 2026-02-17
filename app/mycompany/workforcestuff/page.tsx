@@ -5,9 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getAuth } from 'firebase/auth'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
-import { getWorkMe } from '@/lib/workme.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
-import { Calendar, Filter, Archive, ArchiveRestore, Clock, CheckCircle, Users, AlertCircle, Building2, Edit, Trash2, MoreVertical } from 'lucide-react'
+import { Calendar, Filter, Archive, ArchiveRestore, Clock, CheckCircle, Users, Edit, Trash2, MoreVertical, Package } from 'lucide-react'
 import api from '@/lib/api'
 
 // Unified WorkforceStuffItem type
@@ -47,56 +46,31 @@ export default function WorkforceStuffPage() {
   const [items, setItems] = useState<WorkforceStuffItem[]>([])
   const [loading, setLoading] = useState(true)
   const [authReady, setAuthReady] = useState(false)
-  const [companyIdLoading, setCompanyIdLoading] = useState(false)
-  const [companyIdNotFound, setCompanyIdNotFound] = useState(false)
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<'active' | 'archived' | 'all'>('active')
   const [archiving, setArchiving] = useState<Set<string>>(new Set())
   const [deleting, setDeleting] = useState<Set<string>>(new Set())
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null)
 
-  // Wait for auth to be ready before loading data
+  // Freeze frame: companyId from localStorage only, then one API call (no lookup hell)
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    // Check Firebase auth
     const auth = getAuth()
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
         setAuthReady(true)
         const id = getWorkMeIdFromStorage()
-        if (id) {
-          setWorkMeId(id)
-          // Try multiple sources for companyId:
-          // 0. URL param (preferred)
-          // 1. Direct localStorage key (set by refreshWorkMe)
-          // 2. From stored WorkMe object in localStorage
-          // 3. Legacy companyUnit key (backward compat)
-          // 4. API call if none found
-          const urlCompanyId = new URL(window.location.href).searchParams.get('companyId')
-          const directCompanyId = localStorage.getItem('companyId')
-          const storedWorkMe = getWorkMe()
-          const workMeCompanyId = storedWorkMe?.companyId
-          const legacyCompanyUnit = localStorage.getItem('companyUnit')
-          
-          const companyIdValue = urlCompanyId || directCompanyId || workMeCompanyId || legacyCompanyUnit
-          
-          if (companyIdValue) {
-            setCompanyId(companyIdValue)
-            // Ensure it's saved to localStorage for future use
-            localStorage.setItem('companyId', companyIdValue)
-            localStorage.setItem('companyUnit', companyIdValue)
-            setCompanyIdNotFound(false)
-            setCompanyIdLoading(false)
-            // Don't set loading to false here - let loadItems() handle it
-          } else {
-            // If not in localStorage, try to get from WorkMe API
-            setCompanyIdLoading(true)
-            setLoading(true)
-            loadCompanyId(id)
-          }
-        } else {
+        if (!id) {
           router.push('/signin')
+          return
+        }
+        setWorkMeId(id)
+        const companyIdFromStorage = localStorage.getItem('companyId') || localStorage.getItem('companyUnit')
+        if (companyIdFromStorage) {
+          setCompanyId(companyIdFromStorage)
+        } else {
+          router.push('/welcome')
         }
       } else {
         router.push('/signin')
@@ -106,31 +80,7 @@ export default function WorkforceStuffPage() {
     return () => unsubscribe()
   }, [router])
 
-  // Load companyId from WorkMe profile if not in localStorage
-  async function loadCompanyId(workMeId: string) {
-    try {
-      const response = await api.get('/api/workme/me')
-      if (response.data.success && response.data.workMe?.companyId) {
-        const id = response.data.workMe.companyId
-        setCompanyId(id)
-        localStorage.setItem('companyId', id)
-        // Also set for backward compat if needed
-        localStorage.setItem('companyUnit', id)
-        setCompanyIdNotFound(false)
-      } else {
-        // No companyId found - user needs to add company
-        setCompanyIdNotFound(true)
-      }
-    } catch (error) {
-      console.error('Failed to load companyId:', error)
-      setCompanyIdNotFound(true)
-    } finally {
-      setCompanyIdLoading(false)
-      setLoading(false)
-    }
-  }
-
-  // Load items only when auth is ready and companyId is available
+  // When we have companyId (from localStorage), call API for all companyx stuff
   useEffect(() => {
     if (authReady && workMeId && companyId) {
       loadItems()
@@ -426,81 +376,13 @@ export default function WorkforceStuffPage() {
     )
   }
 
-  // Show loading spinner only while actively loading companyId from API
-  if (companyIdLoading) {
+  // No companyId in localStorage — redirect to welcome to set it (effect already called router.push)
+  if (!companyId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading company information...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Show "add company info" button when companyId is not found (soft fallback)
-  if (companyIdNotFound || !companyId) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        {/* Top Nav */}
-        <nav className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16">
-              <div className="flex items-center">
-                <Link href="/dashboard" className="flex items-center space-x-2">
-                  <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  <span className="text-xl font-bold text-gray-900">Work.me</span>
-                </Link>
-              </div>
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => {
-                    localStorage.clear()
-                    router.push('/signin')
-                  }}
-                  className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Sign Out
-                </button>
-              </div>
-            </div>
-          </div>
-        </nav>
-
-        <div className="flex">
-          <SidebarNav />
-
-          <main className="flex-1">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-              <div className="bg-white rounded-lg shadow p-12 text-center max-w-2xl mx-auto">
-                <AlertCircle className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Company Setup Required</h3>
-                <p className="text-gray-600 mb-2 text-lg">
-                  To view workforce content, we need to know which company you're with.
-                </p>
-                <p className="text-gray-500 mb-8">
-                  This helps us show you relevant events, training sessions, announcements, and other company activities.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link
-                    href="/settings/company"
-                    className="inline-flex items-center justify-center px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg hover:shadow-xl"
-                  >
-                    <Building2 className="h-5 w-5 mr-2" />
-                    Add Your Company
-                  </Link>
-                  <Link
-                    href="/dashboard"
-                    className="inline-flex items-center justify-center px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition"
-                  >
-                    Go to Dashboard
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </main>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Redirecting to setup…</p>
         </div>
       </div>
     )
@@ -690,6 +572,17 @@ export default function WorkforceStuffPage() {
                               
                               {actionMenuOpen === item.id && (
                                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10" data-action-menu>
+                                  <Link
+                                    href={`/mycompany/workforcestuff/${item.id}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setActionMenuOpen(null)
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                                  >
+                                    <Package className="h-4 w-4" />
+                                    Create products from this
+                                  </Link>
                                   <button
                                     onClick={(e) => {
                                       e.preventDefault()
@@ -793,6 +686,17 @@ export default function WorkforceStuffPage() {
                             
                             {actionMenuOpen === item.id && (
                               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10" data-action-menu>
+                                <Link
+                                  href={`/mycompany/workforcestuff/${item.id}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setActionMenuOpen(null)
+                                  }}
+                                  className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                                >
+                                  <Package className="h-4 w-4" />
+                                  Create products from this
+                                </Link>
                                 <button
                                   onClick={(e) => {
                                     e.preventDefault()
