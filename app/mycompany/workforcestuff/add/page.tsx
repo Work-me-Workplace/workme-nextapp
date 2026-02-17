@@ -332,6 +332,7 @@ export default function AddWorkforceStuffPage() {
         return
       }
 
+      // Every key here MUST have a page at that path (or a redirect). See docs/WORKFORCESTUFF_ROUTES_AUDIT.md
       const redirectPathMap: Record<string, string> = {
         event: `/mycompany/workforcestuff/event/${createdId}`,
         campaign: `/mycompany/workforcestuff/campaign/${createdId}`,

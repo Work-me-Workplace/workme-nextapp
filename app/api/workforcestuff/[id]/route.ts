@@ -31,7 +31,7 @@ export async function GET(
     const { id } = await params
 
     // Try to find the item in each CompanyX model
-    const [training, event, campaign, impactEvent, community, benefits, career, employeeCause] = await Promise.all([
+    const [training, event, campaign, impactEvent, community, benefits, career, employeeCause, leaderEngagement] = await Promise.all([
       prisma.companyTraining.findFirst({ where: { id, companyId } }),
       prisma.companyEvent.findFirst({ where: { id, companyId } }),
       prisma.companyCampaign.findFirst({ where: { id, companyId } }),
@@ -40,6 +40,7 @@ export async function GET(
       prisma.companyBenefits.findFirst({ where: { id, companyId } }),
       prisma.companyCareer.findFirst({ where: { id, companyId } }),
       prisma.companyEmployeeCause.findFirst({ where: { id, companyId } }),
+      prisma.companyLeaderEngagement.findFirst({ where: { id, companyId } }),
     ])
 
     // Find which one exists
@@ -128,6 +129,17 @@ export async function GET(
           type: 'cause',
           startDate: employeeCause.windowStart?.toISOString() || null,
           endDate: employeeCause.windowEnd?.toISOString() || null,
+        },
+      })
+    }
+    if (leaderEngagement) {
+      return NextResponse.json({
+        success: true,
+        item: {
+          ...leaderEngagement,
+          type: 'leader_engagement',
+          startDate: leaderEngagement.engagementDate?.toISOString() || null,
+          endDate: null,
         },
       })
     }
