@@ -11,6 +11,11 @@ function MyCompanyLayoutContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
+    // Skip companyId param handling for workforcestuff routes - they use authenticated user's companyId
+    if (pathname?.startsWith('/mycompany/workforcestuff')) {
+      return
+    }
+
     const urlCompanyId = searchParams?.get('companyId')
     
     if (!urlCompanyId) {

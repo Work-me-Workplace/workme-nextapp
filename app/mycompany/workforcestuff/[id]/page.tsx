@@ -379,7 +379,7 @@ export default function WorkforceStuffDetailPage() {
 
             <WorkProductContainer
               source={item}
-              companyId={searchParams?.get('companyId') ?? null}
+              companyId={null}
               layout="stack"
             >
             <div className="bg-white rounded-lg shadow p-8 mb-6">

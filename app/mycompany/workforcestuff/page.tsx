@@ -170,8 +170,8 @@ export default function WorkforceStuffPage() {
         setLoading(true)
       }
       
-      // Pass companyId as query parameter
-      const response = await api.get(`/api/workforcestuff?companyId=${encodeURIComponent(companyId)}`)
+      // API uses authenticated user's companyId - no need to pass it
+      const response = await api.get(`/api/workforcestuff`)
       
       if (response.data.success && response.data.items) {
         setItems(response.data.items)
@@ -257,13 +257,12 @@ export default function WorkforceStuffPage() {
   }
 
   function handleEdit(item: WorkforceStuffItem) {
-    if (!companyId) return
     try {
       sessionStorage.setItem(DETAIL_STORAGE_KEY, JSON.stringify({ id: item.id, type: item.type }))
     } catch (error) {
       console.warn('Failed to store detail selection:', error)
     }
-    router.push(`/mycompany/workforcestuff/detail?companyId=${encodeURIComponent(companyId)}&edit=1`)
+    router.push(`/mycompany/workforcestuff/detail?edit=1`)
   }
 
   function isPastRelevanceWindow(item: WorkforceStuffItem): boolean {
@@ -286,13 +285,12 @@ export default function WorkforceStuffPage() {
   }
 
   function openDetail(item: WorkforceStuffItem) {
-    if (!companyId) return
     try {
       sessionStorage.setItem(DETAIL_STORAGE_KEY, JSON.stringify({ id: item.id, type: item.type }))
     } catch (error) {
       console.warn('Failed to store detail selection:', error)
     }
-    router.push(`/mycompany/workforcestuff/detail?companyId=${encodeURIComponent(companyId)}`)
+    router.push(`/mycompany/workforcestuff/detail`)
   }
 
   const categoryOptions = [

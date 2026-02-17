@@ -29,7 +29,6 @@ const STORAGE_KEY = 'workforce_detail_item'
 function WorkforceStuffDetailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const companyId = searchParams?.get('companyId') || ''
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [item, setItem] = useState<WorkforceStuffItem | null>(null)
   const [loading, setLoading] = useState(true)
@@ -51,11 +50,6 @@ function WorkforceStuffDetailContent() {
     }
   }, [router])
 
-  useEffect(() => {
-    if (!companyId) return
-    loadItemByCompany()
-  }, [companyId])
-
   const selectedItemId = useMemo(() => {
     if (typeof window === 'undefined') return null
     try {
@@ -68,44 +62,41 @@ function WorkforceStuffDetailContent() {
     }
   }, [])
 
-  async function loadItemByCompany() {
+  useEffect(() => {
+    if (workMeId && selectedItemId) {
+      loadItem()
+    }
+  }, [workMeId, selectedItemId])
+
+  async function loadItem() {
+    if (!selectedItemId) {
+      setError('No item selected')
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       setError(null)
 
-      if (!companyId) {
-        setError('companyId is required')
-        return
-      }
-
-      if (!selectedItemId) {
-        setError('No item selected')
-        return
-      }
-
-      const response = await api.get(`/api/workforcestuff?companyId=${encodeURIComponent(companyId)}`)
-      if (!response.data.success || !response.data.items) {
-        setError('Failed to load workforce items')
-        return
-      }
-
-      const found = response.data.items.find((it: WorkforceStuffItem) => it.id === selectedItemId)
-      if (!found) {
+      // Use direct API endpoint - no companyId needed (API uses authenticated user's companyId)
+      const response = await api.get(`/api/workforcestuff/${selectedItemId}`)
+      
+      if (response.data.success && response.data.item) {
+        const loadedItem = response.data.item
+        const isArchived = loadedItem.status === 'ARCHIVED' || loadedItem.archived
+        const normalized = {
+          ...loadedItem,
+          status: isArchived ? 'archived' : 'active',
+          archived: isArchived,
+        }
+        setItem(normalized)
+        setFormData(buildInitialForm(normalized))
+      } else {
         setError('Item not found')
-        return
       }
-
-      const isArchived = found.status === 'ARCHIVED' || found.archived
-      const normalized = {
-        ...found,
-        status: isArchived ? 'archived' : 'active',
-        archived: isArchived,
-      }
-
-      setItem(normalized)
-      setFormData(buildInitialForm(normalized))
     } catch (err: any) {
-      console.error('Failed to load item by company:', err)
+      console.error('Failed to load item:', err)
       setError(err.response?.data?.error || err.message || 'Failed to load item')
     } finally {
       setLoading(false)
@@ -125,7 +116,7 @@ function WorkforceStuffDetailContent() {
       })
 
       if (response.data.success) {
-        await loadItemByCompany()
+        await loadItem()
         router.push(`/mycompany/workforcestuff`)
       } else {
         setError(response.data.error || 'Failed to archive item')
@@ -151,7 +142,7 @@ function WorkforceStuffDetailContent() {
       const response = await api.delete(`/api/workforcestuff/${item.id}?type=${item.type}`)
 
       if (response.data.success) {
-        router.push(`/mycompany/workforcestuff?companyId=${encodeURIComponent(companyId)}`)
+        router.push(`/mycompany/workforcestuff`)
       } else {
         setError(response.data.error || 'Failed to delete item')
       }
@@ -339,7 +330,7 @@ function WorkforceStuffDetailContent() {
         return
       }
 
-      await loadItemByCompany()
+      await loadItem()
       setIsEditing(false)
     } catch (err: any) {
       console.error('Failed to update item:', err)
@@ -425,7 +416,7 @@ function WorkforceStuffDetailContent() {
 
             <WorkProductContainer
               source={item}
-              companyId={companyId || null}
+              companyId={null}
               layout="stack"
             >
             <div className="bg-white rounded-lg shadow p-8 mb-6">

@@ -83,8 +83,8 @@ export function WorkProductContainer({
   }, [source.id, source.type, initialProductStatuses])
 
   const handleProductSelect = (createPath: string) => {
-    const url = companyId ? `${createPath}${createPath.includes('?') ? '&' : '?'}companyId=${companyId}` : createPath
-    router.push(url)
+    // No need to append companyId - APIs use authenticated user's companyId
+    router.push(createPath)
   }
 
   const relatedOutputsHref = `/mywork/products?sourceId=${source.id}${source.type ? `&sourceType=${source.type}` : ''}`
@@ -122,7 +122,7 @@ export function WorkProductContainer({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {WORK_PRODUCT_TYPE_OPTIONS.map((productType) => {
           const Icon = productType.icon
-          const createPath = productType.createPath(source.id, source.type, companyId)
+          const createPath = productType.createPath(source.id, source.type, null)
           const status = getProductStatus(productType.id)
           const exists = status?.exists ?? false
           const statusColor = exists ? 'border-green-500 bg-green-50/50' : 'border-gray-200 hover:border-blue-500 hover:bg-blue-50/50'

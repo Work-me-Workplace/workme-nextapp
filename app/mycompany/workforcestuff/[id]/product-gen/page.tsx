@@ -34,7 +34,6 @@ function ProductGenContent() {
   const [error, setError] = useState<string | null>(null)
   
   const itemId = params?.id as string
-  const companyId = searchParams?.get('companyId')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -53,7 +52,8 @@ function ProductGenContent() {
       setLoading(true)
       setError(null)
       
-      const response = await api.get(`/api/workforcestuff/${itemId}${companyId ? `?companyId=${companyId}` : ''}`)
+      // API uses authenticated user's companyId - no need to pass it
+      const response = await api.get(`/api/workforcestuff/${itemId}`)
       
       if (response.data.success && response.data.item) {
         setItem(response.data.item)
@@ -70,9 +70,8 @@ function ProductGenContent() {
 
   const handleProductSelect = (productType: (typeof WORK_PRODUCT_TYPE_OPTIONS)[0]) => {
     if (!item) return
-    const createPath = productType.createPath(item.id, item.type, companyId ?? undefined)
-    const url = companyId ? `${createPath}${createPath.includes('?') ? '&' : '?'}companyId=${companyId}` : createPath
-    router.push(url)
+    const createPath = productType.createPath(item.id, item.type, undefined)
+    router.push(createPath)
   }
 
   if (!workMeId || loading) {
@@ -108,7 +107,7 @@ function ProductGenContent() {
               <div className="bg-red-50 border border-red-200 rounded-lg p-6">
                 <p className="text-red-800">{error || 'Workforce item not found'}</p>
                 <Link
-                  href={`/mycompany/workforcestuff/${itemId}${companyId ? `?companyId=${companyId}` : ''}`}
+                  href={`/mycompany/workforcestuff/${itemId}`}
                   className="mt-4 inline-block text-blue-600 hover:text-blue-700"
                 >
                   ← Back to Detail Page
@@ -144,7 +143,7 @@ function ProductGenContent() {
         <main className="flex-1">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <Link
-              href={`/mycompany/workforcestuff/${itemId}${companyId ? `?companyId=${companyId}` : ''}`}
+              href={`/mycompany/workforcestuff/${itemId}`}
               className="flex items-center text-blue-600 hover:text-blue-700 mb-6 text-sm"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
