@@ -9,6 +9,7 @@ export type WorkOpsSourceType =
   | 'boss_tasking'
   | 'capture'
   | 'manual'
+  | 'bulk'
   | 'workforce_stuff'
   | 'company_milestones'
   | 'employee_highlights'

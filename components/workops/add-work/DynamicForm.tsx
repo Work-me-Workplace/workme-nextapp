@@ -9,6 +9,7 @@ import SmartWorkForm from './SmartWorkForm'
 import BossTaskingForm from './forms/BossTaskingForm'
 import CaptureForm from './forms/CaptureForm'
 import ManualEntryForm from './forms/ManualEntryForm'
+import BulkAddForm from './forms/BulkAddForm'
 import WorkforceStuffForm from './forms/WorkforceStuffForm'
 import CompanyMilestonesForm from './forms/CompanyMilestonesForm'
 import EmployeeHighlightsForm from './forms/EmployeeHighlightsForm'
@@ -91,10 +92,15 @@ export default function DynamicForm({ source, outlookId, onBack, onSuccess }: Dy
         />
       )}
 
-      {/* Legacy forms (keeping for backward compatibility) */}
+      {/* Quick add (manual fields) and bulk (paste list, no AI) */}
       {source === 'manual' && (
         <ManualEntryForm onSubmit={handleSubmit} loading={loading} />
       )}
+      {source === 'bulk' && (
+        <BulkAddForm onBack={onBack} onSuccess={onSuccess} />
+      )}
+
+      {/* Legacy forms (keeping for backward compatibility) */}
       {source === 'company_milestones' && (
         <CompanyMilestonesForm onSubmit={handleSubmit} loading={loading} />
       )}

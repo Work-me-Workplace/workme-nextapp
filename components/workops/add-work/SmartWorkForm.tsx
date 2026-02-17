@@ -28,6 +28,7 @@ export default function SmartWorkForm({ category, outlookId, onBack, onSuccess }
   const [rawText, setRawText] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [analysis, setAnalysis] = useState<any>(null)
+  const [analyses, setAnalyses] = useState<any[]>([]) // bulk: multiple suggested items
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showAnalysis, setShowAnalysis] = useState(false)
@@ -39,13 +40,16 @@ export default function SmartWorkForm({ category, outlookId, onBack, onSuccess }
     setError(null)
 
     try {
-      const response = await api.post('/api/workops/item/analyze', {
+      // Bulk: detect multiple items (bullets/numbered lines) and analyze each
+      const response = await api.post('/api/workops/item/analyze-bulk', {
         rawText: rawText.trim(),
         category,
       })
 
       if (response.data.success) {
-        setAnalysis(response.data.analysis)
+        const list = response.data.analyses || []
+        setAnalyses(list)
+        setAnalysis(list.length === 1 ? list[0] : null)
         setShowAnalysis(true)
       } else {
         setError(response.data.error || 'Failed to analyze')
@@ -59,6 +63,30 @@ export default function SmartWorkForm({ category, outlookId, onBack, onSuccess }
   }
 
   const handleSubmit = async () => {
+    // Bulk: create all analyzed items
+    if (analyses.length > 1) {
+      setLoading(true)
+      setError(null)
+      try {
+        for (const a of analyses) {
+          await api.post('/api/workops/item/create', {
+            title: a.title,
+            body: a.body,
+            itemType: a.itemType,
+            source: 'manual',
+            urgency: a.urgency,
+            dueDate: a.extractedDetails?.dueDate || null,
+          })
+        }
+        onSuccess()
+      } catch (err: any) {
+        setError(err.response?.data?.error || err.message || 'Failed to create some items')
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
     if (!analysis) {
       // If no analysis, just create a simple capture
       await handleCreate({
@@ -155,36 +183,44 @@ export default function SmartWorkForm({ category, outlookId, onBack, onSuccess }
           </button>
         )}
 
-        {showAnalysis && analysis && (
+        {showAnalysis && (analysis || analyses.length > 0) && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-4">
             <div>
-              <h4 className="text-sm font-semibold text-gray-900 mb-2">Suggested Work Item</h4>
-              <div className="bg-white rounded p-3 space-y-2">
-                <div>
-                  <span className="text-xs text-gray-500">Title:</span>
-                  <p className="text-sm font-medium text-gray-900">{analysis.title}</p>
-                </div>
-                {analysis.suggestedAction && (
-                  <div>
-                    <span className="text-xs text-gray-500">What you want to do:</span>
-                    <p className="text-sm text-gray-700">{analysis.suggestedAction}</p>
+              <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                {analyses.length > 1
+                  ? `Suggested work items (${analyses.length})`
+                  : 'Suggested Work Item'}
+              </h4>
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {(analyses.length > 1 ? analyses : [analysis]).map((a: any, i: number) => (
+                  <div key={i} className="bg-white rounded p-3 space-y-2">
+                    <div>
+                      <span className="text-xs text-gray-500">Title:</span>
+                      <p className="text-sm font-medium text-gray-900">{a.title}</p>
+                    </div>
+                    {a.suggestedAction && analyses.length <= 1 && (
+                      <div>
+                        <span className="text-xs text-gray-500">What you want to do:</span>
+                        <p className="text-sm text-gray-700">{a.suggestedAction}</p>
+                      </div>
+                    )}
+                    <div className="flex gap-2 flex-wrap">
+                      <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded">
+                        Type: {a.itemType}
+                      </span>
+                      {a.urgency && (
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          a.urgency === 'critical' ? 'bg-red-100 text-red-800' :
+                          a.urgency === 'high' ? 'bg-orange-100 text-orange-800' :
+                          a.urgency === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {a.urgency} urgency
+                        </span>
+                      )}
+                    </div>
                   </div>
-                )}
-                <div className="flex gap-2">
-                  <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded">
-                    Type: {analysis.itemType}
-                  </span>
-                  {analysis.urgency && (
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      analysis.urgency === 'critical' ? 'bg-red-100 text-red-800' :
-                      analysis.urgency === 'high' ? 'bg-orange-100 text-orange-800' :
-                      analysis.urgency === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {analysis.urgency} urgency
-                    </span>
-                  )}
-                </div>
+                ))}
               </div>
             </div>
 
@@ -194,12 +230,17 @@ export default function SmartWorkForm({ category, outlookId, onBack, onSuccess }
                 disabled={loading}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
               >
-                {loading ? 'Creating...' : 'Create Work Item'}
+                {loading
+                  ? 'Creating...'
+                  : analyses.length > 1
+                    ? `Create ${analyses.length} items`
+                    : 'Create Work Item'}
               </button>
               <button
                 onClick={() => {
                   setShowAnalysis(false)
                   setAnalysis(null)
+                  setAnalyses([])
                 }}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
               >

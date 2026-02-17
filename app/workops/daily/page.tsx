@@ -18,9 +18,30 @@ import {
   ChevronRight,
   List,
   Trash2,
+  Pencil,
 } from 'lucide-react'
 import api from '@/lib/api'
-import { WorkOpsStatus } from '@prisma/client'
+import { WorkOpsStatus, WorkOpsItemType, WorkOpsUrgency } from '@prisma/client'
+
+const ITEM_TYPE_OPTIONS: { value: WorkOpsItemType; label: string }[] = [
+  { value: WorkOpsItemType.task, label: 'Task' },
+  { value: WorkOpsItemType.capture, label: 'Capture' },
+  { value: WorkOpsItemType.meeting, label: 'Meeting' },
+  { value: WorkOpsItemType.signal, label: 'Signal' },
+  { value: WorkOpsItemType.boss_request, label: 'Boss request' },
+  { value: WorkOpsItemType.tech_work, label: 'Tech work' },
+  { value: WorkOpsItemType.admin, label: 'Admin' },
+  { value: WorkOpsItemType.workforce_comms, label: 'Workforce comms' },
+  { value: WorkOpsItemType.external_pressure, label: 'External pressure' },
+  { value: WorkOpsItemType.personal, label: 'Personal' },
+]
+
+const URGENCY_OPTIONS: { value: WorkOpsUrgency; label: string }[] = [
+  { value: WorkOpsUrgency.low, label: 'Low' },
+  { value: WorkOpsUrgency.medium, label: 'Medium' },
+  { value: WorkOpsUrgency.high, label: 'High' },
+  { value: WorkOpsUrgency.critical, label: 'Critical' },
+]
 
 interface WorkOpsItem {
   id: string
@@ -55,6 +76,14 @@ export default function DailyOutlookPage() {
   const [authReady, setAuthReady] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [showAddFromBacklog, setShowAddFromBacklog] = useState(false)
+  const [editItem, setEditItem] = useState<WorkOpsItem | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editBody, setEditBody] = useState('')
+  const [editItemType, setEditItemType] = useState<WorkOpsItemType>(WorkOpsItemType.task)
+  const [editUrgency, setEditUrgency] = useState<WorkOpsUrgency | ''>('')
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [quickAddText, setQuickAddText] = useState('')
+  const [quickAddLoading, setQuickAddLoading] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -159,6 +188,75 @@ export default function DailyOutlookPage() {
     } catch (error) {
       console.error('Failed to unassign item:', error)
       alert('Failed to remove item. Please try again.')
+    }
+  }
+
+  const openEdit = (item: WorkOpsItem) => {
+    setEditItem(item)
+    setEditTitle(item.title)
+    setEditBody(item.body || '')
+    setEditItemType(item.itemType as WorkOpsItemType)
+    setEditUrgency((item.urgency as WorkOpsUrgency) || '')
+  }
+
+  const closeEdit = () => {
+    setEditItem(null)
+  }
+
+  const saveEdit = async () => {
+    if (!editItem || !editTitle.trim()) return
+    setSavingEdit(true)
+    try {
+      await api.patch(`/api/workops/item/${editItem.id}`, {
+        title: editTitle.trim(),
+        body: editBody.trim() || null,
+        itemType: editItemType,
+        urgency: editUrgency || null,
+      })
+      closeEdit()
+      await loadDailyAssignments()
+      await loadUnassignedItems()
+    } catch (error) {
+      console.error('Failed to update item:', error)
+      alert('Failed to update. Please try again.')
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  const handleDeleteItem = async (itemId: string) => {
+    if (!confirm('Delete this task from your backlog? This cannot be undone.')) return
+    try {
+      await api.delete(`/api/workops/item/${itemId}`)
+      await loadDailyAssignments()
+      await loadUnassignedItems()
+    } catch (error) {
+      console.error('Failed to delete item:', error)
+      alert('Failed to delete. Please try again.')
+    }
+  }
+
+  const handleQuickAdd = async () => {
+    const title = quickAddText.trim()
+    if (!title || quickAddLoading) return
+    setQuickAddLoading(true)
+    try {
+      await api.post('/api/workops/item/create', {
+        title,
+        body: null,
+        itemType: 'task',
+        source: 'manual',
+        urgency: null,
+      })
+      setQuickAddText('')
+      await loadDailyAssignments()
+      await loadUnassignedItems()
+      setShowAddFromBacklog(true)
+    } catch (error) {
+      console.error('Quick add failed:', error)
+      alert('Failed to add. Try again.')
+    } finally {
+      setQuickAddLoading(false)
     }
   }
 
@@ -284,6 +382,25 @@ export default function DailyOutlookPage() {
             </div>
           </div>
 
+          {/* Quick add one-liner */}
+          <div className="flex items-center gap-2 mb-4">
+            <input
+              type="text"
+              value={quickAddText}
+              onChange={(e) => setQuickAddText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd()}
+              placeholder="Add a task (one line, press Enter)"
+              className="flex-1 max-w-xl px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <button
+              onClick={handleQuickAdd}
+              disabled={!quickAddText.trim() || quickAddLoading}
+              className="px-4 py-2.5 bg-gray-800 text-white rounded-lg font-medium hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {quickAddLoading ? '…' : 'Add'}
+            </button>
+          </div>
+
           {/* Actions */}
           <div className="flex items-center gap-3 mb-6">
             <button
@@ -332,12 +449,29 @@ export default function DailyOutlookPage() {
                         </span>
                       )}
                     </div>
-                    <button
-                      onClick={() => handleAssignItem(item.id)}
-                      className="ml-4 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
-                    >
-                      Add to Day
-                    </button>
+                    <div className="ml-4 flex items-center gap-2">
+                      <button
+                        onClick={() => openEdit(item)}
+                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition"
+                        aria-label="Edit task"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteItem(item.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        aria-label="Delete from backlog"
+                        title="Delete from backlog"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleAssignItem(item.id)}
+                        className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+                      >
+                        Add to Day
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -389,13 +523,25 @@ export default function DailyOutlookPage() {
                         </span>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleUnassignItem(assignment.id)}
-                      className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                      aria-label="Remove from day"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
+                    <div className="flex-shrink-0 flex items-center gap-2">
+                      <button
+                        onClick={() => openEdit(assignment.item)}
+                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition"
+                        aria-label="Edit task"
+                        title="Edit task"
+                      >
+                        <Pencil className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={() => handleUnassignItem(assignment.id)}
+                        className="flex items-center gap-1.5 px-2 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition text-sm"
+                        aria-label="Remove from day"
+                        title="Remove from day"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span>Remove from day</span>
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -435,6 +581,90 @@ export default function DailyOutlookPage() {
           onSuccess={handleSuccess}
           outlookId={outlookId}
         />
+      )}
+
+      {/* Edit task modal */}
+      {editItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Edit task</h3>
+              <button
+                onClick={closeEdit}
+                className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Details</label>
+                <textarea
+                  value={editBody}
+                  onChange={(e) => setEditBody(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select
+                    value={editItemType}
+                    onChange={(e) => setEditItemType(e.target.value as WorkOpsItemType)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    {ITEM_TYPE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Urgency</label>
+                  <select
+                    value={editUrgency}
+                    onChange={(e) => setEditUrgency((e.target.value || '') as WorkOpsUrgency | '')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">None</option>
+                    {URGENCY_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={closeEdit}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveEdit}
+                disabled={savingEdit || !editTitle.trim()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+              >
+                {savingEdit ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

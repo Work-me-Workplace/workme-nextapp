@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
 import { loadWorkMe } from '@/lib/auth/loadWorkMe'
-import { getWorkOpsItem, updateWorkOpsItem } from '@/lib/server/workops/items'
+import { getWorkOpsItem, updateWorkOpsItem, deleteWorkOpsItem } from '@/lib/server/workops/items'
 import { WorkOpsItemType, WorkOpsUrgency, WorkOpsSource, WorkOpsStatus } from '@prisma/client'
 import { z } from 'zod'
 
@@ -120,6 +120,50 @@ export async function PATCH(
         details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       },
       { status },
+    )
+  }
+}
+
+/**
+ * DELETE /api/workops/item/[itemId]
+ * Delete a WorkOpsItem (removes from backlog; daily assignments are cascade-deleted)
+ */
+export async function DELETE(
+  _request: NextRequest,
+  context: { params: Promise<{ itemId: string }> }
+) {
+  try {
+    const { firebaseId } = await verifyAuth(_request as Request)
+    if (!firebaseId) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const workMe = await loadWorkMe(firebaseId)
+    const { itemId } = await context.params
+
+    const item = await getWorkOpsItem(itemId)
+    await deleteWorkOpsItem(itemId)
+
+    console.log('[API DELETE /api/workops/item/[itemId]] SUCCESS', { itemId })
+
+    return NextResponse.json({ success: true, id: itemId })
+  } catch (error: any) {
+    console.error('❌ DELETE /api/workops/item/[itemId] error:', error)
+
+    if (error.message?.includes('not found')) {
+      return NextResponse.json(
+        { success: false, error: 'WorkOpsItem not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || 'Failed to delete WorkOpsItem',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      },
+      { status: 500 }
     )
   }
 }

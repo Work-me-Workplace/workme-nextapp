@@ -116,3 +116,26 @@ export async function updateWorkOpsItem(id: string, data: Partial<{
   return item
 }
 
+/**
+ * Delete a WorkOpsItem (and its daily assignments via cascade)
+ */
+export async function deleteWorkOpsItem(id: string) {
+  console.log('[deleteWorkOpsItem]', { id })
+
+  const item = await prisma.workOpsItem.findUnique({
+    where: { id },
+    include: { outlook: true },
+  })
+
+  if (!item) {
+    throw new Error('WorkOpsItem not found')
+  }
+
+  await prisma.workOpsItem.delete({
+    where: { id },
+  })
+
+  console.log('[deleteWorkOpsItem] SUCCESS', { id })
+  return { id }
+}
+
