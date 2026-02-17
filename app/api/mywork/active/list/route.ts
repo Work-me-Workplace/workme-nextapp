@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
     const activeItems = [
       // Digital Signage
       ...digitalSignage.map(p => {
-        let title = `Digital Signage - ${p.signType}`
+        let title: string = `Digital Signage - ${p.signType}`
         
         if (p.workforceAchievement) {
           title = p.workforceAchievement.headline
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
         } else if (p.companyNews) {
           title = p.companyNews.headline
         } else if (p.companyEvent) {
-          title = p.companyEvent.eventName
+          title = p.companyEvent.eventName ? p.companyEvent.eventName : 'Untitled Event'
         }
 
         return {

@@ -28,7 +28,7 @@ type SignageWithRelations = {
     quoteAttribution?: string | null
   } | null
   companyEvent?: {
-    eventName: string
+    eventName: string | null
     eventDate?: Date | string | null
     startTime?: string | null
     endTime?: string | null
@@ -83,7 +83,7 @@ export function digitalSignageToDeckSpec(signage: SignageWithRelations): DeckSpe
         })
       : null
     slides.push({
-      title: e.eventName,
+      title: e.eventName || 'Untitled Event',
       bullets: [
         ...(dateStr ? [dateStr] : []),
         ...(e.startTime && e.endTime ? [`${e.startTime} – ${e.endTime}`] : e.startTime ? [e.startTime] : []),
