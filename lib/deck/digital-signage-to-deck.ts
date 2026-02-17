@@ -89,7 +89,7 @@ export function digitalSignageToDeckSpec(signage: SignageWithRelations): DeckSpe
         ...(e.startTime && e.endTime ? [`${e.startTime} – ${e.endTime}`] : e.startTime ? [e.startTime] : []),
         ...(e.location ? [e.location] : []),
         ...(e.description ? [e.description.slice(0, 300)] : []),
-        ...(e.perks.length ? ['Perks: ' + e.perks.join(', ')] : []),
+        ...(e.perks?.length ? ['Highlights: ' + e.perks.join(', ')] : []),
         ...(e.registrationLink ? [`Register: ${e.registrationLink}`] : []),
       ].filter(Boolean),
     })

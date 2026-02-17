@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
+import { WorkProductContainer } from '@/components/workproduct/WorkProductContainer'
 import { Calendar, ExternalLink, User } from 'lucide-react'
 
 export default function CampaignDetailPage() {
@@ -62,6 +63,16 @@ export default function CampaignDetailPage() {
               ← Back to Workforce Stuff
             </Link>
 
+            <WorkProductContainer
+              source={{
+                id: item.id,
+                type: 'campaign',
+                title: item.title,
+                description: item.description,
+                summary: item.summary ?? item.description,
+              }}
+              layout="stack"
+            >
             <div className="bg-white rounded-lg shadow p-8">
               <span className="text-xs font-medium text-gray-500 uppercase bg-blue-100 text-blue-800 px-2 py-1 rounded mb-3 inline-block">
                 Campaign
@@ -94,6 +105,7 @@ export default function CampaignDetailPage() {
                 <p className="text-sm text-gray-600 mt-4">Sponsored by: {item.sponsor}</p>
               )}
             </div>
+            </WorkProductContainer>
           </div>
         </main>
       </div>

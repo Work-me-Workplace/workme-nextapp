@@ -44,7 +44,8 @@ interface CreateDigitalSignageRequest {
     endTime?: string
     location?: string
     description?: string
-    perks?: string[]
+    eventItems?: string[] // Use eventItems (replaces perks)
+    perks?: string[] // Deprecated: kept for backward compatibility
     registrationLink?: string
   }
 }
@@ -159,7 +160,7 @@ export async function POST(request: NextRequest) {
               endTime: companyEvent.endTime || null,
               location: companyEvent.location || null,
               description: companyEvent.description || null,
-              perks: companyEvent.perks || [],
+              perks: companyEvent.eventItems || companyEvent.perks || [],
               registrationLink: companyEvent.registrationLink || null,
             }
           }

@@ -281,7 +281,7 @@ export async function POST(request: NextRequest) {
               endTime: companyEvent.endTime || null,
               location: companyEvent.location || null,
               description: companyEvent.description || null,
-              perks: companyEvent.perks || [],
+              perks: companyEvent.eventItems || companyEvent.perks || [],
               registrationLink: companyEvent.registrationLink || null,
             }
           }

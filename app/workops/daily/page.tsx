@@ -75,7 +75,7 @@ export default function DailyOutlookPage() {
   const [loading, setLoading] = useState(true)
   const [authReady, setAuthReady] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
-  const [showAddFromBacklog, setShowAddFromBacklog] = useState(false)
+  const [showUnassigned, setShowUnassigned] = useState(false)
   const [editItem, setEditItem] = useState<WorkOpsItem | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editBody, setEditBody] = useState('')
@@ -251,7 +251,7 @@ export default function DailyOutlookPage() {
       setQuickAddText('')
       await loadDailyAssignments()
       await loadUnassignedItems()
-      setShowAddFromBacklog(true)
+      setShowUnassigned(true)
     } catch (error) {
       console.error('Quick add failed:', error)
       alert('Failed to add. Try again.')
@@ -267,7 +267,7 @@ export default function DailyOutlookPage() {
       loadUnassignedItems()
       router.refresh()
       // Auto-show backlog after creating a new task so user can quickly assign it
-      setShowAddFromBacklog(true)
+      setShowUnassigned(true)
     }
   }
 
@@ -411,20 +411,21 @@ export default function DailyOutlookPage() {
               Add New Task
             </button>
             <button
-              onClick={() => setShowAddFromBacklog(!showAddFromBacklog)}
+              onClick={() => setShowUnassigned(!showUnassigned)}
               className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
             >
               <List className="h-5 w-5 mr-2" />
-              {showAddFromBacklog ? 'Hide' : 'Add from'} Backlog
+              {showUnassigned ? 'Hide unassigned' : 'Show unassigned'}
             </button>
           </div>
 
-          {/* Unassigned Items (when showing backlog) */}
-          {showAddFromBacklog && unassignedItems.length > 0 && (
+          {/* Unassigned — tasks not yet scheduled to a day */}
+          {showUnassigned && unassignedItems.length > 0 && (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Unassigned Items ({unassignedItems.length})
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                Unassigned ({unassignedItems.length})
               </h3>
+              <p className="text-sm text-gray-500 mb-4">Tasks not yet scheduled to a day</p>
               <div className="space-y-2">
                 {unassignedItems.map((item) => (
                   <div
@@ -556,10 +557,10 @@ export default function DailyOutlookPage() {
                 </p>
                 <div className="flex items-center justify-center gap-3">
                   <button
-                    onClick={() => setShowAddFromBacklog(true)}
+                    onClick={() => setShowUnassigned(true)}
                     className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
                   >
-                    Add from Backlog
+                    Show unassigned
                   </button>
                   <button
                     onClick={() => setModalOpen(true)}

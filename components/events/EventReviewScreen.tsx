@@ -182,16 +182,16 @@ export default function EventReviewScreen({ ingestionData, onBack, onEdit }: Eve
             </div>
           )}
 
-          {event.perks && event.perks.length > 0 && (
+          {event.eventItems && event.eventItems.length > 0 && (
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Perks</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Highlights</label>
               <div className="flex flex-wrap gap-2">
-                {event.perks.map((perk, index) => (
+                {event.eventItems.map((item, index) => (
                   <span
                     key={index}
                     className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
                   >
-                    {perk}
+                    {item}
                   </span>
                 ))}
               </div>

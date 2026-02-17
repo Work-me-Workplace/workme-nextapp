@@ -30,18 +30,13 @@ export interface EventModel {
   registrationLink: string | null
   audience: EventAudience | null
   vibe: string | null
-  perks: string[] | null
+  eventItems: string[] | null  // Highlights, agenda items, key moments (replaces perks)
   participation: string[] | null
   foodProvided: string | null
   foodTypes: string | null
   speakers: string[] | null
   pocEmail: string | null
   pocPhone: string | null
-  eventItems: Array<{
-    title: string
-    description: string | null
-    metadata: Record<string, any> | null
-  }> | null
 }
 
 /**
@@ -70,20 +65,13 @@ Return JSON with these exact fields:
   "registrationLink": "Registration URL (or null)",
   "audience": "One of: ${validAudiences} (or null)",
   "vibe": "Event vibe/tone (or null)",
-  "perks": ["perk1", "perk2"] or null,
+  "eventItems": ["Highlight 1", "Agenda item 2", "Key moment"] or null,
   "participation": ["activity1", "activity2"] or null,
   "foodProvided": "yes" or "no" or null,
   "foodTypes": "Types of food (or null)",
   "speakers": ["Speaker 1", "Speaker 2"] or null,
   "pocEmail": "Email address (or null)",
-  "pocPhone": "Phone number (or null)",
-  "eventItems": [
-    {
-      "title": "Item title",
-      "description": "Item description (or null)",
-      "metadata": {} or null
-    }
-  ] or null
+  "pocPhone": "Phone number (or null)"
 }
 
 Text:
@@ -125,20 +113,17 @@ ${rawText.substring(0, 3000)}`
       registrationLink: parsed.registrationLink || null,
       audience: validEventAudiences.includes(parsed.audience) ? parsed.audience : null,
       vibe: parsed.vibe || null,
-      perks: Array.isArray(parsed.perks) ? parsed.perks.filter((p: any) => p) : null,
+      eventItems: Array.isArray(parsed.eventItems)
+        ? parsed.eventItems
+            .map((item: any) => (typeof item === 'string' ? item : item?.title || item?.description))
+            .filter((p: any) => p)
+        : null,
       participation: Array.isArray(parsed.participation) ? parsed.participation.filter((p: any) => p) : null,
       foodProvided: parsed.foodProvided || null,
       foodTypes: parsed.foodTypes || null,
       speakers: Array.isArray(parsed.speakers) ? parsed.speakers.filter((s: any) => s) : null,
       pocEmail: parsed.pocEmail || null,
       pocPhone: parsed.pocPhone || null,
-      eventItems: Array.isArray(parsed.eventItems) && parsed.eventItems.length > 0
-        ? parsed.eventItems.map((item: any) => ({
-            title: item.title || 'Untitled Item',
-            description: item.description || null,
-            metadata: item.metadata || null,
-          }))
-        : null,
     }
   } catch (error) {
     console.error('EventMapperService error:', error)
@@ -156,14 +141,13 @@ ${rawText.substring(0, 3000)}`
       registrationLink: null,
       audience: null,
       vibe: null,
-      perks: null,
+      eventItems: null,
       participation: null,
       foodProvided: null,
       foodTypes: null,
       speakers: null,
       pocEmail: null,
       pocPhone: null,
-      eventItems: null,
     }
   }
 }

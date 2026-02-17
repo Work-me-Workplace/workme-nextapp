@@ -298,12 +298,12 @@ export default function EventViewPage() {
             </div>
           )}
 
-          {event.perks && event.perks.length > 0 && (
+          {event.eventItems && event.eventItems.length > 0 && (
             <div className="mt-6">
-              <span className="block text-sm font-medium text-gray-500 mb-2">Perks</span>
+              <span className="block text-sm font-medium text-gray-500 mb-2">Highlights</span>
               <ul className="list-disc list-inside space-y-1">
-                {event.perks.map((perk: string, idx: number) => (
-                  <li key={idx} className="text-gray-900">{perk}</li>
+                {event.eventItems.map((item: string, idx: number) => (
+                  <li key={idx} className="text-gray-900">{item}</li>
                 ))}
               </ul>
             </div>

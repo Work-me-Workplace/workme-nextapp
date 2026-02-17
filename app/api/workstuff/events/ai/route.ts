@@ -78,7 +78,7 @@ Extract:
 7. Agenda blocks → items[]
 8. Highlights inferred from tone/context:
    - participation: string[]
-   - perks: string[]
+   - eventItems: string[] (highlights, agenda items, key moments)
    - vibe: string
 
 NEVER return IDs.
@@ -101,7 +101,7 @@ Return only:
     "foodTypes": "",
     "audience": "ALL_WORKFORCE" | "LEADERS" | "WORKFORCE_AND_FAMILIES" | "COMMUNITY",
     "participation": [],
-    "perks": [],
+    "eventItems": [],
     "vibe": ""
   },
   "items": [
@@ -189,7 +189,7 @@ Return only:
           foodTypes: parsedData.event.foodTypes || null,
           audience: parsedData.event.audience || null,
           participation: Array.isArray(parsedData.event.participation) ? parsedData.event.participation : [],
-          perks: Array.isArray(parsedData.event.perks) ? parsedData.event.perks : [],
+          eventItems: Array.isArray(parsedData.event.eventItems) ? parsedData.event.eventItems : [],
           vibe: parsedData.event.vibe || null,
         },
         items: parsedData.items.map((item: any) => ({

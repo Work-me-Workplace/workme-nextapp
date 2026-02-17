@@ -2,8 +2,10 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Package, ExternalLink } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Package, ExternalLink, CheckCircle2 } from 'lucide-react'
 import { WORK_PRODUCT_TYPE_OPTIONS } from '@/lib/workproduct.config'
+import api from '@/lib/api'
 
 /** Minimal source item shape for "create from this" flows */
 export interface WorkProductSource {
@@ -13,6 +15,13 @@ export interface WorkProductSource {
   description?: string | null
   summary?: string | null
   [key: string]: unknown
+}
+
+/** Product status for a given source */
+export interface ProductStatus {
+  productTypeId: string
+  exists: boolean
+  productId?: string
 }
 
 export interface WorkProductContainerProps {
@@ -26,6 +35,8 @@ export interface WorkProductContainerProps {
   layout?: 'stack' | 'sidebar'
   /** Hide the "View related outputs" link */
   hideRelatedLink?: boolean
+  /** Product status indicators - which products exist for this source */
+  productStatuses?: ProductStatus[]
   className?: string
 }
 
@@ -39,10 +50,37 @@ export function WorkProductContainer({
   children,
   layout = 'stack',
   hideRelatedLink = false,
+  productStatuses: initialProductStatuses,
   className = '',
 }: WorkProductContainerProps) {
   const router = useRouter()
+  const [productStatuses, setProductStatuses] = useState<ProductStatus[]>(initialProductStatuses || [])
+  const [loadingStatuses, setLoadingStatuses] = useState(false)
   const typeLabel = source.type === 'impact' ? 'Impact Event' : source.type.replace(/_/g, ' ')
+
+  // Fetch product statuses if not provided
+  useEffect(() => {
+    if (initialProductStatuses && initialProductStatuses.length > 0) {
+      setProductStatuses(initialProductStatuses)
+      return
+    }
+
+    async function fetchProductStatuses() {
+      try {
+        setLoadingStatuses(true)
+        const response = await api.get(`/api/workforcestuff/${source.id}/product-status?type=${source.type}`)
+        if (response.data.success && response.data.statuses) {
+          setProductStatuses(response.data.statuses)
+        }
+      } catch (error) {
+        console.error('Failed to fetch product statuses:', error)
+      } finally {
+        setLoadingStatuses(false)
+      }
+    }
+
+    fetchProductStatuses()
+  }, [source.id, source.type, initialProductStatuses])
 
   const handleProductSelect = (createPath: string) => {
     const url = companyId ? `${createPath}${createPath.includes('?') ? '&' : '?'}companyId=${companyId}` : createPath
@@ -51,6 +89,11 @@ export function WorkProductContainer({
 
   const relatedOutputsHref = `/mywork/products?sourceId=${source.id}${source.type ? `&sourceType=${source.type}` : ''}`
 
+  /** Get product status for a given product type */
+  const getProductStatus = (productTypeId: string): ProductStatus | undefined => {
+    return productStatuses.find(s => s.productTypeId === productTypeId)
+  }
+
   const workStuffSection = children ?? (
     <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
       <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded uppercase mb-2">
@@ -58,9 +101,14 @@ export function WorkProductContainer({
       </span>
       <h2 className="text-xl font-bold text-gray-900 mb-2">{source.title}</h2>
       {(source.description || source.summary) && (
-        <p className="text-gray-700 text-sm whitespace-pre-wrap line-clamp-4">
-          {source.description || source.summary}
-        </p>
+        <div className="mt-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Full Content</h3>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <p className="text-gray-700 text-sm whitespace-pre-wrap">
+              {source.description || source.summary}
+            </p>
+          </div>
+        </div>
       )}
     </div>
   )
@@ -69,21 +117,35 @@ export function WorkProductContainer({
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-1">Create from this</h3>
       <p className="text-sm text-gray-600 mb-4">
-        Choose a product type to build from this work item. You stay in context—no backtracking.
+        Choose a product type to build from this work item. {loadingStatuses ? 'Checking status...' : 'Green checkmark = already created.'}
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {WORK_PRODUCT_TYPE_OPTIONS.map((productType) => {
           const Icon = productType.icon
           const createPath = productType.createPath(source.id, source.type, companyId)
+          const status = getProductStatus(productType.id)
+          const exists = status?.exists ?? false
+          const statusColor = exists ? 'border-green-500 bg-green-50/50' : 'border-gray-200 hover:border-blue-500 hover:bg-blue-50/50'
+          
           return (
             <button
               key={productType.id}
               onClick={() => handleProductSelect(createPath)}
-              className="flex items-start gap-3 p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50/50 text-left transition group"
+              className={`flex items-start gap-3 p-4 rounded-lg border-2 ${statusColor} text-left transition group relative`}
             >
-              <Icon className="h-8 w-8 text-blue-600 flex-shrink-0 group-hover:scale-110 transition-transform" />
-              <div className="min-w-0">
-                <span className="font-semibold text-gray-900 block">{productType.name}</span>
+              {exists && (
+                <div className="absolute top-2 right-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                </div>
+              )}
+              <Icon className={`h-8 w-8 flex-shrink-0 group-hover:scale-110 transition-transform ${exists ? 'text-green-600' : 'text-blue-600'}`} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-900 block">{productType.name}</span>
+                  {exists && (
+                    <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded">Created</span>
+                  )}
+                </div>
                 <span className="text-sm text-gray-600">{productType.description}</span>
               </div>
             </button>

@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
+import { WorkProductContainer } from '@/components/workproduct/WorkProductContainer'
 import { Calendar, Clock, MapPin, User, Mail, Phone, AlertCircle, CheckCircle } from 'lucide-react'
 import api from '@/lib/api'
 
@@ -131,6 +132,16 @@ export default function TrainingDetailPage() {
               ← Back to Workforce Stuff
             </Link>
 
+            <WorkProductContainer
+              source={{
+                id: training.id,
+                type: 'training',
+                title: training.title || 'Untitled Training',
+                description: training.description,
+                summary: training.topic ?? training.description,
+              }}
+              layout="stack"
+            >
             <div className="bg-white rounded-lg shadow p-8">
               {/* Header */}
               <div className="mb-6">
@@ -391,6 +402,7 @@ export default function TrainingDetailPage() {
                 <p>Created: {new Date(training.createdAt).toLocaleString()}</p>
               </div>
             </div>
+            </WorkProductContainer>
           </div>
         </main>
       </div>

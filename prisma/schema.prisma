@@ -519,9 +519,10 @@ model CompanyCampaign {
   workMeId  String   @db.Uuid
   workMe    WorkMe   @relation("CompanyCampaignWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
-  oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemCampaign")
-  companyWork      CompanyWork[]     @relation
+  oneOffEmailItems OneOffEmailItem[]                  @relation("OneOffEmailItemCampaign")
+  companyWork      CompanyWork[]                      @relation
   myContributions  MyContribution[]
+  digitalSigns     ProductDigitalSignWorkforceStuff[] @relation
 
   @@index([companyId])
   @@index([workMeId])
@@ -555,9 +556,10 @@ model CompanyImpactEvent {
   workMeId  String   @db.Uuid
   workMe    WorkMe   @relation("CompanyImpactEventWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
-  oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemImpactEvent")
-  companyWork      CompanyWork[]     @relation
-  myContributions  MyContribution[]
+  oneOffEmailItems                 OneOffEmailItem[]                  @relation("OneOffEmailItemImpactEvent")
+  companyWork                      CompanyWork[]                      @relation
+  myContributions                  MyContribution[]
+  ProductDigitalSignWorkforceStuff ProductDigitalSignWorkforceStuff[]
 
   @@index([companyId])
   @@index([workMeId])
@@ -606,9 +608,10 @@ model CompanyTraining {
   workMeId  String   @db.Uuid
   workMe    WorkMe   @relation("CompanyTrainingWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
-  oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemTraining")
-  companyWork      CompanyWork[]     @relation
-  myContributions  MyContribution[]
+  oneOffEmailItems                 OneOffEmailItem[]                  @relation("OneOffEmailItemTraining")
+  companyWork                      CompanyWork[]                      @relation
+  myContributions                  MyContribution[]
+  ProductDigitalSignWorkforceStuff ProductDigitalSignWorkforceStuff[]
 
   @@index([companyId])
   @@index([workMeId])
@@ -679,7 +682,7 @@ model CompanyEvent {
 
   audience      EventAudience?
   vibe          String?
-  perks         String[]       @default([])
+  eventItems    String[]       @default([]) // Highlights, agenda items, key moments (replaces perks)
   participation String[]       @default([])
 
   foodProvided String?
@@ -701,9 +704,11 @@ model CompanyEvent {
 
   // Relations
   // NOTE: EventItem is deprecated - products now link via CompanyWorkLink
-  oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemEvent")
-  companyWork      CompanyWork[]     @relation
-  myContributions  MyContribution[]
+  oneOffEmailItems               OneOffEmailItem[]                  @relation("OneOffEmailItemEvent")
+  companyWork                    CompanyWork[]                      @relation
+  myContributions                MyContribution[]
+  digitalSigns                   ProductDigitalSignWorkforceStuff[] @relation
+  ProductDigitalSignCompanyEvent ProductDigitalSignCompanyEvent[]
 
   @@index([companyId])
   @@index([workMeId])
@@ -759,9 +764,10 @@ model CompanyLeaderEngagement {
   workMeId  String   @db.Uuid // Owner ID / Author ID (standardized)
   workMe    WorkMe   @relation("CompanyLeaderEngagementWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
-  oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemLeaderEngagement")
-  companyWork      CompanyWork[]     @relation
-  myContributions  MyContribution[]
+  oneOffEmailItems                 OneOffEmailItem[]                  @relation("OneOffEmailItemLeaderEngagement")
+  companyWork                      CompanyWork[]                      @relation
+  myContributions                  MyContribution[]
+  ProductDigitalSignWorkforceStuff ProductDigitalSignWorkforceStuff[]
 
   @@index([companyId])
   @@index([workMeId])
@@ -809,9 +815,10 @@ model CompanyCommunity {
   workMeId  String   @db.Uuid
   workMe    WorkMe   @relation("CompanyCommunityWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
-  oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemCommunity")
-  companyWork      CompanyWork[]     @relation
-  myContributions  MyContribution[]
+  oneOffEmailItems                 OneOffEmailItem[]                  @relation("OneOffEmailItemCommunity")
+  companyWork                      CompanyWork[]                      @relation
+  myContributions                  MyContribution[]
+  ProductDigitalSignWorkforceStuff ProductDigitalSignWorkforceStuff[]
 
   @@index([companyId])
   @@index([workMeId])
@@ -851,9 +858,10 @@ model CompanyBenefits {
   workMeId  String   @db.Uuid
   workMe    WorkMe   @relation("CompanyBenefitsWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
-  oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemBenefits")
-  companyWork      CompanyWork[]     @relation
-  myContributions  MyContribution[]
+  oneOffEmailItems                 OneOffEmailItem[]                  @relation("OneOffEmailItemBenefits")
+  companyWork                      CompanyWork[]                      @relation
+  myContributions                  MyContribution[]
+  ProductDigitalSignWorkforceStuff ProductDigitalSignWorkforceStuff[]
 
   @@index([companyId])
   @@index([workMeId])
@@ -898,9 +906,10 @@ model CompanyCareer {
   workMeId  String   @db.Uuid
   workMe    WorkMe   @relation("CompanyCareerWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
-  oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemCareer")
-  companyWork      CompanyWork[]     @relation
-  myContributions  MyContribution[]
+  oneOffEmailItems                 OneOffEmailItem[]                  @relation("OneOffEmailItemCareer")
+  companyWork                      CompanyWork[]                      @relation
+  myContributions                  MyContribution[]
+  ProductDigitalSignWorkforceStuff ProductDigitalSignWorkforceStuff[]
 
   @@index([companyId])
   @@index([workMeId])
@@ -939,9 +948,10 @@ model CompanyEmployeeCause {
   workMeId  String   @db.Uuid
   workMe    WorkMe   @relation("CompanyEmployeeCauseWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
-  oneOffEmailItems OneOffEmailItem[] @relation("OneOffEmailItemEmployeeCause")
-  companyWork      CompanyWork[]     @relation
-  myContributions  MyContribution[]
+  oneOffEmailItems                 OneOffEmailItem[]                  @relation("OneOffEmailItemEmployeeCause")
+  companyWork                      CompanyWork[]                      @relation
+  myContributions                  MyContribution[]
+  ProductDigitalSignWorkforceStuff ProductDigitalSignWorkforceStuff[]
 
   @@index([companyId])
   @@index([workMeId])
@@ -1056,7 +1066,7 @@ model CompanyUnitHighlight {
 
   leaderQuote String? // Quote from leadership about the unit
 
-  companyId String?
+  companyId         String?
   createdByWorkMeId String   @db.Uuid
   createdBy         WorkMe   @relation("CompanyUnitHighlightCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
   company           Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -1249,7 +1259,8 @@ model ProductDigitalSign {
   workforce            ProductDigitalSignWorkforce?
   companyNews          ProductDigitalSignCompanyNews?
   workforceAchievement ProductDigitalSignWorkforceAchievement?
-  companyEvent         ProductDigitalSignCompanyEvent?
+  workforceStuff       ProductDigitalSignWorkforceStuff? // Unified model for all CompanyX types
+  companyEvent         ProductDigitalSignCompanyEvent? // Legacy - use workforceStuff instead
 
   // Asset attachments (Blob-backed system)
   assetAttachments DigitalSignAsset[]
@@ -1323,20 +1334,89 @@ model ProductDigitalSignWorkforceAchievement {
   @@index([highlightId])
 }
 
+// Unified model for all CompanyX types (replaces ProductDigitalSignCompanyEvent)
+model ProductDigitalSignWorkforceStuff {
+  id            String @id @default(cuid())
+  digitalSignId String @unique
+
+  // Polymorphic FK to any CompanyX model (exactly one must be set)
+  companyEventId            String?
+  companyTrainingId         String?
+  companyCampaignId         String?
+  companyBenefitsId         String?
+  companyCareerId           String?
+  companyCommunityId        String?
+  companyImpactEventId      String?
+  companyEmployeeCauseId    String?
+  companyLeaderEngagementId String?
+
+  // Relations to CompanyX models
+  companyEvent            CompanyEvent?            @relation(fields: [companyEventId], references: [id], onDelete: SetNull)
+  companyTraining         CompanyTraining?         @relation(fields: [companyTrainingId], references: [id], onDelete: SetNull)
+  companyCampaign         CompanyCampaign?         @relation(fields: [companyCampaignId], references: [id], onDelete: SetNull)
+  companyBenefits         CompanyBenefits?         @relation(fields: [companyBenefitsId], references: [id], onDelete: SetNull)
+  companyCareer           CompanyCareer?           @relation(fields: [companyCareerId], references: [id], onDelete: SetNull)
+  companyCommunity        CompanyCommunity?        @relation(fields: [companyCommunityId], references: [id], onDelete: SetNull)
+  companyImpactEvent      CompanyImpactEvent?      @relation(fields: [companyImpactEventId], references: [id], onDelete: SetNull)
+  companyEmployeeCause    CompanyEmployeeCause?    @relation(fields: [companyEmployeeCauseId], references: [id], onDelete: SetNull)
+  companyLeaderEngagement CompanyLeaderEngagement? @relation(fields: [companyLeaderEngagementId], references: [id], onDelete: SetNull)
+
+  // Common fields (normalized from CompanyX models)
+  title       String?
+  description String?
+
+  // Date/time fields (normalized from CompanyX)
+  date      DateTime? // eventDate, trainingDate, effectiveDate, date, windowStart
+  endDate   DateTime? // windowEnd (for campaigns/benefits)
+  startTime String?
+  endTime   String?
+  location  String?
+
+  // Event-specific fields (only for events)
+  eventItems String[] @default([]) // Highlights, agenda items, key moments (only for CompanyEvent)
+
+  // Legacy fields for backward compatibility
+  eventName        String?
+  registrationLink String?
+  perks            String[] @default([]) // Deprecated: use eventItems
+
+  signage ProductDigitalSign @relation(fields: [digitalSignId], references: [id], onDelete: Cascade)
+
+  // Indexes for efficient queries
+  @@index([companyEventId])
+  @@index([companyTrainingId])
+  @@index([companyCampaignId])
+  @@index([companyBenefitsId])
+  @@index([companyCareerId])
+  @@index([companyCommunityId])
+  @@index([companyImpactEventId])
+  @@index([companyEmployeeCauseId])
+  @@index([companyLeaderEngagementId])
+}
+
+// Legacy model - kept for backward compatibility during migration
 model ProductDigitalSignCompanyEvent {
   id            String @id @default(cuid())
   digitalSignId String @unique
 
-  eventName        String
+  // Reference to CompanyEvent (preferred - use this instead of duplicating data)
+  companyEventId String?
+  companyEvent   CompanyEvent? @relation(fields: [companyEventId], references: [id], onDelete: SetNull)
+
+  // Legacy fields - kept for backward compatibility but should use companyEventId instead
+  eventName        String?
   eventDate        DateTime?
   startTime        String?
   endTime          String?
   location         String?
   description      String?
-  perks            String[]  @default([])
+  eventItems       String[]  @default([]) // Renamed from perks to match CompanyEvent
+  perks            String[]  @default([]) // Deprecated: use eventItems or companyEvent.eventItems
   registrationLink String?
 
   signage ProductDigitalSign @relation(fields: [digitalSignId], references: [id], onDelete: Cascade)
+
+  @@index([companyEventId])
 }
 
 // ============================================

@@ -7,7 +7,7 @@ import SidebarNav from '@/components/mywork/SidebarNav'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { getDashboard, refreshDashboard, type WorkProduct } from '@/lib/dashboard.client'
 import api from '@/lib/api'
-import { Mail, Image, Monitor, FileText, Eye, MessageSquare, Share2, Loader2, Flag, Ship, Award, Calendar, GraduationCap, Megaphone, Zap, Users, Briefcase, Heart, ArrowLeft } from 'lucide-react'
+import { Mail, Image, Monitor, FileText, Eye, MessageSquare, Share2, Loader2, Flag, Ship, Award, Calendar, GraduationCap, Megaphone, Zap, Users, Briefcase, Heart, ArrowLeft, Package } from 'lucide-react'
 
 /** Workstuff types from GET /api/workstuff */
 const WORKSTUFF_TYPES = [
@@ -256,6 +256,15 @@ function ProductsPageContent() {
         raw: m,
       }))
 
+      // Keep separate for grouping
+      const allItems = {
+        workforce: workstuffItems,
+        highlights: fromHighlights,
+        updates: fromUpdates,
+        milestones: fromMilestones,
+      }
+      
+      // Merge for now, but we'll group in render
       const merged = [...workstuffItems, ...fromHighlights, ...fromUpdates, ...fromMilestones].sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )
@@ -268,8 +277,44 @@ function ProductsPageContent() {
     }
   }
 
+  /** Map item type to workforcestuff route segment */
+  function getWorkforceStuffRoute(item: LatestStuffItem): string | null {
+    // Workforce stuff types map directly
+    if (WORKSTUFF_TYPES.includes(item.type as any)) {
+      const routeMap: Record<string, string> = {
+        training: 'training',
+        event: 'event',
+        campaign: 'campaign',
+        impact_event: 'impact-event',
+        community: 'community',
+        benefits: 'benefits',
+        career: 'career',
+        employee_cause: 'employee-cause',
+      }
+      const routeSegment = routeMap[item.type] || item.type.replace(/_/g, '-')
+      return `/mycompany/workforcestuff/${routeSegment}/${item.id}`
+    }
+    // For non-workforce stuff, use generic route if we can map to a source
+    // Highlights, platform updates, milestones don't have direct workforcestuff routes
+    // So we'll use the generic [id] route for workforce stuff items only
+    return null
+  }
+
   function getBuildActions(item: LatestStuffItem) {
     const actions: { label: string; href?: string; onClick?: () => void; icon: React.ComponentType<{ className?: string }> }[] = []
+    
+    // For workforce stuff, open container instead of direct builders
+    const workforceRoute = getWorkforceStuffRoute(item)
+    if (workforceRoute) {
+      actions.push({
+        label: 'Open container',
+        href: workforceRoute,
+        icon: Package,
+      })
+      return actions
+    }
+    
+    // For non-workforce stuff (highlights, milestones, platform updates), keep direct actions
     const hasSign = ['highlight', 'event', 'platform_update', 'milestone'].includes(item.type)
     const hasFlyer = true
     const hasDigest = WORKSTUFF_TYPES.includes(item.type as any) || item.type === 'event'
@@ -439,11 +484,11 @@ function ProductsPageContent() {
             {/* Create New Tab */}
             {activeTab === 'create' && (
               <>
-              {/* Latest stuff – workstuff + highlights + platform updates + milestones */}
+              {/* Latest stuff – grouped by category */}
               <div className="mb-10">
                 <h3 className="text-lg font-semibold text-gray-900 mb-1">Here&apos;s the latest stuff</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  Pick an item below and choose how you want to build from it—sign, flyer, digest, or more.
+                  Pick an item below to open its container—see all content and create any product type.
                 </p>
                 {latestStuffLoading ? (
                   <div className="flex items-center gap-2 text-gray-500 py-6">
@@ -459,59 +504,145 @@ function ProductsPageContent() {
                     , or create a product from scratch below.
                   </div>
                 ) : (
-                  <ul className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100">
-                    {latestStuff.map((item) => {
-                      const isCreating = createSignFromId?.type === item.type && createSignFromId?.id === item.id
-                      const { label: typeLabel, icon: TypeIcon } = TYPE_CONFIG[item.type] ?? { label: item.type, icon: FileText }
-                      const actions = getBuildActions(item)
-                      return (
-                        <li key={`${item.type}-${item.id}`} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50">
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <TypeIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
-                              {item.subtitle && (
-                                <p className="text-xs text-gray-500 truncate">{item.subtitle}</p>
-                              )}
-                              <p className="text-xs text-gray-400 mt-0.5">
-                                {typeLabel} · {new Date(item.createdAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
-                            {actions.map((action) => {
-                              const ActionIcon = action.icon
-                              if (action.onClick) {
-                                const creating = action.label === 'Create sign' && isCreating
-                                return (
-                                  <button
-                                    key={action.label}
-                                    type="button"
-                                    onClick={action.onClick}
-                                    disabled={creating}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-md hover:bg-purple-100 disabled:opacity-50"
-                                  >
-                                    {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ActionIcon className="h-3.5 w-3.5" />}
-                                    {creating ? 'Creating…' : action.label}
-                                  </button>
-                                )
-                              }
+                  <div className="space-y-6">
+                    {/* Workforce Stuff Section */}
+                    {latestStuff.filter(item => WORKSTUFF_TYPES.includes(item.type as any)).length > 0 && (
+                      <div>
+                        <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <Users className="h-4 w-4 text-blue-600" />
+                          Workforce Stuff
+                        </h4>
+                        <ul className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100">
+                          {latestStuff
+                            .filter(item => WORKSTUFF_TYPES.includes(item.type as any))
+                            .map((item) => {
+                              const { label: typeLabel, icon: TypeIcon } = TYPE_CONFIG[item.type] ?? { label: item.type, icon: FileText }
+                              const actions = getBuildActions(item)
+                              const workforceRoute = getWorkforceStuffRoute(item)
                               return (
-                                <Link
-                                  key={action.label}
-                                  href={action.href!}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                                >
-                                  <ActionIcon className="h-3.5 w-3.5" />
-                                  {action.label}
-                                </Link>
+                                <li key={`${item.type}-${item.id}`} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50">
+                                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                                    <TypeIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
+                                      {item.subtitle && (
+                                        <p className="text-xs text-gray-500 truncate">{item.subtitle}</p>
+                                      )}
+                                      <p className="text-xs text-gray-400 mt-0.5">
+                                        {typeLabel} · {new Date(item.createdAt).toLocaleDateString()}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+                                    {workforceRoute ? (
+                                      <Link
+                                        href={workforceRoute}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100"
+                                      >
+                                        <Package className="h-3.5 w-3.5" />
+                                        Open container
+                                      </Link>
+                                    ) : (
+                                      actions.map((action) => {
+                                        const ActionIcon = action.icon
+                                        if (action.onClick) {
+                                          const isCreating = createSignFromId?.type === item.type && createSignFromId?.id === item.id
+                                          const creating = action.label === 'Create sign' && isCreating
+                                          return (
+                                            <button
+                                              key={action.label}
+                                              type="button"
+                                              onClick={action.onClick}
+                                              disabled={creating}
+                                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-md hover:bg-purple-100 disabled:opacity-50"
+                                            >
+                                              {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ActionIcon className="h-3.5 w-3.5" />}
+                                              {creating ? 'Creating…' : action.label}
+                                            </button>
+                                          )
+                                        }
+                                        return (
+                                          <Link
+                                            key={action.label}
+                                            href={action.href!}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                                          >
+                                            <ActionIcon className="h-3.5 w-3.5" />
+                                            {action.label}
+                                          </Link>
+                                        )
+                                      })
+                                    )}
+                                  </div>
+                                </li>
                               )
                             })}
-                          </div>
-                        </li>
-                      )
-                    })}
-                  </ul>
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {/* Other Items Section */}
+                    {latestStuff.filter(item => !WORKSTUFF_TYPES.includes(item.type as any)).length > 0 && (
+                      <div>
+                        <h4 className="text-md font-semibold text-gray-900 mb-3">Other Items</h4>
+                        <ul className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100">
+                          {latestStuff
+                            .filter(item => !WORKSTUFF_TYPES.includes(item.type as any))
+                            .map((item) => {
+                              const isCreating = createSignFromId?.type === item.type && createSignFromId?.id === item.id
+                              const { label: typeLabel, icon: TypeIcon } = TYPE_CONFIG[item.type] ?? { label: item.type, icon: FileText }
+                              const actions = getBuildActions(item)
+                              return (
+                                <li key={`${item.type}-${item.id}`} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50">
+                                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                                    <TypeIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
+                                      {item.subtitle && (
+                                        <p className="text-xs text-gray-500 truncate">{item.subtitle}</p>
+                                      )}
+                                      <p className="text-xs text-gray-400 mt-0.5">
+                                        {typeLabel} · {new Date(item.createdAt).toLocaleDateString()}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+                                    {actions.map((action) => {
+                                      const ActionIcon = action.icon
+                                      if (action.onClick) {
+                                        const creating = action.label === 'Create sign' && isCreating
+                                        return (
+                                          <button
+                                            key={action.label}
+                                            type="button"
+                                            onClick={action.onClick}
+                                            disabled={creating}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 rounded-md hover:bg-purple-100 disabled:opacity-50"
+                                          >
+                                            {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ActionIcon className="h-3.5 w-3.5" />}
+                                            {creating ? 'Creating…' : action.label}
+                                          </button>
+                                        )
+                                      }
+                                      return (
+                                        <Link
+                                          key={action.label}
+                                          href={action.href!}
+                                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                                        >
+                                          <ActionIcon className="h-3.5 w-3.5" />
+                                          {action.label}
+                                        </Link>
+                                      )
+                                    })}
+                                  </div>
+                                </li>
+                              )
+                            })}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 

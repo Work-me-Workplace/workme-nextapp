@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
+import { WorkProductContainer } from '@/components/workproduct/WorkProductContainer'
 import { Calendar, ExternalLink } from 'lucide-react'
 
 export default function BenefitsDetailPage() {
@@ -62,6 +63,16 @@ export default function BenefitsDetailPage() {
               ← Back to Workforce Stuff
             </Link>
 
+            <WorkProductContainer
+              source={{
+                id: item.id,
+                type: 'benefits',
+                title: item.title,
+                description: item.description,
+                summary: item.employeeBenefitSummary ?? item.description,
+              }}
+              layout="stack"
+            >
             <div className="bg-white rounded-lg shadow p-8">
               <span className="text-xs font-medium text-gray-500 uppercase bg-indigo-100 text-indigo-800 px-2 py-1 rounded mb-3 inline-block">
                 Benefits
@@ -97,6 +108,7 @@ export default function BenefitsDetailPage() {
                 </a>
               )}
             </div>
+            </WorkProductContainer>
           </div>
         </main>
       </div>

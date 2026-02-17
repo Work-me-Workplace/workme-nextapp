@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
+import { WorkProductContainer } from '@/components/workproduct/WorkProductContainer'
 import { FileText, ExternalLink, AlertCircle } from 'lucide-react'
 import api from '@/lib/api'
 
@@ -125,6 +126,16 @@ export default function CareerDetailPage() {
               ← Back to Workforce Stuff
             </Link>
 
+            <WorkProductContainer
+              source={{
+                id: career.id,
+                type: 'career',
+                title: career.title,
+                description: career.description,
+                summary: career.description,
+              }}
+              layout="stack"
+            >
             <div className="bg-white rounded-lg shadow p-8">
               {/* Header */}
               <div className="mb-6">
@@ -267,6 +278,7 @@ export default function CareerDetailPage() {
                 <p>Created: {new Date(career.createdAt).toLocaleString()}</p>
               </div>
             </div>
+            </WorkProductContainer>
           </div>
         </main>
       </div>

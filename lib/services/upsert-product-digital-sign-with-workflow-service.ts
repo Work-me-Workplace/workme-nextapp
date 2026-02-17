@@ -290,7 +290,7 @@ export async function upsertProductDigitalSignWithWorkflow(
           endTime: data.endTime || null,
           location: data.location || null,
           description: data.description || null,
-          perks: data.perks || [],
+          perks: data.eventItems || data.perks || [],
           registrationLink: data.registrationLink || null,
         },
         create: {
@@ -301,7 +301,7 @@ export async function upsertProductDigitalSignWithWorkflow(
           endTime: data.endTime || null,
           location: data.location || null,
           description: data.description || null,
-          perks: data.perks || [],
+          perks: data.eventItems || data.perks || [],
           registrationLink: data.registrationLink || null,
         },
       })

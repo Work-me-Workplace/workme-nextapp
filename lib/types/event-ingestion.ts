@@ -36,7 +36,7 @@ export interface ParsedWorkEvent {
   
   audience: EventAudience | null
   vibe: string | null
-  perks: string[]
+  eventItems: string[]
   participation: string[]
 }
 

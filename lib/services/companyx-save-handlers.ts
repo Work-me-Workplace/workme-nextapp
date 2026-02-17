@@ -147,7 +147,7 @@ export async function saveEvent(context: SaveHandlerContext): Promise<SaveHandle
       registrationLink: data.registrationLink,
       audience: data.audience,
       vibe: data.vibe,
-      perks: data.perks || [],
+      eventItems: data.eventItems || [],
       participation: data.participation || [],
       foodProvided: data.foodProvided,
       foodTypes: data.foodTypes,

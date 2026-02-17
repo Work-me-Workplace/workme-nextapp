@@ -183,7 +183,7 @@ export async function buildDigitalSignageProduct(
             endTime: companyEvent.endTime || null,
             location: companyEvent.location || null,
             description: companyEvent.description || null,
-            perks: companyEvent.perks || [],
+            perks: companyEvent.eventItems || [],
             registrationLink: companyEvent.registrationLink || null,
           }
         }

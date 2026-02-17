@@ -153,7 +153,7 @@ export async function createEvent(data: {
   registrationLink?: string | null
   audience?: string | null
   vibe?: string | null
-  perks?: string[]
+  eventItems?: string[]
   participation?: string[]
   foodProvided?: string | null
   foodTypes?: string | null
@@ -183,7 +183,7 @@ export async function createEvent(data: {
         registrationLink: data.registrationLink || null,
         audience: data.audience as any || null,
         vibe: data.vibe || null,
-        perks: data.perks || [],
+        eventItems: data.eventItems || [],
         participation: data.participation || [],
         foodProvided: data.foodProvided || null,
         foodTypes: data.foodTypes || null,

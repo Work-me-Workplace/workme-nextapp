@@ -19,7 +19,7 @@ interface EventSaveRequest {
   registrationLink: string | null
   audience: string | null
   vibe: string | null
-  perks: string[] | null
+  eventItems: string[] | null
   participation: string[] | null
   foodProvided: string | null
   foodTypes: string | null
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
         registrationLink: data.registrationLink,
         audience: data.audience as any,
         vibe: data.vibe,
-        perks: data.perks ?? undefined,
+        eventItems: data.eventItems ?? undefined,
         participation: data.participation ?? undefined,
         foodProvided: data.foodProvided,
         foodTypes: data.foodTypes,

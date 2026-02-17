@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
+import { WorkProductContainer } from '@/components/workproduct/WorkProductContainer'
 import { Calendar, AlertCircle, Users, Mail, Phone } from 'lucide-react'
 
 interface ImpactEvent {
@@ -146,6 +147,16 @@ export default function ImpactEventDetailPage() {
               ← Back to Workforce Stuff
             </Link>
 
+            <WorkProductContainer
+              source={{
+                id: event.id,
+                type: 'impact',
+                title: event.title,
+                description: event.description,
+                summary: event.summary,
+              }}
+              layout="stack"
+            >
             <div className="bg-white rounded-lg shadow p-8 mb-6">
               <div className="flex items-start justify-between mb-6">
                 <div className="flex-1">
@@ -234,6 +245,7 @@ export default function ImpactEventDetailPage() {
                 <p>Created: {new Date(event.createdAt).toLocaleString()}</p>
               </div>
             </div>
+            </WorkProductContainer>
           </div>
         </main>
       </div>

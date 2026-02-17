@@ -210,7 +210,7 @@ export async function POST(request: Request) {
             registrationLink: data.registrationLink || url || null,
             audience: data.audience,
             vibe: data.vibe,
-            perks: data.perks || [],
+            eventItems: data.eventItems || data.perks || [],
             participation: data.participation || [],
             foodProvided: data.foodProvided,
             foodTypes: data.foodTypes,
