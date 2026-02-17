@@ -73,15 +73,14 @@ export default function EmailDigestListPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">📧 Email Digest Builder</h1>
-          <p className="text-gray-600">Create recurring email series or one-off digest emails</p>
+          <p className="text-gray-600">Create recurring email digest series</p>
         </div>
 
-        {/* Choice Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          {/* Recurring Series Card */}
+        {/* Create Series Card */}
+        <div className="mb-12">
           <Link
             href="/workforce/enduring/email-digest/series/new"
-            className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg p-8 hover:shadow-xl transition border-2 border-blue-200 hover:border-blue-400"
+            className="inline-block bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg p-8 hover:shadow-xl transition border-2 border-blue-200 hover:border-blue-400"
           >
             <div className="flex items-start mb-4">
               <div className="bg-blue-600 rounded-lg p-3 mr-4">
@@ -90,7 +89,7 @@ export default function EmailDigestListPage() {
                 </svg>
               </div>
               <div className="flex-1">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Recurring Series</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Create Recurring Series</h3>
                 <p className="text-gray-700 mb-4">
                   Create a recurring email digest series that you'll send regularly (weekly, monthly, etc.)
                 </p>
@@ -116,52 +115,6 @@ export default function EmailDigestListPage() {
                 </ul>
                 <div className="inline-flex items-center text-blue-700 font-semibold">
                   <span>Create Recurring Series</span>
-                  <svg className="h-5 w-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </Link>
-
-          {/* One-Off Email Card */}
-          <Link
-            href="/workforce/enduring/email-digest/one-off/new"
-            className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-lg p-8 hover:shadow-xl transition border-2 border-purple-200 hover:border-purple-400"
-          >
-            <div className="flex items-start mb-4">
-              <div className="bg-purple-600 rounded-lg p-3 mr-4">
-                <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">One-Off Email</h3>
-                <p className="text-gray-700 mb-4">
-                  Create a single standalone email digest (not part of a recurring series)
-                </p>
-                <ul className="text-sm text-gray-600 space-y-1 mb-4">
-                  <li className="flex items-center">
-                    <svg className="h-4 w-4 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    Quick single email creation
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="h-4 w-4 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    Select content items to include
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="h-4 w-4 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    AI-powered content generation
-                  </li>
-                </ul>
-                <div className="inline-flex items-center text-purple-700 font-semibold">
-                  <span>Create One-Off Email</span>
                   <svg className="h-5 w-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
