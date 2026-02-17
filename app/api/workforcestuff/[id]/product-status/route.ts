@@ -67,14 +67,14 @@ export async function GET(
 
     // Check each product type for existence via FK lookup
     const statuses = await Promise.all([
-      // Email Digest - EmailDigestItem has companyTrainingId, companyEventId, etc.
+      // Email Digest - Check EmailDigestItem (has FK relationships to workforcestuff)
       prisma.emailDigestItem.findFirst({
         where: whereClause,
-        select: { id: true, oneOffEmailId: true },
+        select: { id: true },
       }).then(r => ({
         productTypeId: 'email_digest',
         exists: !!r,
-        productId: r?.oneOffEmailId || r?.id,
+        productId: r?.id,
       })),
 
       // Digital Signage - Check unified ProductDigitalSignWorkforceStuff model
@@ -106,12 +106,15 @@ export async function GET(
         productId: undefined,
       }),
 
-      // Senior Leader Email - no CompanyX FK, can't check
-      Promise.resolve({
+      // Senior Leader Email - Check ProductSeniorLeaderEmail (has FK relationships to workforcestuff)
+      prisma.productSeniorLeaderEmail.findFirst({
+        where: whereClause,
+        select: { id: true },
+      }).then(r => ({
         productTypeId: 'senior_leader_email',
-        exists: false,
-        productId: undefined,
-      }),
+        exists: !!r,
+        productId: r?.id,
+      })),
 
       // Comms Plan - no CompanyX FK, can't check
       Promise.resolve({

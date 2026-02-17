@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 // ============================================
@@ -56,7 +57,6 @@ model WorkMe {
   originatedObjectives       Objective[]                        @relation("ObjectiveOriginator")
   originatedAchievements     Achievement[]                      @relation("AchievementOriginator")
   createdEmailDigestProducts WorkForceEnduringProdEmailDigest[] @relation("EmailDigestProductCreator")
-  createdOneOffEmails        WorkForceOneOffEmailDigest[]       @relation("OneOffEmailCreator")
   companyCampaigns           CompanyCampaign[]                  @relation("CompanyCampaignWorkMe")
   companyImpactEvents        CompanyImpactEvent[]               @relation("CompanyImpactEventWorkMe")
   companyTrainings           CompanyTraining[]                  @relation("CompanyTrainingWorkMe")
@@ -519,7 +519,8 @@ model CompanyCampaign {
   workMeId  String   @db.Uuid
   workMe    WorkMe   @relation("CompanyCampaignWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
-  oneOffEmailItems OneOffEmailItem[]                  @relation("OneOffEmailItemCampaign")
+  emailDigestItems EmailDigestItem[]                  @relation("EmailDigestItemCampaign")
+  productSeniorLeaderEmails ProductSeniorLeaderEmail[] @relation("ProductSeniorLeaderEmailCampaign")
   companyWork      CompanyWork[]                      @relation
   myContributions  MyContribution[]
   digitalSigns     ProductDigitalSignWorkforceStuff[] @relation
@@ -556,7 +557,8 @@ model CompanyImpactEvent {
   workMeId  String   @db.Uuid
   workMe    WorkMe   @relation("CompanyImpactEventWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
-  oneOffEmailItems                 OneOffEmailItem[]                  @relation("OneOffEmailItemImpactEvent")
+  emailDigestItems                 EmailDigestItem[]                  @relation("EmailDigestItemImpactEvent")
+  productSeniorLeaderEmails        ProductSeniorLeaderEmail[]        @relation("ProductSeniorLeaderEmailImpactEvent")
   companyWork                      CompanyWork[]                      @relation
   myContributions                  MyContribution[]
   ProductDigitalSignWorkforceStuff ProductDigitalSignWorkforceStuff[]
@@ -608,7 +610,8 @@ model CompanyTraining {
   workMeId  String   @db.Uuid
   workMe    WorkMe   @relation("CompanyTrainingWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
-  oneOffEmailItems                 OneOffEmailItem[]                  @relation("OneOffEmailItemTraining")
+  emailDigestItems                 EmailDigestItem[]                  @relation("EmailDigestItemTraining")
+  productSeniorLeaderEmails        ProductSeniorLeaderEmail[]        @relation("ProductSeniorLeaderEmailTraining")
   companyWork                      CompanyWork[]                      @relation
   myContributions                  MyContribution[]
   ProductDigitalSignWorkforceStuff ProductDigitalSignWorkforceStuff[]
@@ -704,7 +707,8 @@ model CompanyEvent {
 
   // Relations
   // NOTE: EventItem is deprecated - products now link via CompanyWorkLink
-  oneOffEmailItems               OneOffEmailItem[]                  @relation("OneOffEmailItemEvent")
+  emailDigestItems               EmailDigestItem[]                  @relation("EmailDigestItemEvent")
+  productSeniorLeaderEmails      ProductSeniorLeaderEmail[]        @relation("ProductSeniorLeaderEmailEvent")
   companyWork                    CompanyWork[]                      @relation
   myContributions                MyContribution[]
   digitalSigns                   ProductDigitalSignWorkforceStuff[] @relation
@@ -764,7 +768,8 @@ model CompanyLeaderEngagement {
   workMeId  String   @db.Uuid // Owner ID / Author ID (standardized)
   workMe    WorkMe   @relation("CompanyLeaderEngagementWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
-  oneOffEmailItems                 OneOffEmailItem[]                  @relation("OneOffEmailItemLeaderEngagement")
+  emailDigestItems                 EmailDigestItem[]                  @relation("EmailDigestItemLeaderEngagement")
+  productSeniorLeaderEmails        ProductSeniorLeaderEmail[]        @relation("ProductSeniorLeaderEmailLeaderEngagement")
   companyWork                      CompanyWork[]                      @relation
   myContributions                  MyContribution[]
   ProductDigitalSignWorkforceStuff ProductDigitalSignWorkforceStuff[]
@@ -815,7 +820,8 @@ model CompanyCommunity {
   workMeId  String   @db.Uuid
   workMe    WorkMe   @relation("CompanyCommunityWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
-  oneOffEmailItems                 OneOffEmailItem[]                  @relation("OneOffEmailItemCommunity")
+  emailDigestItems                 EmailDigestItem[]                  @relation("EmailDigestItemCommunity")
+  productSeniorLeaderEmails        ProductSeniorLeaderEmail[]        @relation("ProductSeniorLeaderEmailCommunity")
   companyWork                      CompanyWork[]                      @relation
   myContributions                  MyContribution[]
   ProductDigitalSignWorkforceStuff ProductDigitalSignWorkforceStuff[]
@@ -858,7 +864,8 @@ model CompanyBenefits {
   workMeId  String   @db.Uuid
   workMe    WorkMe   @relation("CompanyBenefitsWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
-  oneOffEmailItems                 OneOffEmailItem[]                  @relation("OneOffEmailItemBenefits")
+  emailDigestItems                 EmailDigestItem[]                  @relation("EmailDigestItemBenefits")
+  productSeniorLeaderEmails        ProductSeniorLeaderEmail[]        @relation("ProductSeniorLeaderEmailBenefits")
   companyWork                      CompanyWork[]                      @relation
   myContributions                  MyContribution[]
   ProductDigitalSignWorkforceStuff ProductDigitalSignWorkforceStuff[]
@@ -906,7 +913,8 @@ model CompanyCareer {
   workMeId  String   @db.Uuid
   workMe    WorkMe   @relation("CompanyCareerWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
-  oneOffEmailItems                 OneOffEmailItem[]                  @relation("OneOffEmailItemCareer")
+  emailDigestItems                 EmailDigestItem[]                  @relation("EmailDigestItemCareer")
+  productSeniorLeaderEmails        ProductSeniorLeaderEmail[]        @relation("ProductSeniorLeaderEmailCareer")
   companyWork                      CompanyWork[]                      @relation
   myContributions                  MyContribution[]
   ProductDigitalSignWorkforceStuff ProductDigitalSignWorkforceStuff[]
@@ -948,7 +956,8 @@ model CompanyEmployeeCause {
   workMeId  String   @db.Uuid
   workMe    WorkMe   @relation("CompanyEmployeeCauseWorkMe", fields: [workMeId], references: [id], onDelete: Cascade)
 
-  oneOffEmailItems                 OneOffEmailItem[]                  @relation("OneOffEmailItemEmployeeCause")
+  emailDigestItems                 EmailDigestItem[]                  @relation("EmailDigestItemEmployeeCause")
+  productSeniorLeaderEmails        ProductSeniorLeaderEmail[]        @relation("ProductSeniorLeaderEmailEmployeeCause")
   companyWork                      CompanyWork[]                      @relation
   myContributions                  MyContribution[]
   ProductDigitalSignWorkforceStuff ProductDigitalSignWorkforceStuff[]
@@ -1087,12 +1096,6 @@ enum EmailDigestEditionStatus {
   SENT // Finalized and sent
 }
 
-enum OneOffEmailStatus {
-  DRAFT // Being curated, items being selected
-  GENERATING // OpenAI generation in progress
-  GENERATED // Content generated, ready for review/edit
-  SENT // Finalized and sent
-}
 
 model WorkForceEnduringProdEmailDigest {
   id                String   @id @default(uuid())
@@ -1135,9 +1138,27 @@ model EmailDigestItem {
   // The morphed, formatted content (what matters!)
   formattedContent Json // { title, body, cta, ctaUrl, imageUrl, ... }
 
-  // Source reference (NOT foreign keys, just for tracking)
-  sourceType String? // "CompanyEvent" | "CompanyCampaign" | "CompanyTraining" | "manual" | etc
-  sourceId   String? // UUID of source (for reference only)
+  // Link to workforcestuff (one of these will be set, or null if manual entry)
+  companyEventId            String?
+  companyCampaignId         String?
+  companyTrainingId         String?
+  companyBenefitsId         String?
+  companyImpactEventId      String?
+  companyCommunityId        String?
+  companyCareerId           String?
+  companyEmployeeCauseId    String?
+  companyLeaderEngagementId String?
+
+  // Relations to workforcestuff (nullable)
+  companyEvent            CompanyEvent?            @relation("EmailDigestItemEvent", fields: [companyEventId], references: [id], onDelete: SetNull)
+  companyCampaign         CompanyCampaign?         @relation("EmailDigestItemCampaign", fields: [companyCampaignId], references: [id], onDelete: SetNull)
+  companyTraining         CompanyTraining?         @relation("EmailDigestItemTraining", fields: [companyTrainingId], references: [id], onDelete: SetNull)
+  companyBenefits         CompanyBenefits?         @relation("EmailDigestItemBenefits", fields: [companyBenefitsId], references: [id], onDelete: SetNull)
+  companyImpactEvent      CompanyImpactEvent?      @relation("EmailDigestItemImpactEvent", fields: [companyImpactEventId], references: [id], onDelete: SetNull)
+  companyCommunity        CompanyCommunity?        @relation("EmailDigestItemCommunity", fields: [companyCommunityId], references: [id], onDelete: SetNull)
+  companyCareer           CompanyCareer?           @relation("EmailDigestItemCareer", fields: [companyCareerId], references: [id], onDelete: SetNull)
+  companyEmployeeCause    CompanyEmployeeCause?    @relation("EmailDigestItemEmployeeCause", fields: [companyEmployeeCauseId], references: [id], onDelete: SetNull)
+  companyLeaderEngagement CompanyLeaderEngagement? @relation("EmailDigestItemLeaderEngagement", fields: [companyLeaderEngagementId], references: [id], onDelete: SetNull)
 
   // Status lifecycle
   status String @default("DRAFT") // DRAFT | READY | ARCHIVED
@@ -1153,8 +1174,16 @@ model EmailDigestItem {
 
   @@index([companyId])
   @@index([status])
-  @@index([sourceType])
   @@index([createdByWorkMeId])
+  @@index([companyEventId])
+  @@index([companyCampaignId])
+  @@index([companyTrainingId])
+  @@index([companyBenefitsId])
+  @@index([companyImpactEventId])
+  @@index([companyCommunityId])
+  @@index([companyCareerId])
+  @@index([companyEmployeeCauseId])
+  @@index([companyLeaderEngagementId])
 }
 
 // Junction table for many-to-many relationship between editions and items
@@ -1173,72 +1202,6 @@ model EmailDigestEditionItem {
   @@index([order])
 }
 
-// ============================================
-// ONE-OFF EMAIL DIGEST (Non-recurring)
-// ============================================
-
-model WorkForceOneOffEmailDigest {
-  id                String   @id @default(uuid())
-  title             String
-  companyId         String
-  createdByWorkMeId String   @db.Uuid
-  createdAt         DateTime @default(now())
-
-  status      OneOffEmailStatus @default(DRAFT)
-  contentJson Json? // Generated content (null until GENERATED)
-
-  createdBy WorkMe            @relation("OneOffEmailCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
-  items     OneOffEmailItem[]
-
-  @@index([companyId])
-  @@index([createdByWorkMeId])
-  @@index([status])
-  @@index([createdAt])
-}
-
-model OneOffEmailItem {
-  id            String                     @id @default(cuid())
-  oneOffEmail   WorkForceOneOffEmailDigest @relation(fields: [oneOffEmailId], references: [id], onDelete: Cascade)
-  oneOffEmailId String
-
-  // Link to one CompanyX model (one of these will be set)
-  companyEventId            String?
-  companyCampaignId         String?
-  companyTrainingId         String?
-  companyBenefitsId         String?
-  companyImpactEventId      String?
-  companyCommunityId        String?
-  companyCareerId           String?
-  companyEmployeeCauseId    String?
-  companyLeaderEngagementId String?
-
-  // Relations (nullable)
-  companyEvent            CompanyEvent?            @relation("OneOffEmailItemEvent", fields: [companyEventId], references: [id], onDelete: Cascade)
-  companyCampaign         CompanyCampaign?         @relation("OneOffEmailItemCampaign", fields: [companyCampaignId], references: [id], onDelete: Cascade)
-  companyTraining         CompanyTraining?         @relation("OneOffEmailItemTraining", fields: [companyTrainingId], references: [id], onDelete: Cascade)
-  companyBenefits         CompanyBenefits?         @relation("OneOffEmailItemBenefits", fields: [companyBenefitsId], references: [id], onDelete: Cascade)
-  companyImpactEvent      CompanyImpactEvent?      @relation("OneOffEmailItemImpactEvent", fields: [companyImpactEventId], references: [id], onDelete: Cascade)
-  companyCommunity        CompanyCommunity?        @relation("OneOffEmailItemCommunity", fields: [companyCommunityId], references: [id], onDelete: Cascade)
-  companyCareer           CompanyCareer?           @relation("OneOffEmailItemCareer", fields: [companyCareerId], references: [id], onDelete: Cascade)
-  companyEmployeeCause    CompanyEmployeeCause?    @relation("OneOffEmailItemEmployeeCause", fields: [companyEmployeeCauseId], references: [id], onDelete: Cascade)
-  companyLeaderEngagement CompanyLeaderEngagement? @relation("OneOffEmailItemLeaderEngagement", fields: [companyLeaderEngagementId], references: [id], onDelete: Cascade)
-
-  order     Int // Display order in email
-  notes     String? // User notes for this item
-  createdAt DateTime @default(now())
-
-  @@index([oneOffEmailId])
-  @@index([companyEventId])
-  @@index([companyCampaignId])
-  @@index([companyTrainingId])
-  @@index([companyBenefitsId])
-  @@index([companyImpactEventId])
-  @@index([companyCommunityId])
-  @@index([companyCareerId])
-  @@index([companyEmployeeCauseId])
-  @@index([companyLeaderEngagementId])
-  @@index([order])
-}
 
 // ============================================
 // DIGITAL SIGNAGE PRODUCT MODELS
@@ -2658,6 +2621,28 @@ model ProductSeniorLeaderEmail {
   createdByWorkMeId String  @db.Uuid
   createdBy         WorkMe  @relation("ProductSeniorLeaderEmailCreator", fields: [createdByWorkMeId], references: [id], onDelete: Cascade)
 
+  // Link to workforcestuff (one of these will be set, or null if not derived from workforcestuff)
+  companyEventId            String?
+  companyCampaignId         String?
+  companyTrainingId         String?
+  companyBenefitsId         String?
+  companyImpactEventId      String?
+  companyCommunityId        String?
+  companyCareerId           String?
+  companyEmployeeCauseId    String?
+  companyLeaderEngagementId String?
+
+  // Relations to workforcestuff (nullable)
+  companyEvent            CompanyEvent?            @relation("ProductSeniorLeaderEmailEvent", fields: [companyEventId], references: [id], onDelete: SetNull)
+  companyCampaign         CompanyCampaign?         @relation("ProductSeniorLeaderEmailCampaign", fields: [companyCampaignId], references: [id], onDelete: SetNull)
+  companyTraining         CompanyTraining?         @relation("ProductSeniorLeaderEmailTraining", fields: [companyTrainingId], references: [id], onDelete: SetNull)
+  companyBenefits         CompanyBenefits?         @relation("ProductSeniorLeaderEmailBenefits", fields: [companyBenefitsId], references: [id], onDelete: SetNull)
+  companyImpactEvent      CompanyImpactEvent?      @relation("ProductSeniorLeaderEmailImpactEvent", fields: [companyImpactEventId], references: [id], onDelete: SetNull)
+  companyCommunity        CompanyCommunity?        @relation("ProductSeniorLeaderEmailCommunity", fields: [companyCommunityId], references: [id], onDelete: SetNull)
+  companyCareer           CompanyCareer?           @relation("ProductSeniorLeaderEmailCareer", fields: [companyCareerId], references: [id], onDelete: SetNull)
+  companyEmployeeCause    CompanyEmployeeCause?    @relation("ProductSeniorLeaderEmailEmployeeCause", fields: [companyEmployeeCauseId], references: [id], onDelete: SetNull)
+  companyLeaderEngagement CompanyLeaderEngagement? @relation("ProductSeniorLeaderEmailLeaderEngagement", fields: [companyLeaderEngagementId], references: [id], onDelete: SetNull)
+
   // Typed variant (1:1 relationship)
   content ProductSeniorLeaderEmailContent?
 
@@ -2667,6 +2652,15 @@ model ProductSeniorLeaderEmail {
   @@index([companyUnit])
   @@index([createdByWorkMeId])
   @@index([archivedAt])
+  @@index([companyEventId])
+  @@index([companyCampaignId])
+  @@index([companyTrainingId])
+  @@index([companyBenefitsId])
+  @@index([companyImpactEventId])
+  @@index([companyCommunityId])
+  @@index([companyCareerId])
+  @@index([companyEmployeeCauseId])
+  @@index([companyLeaderEngagementId])
 }
 
 model ProductSeniorLeaderEmailContent {
