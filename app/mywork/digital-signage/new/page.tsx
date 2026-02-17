@@ -6,11 +6,20 @@ import { useEffect, useState, Suspense } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { Users, Newspaper, Award, Calendar, PenLine } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
+type SignageCard = {
+  value: string
+  name: string
+  icon: LucideIcon
+  description: string
+  source?: string
+}
+
 /** Four categories with explainers. Workforce includes both team updates and company events. */
-const categories = [
+const categories: { id: string; label: string; explainer: string; cards: SignageCard[] }[] = [
   {
     id: 'workforce',
     label: 'Workforce & events',
@@ -153,7 +162,7 @@ function DigitalSignageNewContent() {
                       return (
                         <button
                           key={card.value + (card.source ?? '')}
-                          onClick={() => handleSelect(card.value, (card as { source?: string }).source)}
+                          onClick={() => handleSelect(card.value, card.source)}
                           className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition border border-gray-200 hover:border-blue-400 text-left group"
                         >
                           <Icon className="h-9 w-9 text-blue-600 mb-3 group-hover:text-blue-700" />

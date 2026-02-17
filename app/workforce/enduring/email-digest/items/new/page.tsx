@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/providers/AuthProvider'
 import api from '@/lib/api'
@@ -9,7 +9,7 @@ import EmailDigestSidebar from '@/components/workforce/EmailDigestSidebar'
 
 const VALID_SOURCE_TYPES = ['CompanyEvent', 'CompanyCampaign', 'CompanyTraining', 'CompanyBenefits', 'CompanyImpactEvent', 'CompanyCommunity', 'CompanyCareer', 'CompanyEmployeeCause']
 
-export default function CreateItemPage() {
+function CreateItemContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { session, loading: authLoading } = useAuth()
@@ -625,5 +625,17 @@ export default function CreateItemPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function CreateItemPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+      </div>
+    }>
+      <CreateItemContent />
+    </Suspense>
   )
 }
