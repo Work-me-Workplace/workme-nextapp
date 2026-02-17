@@ -223,7 +223,7 @@ export async function GET(request: NextRequest) {
             })),
             ...digitalSignage.map(p => {
               // Extract preview data from nested relations
-              let headline = `Digital Signage - ${p.signType}`
+              let headline: string = `Digital Signage - ${p.signType}`
               let subhead: string | null = null
               let imageUrl: string | null = null
 
@@ -238,7 +238,7 @@ export async function GET(request: NextRequest) {
                 headline = p.companyNews.headline
                 subhead = p.companyNews.subheadline || null
               } else if (p.companyEvent) {
-                headline = p.companyEvent.eventName
+                headline = p.companyEvent.eventName ? p.companyEvent.eventName : 'Untitled Event'
                 subhead = p.companyEvent.description || null
               }
 

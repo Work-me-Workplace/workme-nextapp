@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     // 4. Format products with preview data
     const products = digitalSignage.map(p => {
-      let headline = `Digital Signage - ${p.signType}`
+      let headline: string = `Digital Signage - ${p.signType}`
       let subhead: string | null = null
       let imageUrl: string | null = null
 
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
         headline = p.companyNews.headline
         subhead = p.companyNews.subheadline || null
       } else if (p.companyEvent) {
-        headline = p.companyEvent.eventName
+        headline = p.companyEvent.eventName ? p.companyEvent.eventName : 'Untitled Event'
         subhead = p.companyEvent.description || null
       }
 
