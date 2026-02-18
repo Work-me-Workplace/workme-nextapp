@@ -195,6 +195,7 @@ export async function PUT(
       benefit: 'companyBenefits',
       career: 'companyCareer',
       cause: 'companyEmployeeCause',
+      leader_engagement: 'companyLeaderEngagement',
     }
 
     const modelName = modelMap[type]
@@ -298,6 +299,7 @@ export async function DELETE(
       benefit: 'companyBenefits',
       career: 'companyCareer',
       cause: 'companyEmployeeCause',
+      leader_engagement: 'companyLeaderEngagement',
     }
 
     // If type is provided, use it directly (more efficient)

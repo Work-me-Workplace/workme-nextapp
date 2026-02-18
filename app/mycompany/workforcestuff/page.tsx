@@ -12,7 +12,7 @@ import api from '@/lib/api'
 // Unified WorkforceStuffItem type
 interface WorkforceStuffItem {
   id: string
-  type: 'event' | 'training' | 'benefit' | 'campaign' | 'impact' | 'cause' | 'community' | 'announcement'
+  type: 'event' | 'training' | 'benefit' | 'campaign' | 'impact' | 'cause' | 'community' | 'announcement' | 'leader_engagement' | 'career'
   category: string
   title: string
   summary: string
@@ -265,25 +265,6 @@ export default function WorkforceStuffPage() {
     router.push(`/mycompany/workforcestuff/detail?edit=1`)
   }
 
-  function isPastRelevanceWindow(item: WorkforceStuffItem): boolean {
-    const now = new Date()
-    now.setHours(0, 0, 0, 0)
-    
-    if (item.type === 'training' && item.startDate) {
-      const trainingDate = new Date(item.startDate)
-      trainingDate.setHours(0, 0, 0, 0)
-      return trainingDate < now
-    }
-    
-    if (item.endDate) {
-      const endDate = new Date(item.endDate)
-      endDate.setHours(0, 0, 0, 0)
-      return endDate < now
-    }
-    
-    return false
-  }
-
   function openDetail(item: WorkforceStuffItem) {
     try {
       sessionStorage.setItem(DETAIL_STORAGE_KEY, JSON.stringify({ id: item.id, type: item.type }))
@@ -302,6 +283,8 @@ export default function WorkforceStuffPage() {
     { value: 'impact', label: 'Impact Events' },
     { value: 'cause', label: 'Causes' },
     { value: 'community', label: 'Community' },
+    { value: 'leader_engagement', label: 'Leader Engagement' },
+    { value: 'career', label: 'Career' },
     { value: 'announcement', label: 'Announcements' },
   ]
 
@@ -311,59 +294,9 @@ export default function WorkforceStuffPage() {
     return categoryMatch && statusMatch
   })
 
-  // Status filtering logic
-  const now = new Date()
-  
-  const activeItems = filteredItems.filter(item => {
-    // If explicitly archived, exclude from active
-    if (item.status === 'archived') return false
-    
-    // For training items: include if ingestStatus is pending or saved, or if trainingDate is today/future
-    if (item.type === 'training') {
-      // Include pending/hydrated trainings
-      if (item.ingestStatus === 'pending' || item.ingestStatus === 'saved') {
-        // If trainingDate exists, check if it's today or future
-        if (item.startDate) {
-          const trainingDate = new Date(item.startDate)
-          return trainingDate >= new Date(now.setHours(0, 0, 0, 0))
-        }
-        // If no date, include if status is pending/saved
-        return true
-      }
-      // If trainingDate exists and is future, include
-      if (item.startDate) {
-        const trainingDate = new Date(item.startDate)
-        return trainingDate >= new Date(now.setHours(0, 0, 0, 0))
-      }
-      return false
-    }
-    
-    // For other items: use endDate logic
-    if (item.endDate) {
-      const endDate = new Date(item.endDate)
-      return endDate >= now
-    }
-    return true
-  })
-
-  const archivedItems = filteredItems.filter(item => {
-    // Explicitly archived
-    if (item.status === 'archived') return true
-    
-    // For training items: archive if trainingDate is in the past
-    if (item.type === 'training' && item.startDate) {
-      const trainingDate = new Date(item.startDate)
-      return trainingDate < new Date(now.setHours(0, 0, 0, 0))
-    }
-    
-    // For other items: archive if endDate is in the past
-    if (item.endDate) {
-      const endDate = new Date(item.endDate)
-      return endDate < now
-    }
-    
-    return false
-  })
+  // MVP1: Use explicit status only (no date-based active/archived derivation)
+  const activeItems = filteredItems.filter(item => item.status !== 'archived')
+  const archivedItems = filteredItems.filter(item => item.status === 'archived')
 
   // Show loading spinner while auth is initializing or companyId is being loaded
   if (!authReady || !workMeId) {
@@ -508,17 +441,6 @@ export default function WorkforceStuffPage() {
                                 </span>
                               )}
                             </div>
-                            {(() => {
-                              const date = item.endDate || item.startDate
-                              if (date) {
-                                const dateObj = new Date(date)
-                                const weekFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-                                if (dateObj <= weekFromNow) {
-                                  return <span className="text-xs font-medium text-orange-600">Due Soon</span>
-                                }
-                              }
-                              return null
-                            })()}
                           </div>
                           <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
                           {item.type === 'training' && item.topic && (
@@ -553,7 +475,7 @@ export default function WorkforceStuffPage() {
                             )}
                           </div>
                           {/* Action buttons - more visible for past items */}
-                          <div className={`absolute top-4 right-4 ${isPastRelevanceWindow(item) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`} data-action-menu>
+                          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity" data-action-menu>
                             <div className="relative">
                               <button
                                 onClick={(e) => {

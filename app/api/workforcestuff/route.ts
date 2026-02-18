@@ -29,15 +29,21 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch all CompanyX models scoped by companyId
-    const [trainings, events, campaigns, impactEvents, community, benefits, careers] = await Promise.all([
+    // CompanyEvent: include legacy records where companyId is null but workMe.companyId matches
+    const [trainings, events, campaigns, impactEvents, community, benefits, careers, employeeCauses, leaderEngagements] = await Promise.all([
       // CompanyTraining
       prisma.companyTraining.findMany({
         where: { companyId },
         orderBy: { trainingDate: 'asc' },
       }),
-      // CompanyEvent
+      // CompanyEvent - fallback to workMe.companyId for legacy records with null companyId
       prisma.companyEvent.findMany({
-        where: { companyId },
+        where: {
+          OR: [
+            { companyId },
+            { workMe: { companyId } },
+          ],
+        },
         orderBy: { createdAt: 'desc' },
       }),
       // CompanyCampaign
@@ -62,6 +68,16 @@ export async function GET(request: NextRequest) {
       }),
       // CompanyCareer
       prisma.companyCareer.findMany({
+        where: { companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      // CompanyEmployeeCause
+      prisma.companyEmployeeCause.findMany({
+        where: { companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      // CompanyLeaderEngagement
+      prisma.companyLeaderEngagement.findMany({
         where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
@@ -180,6 +196,34 @@ export async function GET(request: NextRequest) {
         archived: career.status === 'ARCHIVED',
         createdAt: career.createdAt.toISOString(),
         raw: career,
+      })),
+      // Normalize Employee Causes
+      ...employeeCauses.map((cause) => ({
+        id: cause.id,
+        type: 'cause' as const,
+        category: 'Employee Cause',
+        title: cause.title ?? 'Untitled Employee Cause',
+        summary: cause.description ?? '',
+        startDate: cause.windowStart ? cause.windowStart.toISOString() : null,
+        endDate: cause.windowEnd ? cause.windowEnd.toISOString() : null,
+        status: cause.status === 'ARCHIVED' ? 'archived' : 'active' as const,
+        archived: cause.status === 'ARCHIVED',
+        createdAt: cause.createdAt.toISOString(),
+        raw: cause,
+      })),
+      // Normalize Leader Engagements
+      ...leaderEngagements.map((engagement) => ({
+        id: engagement.id,
+        type: 'leader_engagement' as const,
+        category: 'Leader Engagement',
+        title: engagement.title ?? 'Untitled Leader Engagement',
+        summary: engagement.description ?? '',
+        startDate: engagement.engagementDate ? engagement.engagementDate.toISOString() : null,
+        endDate: null,
+        status: engagement.status === 'ARCHIVED' ? 'archived' : 'active' as const,
+        archived: engagement.status === 'ARCHIVED',
+        createdAt: engagement.createdAt.toISOString(),
+        raw: engagement,
       })),
     ]
 
