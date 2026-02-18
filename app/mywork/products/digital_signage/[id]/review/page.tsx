@@ -47,7 +47,7 @@ interface DigitalSignage {
     endTime?: string | null
     location?: string | null
     description?: string | null
-    perks: string[]
+    eventItems: string[]
     registrationLink?: string | null
   } | null
 }

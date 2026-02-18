@@ -105,7 +105,7 @@ function DigitalSignageBuilderContent() {
   const [endTime, setEndTime] = useState('')
   const [location, setLocation] = useState('')
   const [description, setDescription] = useState('')
-  const [perks, setPerks] = useState<string[]>([''])
+  const [eventItems, setEventItems] = useState<string[]>([''])
   const [registrationLink, setRegistrationLink] = useState('')
 
   // AI generation state
@@ -534,7 +534,7 @@ function DigitalSignageBuilderContent() {
           endTime: endTime || null,
           location: location || null,
           description: description || null,
-          perks: perks.filter(p => p.trim()),
+          eventItems: eventItems.filter(p => p.trim()),
           registrationLink: registrationLink || null,
         }
       }
@@ -576,18 +576,18 @@ function DigitalSignageBuilderContent() {
     setWorkforceBullets(workforceBullets.filter((_, i) => i !== index))
   }
 
-  function addPerk() {
-    setPerks([...perks, ''])
+  function addEventItem() {
+    setEventItems([...eventItems, ''])
   }
 
-  function updatePerk(index: number, value: string) {
-    const newPerks = [...perks]
-    newPerks[index] = value
-    setPerks(newPerks)
+  function updateEventItem(index: number, value: string) {
+    const next = [...eventItems]
+    next[index] = value
+    setEventItems(next)
   }
 
-  function removePerk(index: number) {
-    setPerks(perks.filter((_, i) => i !== index))
+  function removeEventItem(index: number) {
+    setEventItems(eventItems.filter((_, i) => i !== index))
   }
 
   if (!workMeId || loading) {
@@ -1637,19 +1637,19 @@ function DigitalSignageBuilderContent() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Perks</label>
-                      {perks.map((perk, index) => (
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Highlights / agenda items</label>
+                      {eventItems.map((item, index) => (
                         <div key={index} className="flex gap-2 mb-2">
                           <input
                             type="text"
-                            value={perk}
-                            onChange={(e) => updatePerk(index, e.target.value)}
+                            value={item}
+                            onChange={(e) => updateEventItem(index, e.target.value)}
                             className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder={`Perk ${index + 1}`}
+                            placeholder={`Item ${index + 1}`}
                           />
-                          {perks.length > 1 && (
+                          {eventItems.length > 1 && (
                             <button
-                              onClick={() => removePerk(index)}
+                              onClick={() => removeEventItem(index)}
                               className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg"
                             >
                               Remove
@@ -1658,10 +1658,10 @@ function DigitalSignageBuilderContent() {
                         </div>
                       ))}
                       <button
-                        onClick={addPerk}
+                        onClick={addEventItem}
                         className="mt-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg"
                       >
-                        + Add Perk
+                        + Add item
                       </button>
                     </div>
                     <div>

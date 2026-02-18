@@ -34,7 +34,7 @@ type SignageWithRelations = {
     endTime?: string | null
     location?: string | null
     description?: string | null
-    perks: string[]
+    eventItems: string[]
     registrationLink?: string | null
   } | null
 }
@@ -89,7 +89,7 @@ export function digitalSignageToDeckSpec(signage: SignageWithRelations): DeckSpe
         ...(e.startTime && e.endTime ? [`${e.startTime} – ${e.endTime}`] : e.startTime ? [e.startTime] : []),
         ...(e.location ? [e.location] : []),
         ...(e.description ? [e.description.slice(0, 300)] : []),
-        ...(e.perks?.length ? ['Highlights: ' + e.perks.join(', ')] : []),
+        ...(e.eventItems?.length ? ['Highlights: ' + e.eventItems.join(', ')] : []),
         ...(e.registrationLink ? [`Register: ${e.registrationLink}`] : []),
       ].filter(Boolean),
     })

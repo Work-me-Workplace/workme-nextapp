@@ -48,7 +48,7 @@ export interface ParsedCompanyEvent {
   endTime?: string | null
   location?: string | null
   description?: string | null
-  perks?: string[] | null
+  eventItems?: string[] | null
   registrationLink?: string | null
 }
 
@@ -151,7 +151,7 @@ Return JSON with these exact fields:
   "endTime": "End time in HH:MM format or null",
   "location": "Event location or null",
   "description": "Event description or null",
-  "perks": ["Array of perks or benefits"] or null,
+  "eventItems": ["Highlights, agenda items, key moments"] or null,
   "registrationLink": "Registration URL or null"
 }
 
@@ -236,7 +236,7 @@ ${raw.substring(0, 4000)}`
             endTime: parsed.endTime || null,
             location: parsed.location || null,
             description: parsed.description || null,
-            perks: Array.isArray(parsed.perks) ? parsed.perks.filter((p: any) => p && typeof p === 'string') : null,
+            eventItems: Array.isArray(parsed.eventItems) ? parsed.eventItems.filter((p: any) => p && typeof p === 'string') : (Array.isArray(parsed.perks) ? parsed.perks.filter((p: any) => p && typeof p === 'string') : null),
             registrationLink: parsed.registrationLink || null,
           },
         }
@@ -290,7 +290,7 @@ ${raw.substring(0, 4000)}`
             endTime: null,
             location: null,
             description: raw,
-            perks: null,
+            eventItems: null,
             registrationLink: null,
           },
         }

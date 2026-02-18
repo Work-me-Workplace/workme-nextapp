@@ -77,8 +77,7 @@ export interface UpsertProductDigitalSignWithWorkflowInput {
         endTime?: string | null
         location?: string | null
         description?: string | null
-        eventItems?: string[] | null // Use eventItems (replaces perks)
-        perks?: string[] | null // Deprecated: use eventItems
+        eventItems?: string[] | null
         registrationLink?: string | null
       }
 
@@ -279,9 +278,10 @@ export async function upsertProductDigitalSignWithWorkflow(
         endTime?: string | null
         location?: string | null
         description?: string | null
-        perks?: string[] | null
+        eventItems?: string[] | null
         registrationLink?: string | null
       }
+      const items = data.eventItems ?? []
       variant = await prisma.productDigitalSignCompanyEvent.upsert({
         where: { digitalSignId: signage.id },
         update: {
@@ -291,7 +291,7 @@ export async function upsertProductDigitalSignWithWorkflow(
           endTime: data.endTime || null,
           location: data.location || null,
           description: data.description || null,
-          perks: data.eventItems || data.perks || [],
+          eventItems: items,
           registrationLink: data.registrationLink || null,
         },
         create: {
@@ -302,7 +302,7 @@ export async function upsertProductDigitalSignWithWorkflow(
           endTime: data.endTime || null,
           location: data.location || null,
           description: data.description || null,
-          perks: data.eventItems || data.perks || [],
+          eventItems: items,
           registrationLink: data.registrationLink || null,
         },
       })

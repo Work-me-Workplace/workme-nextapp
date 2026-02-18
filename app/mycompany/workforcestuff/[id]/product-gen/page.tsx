@@ -147,7 +147,7 @@ function ProductGenContent() {
               className="flex items-center text-blue-600 hover:text-blue-700 mb-6 text-sm"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to work item (source + product options)
+              Back to item
             </Link>
 
             {/* Workforce Stuff Blurb */}
@@ -205,8 +205,8 @@ function ProductGenContent() {
 
             {/* Product Selection */}
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Which product would you like to create?</h2>
-              <p className="text-gray-600">Select a product type to generate from this workforce item</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Build Supporting Products</h2>
+              <p className="text-gray-600">Choose a product type to build from this item</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -115,9 +115,9 @@ export function WorkProductContainer({
 
   const productOptionsSection = (
     <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-1">Create from this</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-1">Build Supporting Products</h3>
       <p className="text-sm text-gray-600 mb-4">
-        Choose a product type to build from this work item. {loadingStatuses ? 'Checking status...' : 'Green checkmark = already created.'}
+        Choose a product type to build from this item. {loadingStatuses ? 'Checking status...' : 'Green checkmark = already created.'}
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {WORK_PRODUCT_TYPE_OPTIONS.map((productType) => {

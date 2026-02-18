@@ -1341,7 +1341,6 @@ model ProductDigitalSignWorkforceStuff {
   // Legacy fields for backward compatibility
   eventName        String?
   registrationLink String?
-  perks            String[] @default([]) // Deprecated: use eventItems
 
   signage ProductDigitalSign @relation(fields: [digitalSignId], references: [id], onDelete: Cascade)
 
@@ -1374,7 +1373,6 @@ model ProductDigitalSignCompanyEvent {
   location         String?
   description      String?
   eventItems       String[]  @default([]) // Renamed from perks to match CompanyEvent
-  perks            String[]  @default([]) // Deprecated: use eventItems or companyEvent.eventItems
   registrationLink String?
 
   signage ProductDigitalSign @relation(fields: [digitalSignId], references: [id], onDelete: Cascade)

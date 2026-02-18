@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import { WorkProductContainer } from '@/components/workproduct/WorkProductContainer'
-import { Calendar, Archive, Edit, ArchiveRestore, Save, X } from 'lucide-react'
+import { Calendar, Archive, Edit, ArchiveRestore, Save, X, Package } from 'lucide-react'
 import api from '@/lib/api'
 
 interface WorkforceStuffItem {
@@ -399,6 +399,13 @@ export default function WorkforceStuffDetailPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
+                  <Link
+                    href={`/mycompany/workforcestuff/${itemId}/product-gen`}
+                    className="inline-flex items-center px-3 py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  >
+                    <Package className="h-4 w-4 mr-2" />
+                    Build Supporting Products
+                  </Link>
                   {!isEditing && (
                     <button
                       onClick={() => setIsEditing(true)}

@@ -49,7 +49,7 @@ interface DigitalSignage {
     endTime?: string | null
     location?: string | null
     description?: string | null
-    perks: string[]
+    eventItems: string[]
     registrationLink?: string | null
   } | null
   // Gamma deck generation
@@ -613,12 +613,12 @@ function DigitalSignageViewContent() {
                         </p>
                       </div>
                     )}
-                    {signage.companyEvent.perks.length > 0 && (
+                    {signage.companyEvent.eventItems.length > 0 && (
                       <div>
                         <h3 className="text-xl font-semibold text-gray-900 mb-3">Perks</h3>
                         <ul className="list-disc list-inside space-y-2">
-                          {signage.companyEvent.perks.map((perk, index) => (
-                            <li key={index} className="text-gray-700">{perk}</li>
+                          {signage.companyEvent.eventItems.map((item, index) => (
+                            <li key={index} className="text-gray-700">{item}</li>
                           ))}
                         </ul>
                       </div>

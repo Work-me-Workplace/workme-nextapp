@@ -52,8 +52,7 @@ export interface BuildDigitalSignageProductInput {
     endTime?: string | null
     location?: string | null
     description?: string | null
-    eventItems?: string[] | null // Use eventItems (replaces perks)
-    perks?: string[] | null // Deprecated: use eventItems
+    eventItems?: string[] | null
     registrationLink?: string | null
   }
   
@@ -184,7 +183,7 @@ export async function buildDigitalSignageProduct(
             endTime: companyEvent.endTime || null,
             location: companyEvent.location || null,
             description: companyEvent.description || null,
-            perks: companyEvent.eventItems || [],
+            eventItems: companyEvent.eventItems || [],
             registrationLink: companyEvent.registrationLink || null,
           }
         }

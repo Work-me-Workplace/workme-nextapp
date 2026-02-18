@@ -30,7 +30,7 @@ export interface EventModel {
   registrationLink: string | null
   audience: EventAudience | null
   vibe: string | null
-  eventItems: string[] | null  // Highlights, agenda items, key moments (replaces perks)
+  eventItems: string[] | null  // Highlights, agenda items, key moments
   participation: string[] | null
   foodProvided: string | null
   foodTypes: string | null

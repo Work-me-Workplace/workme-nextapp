@@ -23,7 +23,6 @@ interface GPTEventOutput {
   audience?: EventAudience | null
   vibe?: string | null
   eventItems?: string[] | null
-  perks?: string[] | null // Deprecated: use eventItems
   participation?: string[] | null
 }
 
@@ -309,7 +308,7 @@ export function normalizeGPTIngestionOutput(
     foodTypes: normalizeString(event.foodTypes),
     audience: normalizeAudience(event.audience),
     vibe: normalizeString(event.vibe),
-    eventItems: normalizeArray(event.eventItems ?? event.perks), // perks migrated to eventItems
+    eventItems: normalizeArray(event.eventItems),
     participation: normalizeArray(event.participation),
     pocEmail: null, // Not in GPT output, can be added later
     pocPhone: null, // Not in GPT output, can be added later
