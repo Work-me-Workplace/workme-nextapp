@@ -7,6 +7,20 @@ import { useAuth } from '@/lib/providers/AuthProvider'
 import { useSearchParams } from 'next/navigation'
 import EmailDigestSidebar from '@/components/workforce/EmailDigestSidebar'
 
+// Helper function to derive source type from FK fields
+function getSourceType(item: any): string | null {
+  if (item.companyEventId) return 'CompanyEvent'
+  if (item.companyCampaignId) return 'CompanyCampaign'
+  if (item.companyTrainingId) return 'CompanyTraining'
+  if (item.companyBenefitsId) return 'CompanyBenefits'
+  if (item.companyImpactEventId) return 'CompanyImpactEvent'
+  if (item.companyCommunityId) return 'CompanyCommunity'
+  if (item.companyCareerId) return 'CompanyCareer'
+  if (item.companyEmployeeCauseId) return 'CompanyEmployeeCause'
+  if (item.companyLeaderEngagementId) return 'CompanyLeaderEngagement'
+  return null // Manual entry
+}
+
 export default function CurateEditionPage({
   params,
 }: {
@@ -291,7 +305,7 @@ export default function CurateEditionPage({
                             />
                           )}
                           <div className="text-xs text-gray-500 mt-1">
-                            {item.sourceType || 'Manual'} • {new Date(item.createdAt).toLocaleDateString()}
+                            {getSourceType(item) || 'Manual'} • {new Date(item.createdAt).toLocaleDateString()}
                           </div>
                         </div>
                       </label>
@@ -356,7 +370,7 @@ export default function CurateEditionPage({
                         />
                       )}
                       <div className="text-xs text-gray-500">
-                        {item.sourceType || 'Manual'} • {new Date(item.createdAt).toLocaleDateString()}
+                            {getSourceType(item) || 'Manual'} • {new Date(item.createdAt).toLocaleDateString()}
                       </div>
                     </div>
                   )

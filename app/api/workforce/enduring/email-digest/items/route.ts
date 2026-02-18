@@ -55,10 +55,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'formattedContent is required' }, { status: 400 })
     }
 
+    // Map sourceType + sourceId to the correct FK field (schema uses FKs, not sourceType/sourceId)
+    const fkForSource =
+      sourceType && sourceId && sourceType !== 'manual'
+        ? (() => {
+            const map: Record<string, keyof Pick<
+              Parameters<typeof prisma.emailDigestItem.create>[0]['data'],
+              'companyEventId' | 'companyCampaignId' | 'companyTrainingId' | 'companyBenefitsId' | 'companyImpactEventId' | 'companyCommunityId' | 'companyCareerId' | 'companyEmployeeCauseId' | 'companyLeaderEngagementId'
+            >> = {
+              CompanyEvent: 'companyEventId',
+              CompanyCampaign: 'companyCampaignId',
+              CompanyTraining: 'companyTrainingId',
+              CompanyBenefits: 'companyBenefitsId',
+              CompanyImpactEvent: 'companyImpactEventId',
+              CompanyCommunity: 'companyCommunityId',
+              CompanyCareer: 'companyCareerId',
+              CompanyEmployeeCause: 'companyEmployeeCauseId',
+              CompanyLeaderEngagement: 'companyLeaderEngagementId',
+            }
+            const key = map[sourceType]
+            return key ? { [key]: sourceId } : {}
+          })()
+        : {}
+
     const item = await prisma.emailDigestItem.create({
       data: {
-        sourceType: sourceType || null,
-        sourceId: sourceId || null,
+        ...fkForSource,
         formattedContent,
         status: status || 'DRAFT',
         companyId,

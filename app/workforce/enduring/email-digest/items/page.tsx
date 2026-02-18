@@ -6,6 +6,20 @@ import { useAuth } from '@/lib/providers/AuthProvider'
 import api from '@/lib/api'
 import EmailDigestSidebar from '@/components/workforce/EmailDigestSidebar'
 
+// Helper function to derive source type from FK fields
+function getSourceType(item: any): string | null {
+  if (item.companyEventId) return 'CompanyEvent'
+  if (item.companyCampaignId) return 'CompanyCampaign'
+  if (item.companyTrainingId) return 'CompanyTraining'
+  if (item.companyBenefitsId) return 'CompanyBenefits'
+  if (item.companyImpactEventId) return 'CompanyImpactEvent'
+  if (item.companyCommunityId) return 'CompanyCommunity'
+  if (item.companyCareerId) return 'CompanyCareer'
+  if (item.companyEmployeeCauseId) return 'CompanyEmployeeCause'
+  if (item.companyLeaderEngagementId) return 'CompanyLeaderEngagement'
+  return null // Manual entry
+}
+
 export default function ItemCataloguePage() {
   const { session, loading: authLoading } = useAuth()
   const [items, setItems] = useState<any[]>([])
@@ -191,8 +205,8 @@ export default function ItemCataloguePage() {
                     >
                       {item.status}
                     </span>
-                    {item.sourceType && (
-                      <span className="text-xs text-gray-500">{item.sourceType}</span>
+                    {getSourceType(item) && (
+                      <span className="text-xs text-gray-500">{getSourceType(item)}</span>
                     )}
                   </div>
                   <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
