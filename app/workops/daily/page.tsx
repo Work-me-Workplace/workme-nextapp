@@ -19,6 +19,7 @@ import {
   List,
   Trash2,
   Pencil,
+  CalendarClock,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { WorkOpsStatus, WorkOpsItemType, WorkOpsUrgency } from '@prisma/client'
@@ -76,6 +77,8 @@ export default function DailyOutlookPage() {
   const [authReady, setAuthReady] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [showUnassigned, setShowUnassigned] = useState(false)
+  const [showFromPreviousDay, setShowFromPreviousDay] = useState(false)
+  const [previousDayAssignments, setPreviousDayAssignments] = useState<DailyAssignment[]>([])
   const [editItem, setEditItem] = useState<WorkOpsItem | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editBody, setEditBody] = useState('')
@@ -113,6 +116,12 @@ export default function DailyOutlookPage() {
       loadUnassignedItems()
     }
   }, [outlookId, selectedDate])
+
+  useEffect(() => {
+    if (outlookId && selectedDate && showFromPreviousDay) {
+      loadPreviousDayAssignments()
+    }
+  }, [outlookId, selectedDate, showFromPreviousDay])
 
   async function loadOutlook(workMeId: string) {
     try {
@@ -159,6 +168,26 @@ export default function DailyOutlookPage() {
       }
     } catch (error) {
       console.error('Failed to load unassigned items:', error)
+    }
+  }
+
+  async function loadPreviousDayAssignments() {
+    if (!outlookId || !selectedDate) return
+
+    const prev = new Date(selectedDate)
+    prev.setDate(prev.getDate() - 1)
+    const dayStr = prev.toISOString().split('T')[0]
+
+    try {
+      const response = await api.get(
+        `/api/workops/daily-assignments?day=${dayStr}`
+      )
+
+      if (response.data.success) {
+        setPreviousDayAssignments(response.data.assignments || [])
+      }
+    } catch (error) {
+      console.error('Failed to load previous day assignments:', error)
     }
   }
 
@@ -417,7 +446,75 @@ export default function DailyOutlookPage() {
               <List className="h-5 w-5 mr-2" />
               {showUnassigned ? 'Hide unassigned' : 'Show unassigned'}
             </button>
+            <button
+              onClick={() => {
+                setShowFromPreviousDay(!showFromPreviousDay)
+                if (!showFromPreviousDay) loadPreviousDayAssignments()
+              }}
+              className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
+            >
+              <CalendarClock className="h-5 w-5 mr-2" />
+              {showFromPreviousDay ? 'Hide from previous day' : 'From previous day'}
+            </button>
           </div>
+
+          {/* From previous day — carry over tasks */}
+          {showFromPreviousDay && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                From previous day ({previousDayAssignments.length})
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Tasks from {formatDate((() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); return d })())} — add any to today
+              </p>
+              {previousDayAssignments.length > 0 ? (
+                <div className="space-y-2">
+                  {previousDayAssignments.map((assignment) => (
+                    <div
+                      key={assignment.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        {getStatusIcon(assignment.item.status)}
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{assignment.item.title}</h4>
+                          {assignment.item.body && (
+                            <p className="text-sm text-gray-600 mt-1">{assignment.item.body}</p>
+                          )}
+                        </div>
+                        {assignment.item.urgency && (
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded ${getUrgencyColor(
+                              assignment.item.urgency
+                            )}`}
+                          >
+                            {assignment.item.urgency}
+                          </span>
+                        )}
+                      </div>
+                      <div className="ml-4 flex items-center gap-2">
+                        <button
+                          onClick={() => openEdit(assignment.item)}
+                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition"
+                          aria-label="Edit task"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleAssignItem(assignment.item.id)}
+                          className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+                        >
+                          Add to Day
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No tasks were assigned to the previous day.</p>
+              )}
+            </div>
+          )}
 
           {/* Unassigned — tasks not yet scheduled to a day */}
           {showUnassigned && unassignedItems.length > 0 && (
@@ -555,12 +652,21 @@ export default function DailyOutlookPage() {
                 <p className="text-gray-600 mb-4">
                   Add tasks from your backlog or create new ones for this day.
                 </p>
-                <div className="flex items-center justify-center gap-3">
+                <div className="flex items-center justify-center gap-3 flex-wrap">
                   <button
                     onClick={() => setShowUnassigned(true)}
                     className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
                   >
                     Show unassigned
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowFromPreviousDay(true)
+                      loadPreviousDayAssignments()
+                    }}
+                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
+                  >
+                    From previous day
                   </button>
                   <button
                     onClick={() => setModalOpen(true)}
