@@ -44,7 +44,7 @@ model WorkMe {
   workSkills         WorkSkills?
   workEntries        WorkEntry[]
   workGoals          WorkGoal[]
-  appraisals         Appraisal[]
+  performancePlans   PerformancePlan[]
   ecosystemCompanies WorkMeEcosystemCompany[]
   ecosystemContacts  MyEcosystemContact[]
 
@@ -109,6 +109,11 @@ model WorkMe {
 
   // Concept Draft Relations
   conceptDrafts ConceptDraft[] @relation("WorkMeConceptDrafts")
+
+  // Next Job (target jobs + career contacts + what I want)
+  targetJobs          TargetJob[]
+  careerContacts      CareerContact[]
+  nextRolePreference  NextRolePreference?
 
   @@index([handle])
   @@index([companyId])
@@ -1578,46 +1583,121 @@ model WorkGoal {
 }
 
 // ============================================
-// APPRAISAL CYCLE (Top-level: appraisalid)
+// NEXT JOB — Target job (saved req) + Career contacts
 // ============================================
-// One per review cycle. Holds objectives and optional linked assessment.
-model Appraisal {
+
+model TargetJob {
+  id               String   @id @default(cuid())
+  workMeId         String   @db.Uuid
+
+  jobTitle         String?
+  companyName      String?
+  rawDescription   String?  // Pasted JD text
+  salaryBand       String?
+  industryOrRole   String?  // e.g. "comms", "engineering"
+  sourceUrl        String?  // Link to posting if any
+
+  // Optional: parsed requirements for framing (job-fit can populate later)
+  parsedRequirements Json?
+
+  status           String?  @default("interested") // interested | applied | interviewing | offer | closed
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  workMe          WorkMe          @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  careerContacts  CareerContact[]
+
+  @@index([workMeId])
+  @@index([status])
+}
+
+model CareerContact {
+  id             String    @id @default(cuid())
+  workMeId       String    @db.Uuid
+  targetJobId    String?   // Optional: link to a specific saved req
+
+  name           String?
+  email          String?
+  companyName    String?   // Redundant with job but useful when contact not tied to one job
+  roleInProcess  String?   // recruiter | hiring_manager | referral | other
+  notes          String?
+  lastContactAt  DateTime?
+  nextAction     String?
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  workMe    WorkMe     @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  targetJob TargetJob? @relation(fields: [targetJobId], references: [id], onDelete: SetNull)
+
+  @@index([workMeId])
+  @@index([targetJobId])
+}
+
+// NextRolePreference = "What I want" (industry, company type, freeform note). One per user.
+model NextRolePreference {
+  id           String   @id @default(cuid())
+  workMeId     String   @unique @db.Uuid
+
+  industry     String?  // e.g. "comms", "defense", "tech"
+  companyType  String?  // e.g. "startup", "enterprise", "agency"
+  note         String?  @db.Text // Freeform MD or text
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workMe       WorkMe   @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+
+  @@index([workMeId])
+}
+
+// ============================================
+// PERFORMANCE PLAN (what was planned) + PERFORMANCE REVIEW (what I did)
+// ============================================
+// No "appraisal" — universal. Performance plan = what was planned; performance review = what I did (same period).
+model PerformancePlan {
   id         String   @id @default(uuid())
   workMeId   String   @db.Uuid
   periodStart DateTime
   periodEnd   DateTime
-  title      String?  // e.g. "2025 Annual Review"
+  periodType  String?  // "quarterly" | "mid-year" | "annual"
+  title      String?  // e.g. "2025 Q2 Plan"
+
+  // Performance review = what I did (string summary for this period)
+  performanceReviewSummary String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   workMe                WorkMe                @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-  objectives            AppraisalObjective[]
+  objectives            PerformancePlanObjective[]
   contributionSummaries ContributionSummary[]
 
   @@index([workMeId])
   @@index([periodStart])
   @@index([periodEnd])
+  @@index([periodType])
 }
 
 // ============================================
-// APPRAISAL OBJECTIVE (objectiveid per appraisal)
+// PERFORMANCE PLAN OBJECTIVE (objectiveId per plan)
 // ============================================
-// Individual objective: name, howMeasured, optional skill set.
-model AppraisalObjective {
-  id          String   @id @default(uuid())
-  appraisalId String   @db.Uuid
-  name        String
-  howMeasured String?
-  skillTopicIds String[] @default([]) // Optional link to SkillTopics
-  sortOrder   Int?     // Display order
+// What was planned: how I will contribute.
+model PerformancePlanObjective {
+  id               String   @id @default(uuid())
+  performancePlanId String   @db.Uuid
+  name             String
+  howIllContribute String?  // How I will contribute
+  howMeasured      String?  // How success is measured (optional)
+  skillTopicIds    String[] @default([])
+  sortOrder        Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  appraisal Appraisal @relation(fields: [appraisalId], references: [id], onDelete: Cascade)
+  performancePlan PerformancePlan @relation(fields: [performancePlanId], references: [id], onDelete: Cascade)
 
-  @@index([appraisalId])
+  @@index([performancePlanId])
 }
 
 // ============================================
@@ -3374,9 +3454,9 @@ model ContributionSummary {
   companyWorkId String?
   companyWork   CompanyWork? @relation(fields: [companyWorkId], references: [id], onDelete: SetNull)
 
-  // Optional link to appraisal cycle (assessment is part of appraisal)
-  appraisalId String?  @db.Uuid
-  appraisal   Appraisal? @relation(fields: [appraisalId], references: [id], onDelete: SetNull)
+  // Optional link to performance plan/review period
+  performancePlanId String?  @db.Uuid
+  performancePlan   PerformancePlan? @relation(fields: [performancePlanId], references: [id], onDelete: SetNull)
 
   // Relations
   workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
@@ -3389,7 +3469,7 @@ model ContributionSummary {
   @@index([periodEnd])
   @@index([periodType])
   @@index([companyWorkId])
-  @@index([appraisalId])
+  @@index([performancePlanId])
 }
 
 // ============================================

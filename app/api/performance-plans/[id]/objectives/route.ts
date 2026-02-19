@@ -4,8 +4,8 @@ import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
 
 /**
- * GET /api/appraisals/[id]/objectives
- * List objectives for an appraisal
+ * GET /api/performance-plans/[id]/objectives
+ * List objectives for a performance plan
  */
 export async function GET(
   request: NextRequest,
@@ -16,21 +16,21 @@ export async function GET(
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    const { id: appraisalId } = await params
+    const { id: performancePlanId } = await params
 
-    const appraisal = await prisma.appraisal.findFirst({
-      where: { id: appraisalId, workMeId },
+    const plan = await prisma.performancePlan.findFirst({
+      where: { id: performancePlanId, workMeId },
     })
 
-    if (!appraisal) {
+    if (!plan) {
       return NextResponse.json(
-        { success: false, error: 'Appraisal not found' },
+        { success: false, error: 'Performance plan not found' },
         { status: 404 },
       )
     }
 
-    const objectives = await prisma.appraisalObjective.findMany({
-      where: { appraisalId },
+    const objectives = await prisma.performancePlanObjective.findMany({
+      where: { performancePlanId },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     })
 
@@ -40,7 +40,7 @@ export async function GET(
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to get objectives'
-    console.error('❌ GetAppraisalObjectives error:', error)
+    console.error('❌ GetPerformancePlanObjectives error:', error)
     return NextResponse.json(
       { success: false, error: message, objectives: [] },
       { status: 500 },
@@ -49,8 +49,8 @@ export async function GET(
 }
 
 /**
- * POST /api/appraisals/[id]/objectives
- * Create an objective under this appraisal
+ * POST /api/performance-plans/[id]/objectives
+ * Create an objective under this performance plan
  */
 export async function POST(
   request: NextRequest,
@@ -61,9 +61,9 @@ export async function POST(
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    const { id: appraisalId } = await params
+    const { id: performancePlanId } = await params
     const body = await request.json()
-    const { name, howMeasured, skillTopicIds, sortOrder } = body
+    const { name, howIllContribute, howMeasured, skillTopicIds, sortOrder } = body
 
     if (!name || !String(name).trim()) {
       return NextResponse.json(
@@ -72,21 +72,23 @@ export async function POST(
       )
     }
 
-    const appraisal = await prisma.appraisal.findFirst({
-      where: { id: appraisalId, workMeId },
+    const plan = await prisma.performancePlan.findFirst({
+      where: { id: performancePlanId, workMeId },
     })
 
-    if (!appraisal) {
+    if (!plan) {
       return NextResponse.json(
-        { success: false, error: 'Appraisal not found' },
+        { success: false, error: 'Performance plan not found' },
         { status: 404 },
       )
     }
 
-    const objective = await prisma.appraisalObjective.create({
+    const objective = await prisma.performancePlanObjective.create({
       data: {
-        appraisalId,
+        performancePlanId,
         name: String(name).trim(),
+        howIllContribute:
+          howIllContribute != null ? String(howIllContribute).trim() || null : null,
         howMeasured: howMeasured != null ? String(howMeasured).trim() || null : null,
         skillTopicIds: Array.isArray(skillTopicIds) ? skillTopicIds : [],
         sortOrder: sortOrder != null ? Number(sortOrder) : null,
@@ -99,7 +101,7 @@ export async function POST(
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to create objective'
-    console.error('❌ CreateAppraisalObjective error:', error)
+    console.error('❌ CreatePerformancePlanObjective error:', error)
     return NextResponse.json(
       { success: false, error: message },
       { status: 500 },

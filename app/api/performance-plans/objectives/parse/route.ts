@@ -1,6 +1,6 @@
 /**
- * POST /api/appraisals/objectives/parse
- * OpenAI blob parse: raw text → structured objectives { name, howMeasured }[]
+ * POST /api/performance-plans/objectives/parse
+ * OpenAI blob parse: raw text → structured objectives { name, howMeasured, howIllContribute? }[]
  * Does NOT save; returns parsed data only.
  */
 
@@ -27,16 +27,17 @@ const systemPrompt = `You extract performance or review objectives from unstruct
 Return ONLY valid JSON with this exact structure:
 {
   "objectives": [
-    { "name": "Short objective title", "howMeasured": "How success is measured" },
+    { "name": "Short objective title", "howMeasured": "How success is measured", "howIllContribute": "How I will contribute" },
     ...
   ]
 }
 
 Rules:
-- Each objective has "name" (string) and "howMeasured" (string). Use empty string if howMeasured cannot be inferred.
+- Each objective has "name" (string), "howMeasured" (string), and optionally "howIllContribute" (string). Use empty string if a field cannot be inferred.
 - Extract 1-15 objectives. Skip vague or non-objective content.
 - name: clear, concise (e.g. "Deliver Q2 roadmap", "Improve team feedback scores").
 - howMeasured: concrete if possible (e.g. "Completion by June 30", "NPS or survey score").
+- howIllContribute: what the person will do to achieve it (optional).
 - Return no other fields or text. No markdown, no code fence.`
 
 export async function POST(request: Request) {
@@ -75,7 +76,9 @@ export async function POST(request: Request) {
       )
     }
 
-    let parsed: { objectives?: Array<{ name?: string; howMeasured?: string }> }
+    let parsed: {
+      objectives?: Array<{ name?: string; howMeasured?: string; howIllContribute?: string }>
+    }
     try {
       parsed = JSON.parse(content)
     } catch {
@@ -90,10 +93,13 @@ export async function POST(request: Request) {
     }
 
     const objectives = Array.isArray(parsed.objectives)
-      ? parsed.objectives.map((o: { name?: string; howMeasured?: string }) => ({
-          name: String(o?.name ?? '').trim() || 'Untitled objective',
-          howMeasured: String(o?.howMeasured ?? '').trim() || null,
-        }))
+      ? parsed.objectives.map(
+          (o: { name?: string; howMeasured?: string; howIllContribute?: string }) => ({
+            name: String(o?.name ?? '').trim() || 'Untitled objective',
+            howMeasured: String(o?.howMeasured ?? '').trim() || null,
+            howIllContribute: String(o?.howIllContribute ?? '').trim() || null,
+          })
+        )
       : []
 
     return NextResponse.json({
@@ -102,7 +108,7 @@ export async function POST(request: Request) {
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to parse objectives'
-    console.error('❌ POST /api/appraisals/objectives/parse error:', error)
+    console.error('❌ POST /api/performance-plans/objectives/parse error:', error)
 
     if (message.includes('OPENAI_API_KEY')) {
       return NextResponse.json(

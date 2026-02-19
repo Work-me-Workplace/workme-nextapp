@@ -14,7 +14,7 @@ export default function CareerDashboardPage() {
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [achievementsCount, setAchievementsCount] = useState(0)
   const [objectivesCount, setObjectivesCount] = useState(0)
-  const [assessmentsCount, setAssessmentsCount] = useState(0)
+  const [performanceReviewsCount, setPerformanceReviewsCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -38,11 +38,11 @@ export default function CareerDashboardPage() {
         const data = await goalsRes.json()
         setObjectivesCount(data.goals?.length || 0)
       }
-      // Load assessments count
-      const assessmentsRes = await fetch('/api/contribution-summaries')
-      if (assessmentsRes.ok) {
-        const data = await assessmentsRes.json()
-        setAssessmentsCount(data.summaries?.length || 0)
+      // Load performance reviews (cycles) count
+      const plansRes = await fetch('/api/performance-plans')
+      if (plansRes.ok) {
+        const data = await plansRes.json()
+        setPerformanceReviewsCount(data.performancePlans?.length || 0)
       }
       // Achievements still deprecated
       setAchievementsCount(0)
@@ -144,26 +144,14 @@ export default function CareerDashboardPage() {
                 </li>
                 <li>
                   <Link
-                    href="/career/assessments"
+                    href="/career/performance-reviews"
                     className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                      isActive('/career/assessments')
+                      isActive('/career/performance-reviews')
                         ? 'bg-blue-50 text-blue-700'
                         : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                     }`}
                   >
-                    Assessments
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/career/appraisal-helper"
-                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                      isActive('/career/appraisal-helper')
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    Appraisal Helper
+                    Performance reviews
                   </Link>
                 </li>
                 <li>
@@ -176,6 +164,30 @@ export default function CareerDashboardPage() {
                     }`}
                   >
                     Job Fit
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/career/next-job"
+                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                      isActive('/career/next-job')
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    Next job
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/career/next-role"
+                    className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                      isActive('/career/next-role')
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    What I want
                   </Link>
                 </li>
                 <li>
@@ -262,34 +274,18 @@ export default function CareerDashboardPage() {
 
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Assessments</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Performance reviews</h3>
                   <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
-                <p className="text-3xl font-bold text-gray-900 mb-2">{assessmentsCount}</p>
-                <p className="text-sm text-gray-500 mb-4">What you accomplished</p>
+                <p className="text-3xl font-bold text-gray-900 mb-2">{performanceReviewsCount}</p>
+                <p className="text-sm text-gray-500 mb-4">Plan (what was planned) and Review (what I did)</p>
                 <Link 
-                  href="/career/assessments"
+                  href="/career/performance-reviews"
                   className="inline-block mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
                 >
-                  Manage Assessments →
-                </Link>
-              </div>
-
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow p-6 border-2 border-blue-200">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Appraisal Helper</h3>
-                  <svg className="h-8 w-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                  </svg>
-                </div>
-                <p className="text-sm text-gray-700 mb-4">Compare goals vs assessments</p>
-                <Link 
-                  href="/career/appraisal-helper"
-                  className="inline-block mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium transition"
-                >
-                  Open Helper →
+                  Performance reviews →
                 </Link>
               </div>
             </div>
@@ -298,7 +294,7 @@ export default function CareerDashboardPage() {
               <h3 className="text-2xl font-bold mb-4">Get Started with Career Planning</h3>
               <p className="text-blue-100 mb-6">
                 At least have a north star on file. Set your goals, document what you accomplished, 
-                and use the appraisal helper to prepare for reviews. Doesn't need to be perfect - 
+                and use the Goals vs outcomes view inside each performance review to prepare. Doesn't need to be perfect - 
                 just have something to reference.
               </p>
               <div className="flex gap-4 flex-wrap">
@@ -309,16 +305,10 @@ export default function CareerDashboardPage() {
                   Set Your Goals
                 </Link>
                 <Link 
-                  href="/career/assessments" 
+                  href="/career/performance-reviews" 
                   className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
                 >
-                  Create Assessment
-                </Link>
-                <Link 
-                  href="/career/appraisal-helper" 
-                  className="bg-indigo-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-400 transition"
-                >
-                  Appraisal Helper
+                  Performance reviews
                 </Link>
               </div>
             </div>

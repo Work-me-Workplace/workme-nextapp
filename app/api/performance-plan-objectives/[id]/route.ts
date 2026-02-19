@@ -4,7 +4,7 @@ import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
 
 /**
- * PUT /api/appraisal-objectives/[id]
+ * PUT /api/performance-plan-objectives/[id]
  * Update an objective
  */
 export async function PUT(
@@ -18,27 +18,37 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
-    const { name, howMeasured, skillTopicIds, sortOrder } = body
+    const { name, howIllContribute, howMeasured, skillTopicIds, sortOrder } = body
 
-    const existing = await prisma.appraisalObjective.findFirst({
+    const existing = await prisma.performancePlanObjective.findFirst({
       where: { id },
-      include: { appraisal: true },
+      include: { performancePlan: true },
     })
 
-    if (!existing || existing.appraisal.workMeId !== workMeId) {
+    if (!existing || existing.performancePlan.workMeId !== workMeId) {
       return NextResponse.json(
         { success: false, error: 'Objective not found' },
         { status: 404 },
       )
     }
 
-    const objective = await prisma.appraisalObjective.update({
+    const objective = await prisma.performancePlanObjective.update({
       where: { id },
       data: {
         ...(name !== undefined && { name: String(name).trim() }),
-        ...(howMeasured !== undefined && { howMeasured: howMeasured === '' ? null : String(howMeasured).trim() }),
-        ...(skillTopicIds !== undefined && { skillTopicIds: Array.isArray(skillTopicIds) ? skillTopicIds : [] }),
-        ...(sortOrder !== undefined && { sortOrder: sortOrder === '' || sortOrder == null ? null : Number(sortOrder) }),
+        ...(howIllContribute !== undefined && {
+          howIllContribute:
+            howIllContribute === '' ? null : String(howIllContribute).trim(),
+        }),
+        ...(howMeasured !== undefined && {
+          howMeasured: howMeasured === '' ? null : String(howMeasured).trim(),
+        }),
+        ...(skillTopicIds !== undefined && {
+          skillTopicIds: Array.isArray(skillTopicIds) ? skillTopicIds : [],
+        }),
+        ...(sortOrder !== undefined && {
+          sortOrder: sortOrder === '' || sortOrder == null ? null : Number(sortOrder),
+        }),
       },
     })
 
@@ -48,7 +58,7 @@ export async function PUT(
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to update objective'
-    console.error('❌ UpdateAppraisalObjective error:', error)
+    console.error('❌ UpdatePerformancePlanObjective error:', error)
     return NextResponse.json(
       { success: false, error: message },
       { status: 500 },
@@ -57,7 +67,7 @@ export async function PUT(
 }
 
 /**
- * DELETE /api/appraisal-objectives/[id]
+ * DELETE /api/performance-plan-objectives/[id]
  * Delete an objective
  */
 export async function DELETE(
@@ -71,19 +81,19 @@ export async function DELETE(
 
     const { id } = await params
 
-    const existing = await prisma.appraisalObjective.findFirst({
+    const existing = await prisma.performancePlanObjective.findFirst({
       where: { id },
-      include: { appraisal: true },
+      include: { performancePlan: true },
     })
 
-    if (!existing || existing.appraisal.workMeId !== workMeId) {
+    if (!existing || existing.performancePlan.workMeId !== workMeId) {
       return NextResponse.json(
         { success: false, error: 'Objective not found' },
         { status: 404 },
       )
     }
 
-    await prisma.appraisalObjective.delete({
+    await prisma.performancePlanObjective.delete({
       where: { id },
     })
 
@@ -93,7 +103,7 @@ export async function DELETE(
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to delete objective'
-    console.error('❌ DeleteAppraisalObjective error:', error)
+    console.error('❌ DeletePerformancePlanObjective error:', error)
     return NextResponse.json(
       { success: false, error: message },
       { status: 500 },

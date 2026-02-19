@@ -4,8 +4,8 @@ import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
 
 /**
- * GET /api/appraisals
- * List appraisals for current user
+ * GET /api/performance-plans
+ * List performance plans for current user
  */
 export async function GET(request: NextRequest) {
   try {
@@ -13,14 +13,16 @@ export async function GET(request: NextRequest) {
     const workMe = await loadWorkMe(firebaseId)
     const { id: workMeId } = workMe
 
-    const appraisals = await prisma.appraisal.findMany({
+    const plans = await prisma.performancePlan.findMany({
       where: { workMeId },
       orderBy: { periodStart: 'desc' },
       select: {
         id: true,
         periodStart: true,
         periodEnd: true,
+        periodType: true,
         title: true,
+        performanceReviewSummary: true,
         createdAt: true,
         updatedAt: true,
         _count: { select: { objectives: true } },
@@ -29,21 +31,21 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      appraisals: appraisals || [],
+      performancePlans: plans || [],
     })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to get appraisals'
-    console.error('❌ GetAppraisals error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to get performance plans'
+    console.error('❌ GetPerformancePlans error:', error)
     return NextResponse.json(
-      { success: false, error: message, appraisals: [] },
+      { success: false, error: message, performancePlans: [] },
       { status: 500 },
     )
   }
 }
 
 /**
- * POST /api/appraisals
- * Create an appraisal
+ * POST /api/performance-plans
+ * Create a performance plan
  */
 export async function POST(request: NextRequest) {
   try {
@@ -52,7 +54,7 @@ export async function POST(request: NextRequest) {
     const { id: workMeId } = workMe
 
     const body = await request.json()
-    const { periodStart, periodEnd, title } = body
+    const { periodStart, periodEnd, periodType, title, performanceReviewSummary } = body
 
     if (!periodStart || !periodEnd) {
       return NextResponse.json(
@@ -61,18 +63,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const appraisal = await prisma.appraisal.create({
+    const plan = await prisma.performancePlan.create({
       data: {
         workMeId,
         periodStart: new Date(periodStart),
         periodEnd: new Date(periodEnd),
+        periodType: periodType?.trim() || null,
         title: title?.trim() || null,
+        performanceReviewSummary: performanceReviewSummary?.trim() || null,
       },
       select: {
         id: true,
         periodStart: true,
         periodEnd: true,
+        periodType: true,
         title: true,
+        performanceReviewSummary: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -80,11 +86,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      appraisal,
+      performancePlan: plan,
     })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to create appraisal'
-    console.error('❌ CreateAppraisal error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to create performance plan'
+    console.error('❌ CreatePerformancePlan error:', error)
     return NextResponse.json(
       { success: false, error: message },
       { status: 500 },

@@ -102,7 +102,7 @@ export default function ContributionAssessmentModal({
         )}
 
         <p className="text-sm text-gray-600 mb-6">
-          Take a moment to document how you helped impact this event. This helps with your career tracking and appraisals.
+          Take a moment to document how you helped impact this event. This helps with your career tracking and performance reviews.
         </p>
 
         {error && (

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { CheckCircle2, XCircle, FileText, Loader2 } from 'lucide-react'
@@ -24,6 +24,8 @@ interface JobFitResult {
 export default function JobFitPage() {
   const pathname = usePathname()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const jobId = searchParams.get('jobId')
   const [workMeId, setWorkMeId] = useState<string | null>(null)
   const [jobPostText, setJobPostText] = useState('')
   const [loading, setLoading] = useState(false)
@@ -40,6 +42,22 @@ export default function JobFitPage() {
       }
     }
   }, [router])
+
+  // Prefill JD from a target job when opening via "See how I fit" from next-job detail
+  useEffect(() => {
+    if (!workMeId || !jobId) return
+    let cancelled = false
+    fetch(`/api/next-job/target-jobs/${jobId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled || !data.success || !data.targetJob?.rawDescription) return
+        setJobPostText(data.targetJob.rawDescription)
+        setResult(null)
+        setError(null)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [workMeId, jobId])
 
   async function handleMatch() {
     if (!jobPostText.trim()) {
@@ -170,13 +188,16 @@ Experience in Hootsuite or Google Analytics`
                   <Link href="/career/goals" className={`block px-3 py-2 rounded-md text-sm font-medium ${isActive('/career/goals') ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}`}>Goals (North Star)</Link>
                 </li>
                 <li>
-                  <Link href="/career/assessments" className={`block px-3 py-2 rounded-md text-sm font-medium ${isActive('/career/assessments') ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}`}>Assessments</Link>
-                </li>
-                <li>
-                  <Link href="/career/appraisal-helper" className={`block px-3 py-2 rounded-md text-sm font-medium ${isActive('/career/appraisal-helper') ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}`}>Appraisal Helper</Link>
+                  <Link href="/career/performance-reviews" className={`block px-3 py-2 rounded-md text-sm font-medium ${isActive('/career/performance-reviews') ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}`}>Performance reviews</Link>
                 </li>
                 <li>
                   <Link href="/career/job-fit" className={`block px-3 py-2 rounded-md text-sm font-medium ${isActive('/career/job-fit') ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}`}>Job Fit</Link>
+                </li>
+                <li>
+                  <Link href="/career/next-job" className={`block px-3 py-2 rounded-md text-sm font-medium ${isActive('/career/next-job') ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}`}>Next job</Link>
+                </li>
+                <li>
+                  <Link href="/career/next-role" className={`block px-3 py-2 rounded-md text-sm font-medium ${isActive('/career/next-role') ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}`}>What I want</Link>
                 </li>
                 <li>
                   <Link href="/mycareer/track" className={`block px-3 py-2 rounded-md text-sm font-medium ${isActive('/mycareer/track') ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}`}>Track</Link>

@@ -1,10 +1,10 @@
 /**
- * Redirect: appraisals/[id] → performance-plans/[id]
+ * Redirect: performance-plans/[id] → performance-reviews/[id]
  */
 
 import { redirect } from 'next/navigation'
 
-export default async function AppraisalDetailRedirectPage({
+export default async function PerformancePlanDetailRedirectPage({
   params,
 }: {
   params: Promise<{ id: string }>

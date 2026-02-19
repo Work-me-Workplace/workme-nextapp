@@ -1,6 +1,8 @@
 # Appraisal System Architecture & UX
 
-**Purpose:** Top-level appraisal (appraisalid) with per-appraisal objectives (objectiveid). Assessment (ContributionSummary) is part of the appraisal cycle. OpenAI blob-and-parse for objectives.
+**Purpose:** Top-level cycle (appraisalid in schema) with per-cycle objectives (objectiveid). Assessment (ContributionSummary) is part of the cycle.
+
+**Terminology:** Product uses **assessment** + **review cycle** only; we do not use “appraisal” in UX. See **ASSESSMENT_BOLT_ON_ANALYSIS.md** for the single source of truth. Schema/API still use “Appraisal” as internal naming.
 
 ---
 
@@ -71,26 +73,31 @@ Parse endpoint: same pattern as `/api/workstuff/events/ai` — return JSON only;
 
 ## 2. UX
 
+### 2.0 UX principles
+
+- **Objectives** are the primary concept in the nav and pages; the “appraisal” is the review cycle that holds objectives and an assessment. We don’t surface “appraisal” as a separate thing from “assessment” — they’re the same flow (objectives + assessment = review).
+- **Goals vs outcomes** (formerly “Appraisal Helper”) is the compare view: goals (North Star) vs what you did (assessments). Same flow as review/appraisal; just different label.
+- **Assessment (ContributionSummary)** is meant to **bolt on to workforcestuff**: after you do a product (training, event, campaign, etc.) in Workforce Stuff, you document your contribution there. The career Assessments list is “contributions you’ve documented”; it can also be linked to an objectives cycle.
+
 ### 2.1 Left Nav (Career / Sidebar)
 
-- **Appraisals** — list/entry point (e.g. `/career/appraisals`).
-- **Objectives** — visible in nav as “Objectives” linking to the same area or to “current appraisal objectives” (e.g. from appraisal detail or `/career/appraisals/[id]`).
-- Keep existing: Career Dashboard, Goals (North Star), Assessments, Appraisal Helper, etc., so “other stuff” remains visible.
+- **Objectives** — single entry to `/career/appraisals` (list of review cycles; each cycle has objectives + optional linked assessment).
+- **Assessments** — list/create contribution summaries (often created from workforcestuff flow).
+- **Goals vs outcomes** — compare goals with assessments (review prep).
 
-Explicit nav items:
+Nav items:
 
 - Career Dashboard  
 - Goals (North Star)  
-- **Appraisals** (new)  
-- **Objectives** (new; can link to “objectives in context” or list)  
+- **Objectives** (`/career/appraisals`)  
 - Assessments  
-- Appraisal Helper  
+- Goals vs outcomes (`/career/appraisal-helper`)  
 - (rest unchanged)
 
 ### 2.2 Routes & Pages
 
 - **`/career/appraisals`**  
-  List appraisals (cards or table). “New appraisal” → period + title → create; then redirect to `/career/appraisals/[id]`.
+  List review cycles (objectives by cycle). “New cycle” → period + title → create; then open `/career/appraisals/[id]`.
 
 - **`/career/appraisals/[id]`**  
   Single appraisal: header (title, period), list of objectives (name, howMeasured, optional skill tags).  
@@ -106,7 +113,7 @@ Explicit nav items:
 - When viewing an appraisal, show an “Assessment” block:
   - If an assessment is linked (`appraisalId` set), show it (read or link to existing assessments UX).
   - If not, “Link existing assessment” or “Create assessment” (create ContributionSummary with this period and set `appraisalId`).
-- Existing **Appraisal Helper** page can stay as the “compare goals vs assessments” view; appraisals/[id] is the “this cycle’s objectives + assessment” view.
+- **Goals vs outcomes** (`/career/appraisal-helper`) is the “compare goals vs assessments” view; `/career/appraisals/[id]` is “this cycle’s objectives + linked assessment”.
 
 ### 2.4 Skill Set Tie-In (Objectives)
 

@@ -4,8 +4,8 @@ import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
 
 /**
- * GET /api/appraisals/[id]
- * Get one appraisal with objectives and linked assessment(s)
+ * GET /api/performance-plans/[id]
+ * Get one performance plan with objectives and linked contribution summaries
  */
 export async function GET(
   request: NextRequest,
@@ -18,7 +18,7 @@ export async function GET(
 
     const { id } = await params
 
-    const appraisal = await prisma.appraisal.findFirst({
+    const plan = await prisma.performancePlan.findFirst({
       where: { id, workMeId },
       include: {
         objectives: { orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] },
@@ -26,20 +26,20 @@ export async function GET(
       },
     })
 
-    if (!appraisal) {
+    if (!plan) {
       return NextResponse.json(
-        { success: false, error: 'Appraisal not found' },
+        { success: false, error: 'Performance plan not found' },
         { status: 404 },
       )
     }
 
     return NextResponse.json({
       success: true,
-      appraisal,
+      performancePlan: plan,
     })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to get appraisal'
-    console.error('❌ GetAppraisal error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to get performance plan'
+    console.error('❌ GetPerformancePlan error:', error)
     return NextResponse.json(
       { success: false, error: message },
       { status: 500 },
@@ -48,8 +48,8 @@ export async function GET(
 }
 
 /**
- * PUT /api/appraisals/[id]
- * Update appraisal
+ * PUT /api/performance-plans/[id]
+ * Update performance plan
  */
 export async function PUT(
   request: NextRequest,
@@ -62,31 +62,38 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
-    const { periodStart, periodEnd, title } = body
+    const { periodStart, periodEnd, periodType, title, performanceReviewSummary } = body
 
-    const existing = await prisma.appraisal.findFirst({
+    const existing = await prisma.performancePlan.findFirst({
       where: { id, workMeId },
     })
 
     if (!existing) {
       return NextResponse.json(
-        { success: false, error: 'Appraisal not found' },
+        { success: false, error: 'Performance plan not found' },
         { status: 404 },
       )
     }
 
-    const appraisal = await prisma.appraisal.update({
+    const plan = await prisma.performancePlan.update({
       where: { id },
       data: {
         periodStart: periodStart ? new Date(periodStart) : undefined,
         periodEnd: periodEnd ? new Date(periodEnd) : undefined,
+        periodType: periodType !== undefined ? (periodType === '' ? null : periodType) : undefined,
         title: title !== undefined ? (title === '' ? null : title) : undefined,
+        performanceReviewSummary:
+          performanceReviewSummary !== undefined
+            ? (performanceReviewSummary === '' ? null : performanceReviewSummary)
+            : undefined,
       },
       select: {
         id: true,
         periodStart: true,
         periodEnd: true,
+        periodType: true,
         title: true,
+        performanceReviewSummary: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -94,11 +101,11 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      appraisal,
+      performancePlan: plan,
     })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to update appraisal'
-    console.error('❌ UpdateAppraisal error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to update performance plan'
+    console.error('❌ UpdatePerformancePlan error:', error)
     return NextResponse.json(
       { success: false, error: message },
       { status: 500 },
@@ -107,8 +114,8 @@ export async function PUT(
 }
 
 /**
- * DELETE /api/appraisals/[id]
- * Delete appraisal (cascades to objectives; unlinks contribution summaries)
+ * DELETE /api/performance-plans/[id]
+ * Delete performance plan (cascades to objectives; unlinks contribution summaries)
  */
 export async function DELETE(
   request: NextRequest,
@@ -121,32 +128,32 @@ export async function DELETE(
 
     const { id } = await params
 
-    const existing = await prisma.appraisal.findFirst({
+    const existing = await prisma.performancePlan.findFirst({
       where: { id, workMeId },
     })
 
     if (!existing) {
       return NextResponse.json(
-        { success: false, error: 'Appraisal not found' },
+        { success: false, error: 'Performance plan not found' },
         { status: 404 },
       )
     }
 
     await prisma.contributionSummary.updateMany({
-      where: { appraisalId: id },
-      data: { appraisalId: null },
+      where: { performancePlanId: id },
+      data: { performancePlanId: null },
     })
-    await prisma.appraisal.delete({
+    await prisma.performancePlan.delete({
       where: { id },
     })
 
     return NextResponse.json({
       success: true,
-      message: 'Appraisal deleted',
+      message: 'Performance plan deleted',
     })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to delete appraisal'
-    console.error('❌ DeleteAppraisal error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to delete performance plan'
+    console.error('❌ DeletePerformancePlan error:', error)
     return NextResponse.json(
       { success: false, error: message },
       { status: 500 },

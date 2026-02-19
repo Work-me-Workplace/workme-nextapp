@@ -140,10 +140,7 @@ export default function SidebarNav() {
       items: [
         { name: 'Career Dashboard', path: '/career', icon: Target },
         { name: 'Goals (North Star)', path: '/career/goals', icon: Target },
-        { name: 'Appraisals', path: '/career/appraisals', icon: CheckSquare },
-        { name: 'Objectives', path: '/career/appraisals', icon: ClipboardList },
-        { name: 'Assessments', path: '/career/assessments', icon: FileText },
-        { name: 'Appraisal Helper', path: '/career/appraisal-helper', icon: CheckSquare },
+        { name: 'Performance reviews', path: '/career/performance-reviews', icon: ClipboardList },
         { name: 'Track', path: '/mycareer/track', icon: Target },
         { name: 'Achievements', path: '/mycareer/achievements', icon: Award },
         { name: 'Reflections', path: '/mycareer/reflections', icon: BookOpen },
