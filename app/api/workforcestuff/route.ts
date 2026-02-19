@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
         summary: event.description ?? '',
         startDate,
         endDate,
-        status: (past ? 'archived' : 'active') as const,
+        status: (past ? 'archived' : 'active') as 'active' | 'archived',
         archived: past,
         createdAt: event.createdAt.toISOString(),
         raw: event,
@@ -160,10 +160,11 @@ export async function GET(request: NextRequest) {
         summary: campaign.description ?? '',
         startDate,
         endDate,
-        status: (past ? 'archived' : 'active') as const,
+        status: (past ? 'archived' : 'active') as 'active' | 'archived',
         archived: past,
         createdAt: campaign.createdAt.toISOString(),
         raw: campaign,
+      }
       }),
       // Normalize Impact Events
       ...impactEvents.map((impact) => {
@@ -177,10 +178,11 @@ export async function GET(request: NextRequest) {
         summary: impact.description ?? '',
         startDate,
         endDate: null,
-        status: (past ? 'archived' : 'active') as const,
+        status: (past ? 'archived' : 'active') as 'active' | 'archived',
         archived: past,
         createdAt: impact.createdAt.toISOString(),
         raw: impact,
+      }
       }),
       // Normalize Community
       ...community.map((comm) => {
@@ -194,10 +196,11 @@ export async function GET(request: NextRequest) {
         summary: comm.description ?? '',
         startDate,
         endDate: null,
-        status: (past ? 'archived' : 'active') as const,
+        status: (past ? 'archived' : 'active') as 'active' | 'archived',
         archived: past,
         createdAt: comm.createdAt.toISOString(),
         raw: comm,
+      }
       }),
       // Normalize Benefits
       ...benefits.map((benefit) => {
@@ -212,10 +215,11 @@ export async function GET(request: NextRequest) {
         summary: benefit.description ?? '',
         startDate,
         endDate,
-        status: (past ? 'archived' : 'active') as const,
+        status: (past ? 'archived' : 'active') as 'active' | 'archived',
         archived: past,
         createdAt: benefit.createdAt.toISOString(),
         raw: benefit,
+      }
       }),
       // Normalize Careers (windowStart/windowEnd optional; no dates = current)
       ...careers.map((career) => {
@@ -230,10 +234,11 @@ export async function GET(request: NextRequest) {
         summary: career.description ?? '',
         startDate,
         endDate,
-        status: (past ? 'archived' : 'active') as const,
+        status: (past ? 'archived' : 'active') as 'active' | 'archived',
         archived: past,
         createdAt: career.createdAt.toISOString(),
         raw: career,
+      }
       }),
       // Normalize Employee Causes
       ...employeeCauses.map((cause) => {
@@ -248,10 +253,11 @@ export async function GET(request: NextRequest) {
         summary: cause.description ?? '',
         startDate,
         endDate,
-        status: (past ? 'archived' : 'active') as const,
+        status: (past ? 'archived' : 'active') as 'active' | 'archived',
         archived: past,
         createdAt: cause.createdAt.toISOString(),
         raw: cause,
+      }
       }),
       // Normalize Leader Engagements
       ...leaderEngagements.map((engagement) => {
@@ -265,10 +271,11 @@ export async function GET(request: NextRequest) {
         summary: engagement.description ?? '',
         startDate,
         endDate: null,
-        status: (past ? 'archived' : 'active') as const,
+        status: (past ? 'archived' : 'active') as 'active' | 'archived',
         archived: past,
         createdAt: engagement.createdAt.toISOString(),
         raw: engagement,
+      }
       }),
     ]
 

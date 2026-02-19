@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import { CheckCircle2, XCircle, FileText, Loader2 } from 'lucide-react'
 import api from '@/lib/api'
@@ -21,7 +21,7 @@ interface JobFitResult {
   summary?: string
 }
 
-export default function JobFitPage() {
+function JobFitPageContent() {
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -354,5 +354,19 @@ Experience in Hootsuite or Google Analytics`
         </main>
       </div>
     </div>
+  )
+}
+
+export default function JobFitPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+        </div>
+      }
+    >
+      <JobFitPageContent />
+    </Suspense>
   )
 }
