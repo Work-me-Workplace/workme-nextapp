@@ -61,6 +61,10 @@ export default function PerformanceReviewDetailPage() {
   const [periodType, setPeriodType] = useState('')
   const [savingPeriodType, setSavingPeriodType] = useState(false)
   const [goals, setGoals] = useState<Array<{ id: string; goal: string; targetDate: string | null }>>([])
+  const [suggestForId, setSuggestForId] = useState<string | null>(null)
+  const [suggestLoading, setSuggestLoading] = useState(false)
+  const [suggestList, setSuggestList] = useState<string[]>([])
+  const [applyingMeasure, setApplyingMeasure] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -209,6 +213,40 @@ export default function PerformanceReviewDetailPage() {
     } catch (e) {
       console.error('Failed to delete:', e)
     }
+  }
+
+  async function handleSuggestHowMeasured(obj: PerformancePlanObjective) {
+    setSuggestForId(obj.id)
+    setSuggestLoading(true)
+    setSuggestList([])
+    try {
+      const res = await api.post('/api/performance-plans/objectives/suggest-measures', {
+        name: obj.name,
+        howIllContribute: obj.howIllContribute ?? undefined,
+      })
+      if (res.data.success && Array.isArray(res.data.suggestions)) {
+        setSuggestList(res.data.suggestions)
+      } else {
+        setSuggestForId(null)
+      }
+    } catch (e) {
+      console.error('Failed to suggest measures:', e)
+      setSuggestForId(null)
+    }
+    setSuggestLoading(false)
+  }
+
+  async function handleApplySuggestedMeasure(objectiveId: string, howMeasured: string) {
+    setApplyingMeasure(objectiveId)
+    try {
+      await api.put(`/api/performance-plan-objectives/${objectiveId}`, { howMeasured: howMeasured.trim() || null })
+      setSuggestForId(null)
+      setSuggestList([])
+      loadPlan()
+    } catch (e) {
+      console.error('Failed to update objective:', e)
+    }
+    setApplyingMeasure(null)
   }
 
   const isActive = (path: string) => (path === '/career' ? pathname === path : pathname?.startsWith(path))
@@ -406,12 +444,48 @@ export default function PerformanceReviewDetailPage() {
               <ul className="space-y-2">
                 {plan.objectives.map(obj => (
                   <li key={obj.id} className="flex items-start justify-between gap-4 p-4 bg-white rounded-lg border">
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="font-medium text-gray-900">{obj.name}</p>
                       {obj.howIllContribute && <p className="text-sm text-gray-600 mt-1">{obj.howIllContribute}</p>}
                       {obj.howMeasured && <p className="text-sm text-gray-500 mt-1">{obj.howMeasured}</p>}
+                      {suggestForId === obj.id && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded border border-gray-200">
+                          {suggestLoading ? (
+                            <p className="text-sm text-gray-500">Suggesting measures…</p>
+                          ) : suggestList.length > 0 ? (
+                            <>
+                              <p className="text-xs font-medium text-gray-600 mb-2">Suggestions (numeric + qualitative). Pick one to use:</p>
+                              <ul className="space-y-1">
+                                {suggestList.map((s, i) => (
+                                  <li key={i}>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleApplySuggestedMeasure(obj.id, s)}
+                                      disabled={applyingMeasure === obj.id}
+                                      className="text-left text-sm text-blue-600 hover:underline block w-full py-1"
+                                    >
+                                      {applyingMeasure === obj.id ? 'Applying…' : s}
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                              <button type="button" onClick={() => { setSuggestForId(null); setSuggestList([]) }} className="mt-2 text-xs text-gray-500 hover:underline">Cancel</button>
+                            </>
+                          ) : null}
+                        </div>
+                      )}
                     </div>
-                    <button type="button" onClick={() => handleDeleteObjective(obj.id)} className="text-red-600 hover:underline text-sm">Delete</button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleSuggestHowMeasured(obj)}
+                        disabled={suggestLoading}
+                        className="text-sm text-blue-600 hover:underline disabled:opacity-50"
+                      >
+                        {suggestForId === obj.id && suggestLoading ? '…' : 'Suggest how measured'}
+                      </button>
+                      <button type="button" onClick={() => handleDeleteObjective(obj.id)} className="text-red-600 hover:underline text-sm">Delete</button>
+                    </div>
                   </li>
                 ))}
               </ul>

@@ -36,8 +36,8 @@ Rules:
 - Each objective has "name" (string), "howMeasured" (string), and optionally "howIllContribute" (string). Use empty string if a field cannot be inferred.
 - Extract 1-15 objectives. Skip vague or non-objective content.
 - name: clear, concise (e.g. "Deliver Q2 roadmap", "Improve team feedback scores").
-- howMeasured: concrete if possible (e.g. "Completion by June 30", "NPS or survey score").
 - howIllContribute: what the person will do to achieve it (optional).
+- howMeasured: if the text does not state how success is measured, suggest plausible measures. Include both (a) numeric/output (e.g. "Deliver X by date", "Complete N items") and (b) qualitative/outcome where relevant (e.g. "X% of employees feel valued", "NPS or survey score", "Stakeholder feedback"). One short sentence per objective is enough.
 - Return no other fields or text. No markdown, no code fence.`
 
 export async function POST(request: Request) {

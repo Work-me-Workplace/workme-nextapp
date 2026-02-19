@@ -11,6 +11,13 @@ import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
+function isPast(startDate: string | null, endDate: string | null): boolean {
+  const now = new Date()
+  if (endDate) return new Date(endDate) < now
+  if (startDate) return new Date(startDate) < now
+  return false
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -45,101 +52,145 @@ export async function GET(
 
     // Find which one exists
     if (training) {
+      const startDate = training.trainingDate?.toISOString() || null
+      const endDate = training.isSelfPaced && training.completionDeadline
+        ? training.completionDeadline.toISOString()
+        : startDate
+      const past = isPast(startDate, endDate)
       return NextResponse.json({
         success: true,
         item: {
           ...training,
           type: 'training',
-          startDate: training.trainingDate?.toISOString() || null,
-          endDate: training.trainingDate?.toISOString() || null,
+          startDate,
+          endDate,
+          status: past ? 'ARCHIVED' : 'ACTIVE',
+          archived: past,
         },
       })
     }
     if (event) {
+      const startDate = event.eventDate?.toISOString() || null
+      const endDate = startDate
+      const past = isPast(startDate, endDate)
       return NextResponse.json({
         success: true,
         item: {
           ...event,
           type: 'event',
-          startDate: event.eventDate?.toISOString() || null,
-          endDate: event.eventDate?.toISOString() || null,
+          startDate,
+          endDate,
+          status: past ? 'ARCHIVED' : 'ACTIVE',
+          archived: past,
         },
       })
     }
     if (campaign) {
+      const startDate = campaign.windowStart?.toISOString() || null
+      const endDate = campaign.windowEnd?.toISOString() || null
+      const past = isPast(startDate, endDate)
       return NextResponse.json({
         success: true,
         item: {
           ...campaign,
           type: 'campaign',
-          startDate: campaign.windowStart?.toISOString() || null,
-          endDate: campaign.windowEnd?.toISOString() || null,
+          startDate,
+          endDate,
+          status: past ? 'ARCHIVED' : 'ACTIVE',
+          archived: past,
         },
       })
     }
     if (impactEvent) {
+      const startDate = impactEvent.effectiveDate?.toISOString() || null
+      const past = isPast(startDate, null)
       return NextResponse.json({
         success: true,
         item: {
           ...impactEvent,
           type: 'impact',
-          startDate: impactEvent.effectiveDate?.toISOString() || null,
+          startDate,
           endDate: null,
+          status: past ? 'ARCHIVED' : 'ACTIVE',
+          archived: past,
         },
       })
     }
     if (community) {
+      const startDate = community.date?.toISOString() || null
+      const past = isPast(startDate, null)
       return NextResponse.json({
         success: true,
         item: {
           ...community,
           type: 'community',
-          startDate: community.date?.toISOString() || null,
+          startDate,
           endDate: null,
+          status: past ? 'ARCHIVED' : 'ACTIVE',
+          archived: past,
         },
       })
     }
     if (benefits) {
+      const startDate = benefits.windowStart?.toISOString() || null
+      const endDate = benefits.windowEnd?.toISOString() || null
+      const past = isPast(startDate, endDate)
       return NextResponse.json({
         success: true,
         item: {
           ...benefits,
           type: 'benefit',
-          startDate: benefits.windowStart?.toISOString() || null,
-          endDate: benefits.windowEnd?.toISOString() || null,
+          startDate,
+          endDate,
+          status: past ? 'ARCHIVED' : 'ACTIVE',
+          archived: past,
         },
       })
     }
     if (career) {
+      const startDate = career.windowStart?.toISOString() || null
+      const endDate = career.windowEnd?.toISOString() || null
+      const past = isPast(startDate, endDate)
       return NextResponse.json({
         success: true,
         item: {
           ...career,
           type: 'career',
-          startDate: null,
-          endDate: null,
+          startDate,
+          endDate,
+          status: past ? 'ARCHIVED' : 'ACTIVE',
+          archived: past,
         },
       })
     }
     if (employeeCause) {
+      const startDate = employeeCause.windowStart?.toISOString() || null
+      const endDate = employeeCause.windowEnd?.toISOString() || null
+      const past = isPast(startDate, endDate)
       return NextResponse.json({
         success: true,
         item: {
           ...employeeCause,
           type: 'cause',
-          startDate: employeeCause.windowStart?.toISOString() || null,
-          endDate: employeeCause.windowEnd?.toISOString() || null,
+          startDate,
+          endDate,
+          status: past ? 'ARCHIVED' : 'ACTIVE',
+          archived: past,
         },
       })
     }
     if (leaderEngagement) {
+      const startDate = leaderEngagement.engagementDate?.toISOString() || null
+      const past = isPast(startDate, null)
       return NextResponse.json({
         success: true,
         item: {
           ...leaderEngagement,
           type: 'leader_engagement',
-          startDate: leaderEngagement.engagementDate?.toISOString() || null,
+          startDate,
           endDate: null,
+          status: past ? 'ARCHIVED' : 'ACTIVE',
+          archived: past,
         },
       })
     }
@@ -235,19 +286,9 @@ export async function PUT(
       updateData.summary = existing.summary
     }
     
-    // Convert archived boolean to status enum if provided (backward compatibility)
-    if (data.archived !== undefined) {
-      updateData.status = data.archived ? 'ARCHIVED' : 'ACTIVE'
-      delete updateData.archived // Remove boolean field
-    }
-    
-    // Ensure status is valid enum value if provided
-    if (updateData.status && !['ACTIVE', 'ARCHIVED', 'DRAFT', 'EXPIRED'].includes(updateData.status)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid status value. Must be ACTIVE, ARCHIVED, DRAFT, or EXPIRED' },
-        { status: 400 }
-      )
-    }
+    // Status/archived removed: CompanyX is date-only; current vs past derived from dates in API/UI.
+    if (updateData.status !== undefined) delete updateData.status
+    if (updateData.archived !== undefined) delete updateData.archived
 
     // Update the item
     const updated = await (prisma as any)[modelName].update({

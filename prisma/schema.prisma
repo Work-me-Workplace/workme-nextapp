@@ -175,12 +175,7 @@ enum DesignWorkPackageStatus {
   COMPLETE
 }
 
-enum WorkforceStuffStatus {
-  ACTIVE
-  ARCHIVED
-  DRAFT
-  EXPIRED
-}
+// WorkforceStuffStatus REMOVED: CompanyX items are date-only. Current vs past derived from dates in API/UI.
 
 enum PressureSource {
   CONGRESS
@@ -498,10 +493,9 @@ model Achievement {
 // ============================================
 
 model CompanyCampaign {
-  id          String               @id @default(cuid())
-  createdAt   DateTime             @default(now())
-  status      WorkforceStuffStatus @default(ACTIVE)
-  title       String
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  title     String
   description String?
 
   // Standardized CompanyX Fields
@@ -533,14 +527,12 @@ model CompanyCampaign {
 
   @@index([companyId])
   @@index([workMeId])
-  @@index([status])
 }
 
 model CompanyImpactEvent {
-  id          String               @id @default(cuid())
-  createdAt   DateTime             @default(now())
-  status      WorkforceStuffStatus @default(ACTIVE)
-  title       String
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  title     String
   description String?
 
   // Standardized CompanyX Fields
@@ -571,13 +563,11 @@ model CompanyImpactEvent {
 
   @@index([companyId])
   @@index([workMeId])
-  @@index([status])
 }
 
 model CompanyTraining {
-  id        String               @id @default(cuid())
-  createdAt DateTime             @default(now())
-  status    WorkforceStuffStatus @default(ACTIVE)
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
 
   title            String?
   topic            String?
@@ -624,7 +614,6 @@ model CompanyTraining {
 
   @@index([companyId])
   @@index([workMeId])
-  @@index([status])
 }
 
 // ============================================
@@ -641,9 +630,9 @@ model CompanyTraining {
 // }
 //
 // model CompanyMandatoryStuff {
-//   id        String               @id @default(cuid())
-//   createdAt DateTime             @default(now())
-//   status    WorkforceStuffStatus @default(ACTIVE)
+//   id        String   @id @default(cuid())
+//   createdAt DateTime @default(now())
+//   // No status: date-only like other CompanyX (use dueDate for current vs past).
 //
 //   title            String?
 //   description      String?
@@ -667,10 +656,9 @@ model CompanyTraining {
 // }
 
 model CompanyEvent {
-  id        String               @id @default(cuid())
-  createdAt DateTime             @default(now())
-  updatedAt DateTime             @updatedAt
-  status    WorkforceStuffStatus @default(ACTIVE)
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Core Content
   title       String
@@ -723,7 +711,6 @@ model CompanyEvent {
   @@index([companyId])
   @@index([workMeId])
   @@index([eventDate])
-  @@index([status])
 }
 
 model CompanyLeaderEngagement {
@@ -798,10 +785,9 @@ model CompanyLeaderEngagement {
 //
 
 model CompanyCommunity {
-  id          String               @id @default(cuid())
-  createdAt   DateTime             @default(now())
-  status      WorkforceStuffStatus @default(ACTIVE)
-  title       String
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  title     String
   description String?
   partnerOrg  String?
 
@@ -834,14 +820,12 @@ model CompanyCommunity {
 
   @@index([companyId])
   @@index([workMeId])
-  @@index([status])
 }
 
 model CompanyBenefits {
-  id        String               @id @default(cuid())
-  createdAt DateTime             @default(now())
-  updatedAt DateTime             @updatedAt
-  status    WorkforceStuffStatus @default(ACTIVE)
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   title                  String
   description            String?
@@ -878,7 +862,6 @@ model CompanyBenefits {
 
   @@index([companyId])
   @@index([workMeId])
-  @@index([status])
 }
 
 enum CareerLevel {
@@ -894,15 +877,18 @@ enum CareerType {
 }
 
 model CompanyCareer {
-  id        String               @id @default(cuid())
-  createdAt DateTime             @default(now())
-  status    WorkforceStuffStatus @default(ACTIVE)
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
 
   title       String
   description String?
 
   level CareerLevel?
   type  CareerType?
+
+  // Date window for "current vs past" (aligned with other CompanyX models)
+  windowStart DateTime?
+  windowEnd   DateTime?
 
   eligibility Json?
 
@@ -927,14 +913,14 @@ model CompanyCareer {
 
   @@index([companyId])
   @@index([workMeId])
-  @@index([status])
+  @@index([windowStart])
+  @@index([windowEnd])
 }
 
 model CompanyEmployeeCause {
-  id        String               @id @default(cuid())
-  createdAt DateTime             @default(now())
-  updatedAt DateTime             @updatedAt
-  status    WorkforceStuffStatus @default(ACTIVE)
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   title         String
   description   String?
@@ -970,7 +956,6 @@ model CompanyEmployeeCause {
 
   @@index([companyId])
   @@index([workMeId])
-  @@index([status])
 }
 
 // ====================================================
