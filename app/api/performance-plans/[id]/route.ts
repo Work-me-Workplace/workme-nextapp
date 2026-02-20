@@ -22,7 +22,6 @@ export async function GET(
       where: { id, workMeId },
       include: {
         objectives: { orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] },
-        contributionSummaries: true,
       },
     })
 
@@ -62,7 +61,7 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
-    const { periodStart, periodEnd, periodType, title, performanceReviewSummary } = body
+    const { periodStart, periodEnd, periodType, title } = body
 
     const existing = await prisma.performancePlan.findFirst({
       where: { id, workMeId },
@@ -82,20 +81,6 @@ export async function PUT(
         periodEnd: periodEnd ? new Date(periodEnd) : undefined,
         periodType: periodType !== undefined ? (periodType === '' ? null : periodType) : undefined,
         title: title !== undefined ? (title === '' ? null : title) : undefined,
-        performanceReviewSummary:
-          performanceReviewSummary !== undefined
-            ? (performanceReviewSummary === '' ? null : performanceReviewSummary)
-            : undefined,
-      },
-      select: {
-        id: true,
-        periodStart: true,
-        periodEnd: true,
-        periodType: true,
-        title: true,
-        performanceReviewSummary: true,
-        createdAt: true,
-        updatedAt: true,
       },
     })
 
@@ -139,10 +124,6 @@ export async function DELETE(
       )
     }
 
-    await prisma.contributionSummary.updateMany({
-      where: { performancePlanId: id },
-      data: { performancePlanId: null },
-    })
     await prisma.performancePlan.delete({
       where: { id },
     })
