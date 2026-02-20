@@ -18,7 +18,7 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
-    const { periodStart, periodEnd, periodType, title, summary, skillTopicIds, companyWorkId, performancePlanId } = body
+    const { periodStart, periodEnd, periodType, title, summary, skillTopicIds, companyWorkId, performanceReviewId } = body
 
     // Verify summary belongs to user
     const existingSummary = await prisma.contributionSummary.findFirst({
@@ -42,7 +42,7 @@ export async function PUT(
         summary: summary !== undefined ? summary : undefined,
         skillTopicIds: skillTopicIds !== undefined ? skillTopicIds : undefined,
         companyWorkId: companyWorkId !== undefined ? companyWorkId : undefined,
-        performancePlanId: performancePlanId !== undefined ? performancePlanId : undefined,
+        performanceReviewId: performanceReviewId !== undefined ? performanceReviewId : undefined,
       },
       select: {
         id: true,
@@ -53,7 +53,7 @@ export async function PUT(
         summary: true,
         skillTopicIds: true,
         companyWorkId: true,
-        performancePlanId: true,
+        performanceReviewId: true,
         createdAt: true,
         updatedAt: true,
       },
