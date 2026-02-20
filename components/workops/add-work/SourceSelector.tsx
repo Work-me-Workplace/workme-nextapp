@@ -1,7 +1,18 @@
 'use client'
 
 import { Brain, UserCheck, Building2, Zap, List } from 'lucide-react'
-import type { WorkOpsSourceType } from './AddWorkModal'
+
+// Legacy source types (Add Work modal now uses MethodSelector: manual | ai)
+export type WorkOpsSourceType =
+  | 'boss_tasking'
+  | 'capture'
+  | 'manual'
+  | 'bulk'
+  | 'workforce_stuff'
+  | 'company_milestones'
+  | 'employee_highlights'
+  | 'products'
+  | 'external_pressures'
 
 interface SourceSelectorProps {
   onSelect: (source: WorkOpsSourceType) => void
