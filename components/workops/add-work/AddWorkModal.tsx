@@ -2,19 +2,9 @@
 
 import { useState } from 'react'
 import { X } from 'lucide-react'
-import SourceSelector from './SourceSelector'
+import type { AddTaskMethod } from './MethodSelector'
+import MethodSelector from './MethodSelector'
 import DynamicForm from './DynamicForm'
-
-export type WorkOpsSourceType =
-  | 'boss_tasking'
-  | 'capture'
-  | 'manual'
-  | 'bulk'
-  | 'workforce_stuff'
-  | 'company_milestones'
-  | 'employee_highlights'
-  | 'products'
-  | 'external_pressures'
 
 interface AddWorkModalProps {
   isOpen: boolean
@@ -24,35 +14,34 @@ interface AddWorkModalProps {
 }
 
 export default function AddWorkModal({ isOpen, onClose, onSuccess, outlookId }: AddWorkModalProps) {
-  const [step, setStep] = useState<'source' | 'form'>('source')
-  const [selectedSource, setSelectedSource] = useState<WorkOpsSourceType | null>(null)
+  const [step, setStep] = useState<'method' | 'form'>('method')
+  const [method, setMethod] = useState<AddTaskMethod | null>(null)
 
   if (!isOpen) return null
 
-  const handleSourceSelect = (source: WorkOpsSourceType) => {
-    setSelectedSource(source)
+  const handleMethodSelect = (m: AddTaskMethod) => {
+    setMethod(m)
     setStep('form')
   }
 
   const handleBack = () => {
-    setStep('source')
-    setSelectedSource(null)
+    setStep('method')
+    setMethod(null)
   }
 
   const handleSuccess = () => {
-    setStep('source')
-    setSelectedSource(null)
+    setStep('method')
+    setMethod(null)
     onSuccess()
     onClose()
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
-            {step === 'source' ? 'Add Work' : 'Create Work Item'}
+            {step === 'method' ? 'Add a task' : method === 'ai' ? 'Add task (AI)' : 'Add task (manual)'}
           </h2>
           <button
             onClick={onClose}
@@ -63,13 +52,19 @@ export default function AddWorkModal({ isOpen, onClose, onSuccess, outlookId }: 
           </button>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {step === 'source' ? (
-            <SourceSelector onSelect={handleSourceSelect} />
+          {step === 'method' ? (
+            <MethodSelector onSelect={handleMethodSelect} />
+          ) : method === 'manual' ? (
+            <DynamicForm
+              method="manual"
+              outlookId={outlookId}
+              onBack={handleBack}
+              onSuccess={handleSuccess}
+            />
           ) : (
             <DynamicForm
-              source={selectedSource!}
+              method="ai"
               outlookId={outlookId}
               onBack={handleBack}
               onSuccess={handleSuccess}
@@ -80,4 +75,3 @@ export default function AddWorkModal({ isOpen, onClose, onSuccess, outlookId }: 
     </div>
   )
 }
-

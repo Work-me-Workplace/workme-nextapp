@@ -437,7 +437,7 @@ export default function DailyOutlookPage() {
               className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
             >
               <Plus className="h-5 w-5 mr-2" />
-              Add New Task
+              Add task
             </button>
             <button
               onClick={() => setShowUnassigned(!showUnassigned)}
@@ -650,14 +650,20 @@ export default function DailyOutlookPage() {
                   No tasks assigned
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  Add tasks from your backlog or create new ones for this day.
+                  Add a task (manual or AI), pull from unassigned backlog, or carry over from yesterday.
                 </p>
                 <div className="flex items-center justify-center gap-3 flex-wrap">
+                  <button
+                    onClick={() => setModalOpen(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+                  >
+                    Add task
+                  </button>
                   <button
                     onClick={() => setShowUnassigned(true)}
                     className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
                   >
-                    Show unassigned
+                    From backlog
                   </button>
                   <button
                     onClick={() => {
@@ -667,12 +673,6 @@ export default function DailyOutlookPage() {
                     className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
                   >
                     From previous day
-                  </button>
-                  <button
-                    onClick={() => setModalOpen(true)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
-                  >
-                    Create New Task
                   </button>
                 </div>
               </div>

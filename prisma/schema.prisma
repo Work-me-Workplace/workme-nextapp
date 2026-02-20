@@ -45,6 +45,7 @@ model WorkMe {
   workEntries        WorkEntry[]
   workGoals          WorkGoal[]
   performancePlans   PerformancePlan[]
+  performanceReviews PerformanceReview[]
   ecosystemCompanies WorkMeEcosystemCompany[]
   ecosystemContacts  MyEcosystemContact[]
 
@@ -1491,6 +1492,15 @@ enum WorkOpsSource {
   system
 }
 
+// Where the task is derived from (single dropdown in add-task UX)
+enum WorkOpsDerivedFrom {
+  my_own
+  boss
+  workforce_comms
+  external_pressure
+  personal
+}
+
 model WorkOpsOutlook {
   id        String   @id @default(cuid())
   workMeId  String   @unique @db.Uuid
@@ -1513,10 +1523,11 @@ model WorkOpsItem {
   title String
   body  String?
 
-  itemType WorkOpsItemType
-  urgency  WorkOpsUrgency?
-  status   WorkOpsStatus   @default(open)
-  source   WorkOpsSource?
+  itemType    WorkOpsItemType
+  urgency     WorkOpsUrgency?
+  status      WorkOpsStatus   @default(open)
+  source      WorkOpsSource?  // how added: manual | ai
+  derivedFrom WorkOpsDerivedFrom?
 
   priority   Int?
   dueDate    DateTime?
@@ -1637,9 +1648,8 @@ model NextRolePreference {
 }
 
 // ============================================
-// PERFORMANCE PLAN (what was planned) + PERFORMANCE REVIEW (what I did)
+// PERFORMANCE PLAN (what was planned) — objectives only. No review data.
 // ============================================
-// No "appraisal" — universal. Performance plan = what was planned; performance review = what I did (same period).
 model PerformancePlan {
   id         String   @id @default(uuid())
   workMeId   String   @db.Uuid
@@ -1648,15 +1658,11 @@ model PerformancePlan {
   periodType  String?  // "quarterly" | "mid-year" | "annual"
   title      String?  // e.g. "2025 Q2 Plan"
 
-  // Performance review = what I did (string summary for this period)
-  performanceReviewSummary String?
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  workMe                WorkMe                @relation(fields: [workMeId], references: [id], onDelete: Cascade)
-  objectives            PerformancePlanObjective[]
-  contributionSummaries ContributionSummary[]
+  workMe     WorkMe                     @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  objectives PerformancePlanObjective[]
 
   @@index([workMeId])
   @@index([periodStart])
@@ -1683,6 +1689,45 @@ model PerformancePlanObjective {
   performancePlan PerformancePlan @relation(fields: [performancePlanId], references: [id], onDelete: Cascade)
 
   @@index([performancePlanId])
+}
+
+// ============================================
+// PERFORMANCE REVIEW (what I did) — accomplishments only. Separate from Plan.
+// ============================================
+model PerformanceReview {
+  id         String   @id @default(uuid())
+  workMeId   String   @db.Uuid
+  periodStart DateTime
+  periodEnd   DateTime
+  periodType  String?  // "quarterly" | "mid-year" | "annual"
+  title      String?  // e.g. "2025 Annual Review"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workMe                WorkMe                          @relation(fields: [workMeId], references: [id], onDelete: Cascade)
+  accomplishments       PerformanceReviewAccomplishment[]
+  contributionSummaries ContributionSummary[]
+
+  @@index([workMeId])
+  @@index([periodStart])
+  @@index([periodEnd])
+  @@index([periodType])
+}
+
+model PerformanceReviewAccomplishment {
+  id                 String   @id @default(uuid())
+  performanceReviewId String   @db.Uuid
+  title              String
+  description        String?  @db.Text
+  sortOrder          Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  performanceReview PerformanceReview @relation(fields: [performanceReviewId], references: [id], onDelete: Cascade)
+
+  @@index([performanceReviewId])
 }
 
 // ============================================
@@ -3439,9 +3484,9 @@ model ContributionSummary {
   companyWorkId String?
   companyWork   CompanyWork? @relation(fields: [companyWorkId], references: [id], onDelete: SetNull)
 
-  // Optional link to performance plan/review period
-  performancePlanId String?  @db.Uuid
-  performancePlan   PerformancePlan? @relation(fields: [performancePlanId], references: [id], onDelete: SetNull)
+  // Optional link to performance review (pull into review)
+  performanceReviewId String?  @db.Uuid
+  performanceReview   PerformanceReview? @relation(fields: [performanceReviewId], references: [id], onDelete: SetNull)
 
   // Relations
   workMe WorkMe @relation(fields: [workMeId], references: [id], onDelete: Cascade)
@@ -3454,7 +3499,7 @@ model ContributionSummary {
   @@index([periodEnd])
   @@index([periodType])
   @@index([companyWorkId])
-  @@index([performancePlanId])
+  @@index([performanceReviewId])
 }
 
 // ============================================

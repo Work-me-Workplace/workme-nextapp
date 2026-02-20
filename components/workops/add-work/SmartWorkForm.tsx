@@ -3,28 +3,30 @@
 import { useState } from 'react'
 import { Sparkles, Loader2 } from 'lucide-react'
 import api from '@/lib/api'
-import type { WorkOpsSourceType } from './AddWorkModal'
+import { WorkOpsDerivedFrom } from '@prisma/client'
 
 interface SmartWorkFormProps {
-  category: 'my_thoughts' | 'boss' | 'company_stuff'
-  outlookId?: string // Optional, API gets it from auth
+  derivedFrom: WorkOpsDerivedFrom
+  outlookId?: string
   onBack?: () => void
   onSuccess: () => void
 }
 
-const categoryLabels = {
-  my_thoughts: 'My Thoughts',
-  boss: 'Boss',
-  company_stuff: 'Company Stuff',
+// Map derivedFrom to analyze API category for prompts
+const derivedFromToCategory = (d: WorkOpsDerivedFrom): 'my_thoughts' | 'boss' | 'company_stuff' => {
+  if (d === WorkOpsDerivedFrom.boss) return 'boss'
+  if (d === WorkOpsDerivedFrom.workforce_comms) return 'company_stuff'
+  return 'my_thoughts'
 }
 
-const categoryPlaceholders = {
-  my_thoughts: 'What\'s on your mind? What do you want to remember or do?',
+const categoryPlaceholders: Record<string, string> = {
+  my_thoughts: "What's on your mind? What do you want to remember or do?",
   boss: 'What did your boss ask you to do? Any deadlines or urgency?',
   company_stuff: 'What company event, milestone, or initiative needs attention?',
 }
 
-export default function SmartWorkForm({ category, outlookId, onBack, onSuccess }: SmartWorkFormProps) {
+export default function SmartWorkForm({ derivedFrom, outlookId, onBack, onSuccess }: SmartWorkFormProps) {
+  const category = derivedFromToCategory(derivedFrom)
   const [rawText, setRawText] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [analysis, setAnalysis] = useState<any>(null)
@@ -73,7 +75,8 @@ export default function SmartWorkForm({ category, outlookId, onBack, onSuccess }
             title: a.title,
             body: a.body,
             itemType: a.itemType,
-            source: 'manual',
+            source: 'ai',
+            derivedFrom,
             urgency: a.urgency,
             dueDate: a.extractedDetails?.dueDate || null,
           })
@@ -88,12 +91,12 @@ export default function SmartWorkForm({ category, outlookId, onBack, onSuccess }
     }
 
     if (!analysis) {
-      // If no analysis, just create a simple capture
       await handleCreate({
         title: rawText.trim().substring(0, 100),
         body: rawText.trim(),
         itemType: 'capture',
-        source: 'manual',
+        source: 'ai',
+        derivedFrom,
         urgency: null,
       })
       return
@@ -103,7 +106,8 @@ export default function SmartWorkForm({ category, outlookId, onBack, onSuccess }
       title: analysis.title,
       body: analysis.body,
       itemType: analysis.itemType,
-      source: 'manual',
+      source: 'ai',
+      derivedFrom,
       urgency: analysis.urgency,
       dueDate: analysis.extractedDetails?.dueDate || null,
     })
@@ -134,11 +138,8 @@ export default function SmartWorkForm({ category, outlookId, onBack, onSuccess }
   return (
     <div>
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          {categoryLabels[category]}
-        </h3>
         <p className="text-sm text-gray-600">
-          Tell me what you want to do, and I'll help structure it as a work item.
+          Describe what you want to do; we'll structure it as a task.
         </p>
       </div>
 
@@ -256,7 +257,8 @@ export default function SmartWorkForm({ category, outlookId, onBack, onSuccess }
               title: rawText.trim().substring(0, 100) || 'Quick Capture',
               body: rawText.trim(),
               itemType: 'capture',
-              source: 'manual',
+              source: 'ai',
+              derivedFrom,
               urgency: null,
             })}
             disabled={loading || !rawText.trim()}
