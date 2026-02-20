@@ -13,8 +13,15 @@ We do **not** use 6+ source-type buttons; we use two choices (Manual / AI) and o
 ## Previous day
 
 - **Not automatic.** Tasks from the previous day are **not** auto-copied to today.
-- **How it works:** On Daily, use the date arrows to pick a day. Click **"From previous day"** to expand a section that lists tasks that were assigned to **yesterday** (relative to the currently selected day). Each row has **"Add to Day"** to assign that task to the **currently selected day** (today if you're on today). So you explicitly choose which yesterday tasks to carry over.
+- **How it works:** On Daily, use the date arrows to pick a day. Click **"From previous day"** to expand a section that lists tasks that were assigned to **yesterday** (relative to the currently selected day).
+  - **Add to Day** on a row assigns that one task to the **currently selected day**.
+  - **Bring all forward** assigns every task from the previous day to the currently selected day in one go (e.g. if you forgot to carry them over). Shows loading and reports any failures in the error banner.
 - **Empty state:** When the selected day has no tasks, the empty state offers: **Add task**, **From backlog**, **From previous day**.
+
+## Error handling
+
+- **Inline error banner:** Failed actions (assign, unassign, edit, delete, quick add, bring all forward) and failed loads (daily assignments, unassigned list, previous day) set an error message that appears in a dismissible red banner at the top. No `alert()` dialogs; errors are cleared when the user dismisses or when a later action succeeds.
+- **Bring all forward:** On partial failure (some items failed to assign), the banner shows which tasks failed (up to 3 names plus "and N more" if needed).
 
 ## Schema
 

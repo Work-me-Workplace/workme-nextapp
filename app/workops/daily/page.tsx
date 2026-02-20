@@ -20,6 +20,7 @@ import {
   Trash2,
   Pencil,
   CalendarClock,
+  Loader2,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { WorkOpsStatus, WorkOpsItemType, WorkOpsUrgency } from '@prisma/client'
@@ -87,6 +88,12 @@ export default function DailyOutlookPage() {
   const [savingEdit, setSavingEdit] = useState(false)
   const [quickAddText, setQuickAddText] = useState('')
   const [quickAddLoading, setQuickAddLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [bringAllForwardLoading, setBringAllForwardLoading] = useState(false)
+
+  const clearError = () => setErrorMessage(null)
+  const getApiError = (err: any) =>
+    err?.response?.data?.error || err?.message || 'Something went wrong. Please try again.'
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -140,83 +147,110 @@ export default function DailyOutlookPage() {
 
   async function loadDailyAssignments() {
     if (!outlookId) return
-
     try {
       const dayStr = selectedDate.toISOString().split('T')[0]
       const response = await api.get(
         `/api/workops/daily-assignments?day=${dayStr}`
       )
-
       if (response.data.success) {
         setAssignments(response.data.assignments || [])
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load daily assignments:', error)
+      setErrorMessage(getApiError(error))
     }
   }
 
   async function loadUnassignedItems() {
     if (!outlookId) return
-
     try {
       const response = await api.get(
         `/api/workops/daily-assignments?unassigned=true`
       )
-
       if (response.data.success) {
         setUnassignedItems(response.data.items || [])
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load unassigned items:', error)
+      setErrorMessage(getApiError(error))
     }
   }
 
   async function loadPreviousDayAssignments() {
     if (!outlookId || !selectedDate) return
-
     const prev = new Date(selectedDate)
     prev.setDate(prev.getDate() - 1)
     const dayStr = prev.toISOString().split('T')[0]
-
     try {
       const response = await api.get(
         `/api/workops/daily-assignments?day=${dayStr}`
       )
-
       if (response.data.success) {
         setPreviousDayAssignments(response.data.assignments || [])
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load previous day assignments:', error)
+      setErrorMessage(getApiError(error))
     }
   }
 
   const handleAssignItem = async (itemId: string) => {
     if (!outlookId) return
-
+    clearError()
     try {
       const dayStr = selectedDate.toISOString()
       await api.post('/api/workops/daily-assignments', {
         itemId,
         day: dayStr,
       })
-
       await loadDailyAssignments()
       await loadUnassignedItems()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to assign item:', error)
-      alert('Failed to assign item. Please try again.')
+      setErrorMessage(getApiError(error))
+    }
+  }
+
+  const handleBringAllForward = async () => {
+    if (!outlookId || previousDayAssignments.length === 0) return
+    clearError()
+    setBringAllForwardLoading(true)
+    const dayStr = selectedDate.toISOString()
+    const failed: string[] = []
+    try {
+      for (const a of previousDayAssignments) {
+        try {
+          await api.post('/api/workops/daily-assignments', {
+            itemId: a.item.id,
+            day: dayStr,
+          })
+        } catch (_) {
+          failed.push(a.item.title)
+        }
+      }
+      await loadDailyAssignments()
+      await loadUnassignedItems()
+      await loadPreviousDayAssignments()
+      if (failed.length > 0) {
+        setErrorMessage(`Assigned most tasks. Failed for: ${failed.slice(0, 3).join(', ')}${failed.length > 3 ? ` and ${failed.length - 3} more` : ''}.`)
+      }
+    } catch (error: any) {
+      console.error('Bring all forward failed:', error)
+      setErrorMessage(getApiError(error))
+    } finally {
+      setBringAllForwardLoading(false)
     }
   }
 
   const handleUnassignItem = async (assignmentId: string) => {
+    clearError()
     try {
       await api.delete(`/api/workops/daily-assignments/${assignmentId}`)
       await loadDailyAssignments()
       await loadUnassignedItems()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to unassign item:', error)
-      alert('Failed to remove item. Please try again.')
+      setErrorMessage(getApiError(error))
     }
   }
 
@@ -235,6 +269,7 @@ export default function DailyOutlookPage() {
   const saveEdit = async () => {
     if (!editItem || !editTitle.trim()) return
     setSavingEdit(true)
+    clearError()
     try {
       await api.patch(`/api/workops/item/${editItem.id}`, {
         title: editTitle.trim(),
@@ -245,9 +280,9 @@ export default function DailyOutlookPage() {
       closeEdit()
       await loadDailyAssignments()
       await loadUnassignedItems()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update item:', error)
-      alert('Failed to update. Please try again.')
+      setErrorMessage(getApiError(error))
     } finally {
       setSavingEdit(false)
     }
@@ -255,13 +290,14 @@ export default function DailyOutlookPage() {
 
   const handleDeleteItem = async (itemId: string) => {
     if (!confirm('Delete this task from your backlog? This cannot be undone.')) return
+    clearError()
     try {
       await api.delete(`/api/workops/item/${itemId}`)
       await loadDailyAssignments()
       await loadUnassignedItems()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete item:', error)
-      alert('Failed to delete. Please try again.')
+      setErrorMessage(getApiError(error))
     }
   }
 
@@ -269,6 +305,7 @@ export default function DailyOutlookPage() {
     const title = quickAddText.trim()
     if (!title || quickAddLoading) return
     setQuickAddLoading(true)
+    clearError()
     try {
       await api.post('/api/workops/item/create', {
         title,
@@ -281,9 +318,9 @@ export default function DailyOutlookPage() {
       await loadDailyAssignments()
       await loadUnassignedItems()
       setShowUnassigned(true)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Quick add failed:', error)
-      alert('Failed to add. Try again.')
+      setErrorMessage(getApiError(error))
     } finally {
       setQuickAddLoading(false)
     }
@@ -375,6 +412,20 @@ export default function DailyOutlookPage() {
             <p className="text-gray-600 mt-2">Plan and manage your daily tasks</p>
           </div>
 
+          {/* Error banner */}
+          {errorMessage && (
+            <div className="mb-6 flex items-center justify-between gap-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800">
+              <p className="text-sm font-medium">{errorMessage}</p>
+              <button
+                onClick={clearError}
+                className="shrink-0 rounded p-1 hover:bg-red-100 transition"
+                aria-label="Dismiss"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          )}
+
           {/* Date Selector */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
             <div className="flex items-center justify-between">
@@ -461,12 +512,32 @@ export default function DailyOutlookPage() {
           {/* From previous day — carry over tasks */}
           {showFromPreviousDay && (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                From previous day ({previousDayAssignments.length})
-              </h3>
-              <p className="text-sm text-gray-500 mb-4">
-                Tasks from {formatDate((() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); return d })())} — add any to today
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    From previous day ({previousDayAssignments.length})
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    Tasks from {formatDate((() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); return d })())} — add any to {isToday(selectedDate) ? 'today' : 'this day'} or bring all forward
+                  </p>
+                </div>
+                {previousDayAssignments.length > 0 && (
+                  <button
+                    onClick={handleBringAllForward}
+                    disabled={bringAllForwardLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {bringAllForwardLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Bringing forward…
+                      </>
+                    ) : (
+                      'Bring all forward'
+                    )}
+                  </button>
+                )}
+              </div>
               {previousDayAssignments.length > 0 ? (
                 <div className="space-y-2">
                   {previousDayAssignments.map((assignment) => (
