@@ -1,5 +1,7 @@
 # Performance plan & performance review (end-to-end)
 
+> **Superseded for architecture:** The canonical mental model and current schema/APIs/UX are in **[PERFORMANCE_PLAN_AND_REVIEW_ARCHITECTURE.md](./PERFORMANCE_PLAN_AND_REVIEW_ARCHITECTURE.md)**. This file described the old “one cycle with plan + review” model we moved away from; do not refactor from it.
+
 **No “appraisal.”** That was NavSea-specific; not universal. In the old world, “appraisal” was end-of-year and “contribution plan” was beginning-of-year—we couldn’t get to a clear mental model with that split. So we collapsed to one:
 
 - **Performance plan** = **what was planned.** (Objectives, how I’ll contribute, period.)
