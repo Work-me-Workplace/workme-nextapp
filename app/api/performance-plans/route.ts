@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
         periodEnd: true,
         periodType: true,
         title: true,
-        performanceReviewSummary: true,
         createdAt: true,
         updatedAt: true,
         _count: { select: { objectives: true } },
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
     const { id: workMeId } = workMe
 
     const body = await request.json()
-    const { periodStart, periodEnd, periodType, title, performanceReviewSummary } = body
+    const { periodStart, periodEnd, periodType, title } = body
 
     if (!periodStart || !periodEnd) {
       return NextResponse.json(
@@ -70,17 +69,6 @@ export async function POST(request: NextRequest) {
         periodEnd: new Date(periodEnd),
         periodType: periodType?.trim() || null,
         title: title?.trim() || null,
-        performanceReviewSummary: performanceReviewSummary?.trim() || null,
-      },
-      select: {
-        id: true,
-        periodStart: true,
-        periodEnd: true,
-        periodType: true,
-        title: true,
-        performanceReviewSummary: true,
-        createdAt: true,
-        updatedAt: true,
       },
     })
 
