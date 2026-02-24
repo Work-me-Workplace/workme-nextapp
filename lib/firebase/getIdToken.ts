@@ -20,12 +20,15 @@ export async function getIdToken(): Promise<string | null> {
       return null
     }
 
+    // Store auth in const so TypeScript knows it's non-null
+    const authInstance = auth
+
     // Wait for auth to be ready if currentUser is null
-    let user = auth.currentUser
+    let user = authInstance.currentUser
     if (!user) {
       // Wait up to 2 seconds for auth state to initialize
       await new Promise<void>((resolve) => {
-        const unsubscribe = auth.onAuthStateChanged((user) => {
+        const unsubscribe = authInstance.onAuthStateChanged((user) => {
           unsubscribe()
           resolve()
         })
@@ -35,7 +38,7 @@ export async function getIdToken(): Promise<string | null> {
           resolve()
         }, 2000)
       })
-      user = auth.currentUser
+      user = authInstance.currentUser
     }
 
     if (!user) {
