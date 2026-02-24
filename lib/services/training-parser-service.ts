@@ -66,13 +66,13 @@ Return JSON with these exact fields:
   "mandatory": true or false,
   "topic": "Training topic/subject (or null)",
   "sponsoringOffice": "Office or organization sponsoring (or null)",
-  "trainingDate": "ISO date string (YYYY-MM-DD) for scheduled training events, or null",
+  "trainingDate": "ISO date string (YYYY-MM-DD) for scheduled training events. IMPORTANT: If date has no year (e.g., 'Feb. 25'), use current year (2026). If date is in the past relative to today, assume it's next occurrence (e.g., if today is Feb 2026 and date is 'Jan. 22', use 2027). Or null",
   "startTime": "Time string in HH:MM format (e.g., '09:00') for scheduled events, or null",
   "endTime": "Time string in HH:MM format (e.g., '10:30') for scheduled events, or null",
   "timeSlots": "Array of { date?: string (ISO), startTime: string, endTime: string, label?: string } when training is held at multiple times (e.g. '9:30-10:30 a.m. ET or 11:00 a.m.-12:00 p.m. ET'). Omit date if same as trainingDate. Or null if single time.",
-  "completionDeadline": "ISO date string (YYYY-MM-DD) for self-paced training deadlines, or null",
+  "completionDeadline": "ISO date string (YYYY-MM-DD) for self-paced training deadlines. IMPORTANT: If date has no year, use current year (2026) or next occurrence if in past. Or null",
   "isSelfPaced": true if training is self-paced (no fixed schedule), false if scheduled event,
-  "registrationDeadline": "ISO date string (YYYY-MM-DD) when registration must be completed by (e.g. 'Registration deadline is Feb. 9'), or null",
+  "registrationDeadline": "ISO date string (YYYY-MM-DD) when registration must be completed by (e.g. 'Registration deadline is Feb. 9'). IMPORTANT: If date has no year, use current year (2026) or next occurrence if in past. Or null",
   "location": "Physical location or venue (or null)",
   "format": "in-person" or "virtual" or "hybrid" or null,
   "link": "First livestream/registration link found (or null)",
@@ -107,6 +107,32 @@ ${rawText.substring(0, 3000)}`
 
     const parsed = JSON.parse(response.choices[0].message.content || '{}')
 
+    // Fix dates that are clearly wrong (in the past when they should be current/future)
+    // If a date is more than 1 year in the past, assume it should be current year
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    
+    const fixDate = (dateStr: string | null): string | null => {
+      if (!dateStr) return null
+      try {
+        const date = new Date(dateStr)
+        const year = date.getFullYear()
+        // If date is more than 1 year old, assume it should be current year
+        if (year < currentYear - 1) {
+          const fixedDate = new Date(date)
+          fixedDate.setFullYear(currentYear)
+          // If fixed date is still in the past, try next year
+          if (fixedDate < now) {
+            fixedDate.setFullYear(currentYear + 1)
+          }
+          return fixedDate.toISOString().split('T')[0]
+        }
+        return dateStr
+      } catch {
+        return dateStr
+      }
+    }
+
     // Validate and normalize
     const isSelfPaced = parsed.isSelfPaced === true || parsed.isSelfPaced === 'true'
     
@@ -131,13 +157,13 @@ ${rawText.substring(0, 3000)}`
       mandatory: parsed.mandatory === true || parsed.mandatory === 'true',
       topic: parsed.topic || null,
       sponsoringOffice: parsed.sponsoringOffice || null,
-      trainingDate: parsed.trainingDate || null,
+      trainingDate: fixDate(parsed.trainingDate),
       startTime: parsed.startTime || null,
       endTime: parsed.endTime || null,
       timeSlots: timeSlots?.length ? timeSlots : null,
-      completionDeadline: parsed.completionDeadline || null,
+      completionDeadline: fixDate(parsed.completionDeadline),
       isSelfPaced: isSelfPaced,
-      registrationDeadline: parsed.registrationDeadline || null,
+      registrationDeadline: fixDate(parsed.registrationDeadline),
       location: parsed.location || null,
       format: ['in-person', 'virtual', 'hybrid'].includes(parsed.format) ? parsed.format : null,
       link: parsed.link || null,
