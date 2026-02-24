@@ -55,49 +55,84 @@ export async function GET(request: NextRequest) {
         },
         orderBy: { trainingDate: 'asc' },
       }),
-      // CompanyEvent - fallback to workMe.companyId for legacy records with null companyId
+      // CompanyEvent - query by companyId OR workMeId (owner)
       prisma.companyEvent.findMany({
         where: {
           OR: [
             { companyId },
-            { workMe: { companyId } },
+            ...(workMeId ? [{ workMeId }] : []),
           ],
         },
         orderBy: { createdAt: 'desc' },
       }),
-      // CompanyCampaign
+      // CompanyCampaign - query by companyId OR workMeId (owner)
       prisma.companyCampaign.findMany({
-        where: { companyId },
+        where: {
+          OR: [
+            { companyId },
+            ...(workMeId ? [{ workMeId }] : []),
+          ],
+        },
         orderBy: { createdAt: 'desc' },
       }),
-      // CompanyImpactEvent
+      // CompanyImpactEvent - query by companyId OR workMeId (owner)
       prisma.companyImpactEvent.findMany({
-        where: { companyId },
+        where: {
+          OR: [
+            { companyId },
+            ...(workMeId ? [{ workMeId }] : []),
+          ],
+        },
         orderBy: { createdAt: 'desc' },
       }),
-      // CompanyCommunity
+      // CompanyCommunity - query by companyId OR workMeId (owner)
       prisma.companyCommunity.findMany({
-        where: { companyId },
+        where: {
+          OR: [
+            { companyId },
+            ...(workMeId ? [{ workMeId }] : []),
+          ],
+        },
         orderBy: { createdAt: 'desc' },
       }),
-      // CompanyBenefits
+      // CompanyBenefits - query by companyId OR workMeId (owner)
       prisma.companyBenefits.findMany({
-        where: { companyId },
+        where: {
+          OR: [
+            { companyId },
+            ...(workMeId ? [{ workMeId }] : []),
+          ],
+        },
         orderBy: { createdAt: 'desc' },
       }),
-      // CompanyCareer
+      // CompanyCareer - query by companyId OR workMeId (owner)
       prisma.companyCareer.findMany({
-        where: { companyId },
+        where: {
+          OR: [
+            { companyId },
+            ...(workMeId ? [{ workMeId }] : []),
+          ],
+        },
         orderBy: { createdAt: 'desc' },
       }),
-      // CompanyEmployeeCause
+      // CompanyEmployeeCause - query by companyId OR workMeId (owner)
       prisma.companyEmployeeCause.findMany({
-        where: { companyId },
+        where: {
+          OR: [
+            { companyId },
+            ...(workMeId ? [{ workMeId }] : []),
+          ],
+        },
         orderBy: { createdAt: 'desc' },
       }),
-      // CompanyLeaderEngagement
+      // CompanyLeaderEngagement - query by companyId OR workMeId (owner)
       prisma.companyLeaderEngagement.findMany({
-        where: { companyId },
+        where: {
+          OR: [
+            { companyId },
+            ...(workMeId ? [{ workMeId }] : []),
+          ],
+        },
         orderBy: { createdAt: 'desc' },
       }),
     ])
