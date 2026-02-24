@@ -20,7 +20,7 @@ So: **the payload we send to Gamma is exactly that blob** — the narrative buil
 
 - On the digital signage **view** page (`/mywork/digital-signage/[id]`), when the sign has content (including `workforceStuff` from CompanyX ingests), we **auto-fill** the “details for Gamma” text area with the same blob we would send if the user left it blank.
 - So the user sees workforce context (title, description, date, highlights, etc.) already in the box instead of a blank “put stuff here” prompt. They can edit and then click “Send to Gamma,” or leave it as-is.
-- “Load from sign” still does the same thing: fetches the preview blob from the sign’s content and sets the text area. Auto-fill does that once on load when the sign has content.
+- “Use this sign’s content” still does the same thing: fetches the preview blob from the sign’s content and sets the text area. Auto-fill does that once on load when the sign has content.
 
 ---
 

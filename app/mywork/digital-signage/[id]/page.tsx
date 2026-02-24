@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import api from '@/lib/api'
@@ -95,6 +95,7 @@ function DigitalSignageViewContent() {
   const [gammaGenerationId, setGammaGenerationId] = useState<string | null>(null)
   const [showDeckStatus, setShowDeckStatus] = useState(false)
   const [gammaDetails, setGammaDetails] = useState('')
+  const [payloadFromSign, setPayloadFromSign] = useState('') // What we send when the box is blank
   const [loadingPreview, setLoadingPreview] = useState(false)
   const [lastPayloadChars, setLastPayloadChars] = useState<number | null>(null)
 
@@ -119,62 +120,79 @@ function DigitalSignageViewContent() {
     }
   }, [router, signageId, searchParams])
 
-  // Auto-fill Gamma text from sign content (workforce context) when the sign has content
-  const hasSignContent =
-    signage?.workforce ||
-    signage?.companyEvent ||
-    signage?.workforceStuff ||
-    signage?.companyNews ||
-    signage?.workforceAchievement
+  // Load "what we'll send to Gamma" for this sign once so we can show it (and auto-fill when sign has content)
+  const previewLoadedForRef = useRef<string | null>(null)
   useEffect(() => {
-    if (!signageId || !signage?.id || !hasSignContent) return
+    if (!signageId || !signage?.id) return
+    if (previewLoadedForRef.current === signageId) return
+    previewLoadedForRef.current = signageId
     let cancelled = false
-    async function fillFromSign() {
+    async function loadPayloadPreview() {
       try {
         const res = await api.get(
           `/api/decks/digital-signage/preview?digitalSignId=${signageId}`
         )
         if (cancelled) return
         if (res.data.success && res.data.preview && typeof res.data.preview === 'string') {
-          setGammaDetails((prev) => (prev === '' ? res.data.preview : prev))
+          const blob = res.data.preview
+          setPayloadFromSign(blob)
+          setGammaDetails((prev) => (prev === '' ? blob : prev))
         }
       } catch {
-        // ignore; user can still click "Load from sign"
+        previewLoadedForRef.current = null
       }
     }
-    fillFromSign()
+    loadPayloadPreview()
     return () => {
       cancelled = true
     }
-  }, [signageId, signage?.id, hasSignContent])
+  }, [signageId, signage?.id])
 
-  // Poll Gamma deck status when generating
+  // Poll Gamma deck status when generating (cap at 100 polls = ~5 min to avoid infinite loop)
+  const pollCountRef = useRef(0)
+  const GAMMA_POLL_MAX = 100
   useEffect(() => {
     if (gammaStatus !== 'generating' || !gammaGenerationId || !signageId) return
-    const interval = setInterval(async () => {
+    pollCountRef.current = 0
+    let cancelled = false
+    const poll = async () => {
+      if (cancelled) return
+      pollCountRef.current += 1
+      if (pollCountRef.current > GAMMA_POLL_MAX) {
+        setGammaStatus('error')
+        setError('Generation is taking longer than expected. Refresh the page to check again.')
+        return
+      }
       try {
         const res = await api.get(
           `/api/decks/status/${gammaGenerationId}?digitalSignId=${signageId}`
         )
+        if (cancelled) return
         if (res.data.success) {
           if (res.data.status === 'ready') {
             setGammaStatus('ready')
-            setGammaDeckUrl(res.data.url ?? null)
+            setGammaDeckUrl(res.data.url ?? res.data.deckUrl ?? null)
             setGammaPptxUrl(res.data.pptxUrl ?? null)
-            clearInterval(interval)
             return
           }
           if (res.data.status === 'error' || res.data.status === 'failed') {
             setGammaStatus('error')
-            clearInterval(interval)
+            setError(res.data.error ?? res.data.details ?? 'Deck generation failed')
           }
         }
       } catch {
-        setGammaStatus('error')
-        clearInterval(interval)
+        if (!cancelled) {
+          setGammaStatus('error')
+          setError('Could not check generation status')
+        }
       }
-    }, 3000)
-    return () => clearInterval(interval)
+    }
+    poll()
+    const interval = setInterval(poll, 3000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
   }, [gammaStatus, gammaGenerationId, signageId])
 
   async function loadSignage() {
@@ -239,8 +257,10 @@ function DigitalSignageViewContent() {
       const res = await api.get(
         `/api/decks/digital-signage/preview?digitalSignId=${signageId}`
       )
-      if (res.data.success && res.data.preview) {
-        setGammaDetails(res.data.preview)
+      if (res.data.success && res.data.preview && typeof res.data.preview === 'string') {
+        const blob = res.data.preview
+        setPayloadFromSign(blob)
+        setGammaDetails(blob)
       }
     } catch {
       setError('Could not load preview from signage')
@@ -386,16 +406,16 @@ function DigitalSignageViewContent() {
                     Build a presentation from this sign
                   </h3>
                   <p className="text-sm text-gray-600 mb-4">
-                    Turn this digital sign into a Gamma deck or PowerPoint. The text below is what we send to Gamma. Leave it blank to auto-fill from this sign’s content, or edit it first. Then click to send—you’ll see a confirmation that the payload was sent.
+                    Edit the content below to change what we send to Gamma, or leave it blank to use this sign’s content. The preview underneath shows <strong>exactly what will be sent</strong> when you click Send to Gamma.
                   </p>
                   <textarea
                     value={gammaDetails}
                     onChange={(e) => setGammaDetails(e.target.value)}
-                    placeholder="Leave blank to use this sign’s content, or enter your own title and bullet points..."
+                    placeholder="Optional: type your own title and bullet points, or leave blank to use the sign’s content (see preview below)"
                     rows={6}
                     className="mb-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 bg-white"
                   />
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
                     <button
                       type="button"
                       onClick={handleLoadPreview}
@@ -405,7 +425,7 @@ function DigitalSignageViewContent() {
                       {loadingPreview ? (
                         <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
                       ) : null}
-                      Load from sign
+                      Use this sign's content
                     </button>
                     <button
                       onClick={handleGenerateDeck}
@@ -429,6 +449,22 @@ function DigitalSignageViewContent() {
                         Last sent: {lastPayloadChars.toLocaleString()} characters
                       </span>
                     )}
+                  </div>
+                  {/* Always show what we'll send so the user never has to guess */}
+                  <div className="rounded-lg border border-amber-200 bg-amber-50/80 p-4">
+                    <h4 className="text-sm font-semibold text-amber-900 mb-1.5">
+                      What we’ll send to Gamma
+                    </h4>
+                    <p className="text-xs text-amber-800 mb-2">
+                      {gammaDetails.trim()
+                        ? 'Sending the content you entered above.'
+                        : payloadFromSign
+                          ? 'Sending the content below (from this sign). Clear the box above and click "Use this sign\'s content" to refresh.'
+                          : 'No content yet. Enter text above or click "Use this sign\'s content" to pull from this sign.'}
+                    </p>
+                    <pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans bg-white/80 border border-amber-100 rounded p-3 max-h-48 overflow-y-auto">
+                      {gammaDetails.trim() || payloadFromSign || "(empty — nothing will be sent until you add content or use this sign's content)"}
+                    </pre>
                   </div>
                 </div>
 
@@ -485,8 +521,8 @@ function DigitalSignageViewContent() {
                     <div className="flex items-center">
                       <CheckCircle2 className="h-5 w-5 text-green-600 mr-3" />
                       <div>
-                        <p className="text-sm font-semibold text-green-900">Digital Signage Saved Successfully!</p>
-                        <p className="text-xs text-green-700">Your digital signage has been created and is ready to use.</p>
+                        <p className="text-sm font-semibold text-green-900">Digital sign saved</p>
+                        <p className="text-xs text-green-700">This sign is saved. Use the section above to see what will be sent to Gamma and click Send to Gamma when ready.</p>
                       </div>
                     </div>
                     <button

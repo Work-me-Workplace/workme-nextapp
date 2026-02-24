@@ -61,6 +61,7 @@ export async function GET(
       success: true,
       status: statusResult.status === 'completed' ? 'ready' : statusResult.status,
       url: deckUrl ?? undefined,
+      deckUrl: deckUrl ?? undefined,
       pptxUrl: statusResult.pptxUrl ?? undefined,
       error: statusResult.error ?? undefined,
     })
