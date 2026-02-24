@@ -53,6 +53,7 @@ export async function parseCommsPlan(
   rawText: string
 ): Promise<CommsPlanParseResult> {
   const openai = getOpenAI()
+  const currentYear = getCurrentYear()
 
   const systemPrompt = `You are an expert at parsing communications plans from raw text.
 
