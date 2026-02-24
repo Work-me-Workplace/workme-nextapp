@@ -4,8 +4,11 @@
  * Fetches all CompanyX models (Events, Training, Campaigns, etc.)
  * and returns them in a unified format for the dashboard.
  *
- * AUTH: WorkMe-only (Firebase → WorkMe)
- * SCOPE: companyId from authenticated user's WorkMe only (single-tenant).
+ * AUTH: WorkMe-only (Firebase → WorkMe) - handled by verifyAuth()
+ * SCOPE: Always companyId-scoped only (from localStorage).
+ * 
+ * NOTE: Owner (workMeId) is handled at auth/axios level, not in query OR logic.
+ * The OR logic was causing stack errors - companyId scoping is sufficient.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -39,7 +42,8 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    // Fetch all CompanyX models scoped by companyId only (always company-scoped)
+    // Fetch all CompanyX models scoped by companyId only
+    // Owner (workMeId) is handled at auth/axios level, not here
     const [trainings, events, campaigns, impactEvents, community, benefits, careers, employeeCauses, leaderEngagements] = await Promise.all([
       // CompanyTraining - always companyId scoped
       prisma.companyTraining.findMany({
