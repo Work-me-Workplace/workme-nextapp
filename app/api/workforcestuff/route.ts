@@ -44,6 +44,10 @@ export async function GET(request: NextRequest) {
     
     // Fetch all CompanyX models scoped by companyId only
     // Owner (workMeId) is handled at auth/axios level, not here
+    
+    // DEBUG: Log the query
+    console.log('[WorkforceStuff API] Querying with companyId:', companyId)
+    
     const [trainings, events, campaigns, impactEvents, community, benefits, careers, employeeCauses, leaderEngagements] = await Promise.all([
       // CompanyTraining - always companyId scoped
       prisma.companyTraining.findMany({
@@ -92,6 +96,17 @@ export async function GET(request: NextRequest) {
       }),
     ])
 
+    // DEBUG: Log trainings found
+    console.log('[WorkforceStuff API] Trainings found:', trainings.length)
+    if (trainings.length > 0) {
+      console.log('[WorkforceStuff API] First training:', {
+        id: trainings[0].id,
+        title: trainings[0].title,
+        companyId: trainings[0].companyId,
+        trainingDate: trainings[0].trainingDate,
+      })
+    }
+    
     // Normalize all items into unified WorkforceStuffItem shape
     const normalizedItems = [
       // Normalize Trainings (date-derived: use completionDeadline as end when self-paced)
@@ -101,6 +116,17 @@ export async function GET(request: NextRequest) {
           ? training.completionDeadline.toISOString()
           : (training.trainingDate ? training.trainingDate.toISOString() : null)
         const past = isPast(startDate, endDate)
+        
+        // DEBUG: Log training normalization
+        if (training.id === 'cmm0ud2560001v43t4u7nt5dg') {
+          console.log('[WorkforceStuff API] Normalizing training:', {
+            id: training.id,
+            startDate,
+            endDate,
+            past,
+            trainingDate: training.trainingDate,
+          })
+        }
         return {
         id: training.id,
         type: 'training' as const,
