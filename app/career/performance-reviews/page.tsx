@@ -4,28 +4,39 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
-import { Plus, Calendar } from 'lucide-react'
+import { ClipboardList, FileText, Calendar } from 'lucide-react'
 import api from '@/lib/api'
 
-interface PerformancePlan {
+interface Plan {
   id: string
   periodStart: string
   periodEnd: string
   periodType: string | null
   title: string | null
-  performanceReviewSummary: string | null
   createdAt: string
   updatedAt: string
   _count: { objectives: number }
+}
+
+interface Review {
+  id: string
+  periodStart: string
+  periodEnd: string
+  periodType: string | null
+  title: string | null
+  createdAt: string
+  updatedAt: string
+  _count: { accomplishments: number }
 }
 
 export default function PerformanceReviewsListPage() {
   const pathname = usePathname()
   const router = useRouter()
   const [workMeId, setWorkMeId] = useState<string | null>(null)
-  const [plans, setPlans] = useState<PerformancePlan[]>([])
+  const [plans, setPlans] = useState<Plan[]>([])
+  const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
-  const [showNew, setShowNew] = useState(false)
+  const [showNew, setShowNew] = useState<'plan' | 'review' | null>(null)
   const [newPeriodStart, setNewPeriodStart] = useState('')
   const [newPeriodEnd, setNewPeriodEnd] = useState('')
   const [newPeriodType, setNewPeriodType] = useState<string>('')
@@ -39,18 +50,22 @@ export default function PerformanceReviewsListPage() {
         router.push('/signin')
       } else {
         setWorkMeId(id)
-        loadPlans()
+        loadAll()
       }
     }
   }, [router])
 
-  async function loadPlans() {
+  async function loadAll() {
     setLoading(true)
     try {
-      const res = await api.get('/api/performance-plans')
-      if (res.data.success) setPlans(res.data.performancePlans || [])
+      const [plansRes, reviewsRes] = await Promise.all([
+        api.get('/api/performance-plans'),
+        api.get('/api/performance-reviews'),
+      ])
+      if (plansRes.data.success) setPlans(plansRes.data.performancePlans || [])
+      if (reviewsRes.data.success) setReviews(reviewsRes.data.performanceReviews || [])
     } catch (e) {
-      console.error('Failed to load performance reviews:', e)
+      console.error('Failed to load plans/reviews:', e)
     }
     setLoading(false)
   }
@@ -58,23 +73,43 @@ export default function PerformanceReviewsListPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     if (!newPeriodStart || !newPeriodEnd) return
+    const kind = showNew
     setSubmitting(true)
     try {
-      await api.post('/api/performance-plans', {
-        periodStart: newPeriodStart,
-        periodEnd: newPeriodEnd,
-        periodType: newPeriodType === 'quarterly' || newPeriodType === 'mid-year' || newPeriodType === 'annual' ? newPeriodType : undefined,
-        title: newTitle.trim() || undefined,
-      })
-      setShowNew(false)
-      setNewPeriodStart('')
-      setNewPeriodEnd('')
-      setNewPeriodType('')
-      setNewTitle('')
-      loadPlans()
+      if (kind === 'plan') {
+        const res = await api.post('/api/performance-plans', {
+          periodStart: newPeriodStart,
+          periodEnd: newPeriodEnd,
+          periodType: newPeriodType === 'quarterly' || newPeriodType === 'mid-year' || newPeriodType === 'annual' ? newPeriodType : undefined,
+          title: newTitle.trim() || undefined,
+        })
+        const createdId = res?.data?.performancePlan?.id
+        setShowNew(null)
+        setNewPeriodStart('')
+        setNewPeriodEnd('')
+        setNewPeriodType('')
+        setNewTitle('')
+        loadAll()
+        if (createdId) router.push(`/career/performance-reviews/plans/${createdId}`)
+      } else {
+        const res = await api.post('/api/performance-reviews', {
+          periodStart: newPeriodStart,
+          periodEnd: newPeriodEnd,
+          periodType: newPeriodType === 'quarterly' || newPeriodType === 'mid-year' || newPeriodType === 'annual' ? newPeriodType : undefined,
+          title: newTitle.trim() || undefined,
+        })
+        const createdId = res?.data?.performanceReview?.id
+        setShowNew(null)
+        setNewPeriodStart('')
+        setNewPeriodEnd('')
+        setNewPeriodType('')
+        setNewTitle('')
+        loadAll()
+        if (createdId) router.push(`/career/performance-reviews/reviews/${createdId}`)
+      }
     } catch (err: unknown) {
       const msg = err && typeof err === 'object' && 'response' in err && (err as { response?: { data?: { error?: string } } }).response?.data?.error
-      alert(msg || 'Failed to create performance review')
+      alert(msg || 'Failed to create')
     }
     setSubmitting(false)
   }
@@ -147,22 +182,29 @@ export default function PerformanceReviewsListPage() {
         <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-gray-900">Performance reviews</h2>
-            <p className="text-gray-600 mt-2">Each cycle has a <strong>Plan</strong> (what was planned) and a <strong>Review</strong> (what I did). Create a cycle, then add your plan and review.</p>
+            <p className="text-gray-600 mt-2">Start a <strong>Plan</strong> (what you’ll do this period) or a <strong>Review</strong> (what you did). Each has a period; add objectives to the plan and a summary to the review.</p>
           </div>
 
-          <div className="mb-6">
+          <div className="mb-6 flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => setShowNew(true)}
+              onClick={() => setShowNew('plan')}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
             >
-              <Plus className="h-5 w-5 mr-2" /> New cycle
+              <ClipboardList className="h-5 w-5 mr-2" /> Start a plan
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowNew('review')}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            >
+              <FileText className="h-5 w-5 mr-2" /> Start a review
             </button>
           </div>
 
           {showNew && (
             <form onSubmit={handleCreate} className="mb-8 p-4 bg-white rounded-lg shadow border">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">New review cycle</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">{showNew === 'plan' ? 'New plan' : 'New review'}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Period start</label>
@@ -212,43 +254,83 @@ export default function PerformanceReviewsListPage() {
                 <button type="submit" disabled={submitting} className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
                   {submitting ? 'Creating…' : 'Create'}
                 </button>
-                <button type="button" onClick={() => { setShowNew(false); setNewPeriodStart(''); setNewPeriodEnd(''); setNewPeriodType(''); setNewTitle('') }} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md text-sm font-medium hover:bg-gray-300">
+                <button type="button" onClick={() => { setShowNew(null); setNewPeriodStart(''); setNewPeriodEnd(''); setNewPeriodType(''); setNewTitle('') }} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md text-sm font-medium hover:bg-gray-300">
                   Cancel
                 </button>
               </div>
             </form>
           )}
 
-          {plans.length === 0 && !showNew ? (
+          {plans.length === 0 && reviews.length === 0 && !showNew ? (
             <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
               <Calendar className="mx-auto h-12 w-12 text-gray-300 mb-2" />
-              <p>No cycles yet. Create one, then add your Plan and Review.</p>
+              <p>No plans or reviews yet. Start a plan or start a review above.</p>
             </div>
           ) : (
-            <ul className="space-y-3">
-              {plans.map(p => (
-                <li key={p.id}>
-                  <Link
-                    href={`/career/performance-reviews/${p.id}`}
-                    className="block bg-white rounded-lg shadow border p-4 hover:border-blue-400 transition"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{p.title || `${new Date(p.periodStart).toLocaleDateString()} – ${new Date(p.periodEnd).toLocaleDateString()}`}</h3>
-                        {(p.title || p.periodType) && (
-                          <p className="text-sm text-gray-500 mt-1">
-                            {p.title && `${new Date(p.periodStart).toLocaleDateString()} – ${new Date(p.periodEnd).toLocaleDateString()}`}
-                            {p.title && p.periodType && ' · '}
-                            {p.periodType && p.periodType}
-                          </p>
-                        )}
-                      </div>
-                      <span className="text-sm text-gray-500">{p._count.objectives} in plan</span>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <div className="space-y-8">
+              {plans.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <ClipboardList className="h-5 w-5" /> Plans
+                  </h3>
+                  <ul className="space-y-3">
+                    {plans.map(p => (
+                      <li key={p.id}>
+                        <Link
+                          href={`/career/performance-reviews/plans/${p.id}`}
+                          className="block bg-white rounded-lg shadow border p-4 hover:border-blue-400 transition"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-semibold text-gray-900">{p.title || `${new Date(p.periodStart).toLocaleDateString()} – ${new Date(p.periodEnd).toLocaleDateString()}`}</h3>
+                              {(p.title || p.periodType) && (
+                                <p className="text-sm text-gray-500 mt-1">
+                                  {p.title && `${new Date(p.periodStart).toLocaleDateString()} – ${new Date(p.periodEnd).toLocaleDateString()}`}
+                                  {p.title && p.periodType && ' · '}
+                                  {p.periodType && p.periodType}
+                                </p>
+                              )}
+                            </div>
+                            <span className="text-sm text-gray-500">{p._count.objectives} objectives</span>
+                          </div>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {reviews.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <FileText className="h-5 w-5" /> Reviews
+                  </h3>
+                  <ul className="space-y-3">
+                    {reviews.map(r => (
+                      <li key={r.id}>
+                        <Link
+                          href={`/career/performance-reviews/reviews/${r.id}`}
+                          className="block bg-white rounded-lg shadow border p-4 hover:border-blue-400 transition"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-semibold text-gray-900">{r.title || `${new Date(r.periodStart).toLocaleDateString()} – ${new Date(r.periodEnd).toLocaleDateString()}`}</h3>
+                              {(r.title || r.periodType) && (
+                                <p className="text-sm text-gray-500 mt-1">
+                                  {r.title && `${new Date(r.periodStart).toLocaleDateString()} – ${new Date(r.periodEnd).toLocaleDateString()}`}
+                                  {r.title && r.periodType && ' · '}
+                                  {r.periodType && r.periodType}
+                                </p>
+                              )}
+                            </div>
+                            <span className="text-sm text-gray-500">{r._count.accomplishments} accomplishments</span>
+                          </div>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           )}
         </main>
       </div>

@@ -100,25 +100,26 @@ export default function AddWorkforceStuffPage() {
   async function resolveCompanyId(): Promise<string | null> {
     if (typeof window === 'undefined') return null
 
+    // Get companyId from localStorage (set from /api/workme/me)
     const directCompanyId = localStorage.getItem('companyId')
     const storedWorkMe = getWorkMe()
     const workMeCompanyId = storedWorkMe?.companyId
-    const legacyCompanyUnit = localStorage.getItem('companyUnit')
-    const companyIdValue = directCompanyId || workMeCompanyId || legacyCompanyUnit
+    const companyIdValue = directCompanyId || workMeCompanyId
 
     if (companyIdValue) {
-      if (!directCompanyId) {
-        localStorage.setItem('companyId', companyIdValue)
+      if (!directCompanyId && workMeCompanyId) {
+        // Sync to direct localStorage key for consistency
+        localStorage.setItem('companyId', workMeCompanyId)
       }
       return companyIdValue
     }
 
+    // Fallback: fetch from API if not in localStorage
     try {
       const response = await api.get('/api/workme/me')
       if (response.data.success && response.data.workMe?.companyId) {
         const id = response.data.workMe.companyId
         localStorage.setItem('companyId', id)
-        localStorage.setItem('companyUnit', id)
         return id
       }
     } catch (err) {

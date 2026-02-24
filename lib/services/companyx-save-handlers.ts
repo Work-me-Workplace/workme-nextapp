@@ -152,6 +152,7 @@ export async function saveEvent(context: SaveHandlerContext): Promise<SaveHandle
       foodProvided: data.foodProvided,
       foodTypes: data.foodTypes,
       speakers: data.speakers || [],
+      intendedEffect: data.intendedEffect ?? undefined,
       pocEmail: data.pocEmail,
       pocPhone: data.pocPhone,
       summary: data.description || data.theme || data.title || null,

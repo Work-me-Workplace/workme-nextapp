@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update ALL real training fields
-    // DO NOT overwrite ingest fields
+    // DO NOT overwrite ingest fields, companyId, or workMeId
     const updated = await prisma.companyTraining.update({
       where: { id: data.trainingId },
       data: {
@@ -115,7 +115,13 @@ export async function POST(request: NextRequest) {
         // Status
         ingestStatus: 'saved',
 
-        // ingestRawText, ingestType, ingestCreatedAt remain unchanged
+        // Preserve critical fields: ingestRawText, ingestType, ingestCreatedAt, companyId, workMeId
+        // These are set during creation and should never be overwritten during save
+        companyId: existing.companyId,
+        workMeId: existing.workMeId,
+        ingestRawText: existing.ingestRawText,
+        ingestType: existing.ingestType,
+        ingestCreatedAt: existing.ingestCreatedAt,
       },
     })
 

@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react'
 import TopNav from '@/components/layout/TopNav'
+import SidebarNav from '@/components/mywork/SidebarNav'
 
 /**
  * Authenticated Route Group Layout
@@ -12,10 +13,15 @@ import TopNav from '@/components/layout/TopNav'
  */
 export default function AuthenticatedLayout({ children }: { children: ReactNode }) {
   return (
-    <>
+    <div className="min-h-screen bg-gray-50">
       <TopNav />
-      {children}
-    </>
+      <div className="flex">
+        <SidebarNav />
+        <main className="flex-1 p-6">
+          {children}
+        </main>
+      </div>
+    </div>
   )
 }
 

@@ -690,6 +690,9 @@ model CompanyEvent {
   pocEmail String?
   pocPhone String?
 
+  // Workforce outcome (events are workforce-wide: what should they walk away with?)
+  intendedEffect String?
+
   // Ingestion
   ingestRawText String?
   summary       String?

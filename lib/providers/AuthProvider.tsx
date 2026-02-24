@@ -101,11 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('workMeId', newSession.workMeId || '')
         localStorage.setItem('firebaseId', newSession.firebaseId || '')
         localStorage.setItem('email', newSession.email || '')
-        if (newSession.companyUnit) {
-          localStorage.setItem('companyUnit', newSession.companyUnit)
-          // Dispatch custom event for same-tab updates
-          window.dispatchEvent(new Event('companyUnitUpdated'))
-        }
+        // companyUnit removed - use companyId only
         if (newSession.companyDivision) {
           localStorage.setItem('companyDivision', newSession.companyDivision)
         }
@@ -147,8 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.removeItem('workMeId')
           localStorage.removeItem('firebaseId')
           localStorage.removeItem('email')
-          localStorage.removeItem('companyUnit')
-          localStorage.removeItem('companyDivision')
+          // companyUnit and companyDivision removed - use companyId only
           localStorage.removeItem('firebaseToken')
         }
       } else {
@@ -189,8 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('workMeId')
       localStorage.removeItem('firebaseId')
       localStorage.removeItem('email')
-      localStorage.removeItem('companyUnit')
-      localStorage.removeItem('companyDivision')
+      // companyUnit and companyDivision removed - use companyId only
       localStorage.removeItem('firebaseToken')
     }
   }, [])

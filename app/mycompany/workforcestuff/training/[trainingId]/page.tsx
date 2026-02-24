@@ -62,7 +62,28 @@ export default function TrainingDetailPage() {
   async function loadTraining() {
     try {
       setLoading(true)
-      const response = await api.get(`/api/workforcestuff/training/${trainingId}`)
+      
+      // Get workMeId and companyId from localStorage - no helpers, just localStorage
+      const workMeId = typeof window !== 'undefined' 
+        ? localStorage.getItem('workMeId') || null
+        : null
+      const companyId = typeof window !== 'undefined' 
+        ? localStorage.getItem('companyId') || null
+        : null
+      
+      if (!workMeId) {
+        console.error('workMeId not found in localStorage')
+        return
+      }
+      
+      // Pass both as query params - simple, done
+      const params = new URLSearchParams({ workMeId })
+      if (companyId) {
+        params.append('companyId', companyId)
+      }
+      const url = `/api/workforcestuff/training/${trainingId}?${params.toString()}`
+      
+      const response = await api.get(url)
       
       if (response.data.success && response.data.training) {
         setTraining(response.data.training)

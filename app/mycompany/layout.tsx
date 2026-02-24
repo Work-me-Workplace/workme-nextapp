@@ -20,7 +20,7 @@ function MyCompanyLayoutContent({ children }: { children: React.ReactNode }) {
     
     if (!urlCompanyId) {
       // No companyId in URL - check localStorage and redirect if found
-      const storedCompanyId = localStorage.getItem('companyId') || localStorage.getItem('companyUnit')
+      const storedCompanyId = localStorage.getItem('companyId')
       if (storedCompanyId) {
         const newUrl = `${pathname}?companyId=${encodeURIComponent(storedCompanyId)}`
         router.replace(newUrl)
@@ -29,7 +29,6 @@ function MyCompanyLayoutContent({ children }: { children: React.ReactNode }) {
     } else {
       // companyId in URL - sync to localStorage
       localStorage.setItem('companyId', urlCompanyId)
-      localStorage.setItem('companyUnit', urlCompanyId)
     }
   }, [router, pathname, searchParams])
 

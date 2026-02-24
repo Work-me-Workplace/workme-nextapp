@@ -47,7 +47,7 @@ export default function WorkforceStuffPage() {
   const [loading, setLoading] = useState(true)
   const [authReady, setAuthReady] = useState(false)
   const [filterCategory, setFilterCategory] = useState<string>('all')
-  const [filterStatus, setFilterStatus] = useState<'active' | 'archived' | 'all'>('active')
+  const [filterTimeHorizon, setFilterTimeHorizon] = useState<'all' | 'now' | '7d' | '14d'>('now')
   const [archiving, setArchiving] = useState<Set<string>>(new Set())
   const [deleting, setDeleting] = useState<Set<string>>(new Set())
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null)
@@ -66,7 +66,7 @@ export default function WorkforceStuffPage() {
           return
         }
         setWorkMeId(id)
-        const companyIdFromStorage = localStorage.getItem('companyId') || localStorage.getItem('companyUnit')
+        const companyIdFromStorage = localStorage.getItem('companyId')
         if (companyIdFromStorage) {
           setCompanyId(companyIdFromStorage)
         } else {
@@ -288,15 +288,48 @@ export default function WorkforceStuffPage() {
     { value: 'announcement', label: 'Announcements' },
   ]
 
+  const timeHorizonOptions = [
+    { value: 'now', label: 'Happening now' },
+    { value: '7d', label: 'Next 7 days' },
+    { value: '14d', label: 'Next 14 days' },
+    { value: 'all', label: 'All' },
+  ]
+
+  /** Bucket item by time horizon using start/end dates. */
+  function getTimeHorizon(item: WorkforceStuffItem): 'now' | '7d' | '14d' | 'past' {
+    const now = new Date()
+    const start = item.startDate ? new Date(item.startDate) : null
+    const end = item.endDate ? new Date(item.endDate) : null
+    if (!start) return 'past'
+    const endOrStart = end ?? start
+    if (endOrStart < now) return 'past'
+    if (start <= now) return 'now'
+    const ms7 = 7 * 24 * 60 * 60 * 1000
+    const ms14 = 14 * 24 * 60 * 60 * 1000
+    if (start.getTime() - now.getTime() <= ms7) return '7d'
+    if (start.getTime() - now.getTime() <= ms14) return '14d'
+    return 'past'
+  }
+
   const filteredItems = items.filter(item => {
     const categoryMatch = filterCategory === 'all' || item.type === filterCategory
-    const statusMatch = filterStatus === 'all' || item.status === filterStatus
-    return categoryMatch && statusMatch
+    const horizon = getTimeHorizon(item)
+    const horizonMatch =
+      filterTimeHorizon === 'all' ||
+      (filterTimeHorizon === 'now' && horizon === 'now') ||
+      (filterTimeHorizon === '7d' && (horizon === 'now' || horizon === '7d')) ||
+      (filterTimeHorizon === '14d' && (horizon === 'now' || horizon === '7d' || horizon === '14d'))
+    return categoryMatch && horizonMatch
   })
 
-  // MVP1: Use explicit status only (no date-based active/archived derivation)
-  const activeItems = filteredItems.filter(item => item.status !== 'archived')
-  const archivedItems = filteredItems.filter(item => item.status === 'archived')
+  const horizonSectionLabel =
+    filterTimeHorizon === 'all'
+      ? 'All items'
+      : filterTimeHorizon === 'now'
+        ? 'Happening now'
+        : filterTimeHorizon === '7d'
+          ? 'Next 7 days'
+          : 'Next 14 days'
 
   // Show loading spinner while auth is initializing or companyId is being loaded
   if (!authReady || !workMeId) {
@@ -394,30 +427,29 @@ export default function WorkforceStuffPage() {
                   ))}
                 </select>
                 <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value as 'active' | 'archived' | 'all')}
+                  value={filterTimeHorizon}
+                  onChange={(e) => setFilterTimeHorizon(e.target.value as 'all' | 'now' | '7d' | '14d')}
                   className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="active">Active Now</option>
-                  <option value="archived">Archived</option>
-                  <option value="all">All</option>
+                  {timeHorizonOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
                 </select>
               </div>
             </div>
 
-            {/* Active Now Section */}
-            {filterStatus === 'active' || filterStatus === 'all' ? (
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                    <Clock className="h-5 w-5 text-green-600 mr-2" />
-                    Active Now
-                  </h2>
-                  <span className="text-sm text-gray-500">{activeItems.length} items</span>
-                </div>
-                {activeItems.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {activeItems.map(item => {
+            {/* Time horizon section */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                  <Clock className="h-5 w-5 text-green-600 mr-2" />
+                  {horizonSectionLabel}
+                </h2>
+                <span className="text-sm text-gray-500">{filteredItems.length} items</span>
+              </div>
+              {filteredItems.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredItems.map(item => {
                       // Determine the correct detail page route
                       return (
                         <div
@@ -548,122 +580,15 @@ export default function WorkforceStuffPage() {
                       )
                     })}
                   </div>
-                ) : (
-                  <div className="bg-white rounded-lg shadow p-12 text-center">
-                    <CheckCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    <p className="text-gray-500">No active workforce items</p>
-                  </div>
-                )}
-              </div>
-            ) : null}
-
-            {/* Archived Section */}
-            {(filterStatus === 'archived' || filterStatus === 'all') && archivedItems.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                    <Archive className="h-5 w-5 text-gray-400 mr-2" />
-                    Archived
-                  </h2>
-                  <span className="text-sm text-gray-500">{archivedItems.length} items</span>
+              ) : (
+                <div className="bg-white rounded-lg shadow p-12 text-center">
+                  <CheckCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <p className="text-gray-500">
+                    {filterTimeHorizon === 'all' ? 'No workforce items' : `No items ${horizonSectionLabel.toLowerCase()}`}
+                  </p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {archivedItems.map(item => {
-                    return (
-                      <div
-                        key={item.id}
-                        className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition border-l-4 border-gray-300 opacity-75 relative group cursor-pointer"
-                        onClick={() => openDetail(item)}
-                      >
-                          <div className="flex items-start justify-between mb-2">
-                          <span className="text-xs font-medium text-gray-500 uppercase bg-gray-100 text-gray-800 px-2 py-1 rounded">
-                            {item.type}
-                          </span>
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
-                        <p className="text-sm text-gray-600 mb-4 line-clamp-2">{item.summary}</p>
-                        {item.startDate && (
-                          <div className="flex items-center text-xs text-gray-500">
-                            <Calendar className="h-4 w-4 mr-1" />
-                            {new Date(item.startDate).toLocaleDateString()}
-                            </div>
-                          )}
-                        {/* Action buttons for archived items */}
-                        <div className="absolute top-4 right-4 opacity-100 transition-opacity" data-action-menu>
-                          <div className="relative">
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault()
-                                e.stopPropagation()
-                                setActionMenuOpen(actionMenuOpen === item.id ? null : item.id)
-                              }}
-                              className="p-2 bg-white hover:bg-gray-100 rounded-full transition shadow-sm border border-gray-200"
-                              title="Actions"
-                              data-action-menu
-                            >
-                              <MoreVertical className="h-4 w-4 text-gray-600" />
-                            </button>
-                            
-                            {actionMenuOpen === item.id && (
-                              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10" data-action-menu>
-                                <Link
-                                  href={`/mycompany/workforcestuff/${item.id}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setActionMenuOpen(null)
-                                  }}
-                                  className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2"
-                                >
-                                  <Package className="h-4 w-4" />
-                                  Create products from this
-                                </Link>
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    handleEdit(item)
-                                    setActionMenuOpen(null)
-                                  }}
-                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    handleArchive(item.id, item.type, false)
-                                    setActionMenuOpen(null)
-                                  }}
-                                  disabled={archiving.has(item.id)}
-                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50"
-                                >
-                                  <ArchiveRestore className="h-4 w-4" />
-                                  {archiving.has(item.id) ? 'Unarchiving...' : 'Unarchive'}
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    handleDelete(item.id, item.type)
-                                  }}
-                                  disabled={deleting.has(item.id)}
-                                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                  {deleting.has(item.id) ? 'Deleting...' : 'Delete'}
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Empty State - only show when not loading and truly no items */}
             {!loading && filteredItems.length === 0 && items.length === 0 && (

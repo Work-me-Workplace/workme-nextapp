@@ -110,7 +110,6 @@ export default function WelcomePage() {
       if (workMeCompanyId) {
         // Ensure it's saved to localStorage for easy access
         localStorage.setItem('companyId', workMeCompanyId)
-        localStorage.setItem('companyUnit', workMeCompanyId)
         // Go straight to dashboard - company scoped via firebaseid
         router.push('/dashboard')
         return

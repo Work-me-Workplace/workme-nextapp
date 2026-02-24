@@ -83,21 +83,16 @@ export async function refreshWorkMe(): Promise<WorkMe | null> {
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(workMe))
       
-      // Also store companyId separately for easy access (backward compat and convenience)
+      // Store companyId separately for easy access
       if (workMe.companyId) {
         localStorage.setItem('companyId', workMe.companyId)
-        // Also set as companyUnit for backward compatibility (use companyUnit if exists, otherwise companyId)
-        const companyUnitValue = workMe.companyUnit || workMe.companyId
-        localStorage.setItem('companyUnit', companyUnitValue)
       } else {
         // Clear companyId if it was removed
         localStorage.removeItem('companyId')
-        // Also clear companyUnit if it was the same as companyId
-        const storedUnit = localStorage.getItem('companyUnit')
-        if (storedUnit && !workMe.companyUnit) {
-          localStorage.removeItem('companyUnit')
-        }
       }
+      
+      // Clean up legacy companyUnit from localStorage (no longer used)
+      localStorage.removeItem('companyUnit')
     }
 
     return workMe

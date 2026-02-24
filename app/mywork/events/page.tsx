@@ -19,13 +19,14 @@ export default function EventsLandingPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const id = getWorkMeIdFromStorage()
-      const storedCompanyUnit = localStorage.getItem('companyUnit')
+      // Get companyId from localStorage (companyUnit removed)
+      const storedCompanyId = localStorage.getItem('companyId')
       if (!id) {
         router.push('/signin')
       } else {
         setWorkMeId(id)
-        if (storedCompanyUnit) {
-          setCompanyUnit(storedCompanyUnit)
+        if (storedCompanyId) {
+          setCompanyUnit(storedCompanyId) // Keep using setCompanyUnit for now if component needs it
         }
       }
     }

@@ -4,7 +4,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
-import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
@@ -14,22 +13,33 @@ export async function GET(
   { params }: { params: Promise<{ trainingId: string }> }
 ) {
   try {
-    const { firebaseId } = await verifyAuth(request)
-    const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyId } = workMe
+    // Auth: Just verify Firebase token
+    await verifyAuth(request)
+    
+    const { trainingId } = await params
+    const url = new URL(request.url)
+    
+    // Get workMeId and companyId from query params (from localStorage)
+    // No helpers - just localStorage, done
+    const workMeId = url.searchParams.get('workMeId')
+    const companyId = url.searchParams.get('companyId')
 
-    if (!workMeId || !companyId) {
+    if (!workMeId) {
       return NextResponse.json(
-        { success: false, error: 'Not authenticated or companyId not set' },
-        { status: 401 }
+        { success: false, error: 'workMeId is required' },
+        { status: 400 }
       )
     }
-    const { trainingId } = await params
 
+    // Query training: owner (workMeId) OR same company (companyId)
+    // workMeId is always reliable, companyId helps with multi-tenant security
     const training = await prisma.companyTraining.findFirst({
       where: {
         id: trainingId,
-        companyId, // Multi-tenant security
+        OR: [
+          { workMeId: workMeId }, // Owner can always access
+          ...(companyId ? [{ companyId: companyId }] : []), // Same company
+        ],
       },
     })
 
@@ -67,26 +77,38 @@ export async function PUT(
   { params }: { params: Promise<{ trainingId: string }> }
 ) {
   try {
-    const { firebaseId } = await verifyAuth(request)
-    const workMe = await loadWorkMe(firebaseId)
-    const { id: workMeId, companyId } = workMe
-
-    if (!workMeId || !companyId) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated or companyId not set' },
-        { status: 401 }
-      )
-    }
-
+    // Auth: Just verify Firebase token
+    await verifyAuth(request)
+    
     const { trainingId } = await params
     const body = await request.json()
     const { data } = body
+    const url = new URL(request.url)
+    
+    // Get workMeId and companyId from query params (from localStorage)
+    const workMeId = url.searchParams.get('workMeId')
+    const companyId = url.searchParams.get('companyId')
+
+    if (!workMeId) {
+      return NextResponse.json(
+        { success: false, error: 'workMeId is required' },
+        { status: 400 }
+      )
+    }
+
+    // Query training: owner (workMeId) OR same company (companyId)
+    const whereClause: any = {
+      id: trainingId,
+      workMeId: workMeId, // Owner can always access
+    }
+
+    // If companyId is provided, also check it matches
+    if (companyId) {
+      whereClause.companyId = companyId
+    }
 
     const existing = await prisma.companyTraining.findFirst({
-      where: {
-        id: trainingId,
-        companyId,
-      },
+      where: whereClause,
     })
 
     if (!existing) {
