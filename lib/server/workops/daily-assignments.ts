@@ -189,3 +189,62 @@ export async function getUnassignedItems(outlookId: string) {
 
   return unassignedItems
 }
+
+/**
+ * Get all items that are uncompleted and were assigned to any day before the given date.
+ * Used to "hydrate" today with work that wasn't done on past days.
+ * Optionally exclude items that are already assigned to excludeOnDay (e.g. selected date).
+ */
+export async function getUncompletedFromAllPreviousDays(
+  outlookId: string,
+  beforeDate: Date,
+  excludeOnDay?: Date
+) {
+  const startOfBefore = new Date(beforeDate)
+  startOfBefore.setHours(0, 0, 0, 0)
+
+  const assignments = await prisma.workOpsDailyAssignment.findMany({
+    where: {
+      outlookId,
+      day: { lt: startOfBefore },
+      item: {
+        status: { not: 'done' },
+      },
+    },
+    include: {
+      item: true,
+    },
+    orderBy: [
+      { day: 'desc' },
+      { createdAt: 'asc' },
+    ],
+  })
+
+  // Dedupe by item id (keep first = most recent assignment day)
+  const byItemId = new Map<string, (typeof assignments)[0]>()
+  for (const a of assignments) {
+    if (!byItemId.has(a.itemId)) {
+      byItemId.set(a.itemId, a)
+    }
+  }
+
+  let results = Array.from(byItemId.values()).map((a) => ({
+    item: a.item,
+    lastAssignedDay: a.day,
+  }))
+
+  // Exclude items already assigned on the selected day
+  if (excludeOnDay) {
+    const startExclude = new Date(excludeOnDay)
+    startExclude.setHours(0, 0, 0, 0)
+    const endExclude = new Date(excludeOnDay)
+    endExclude.setHours(23, 59, 59, 999)
+    const onThatDay = await prisma.workOpsDailyAssignment.findMany({
+      where: { outlookId, day: { gte: startExclude, lte: endExclude } },
+      select: { itemId: true },
+    })
+    const idsOnDay = new Set(onThatDay.map((a) => a.itemId))
+    results = results.filter((r) => !idsOnDay.has(r.item.id))
+  }
+
+  return results

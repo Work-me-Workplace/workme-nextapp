@@ -21,6 +21,7 @@ import {
   Pencil,
   CalendarClock,
   Loader2,
+  Layers,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { WorkOpsStatus, WorkOpsItemType, WorkOpsUrgency } from '@prisma/client'
@@ -58,6 +59,9 @@ interface WorkOpsItem {
   updatedAt: string
 }
 
+/** WorkOpsItem plus optional last day it was assigned (for "from all previous days") */
+type WorkOpsItemWithLastDay = WorkOpsItem & { lastAssignedDay?: string }
+
 interface DailyAssignment {
   id: string
   itemId: string
@@ -80,6 +84,8 @@ export default function DailyOutlookPage() {
   const [showUnassigned, setShowUnassigned] = useState(false)
   const [showFromPreviousDay, setShowFromPreviousDay] = useState(false)
   const [previousDayAssignments, setPreviousDayAssignments] = useState<DailyAssignment[]>([])
+  const [showUncompletedFromPast, setShowUncompletedFromPast] = useState(false)
+  const [uncompletedFromPastItems, setUncompletedFromPastItems] = useState<WorkOpsItemWithLastDay[]>([])
   const [editItem, setEditItem] = useState<WorkOpsItem | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editBody, setEditBody] = useState('')
@@ -90,6 +96,7 @@ export default function DailyOutlookPage() {
   const [quickAddLoading, setQuickAddLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [bringAllForwardLoading, setBringAllForwardLoading] = useState(false)
+  const [bringAllUncompletedForwardLoading, setBringAllUncompletedForwardLoading] = useState(false)
 
   const clearError = () => setErrorMessage(null)
   const getApiError = (err: any) =>
@@ -129,6 +136,12 @@ export default function DailyOutlookPage() {
       loadPreviousDayAssignments()
     }
   }, [outlookId, selectedDate, showFromPreviousDay])
+
+  useEffect(() => {
+    if (outlookId && selectedDate && showUncompletedFromPast) {
+      loadUncompletedFromPast()
+    }
+  }, [outlookId, selectedDate, showUncompletedFromPast])
 
   async function loadOutlook(workMeId: string) {
     try {
@@ -194,6 +207,22 @@ export default function DailyOutlookPage() {
     }
   }
 
+  async function loadUncompletedFromPast() {
+    if (!outlookId || !selectedDate) return
+    const beforeStr = selectedDate.toISOString().split('T')[0]
+    try {
+      const response = await api.get(
+        `/api/workops/daily-assignments?uncompletedPast=true&before=${beforeStr}`
+      )
+      if (response.data.success) {
+        setUncompletedFromPastItems(response.data.items || [])
+      }
+    } catch (error: any) {
+      console.error('Failed to load uncompleted from past:', error)
+      setErrorMessage(getApiError(error))
+    }
+  }
+
   const handleAssignItem = async (itemId: string) => {
     if (!outlookId) return
     clearError()
@@ -205,6 +234,7 @@ export default function DailyOutlookPage() {
       })
       await loadDailyAssignments()
       await loadUnassignedItems()
+      if (showUncompletedFromPast) await loadUncompletedFromPast()
     } catch (error: any) {
       console.error('Failed to assign item:', error)
       setErrorMessage(getApiError(error))
@@ -231,6 +261,7 @@ export default function DailyOutlookPage() {
       await loadDailyAssignments()
       await loadUnassignedItems()
       await loadPreviousDayAssignments()
+      if (showUncompletedFromPast) await loadUncompletedFromPast()
       if (failed.length > 0) {
         setErrorMessage(`Assigned most tasks. Failed for: ${failed.slice(0, 3).join(', ')}${failed.length > 3 ? ` and ${failed.length - 3} more` : ''}.`)
       }
@@ -239,6 +270,37 @@ export default function DailyOutlookPage() {
       setErrorMessage(getApiError(error))
     } finally {
       setBringAllForwardLoading(false)
+    }
+  }
+
+  const handleBringAllUncompletedForward = async () => {
+    if (!outlookId || uncompletedFromPastItems.length === 0) return
+    clearError()
+    setBringAllUncompletedForwardLoading(true)
+    const dayStr = selectedDate.toISOString()
+    const failed: string[] = []
+    try {
+      for (const item of uncompletedFromPastItems) {
+        try {
+          await api.post('/api/workops/daily-assignments', {
+            itemId: item.id,
+            day: dayStr,
+          })
+        } catch (_) {
+          failed.push(item.title)
+        }
+      }
+      await loadDailyAssignments()
+      await loadUnassignedItems()
+      await loadUncompletedFromPast()
+      if (failed.length > 0) {
+        setErrorMessage(`Assigned most. Failed for: ${failed.slice(0, 3).join(', ')}${failed.length > 3 ? ` and ${failed.length - 3} more` : ''}.`)
+      }
+    } catch (error: any) {
+      console.error('Bring all uncompleted forward failed:', error)
+      setErrorMessage(getApiError(error))
+    } finally {
+      setBringAllUncompletedForwardLoading(false)
     }
   }
 
@@ -507,7 +569,100 @@ export default function DailyOutlookPage() {
               <CalendarClock className="h-5 w-5 mr-2" />
               {showFromPreviousDay ? 'Hide from previous day' : 'From previous day'}
             </button>
+            <button
+              onClick={() => {
+                setShowUncompletedFromPast(!showUncompletedFromPast)
+                if (!showUncompletedFromPast) loadUncompletedFromPast()
+              }}
+              className="flex items-center px-4 py-2 bg-amber-50 text-amber-800 border border-amber-200 rounded-lg font-medium hover:bg-amber-100 transition"
+            >
+              <Layers className="h-5 w-5 mr-2" />
+              {showUncompletedFromPast ? 'Hide uncompleted work' : 'From all previous days'}
+            </button>
           </div>
+
+          {/* Uncompleted from all previous days — hydrate today with past incomplete work */}
+          {showUncompletedFromPast && (
+            <div className="bg-white rounded-lg shadow-sm border border-amber-200 p-6 mb-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    From all previous days ({uncompletedFromPastItems.length})
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    Uncompleted tasks from any past day — add to {isToday(selectedDate) ? 'today' : 'this day'} or bring all forward
+                  </p>
+                </div>
+                {uncompletedFromPastItems.length > 0 && (
+                  <button
+                    onClick={handleBringAllUncompletedForward}
+                    disabled={bringAllUncompletedForwardLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {bringAllUncompletedForwardLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Bringing forward…
+                      </>
+                    ) : (
+                      'Bring all forward'
+                    )}
+                  </button>
+                )}
+              </div>
+              {uncompletedFromPastItems.length > 0 ? (
+                <div className="space-y-2">
+                  {uncompletedFromPastItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-3 bg-amber-50/50 rounded-lg hover:bg-amber-50 transition border border-amber-100"
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        {getStatusIcon(item.status)}
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{item.title}</h4>
+                          {item.body && (
+                            <p className="text-sm text-gray-600 mt-1">{item.body}</p>
+                          )}
+                          {item.lastAssignedDay && (
+                            <p className="text-xs text-amber-700 mt-1">
+                              Last scheduled: {new Date(item.lastAssignedDay + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                            </p>
+                          )}
+                        </div>
+                        {item.urgency && (
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded ${getUrgencyColor(
+                              item.urgency
+                            )}`}
+                          >
+                            {item.urgency}
+                          </span>
+                        )}
+                      </div>
+                      <div className="ml-4 flex items-center gap-2">
+                        <button
+                          onClick={() => openEdit(item)}
+                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition"
+                          aria-label="Edit task"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleAssignItem(item.id)}
+                          className="px-3 py-1.5 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 transition"
+                        >
+                          Add to Day
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No uncompleted work from previous days.</p>
+              )}
+            </div>
+          )}
 
           {/* From previous day — carry over tasks */}
           {showFromPreviousDay && (
@@ -721,7 +876,7 @@ export default function DailyOutlookPage() {
                   No tasks assigned
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  Add a task (manual or AI), pull from unassigned backlog, or carry over from yesterday.
+                  Add a task (manual or AI), pull from backlog, carry over from yesterday, or hydrate from all uncompleted past work.
                 </p>
                 <div className="flex items-center justify-center gap-3 flex-wrap">
                   <button
@@ -744,6 +899,15 @@ export default function DailyOutlookPage() {
                     className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
                   >
                     From previous day
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowUncompletedFromPast(true)
+                      loadUncompletedFromPast()
+                    }}
+                    className="px-4 py-2 bg-amber-50 text-amber-800 border border-amber-200 rounded-lg font-medium hover:bg-amber-100 transition"
+                  >
+                    From all previous days
                   </button>
                 </div>
               </div>

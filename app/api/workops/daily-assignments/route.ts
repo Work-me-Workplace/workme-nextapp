@@ -5,6 +5,7 @@ import {
   getDailyAssignments,
   createDailyAssignment,
   getUnassignedItems,
+  getUncompletedFromAllPreviousDays,
 } from '@/lib/server/workops/daily-assignments'
 import { getOrCreateOutlook } from '@/lib/server/workops/outlook'
 import { z } from 'zod'
@@ -36,6 +37,8 @@ export async function GET(request: NextRequest) {
     const dayParam = searchParams.get('day')
     const outlookIdParam = searchParams.get('outlookId')
     const unassignedParam = searchParams.get('unassigned')
+    const uncompletedPastParam = searchParams.get('uncompletedPast')
+    const beforeParam = searchParams.get('before')
 
     // 3. Get or create outlook
     const outlook = await getOrCreateOutlook(workMeId)
@@ -46,6 +49,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         items: unassignedItems,
+      })
+    }
+
+    // Uncompleted work from all previous days (hydrate today from past)
+    if (uncompletedPastParam === 'true') {
+      const before = beforeParam ? new Date(beforeParam) : new Date()
+      if (isNaN(before.getTime())) {
+        return NextResponse.json(
+          { error: 'Invalid before date format' },
+          { status: 400 }
+        )
+      }
+      // Exclude items already assigned on the selected day (before = selected date)
+      const entries = await getUncompletedFromAllPreviousDays(outlook.id, before, before)
+      return NextResponse.json({
+        success: true,
+        items: entries.map((e) => ({
+          ...e.item,
+          lastAssignedDay: e.lastAssignedDay.toISOString().split('T')[0],
+        })),
       })
     }
 
