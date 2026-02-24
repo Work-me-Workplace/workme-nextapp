@@ -38,101 +38,52 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    // Get workMeId from query params too (for owner access)
-    const workMeId = url.searchParams.get('workMeId')
     
-    // Fetch all CompanyX models scoped by companyId OR workMeId (owner access)
-    // CompanyEvent: include legacy records where companyId is null but workMe.companyId matches
+    // Fetch all CompanyX models scoped by companyId only (always company-scoped)
     const [trainings, events, campaigns, impactEvents, community, benefits, careers, employeeCauses, leaderEngagements] = await Promise.all([
-      // CompanyTraining - query by companyId OR workMeId (owner)
+      // CompanyTraining - always companyId scoped
       prisma.companyTraining.findMany({
-        where: {
-          OR: [
-            { companyId },
-            ...(workMeId ? [{ workMeId }] : []),
-          ],
-        },
+        where: { companyId },
         orderBy: { trainingDate: 'asc' },
       }),
-      // CompanyEvent - query by companyId OR workMeId (owner)
+      // CompanyEvent - always companyId scoped
       prisma.companyEvent.findMany({
-        where: {
-          OR: [
-            { companyId },
-            ...(workMeId ? [{ workMeId }] : []),
-          ],
-        },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
-      // CompanyCampaign - query by companyId OR workMeId (owner)
+      // CompanyCampaign - always companyId scoped
       prisma.companyCampaign.findMany({
-        where: {
-          OR: [
-            { companyId },
-            ...(workMeId ? [{ workMeId }] : []),
-          ],
-        },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
-      // CompanyImpactEvent - query by companyId OR workMeId (owner)
+      // CompanyImpactEvent - always companyId scoped
       prisma.companyImpactEvent.findMany({
-        where: {
-          OR: [
-            { companyId },
-            ...(workMeId ? [{ workMeId }] : []),
-          ],
-        },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
-      // CompanyCommunity - query by companyId OR workMeId (owner)
+      // CompanyCommunity - always companyId scoped
       prisma.companyCommunity.findMany({
-        where: {
-          OR: [
-            { companyId },
-            ...(workMeId ? [{ workMeId }] : []),
-          ],
-        },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
-      // CompanyBenefits - query by companyId OR workMeId (owner)
+      // CompanyBenefits - always companyId scoped
       prisma.companyBenefits.findMany({
-        where: {
-          OR: [
-            { companyId },
-            ...(workMeId ? [{ workMeId }] : []),
-          ],
-        },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
-      // CompanyCareer - query by companyId OR workMeId (owner)
+      // CompanyCareer - always companyId scoped
       prisma.companyCareer.findMany({
-        where: {
-          OR: [
-            { companyId },
-            ...(workMeId ? [{ workMeId }] : []),
-          ],
-        },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
-      // CompanyEmployeeCause - query by companyId OR workMeId (owner)
+      // CompanyEmployeeCause - always companyId scoped
       prisma.companyEmployeeCause.findMany({
-        where: {
-          OR: [
-            { companyId },
-            ...(workMeId ? [{ workMeId }] : []),
-          ],
-        },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
-      // CompanyLeaderEngagement - query by companyId OR workMeId (owner)
+      // CompanyLeaderEngagement - always companyId scoped
       prisma.companyLeaderEngagement.findMany({
-        where: {
-          OR: [
-            { companyId },
-            ...(workMeId ? [{ workMeId }] : []),
-          ],
-        },
+        where: { companyId },
         orderBy: { createdAt: 'desc' },
       }),
     ])

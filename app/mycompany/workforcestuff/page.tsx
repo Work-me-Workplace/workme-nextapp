@@ -170,12 +170,8 @@ export default function WorkforceStuffPage() {
         setLoading(true)
       }
       
-      // Pass workMeId and companyId from localStorage as query params - no helpers, just localStorage
-      const params = new URLSearchParams({ companyId })
-      if (workMeId) {
-        params.append('workMeId', workMeId)
-      }
-      const response = await api.get(`/api/workforcestuff?${params.toString()}`)
+      // Always companyId scoped - simple and consistent
+      const response = await api.get(`/api/workforcestuff?companyId=${companyId}`)
       
       if (response.data.success && response.data.items) {
         setItems(response.data.items)
