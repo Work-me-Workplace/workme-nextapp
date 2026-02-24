@@ -7,6 +7,7 @@
 
 import OpenAI from 'openai'
 import { EventCategory, EventAudience } from '@prisma/client'
+import { fixDate, getCurrentYear } from './date-fix-utility'
 
 function getOpenAI() {
   if (!process.env.OPENAI_API_KEY) {
@@ -49,6 +50,7 @@ export async function parseEvent(rawText: string): Promise<EventModel> {
 
   const validCategories = Object.values(EventCategory).join(', ')
   const validAudiences = Object.values(EventAudience).join(', ')
+  const currentYear = getCurrentYear()
 
   const prompt = `Extract structured event information from this workforce communication text.
 
@@ -66,7 +68,7 @@ Return JSON with these exact fields:
   "title": "Event title or inferred title (or null)",
   "theme": "Event theme or inferred theme (or null)",
   "description": "Full or inferred description (never null if input describes the event)",
-  "eventDate": "ISO date string (YYYY-MM-DD) or null",
+  "eventDate": "ISO date string (YYYY-MM-DD). IMPORTANT: If date has no year (e.g., 'Feb. 25'), use current year (${currentYear}). If date is in the past relative to today, assume it's next occurrence. Or null",
   "startTime": "Time string in HH:MM format (e.g., '09:00') or null",
   "endTime": "Time string in HH:MM format (e.g., '10:30') or null",
   "location": "Event location/venue (or null)",
@@ -147,7 +149,7 @@ ${rawText.substring(0, 3000)}`
       title: parsed.title || null,
       theme: parsed.theme || null,
       description,
-      eventDate: parsed.eventDate || null,
+      eventDate: fixDate(parsed.eventDate),
       startTime: parsed.startTime || null,
       endTime: parsed.endTime || null,
       location: parsed.location || null,

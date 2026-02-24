@@ -6,6 +6,7 @@
  */
 
 import OpenAI from 'openai'
+import { fixDate, getCurrentYear } from './date-fix-utility'
 
 function getOpenAI() {
   if (!process.env.OPENAI_API_KEY) {
@@ -40,6 +41,7 @@ export interface BenefitsModel {
  */
 export async function parseBenefits(rawText: string): Promise<BenefitsModel> {
   const openai = getOpenAI()
+  const currentYear = getCurrentYear()
 
   const prompt = `Extract structured benefits information from this NAVSEA workforce communication text.
 
@@ -48,8 +50,8 @@ Return JSON with these exact fields:
   "title": "Benefits title (or null)",
   "description": "Full description (or null)",
   "employeeBenefitSummary": "Summary for employees (or null)",
-  "windowStart": "ISO date string (YYYY-MM-DD) or null",
-  "windowEnd": "ISO date string (YYYY-MM-DD) or null",
+  "windowStart": "ISO date string (YYYY-MM-DD). IMPORTANT: If date has no year (e.g., 'Feb. 25'), use current year (${currentYear}). If date is in the past relative to today, assume it's next occurrence. Or null",
+  "windowEnd": "ISO date string (YYYY-MM-DD). IMPORTANT: If date has no year (e.g., 'Feb. 25'), use current year (${currentYear}). If date is in the past relative to today, assume it's next occurrence. Or null",
   "actionLink": "Link to enroll or take action (or null)",
   "deadlines": [
     {"label": "Deadline label", "date": "ISO date string"}
@@ -88,14 +90,22 @@ ${rawText.substring(0, 3000)}`
 
     const parsed = JSON.parse(response.choices[0].message.content || '{}')
 
+    // Fix dates in deadlines array
+    const deadlines = Array.isArray(parsed.deadlines)
+      ? parsed.deadlines.map((d: any) => ({
+          label: d.label || '',
+          date: fixDate(d.date) || '',
+        })).filter((d: any) => d.date) // Remove entries with null dates
+      : null
+
     return {
       title: parsed.title || null,
       description: parsed.description || null,
       employeeBenefitSummary: parsed.employeeBenefitSummary || null,
-      windowStart: parsed.windowStart || null,
-      windowEnd: parsed.windowEnd || null,
+      windowStart: fixDate(parsed.windowStart),
+      windowEnd: fixDate(parsed.windowEnd),
       actionLink: parsed.actionLink || null,
-      deadlines: Array.isArray(parsed.deadlines) ? parsed.deadlines : null,
+      deadlines: deadlines && deadlines.length > 0 ? deadlines : null,
       resources: parsed.resources || null,
       pocList: Array.isArray(parsed.pocList) ? parsed.pocList : null,
     }

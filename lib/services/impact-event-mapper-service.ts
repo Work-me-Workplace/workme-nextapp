@@ -6,6 +6,7 @@
  */
 
 import OpenAI from 'openai'
+import { fixDate, getCurrentYear } from './date-fix-utility'
 
 function getOpenAI() {
   if (!process.env.OPENAI_API_KEY) {
@@ -36,6 +37,7 @@ export interface ImpactEventModel {
  */
 export async function parseImpactEvent(rawText: string): Promise<ImpactEventModel> {
   const openai = getOpenAI()
+  const currentYear = getCurrentYear()
 
   const prompt = `Extract structured impact event information from this NAVSEA workforce communication text.
 Impact events are disruptions, changes, or announcements that affect the workforce.
@@ -52,7 +54,7 @@ Return JSON with these exact fields:
   "title": "Impact event title (or null)",
   "description": "The impact/deal - what's happening. Full description (or null)",
   "summary": "COMPREHENSIVE summary that KEEPS all critical details: deadlines, codes, requirements, dates, times, pay periods, leave codes, etc. Do NOT abbreviate! (or null)",
-  "effectiveDate": "ISO date string (YYYY-MM-DD) or null",
+  "effectiveDate": "ISO date string (YYYY-MM-DD). IMPORTANT: If date has no year (e.g., 'Feb. 25'), use current year (${currentYear}). If date is in the past relative to today, assume it's next occurrence. Or null",
   "location": "Location if applicable (or null)",
   "impactedPopulation": "Who is affected (or null)",
   "urgency": "Urgency level: Low, Medium, High, or Critical (or null)",
@@ -88,7 +90,7 @@ ${rawText.substring(0, 3000)}`
       title: parsed.title || null,
       description: parsed.description || null,
       summary: parsed.summary || null,
-      effectiveDate: parsed.effectiveDate || null,
+      effectiveDate: fixDate(parsed.effectiveDate),
       location: parsed.location || null,
       impactedPopulation: parsed.impactedPopulation || null,
       urgency: parsed.urgency || null,

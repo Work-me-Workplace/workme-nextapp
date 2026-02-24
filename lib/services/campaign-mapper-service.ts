@@ -6,6 +6,7 @@
  */
 
 import OpenAI from 'openai'
+import { fixDate, getCurrentYear } from './date-fix-utility'
 
 function getOpenAI() {
   if (!process.env.OPENAI_API_KEY) {
@@ -35,6 +36,7 @@ export interface CampaignModel {
  */
 export async function parseCampaign(rawText: string): Promise<CampaignModel> {
   const openai = getOpenAI()
+  const currentYear = getCurrentYear()
 
   const prompt = `Extract structured campaign information from this NAVSEA workforce communication text.
 
@@ -42,8 +44,8 @@ Return JSON with these exact fields:
 {
   "title": "Campaign title or name (or null)",
   "description": "Full description (or null)",
-  "windowStart": "ISO date string (YYYY-MM-DD) or null",
-  "windowEnd": "ISO date string (YYYY-MM-DD) or null",
+  "windowStart": "ISO date string (YYYY-MM-DD). IMPORTANT: If date has no year (e.g., 'Feb. 25'), use current year (${currentYear}). If date is in the past relative to today, assume it's next occurrence. Or null",
+  "windowEnd": "ISO date string (YYYY-MM-DD). IMPORTANT: If date has no year (e.g., 'Feb. 25'), use current year (${currentYear}). If date is in the past relative to today, assume it's next occurrence. Or null",
   "ctaLink": "Call-to-action link (or null)",
   "sponsor": "Sponsoring office/organization (or null)",
   "pocFirstName": "First name (or null)",
@@ -77,8 +79,8 @@ ${rawText.substring(0, 3000)}`
     return {
       title: parsed.title || null,
       description: parsed.description || null,
-      windowStart: parsed.windowStart || null,
-      windowEnd: parsed.windowEnd || null,
+      windowStart: fixDate(parsed.windowStart),
+      windowEnd: fixDate(parsed.windowEnd),
       ctaLink: parsed.ctaLink || null,
       sponsor: parsed.sponsor || null,
       pocFirstName: parsed.pocFirstName || null,

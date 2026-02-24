@@ -7,6 +7,7 @@
 
 import OpenAI from 'openai'
 import { EventAudience } from '@prisma/client'
+import { fixDate, getCurrentYear } from './date-fix-utility'
 
 function getOpenAI() {
   if (!process.env.OPENAI_API_KEY) {
@@ -46,6 +47,7 @@ export interface LeaderEngagementModel {
  */
 export async function parseLeaderEngagement(rawText: string): Promise<LeaderEngagementModel> {
   const openai = getOpenAI()
+  const currentYear = getCurrentYear()
 
   const systemPrompt = `You convert messy government or corporate leader engagement announcements (town halls, all-hands, state of the org) into structured JSON. Return ONLY JSON with the exact structure below.
 
@@ -70,7 +72,7 @@ Return only:
 {
   "title": "",
   "description": "",
-  "engagementDate": "",
+  "engagementDate": "ISO date string (YYYY-MM-DD). IMPORTANT: If date has no year (e.g., 'Feb. 25'), use current year (${currentYear}). If date is in the past relative to today, assume it's next occurrence. Or null",
   "startTime": "",
   "endTime": "",
   "location": "",
@@ -112,7 +114,7 @@ Return only:
     return {
       title: parsed.title || null,
       description: parsed.description || null,
-      engagementDate: parsed.engagementDate || null,
+      engagementDate: fixDate(parsed.engagementDate),
       startTime: parsed.startTime || null,
       endTime: parsed.endTime || null,
       location: parsed.location || null,

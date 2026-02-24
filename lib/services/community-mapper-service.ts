@@ -6,6 +6,7 @@
  */
 
 import OpenAI from 'openai'
+import { fixDate, getCurrentYear } from './date-fix-utility'
 
 function getOpenAI() {
   if (!process.env.OPENAI_API_KEY) {
@@ -35,6 +36,7 @@ export interface CommunityModel {
  */
 export async function parseCommunity(rawText: string): Promise<CommunityModel> {
   const openai = getOpenAI()
+  const currentYear = getCurrentYear()
 
   const prompt = `Extract structured community opportunity information from this NAVSEA workforce communication text.
 
@@ -43,7 +45,7 @@ Return JSON with these exact fields:
   "title": "Community opportunity title (or null)",
   "description": "Full description (or null)",
   "partnerOrg": "Partner organization (or null)",
-  "date": "ISO date string (YYYY-MM-DD) or null",
+  "date": "ISO date string (YYYY-MM-DD). IMPORTANT: If date has no year (e.g., 'Feb. 25'), use current year (${currentYear}). If date is in the past relative to today, assume it's next occurrence. Or null",
   "location": "Location (or null)",
   "signUpLink": "Sign-up link (or null)",
   "pocFirstName": "First name (or null)",
@@ -78,7 +80,7 @@ ${rawText.substring(0, 3000)}`
       title: parsed.title || null,
       description: parsed.description || null,
       partnerOrg: parsed.partnerOrg || null,
-      date: parsed.date || null,
+      date: fixDate(parsed.date),
       location: parsed.location || null,
       signUpLink: parsed.signUpLink || null,
       pocFirstName: parsed.pocFirstName || null,

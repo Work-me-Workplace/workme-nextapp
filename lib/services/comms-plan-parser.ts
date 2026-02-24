@@ -10,6 +10,7 @@
  */
 
 import OpenAI from 'openai'
+import { fixDate, getCurrentYear } from './date-fix-utility'
 
 function getOpenAI() {
   if (!process.env.OPENAI_API_KEY) {
@@ -95,8 +96,8 @@ Return ONLY valid JSON in this format:
     "phases": [
       {
         "name": "Pre-Launch",
-        "startDate": "2024-01-01",
-        "endDate": "2024-01-15",
+        "startDate": "ISO date string (YYYY-MM-DD). IMPORTANT: If date has no year, use current year (${currentYear}). Or null",
+        "endDate": "ISO date string (YYYY-MM-DD). IMPORTANT: If date has no year, use current year (${currentYear}). Or null",
         "products": [
           {
             "name": "Teaser Email",
@@ -159,8 +160,8 @@ ${rawText.substring(0, 8000)}`
                   .filter((phase: any) => phase && typeof phase.name === 'string')
                   .map((phase: any) => ({
                     name: phase.name.trim(),
-                    startDate: typeof phase.startDate === 'string' ? phase.startDate.trim() : undefined,
-                    endDate: typeof phase.endDate === 'string' ? phase.endDate.trim() : undefined,
+                    startDate: fixDate(phase.startDate) || undefined,
+                    endDate: fixDate(phase.endDate) || undefined,
                     products: Array.isArray(phase.products)
                       ? phase.products
                           .filter((product: any) => product && typeof product.name === 'string')
