@@ -38,6 +38,7 @@ export async function POST(request: Request) {
         workforce: true,
         companyNews: true,
         companyEvent: true,
+        workforceStuff: true,
       },
     })
 

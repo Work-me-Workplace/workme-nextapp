@@ -37,6 +37,18 @@ type SignageWithRelations = {
     eventItems: string[]
     registrationLink?: string | null
   } | null
+  workforceStuff?: {
+    title: string | null
+    description?: string | null
+    date?: Date | string | null
+    endDate?: Date | string | null
+    startTime?: string | null
+    endTime?: string | null
+    location?: string | null
+    eventItems: string[]
+    eventName?: string | null
+    registrationLink?: string | null
+  } | null
 }
 
 export function digitalSignageToDeckSpec(signage: SignageWithRelations): DeckSpec {
@@ -93,6 +105,37 @@ export function digitalSignageToDeckSpec(signage: SignageWithRelations): DeckSpe
         ...(e.registrationLink ? [`Register: ${e.registrationLink}`] : []),
       ].filter(Boolean),
     })
+  } else if (signage.workforceStuff) {
+    const ws = signage.workforceStuff
+    const title = ws.title || ws.eventName || 'Workforce'
+    const dateStr = ws.date
+      ? new Date(ws.date).toLocaleDateString(undefined, {
+          weekday: 'short',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        })
+      : null
+    const endDateStr = ws.endDate
+      ? new Date(ws.endDate).toLocaleDateString(undefined, {
+          weekday: 'short',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        })
+      : null
+    slides.push({
+      title,
+      bullets: [
+        ...(ws.description ? [ws.description.slice(0, 400)] : []),
+        ...(dateStr ? [dateStr] : []),
+        ...(endDateStr ? [`Through ${endDateStr}`] : []),
+        ...(ws.startTime && ws.endTime ? [`${ws.startTime} – ${ws.endTime}`] : ws.startTime ? [ws.startTime] : []),
+        ...(ws.location ? [ws.location] : []),
+        ...(ws.eventItems?.length ? ['Highlights: ' + ws.eventItems.join(', ')] : []),
+        ...(ws.registrationLink ? [`Register: ${ws.registrationLink}`] : []),
+      ].filter(Boolean),
+    })
   }
 
   if (slides.length === 0) {
@@ -111,5 +154,7 @@ function getSignageTitle(signage: SignageWithRelations): string {
   if (signage.workforce?.title) return signage.workforce.title
   if (signage.companyNews?.headline) return signage.companyNews.headline
   if (signage.companyEvent?.eventName) return signage.companyEvent.eventName
+  if (signage.workforceStuff?.title) return signage.workforceStuff.title
+  if (signage.workforceStuff?.eventName) return signage.workforceStuff.eventName
   return 'Digital Signage'
 }

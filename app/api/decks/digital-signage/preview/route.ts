@@ -36,6 +36,7 @@ export async function GET(request: Request) {
       workforce: true,
       companyNews: true,
       companyEvent: true,
+      workforceStuff: true,
     },
   })
 

@@ -52,6 +52,18 @@ interface DigitalSignage {
     eventItems: string[]
     registrationLink?: string | null
   } | null
+  workforceStuff?: {
+    title: string | null
+    description?: string | null
+    date?: string | null
+    endDate?: string | null
+    startTime?: string | null
+    endTime?: string | null
+    location?: string | null
+    eventItems: string[]
+    eventName?: string | null
+    registrationLink?: string | null
+  } | null
   // Gamma deck generation
   gammaStatus?: string | null
   gammaDeckUrl?: string | null
@@ -106,6 +118,35 @@ function DigitalSignageViewContent() {
       }
     }
   }, [router, signageId, searchParams])
+
+  // Auto-fill Gamma text from sign content (workforce context) when the sign has content
+  const hasSignContent =
+    signage?.workforce ||
+    signage?.companyEvent ||
+    signage?.workforceStuff ||
+    signage?.companyNews ||
+    signage?.workforceAchievement
+  useEffect(() => {
+    if (!signageId || !signage?.id || !hasSignContent) return
+    let cancelled = false
+    async function fillFromSign() {
+      try {
+        const res = await api.get(
+          `/api/decks/digital-signage/preview?digitalSignId=${signageId}`
+        )
+        if (cancelled) return
+        if (res.data.success && res.data.preview && typeof res.data.preview === 'string') {
+          setGammaDetails((prev) => (prev === '' ? res.data.preview : prev))
+        }
+      } catch {
+        // ignore; user can still click "Load from sign"
+      }
+    }
+    fillFromSign()
+    return () => {
+      cancelled = true
+    }
+  }, [signageId, signage?.id, hasSignContent])
 
   // Poll Gamma deck status when generating
   useEffect(() => {
@@ -627,6 +668,79 @@ function DigitalSignageViewContent() {
                       <div>
                         <a 
                           href={signage.companyEvent.registrationLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+                        >
+                          Register Now →
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {signage.workforceStuff && (
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                        {signage.workforceStuff.title || signage.workforceStuff.eventName || 'Workforce'}
+                      </h2>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      {signage.workforceStuff.date && (
+                        <div>
+                          <p className="text-sm text-gray-500">Date</p>
+                          <p className="text-lg font-medium text-gray-900">
+                            {new Date(signage.workforceStuff.date).toLocaleDateString()}
+                          </p>
+                        </div>
+                      )}
+                      {signage.workforceStuff.endDate && (
+                        <div>
+                          <p className="text-sm text-gray-500">Through</p>
+                          <p className="text-lg font-medium text-gray-900">
+                            {new Date(signage.workforceStuff.endDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                      )}
+                      {(signage.workforceStuff.startTime || signage.workforceStuff.endTime) && (
+                        <div>
+                          <p className="text-sm text-gray-500">Time</p>
+                          <p className="text-lg font-medium text-gray-900">
+                            {signage.workforceStuff.startTime && signage.workforceStuff.endTime
+                              ? `${signage.workforceStuff.startTime} - ${signage.workforceStuff.endTime}`
+                              : signage.workforceStuff.startTime || signage.workforceStuff.endTime}
+                          </p>
+                        </div>
+                      )}
+                      {signage.workforceStuff.location && (
+                        <div className="col-span-2">
+                          <p className="text-sm text-gray-500">Location</p>
+                          <p className="text-lg font-medium text-gray-900">{signage.workforceStuff.location}</p>
+                        </div>
+                      )}
+                    </div>
+                    {signage.workforceStuff.description && (
+                      <div>
+                        <p className="text-gray-700 whitespace-pre-wrap text-lg leading-relaxed">
+                          {signage.workforceStuff.description}
+                        </p>
+                      </div>
+                    )}
+                    {signage.workforceStuff.eventItems?.length > 0 && (
+                      <div>
+                        <h3 className="text-xl font-semibold text-gray-900 mb-3">Highlights</h3>
+                        <ul className="list-disc list-inside space-y-2">
+                          {signage.workforceStuff.eventItems.map((item, index) => (
+                            <li key={index} className="text-gray-700">{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {signage.workforceStuff.registrationLink && (
+                      <div>
+                        <a 
+                          href={signage.workforceStuff.registrationLink} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"

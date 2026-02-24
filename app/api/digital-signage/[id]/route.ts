@@ -28,6 +28,7 @@ export async function GET(
         workforce: true,
         companyNews: true,
         companyEvent: true,
+        workforceStuff: true,
       }
     })
 
