@@ -210,8 +210,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth state changes
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       if (!firebaseUser) {
-        console.log('[AuthProvider] User signed out')
-        clearSession()
+        // Only sign out if we had a previous session (not initial load)
+        const hadSession = session.workMeId !== null || session.firebaseId !== null
+        if (hadSession) {
+          console.log('[AuthProvider] User signed out')
+          clearSession()
+        } else {
+          console.log('[AuthProvider] No user on initial load - waiting for auth')
+        }
         setLoading(false)
         return
       }

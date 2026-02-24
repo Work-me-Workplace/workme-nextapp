@@ -20,9 +20,26 @@ export async function getIdToken(): Promise<string | null> {
       return null
     }
 
-    const user = auth.currentUser
+    // Wait for auth to be ready if currentUser is null
+    let user = auth.currentUser
     if (!user) {
-      console.warn('[getIdToken] No Firebase user found')
+      // Wait up to 2 seconds for auth state to initialize
+      await new Promise<void>((resolve) => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          unsubscribe()
+          resolve()
+        })
+        // Timeout after 2 seconds
+        setTimeout(() => {
+          unsubscribe()
+          resolve()
+        }, 2000)
+      })
+      user = auth.currentUser
+    }
+
+    if (!user) {
+      console.warn('[getIdToken] No Firebase user found after waiting')
       return null
     }
 

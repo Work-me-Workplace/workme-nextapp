@@ -60,6 +60,8 @@ api.interceptors.response.use(
     // Handle 401 Unauthorized - token expired or invalid
     if (error.response?.status === 401) {
       console.error('[API] ❌ Unauthorized (401):', error.response.data)
+      // Don't auto-sign-out here - let AuthProvider handle it
+      // Some 401s might be expected (e.g., expired token that will refresh)
     }
 
     // Handle 403 Forbidden
@@ -67,6 +69,8 @@ api.interceptors.response.use(
       console.error('[API] ❌ Forbidden (403):', error.response.data)
     }
 
+    // Don't block on missing token warnings - let the request proceed
+    // The server will return 401 if auth is actually required
     return Promise.reject(error)
   }
 )
