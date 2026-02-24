@@ -10,7 +10,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
-import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
@@ -25,23 +24,35 @@ function isPast(startDate: string | null, endDate: string | null): boolean {
 
 export async function GET(request: NextRequest) {
   try {
-    const { firebaseId } = await verifyAuth(request)
-    const workMe = await loadWorkMe(firebaseId)
-    const { companyId } = workMe
+    // Auth: Just verify Firebase token
+    await verifyAuth(request)
+    
+    const url = new URL(request.url)
+    
+    // Get companyId from query params (from localStorage) - no helpers, just localStorage
+    const companyId = url.searchParams.get('companyId')
 
     if (!companyId) {
       return NextResponse.json(
-        { success: false, error: 'Company ID not set on your account. Please contact support.' },
+        { success: false, error: 'companyId is required' },
         { status: 400 }
       )
     }
 
-    // Fetch all CompanyX models scoped by companyId
+    // Get workMeId from query params too (for owner access)
+    const workMeId = url.searchParams.get('workMeId')
+    
+    // Fetch all CompanyX models scoped by companyId OR workMeId (owner access)
     // CompanyEvent: include legacy records where companyId is null but workMe.companyId matches
     const [trainings, events, campaigns, impactEvents, community, benefits, careers, employeeCauses, leaderEngagements] = await Promise.all([
-      // CompanyTraining
+      // CompanyTraining - query by companyId OR workMeId (owner)
       prisma.companyTraining.findMany({
-        where: { companyId },
+        where: {
+          OR: [
+            { companyId },
+            ...(workMeId ? [{ workMeId }] : []),
+          ],
+        },
         orderBy: { trainingDate: 'asc' },
       }),
       // CompanyEvent - fallback to workMe.companyId for legacy records with null companyId

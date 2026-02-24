@@ -170,8 +170,12 @@ export default function WorkforceStuffPage() {
         setLoading(true)
       }
       
-      // API uses authenticated user's companyId - no need to pass it
-      const response = await api.get(`/api/workforcestuff`)
+      // Pass workMeId and companyId from localStorage as query params - no helpers, just localStorage
+      const params = new URLSearchParams({ companyId })
+      if (workMeId) {
+        params.append('workMeId', workMeId)
+      }
+      const response = await api.get(`/api/workforcestuff?${params.toString()}`)
       
       if (response.data.success && response.data.items) {
         setItems(response.data.items)
