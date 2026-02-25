@@ -21,7 +21,7 @@ const api = axios.create({
   },
 })
 
-// Request interceptor - ALWAYS attaches Firebase token
+// Request interceptor - ALWAYS attaches Firebase token; never send /api requests without one
 api.interceptors.request.use(
   async (config) => {
     // Ensure /api/* routes use current origin
@@ -29,18 +29,30 @@ api.interceptors.request.use(
       config.baseURL = typeof window !== 'undefined' ? window.location.origin : ''
     }
 
-    // ALWAYS try to attach Firebase token
+    const isApiRoute = config.url && config.url.startsWith('/api/')
+
     try {
-      const token = await getIdToken()
+      let token = await getIdToken()
+      // If no token on first try for /api, wait and retry once (Firebase may still be restoring session)
+      if (!token && isApiRoute && typeof window !== 'undefined') {
+        await new Promise((r) => setTimeout(r, 1500))
+        token = await getIdToken(true)
+      }
       if (token) {
         config.headers['Authorization'] = `Bearer ${token}`
-        console.log(`[API] ✅ Token attached to ${config.method?.toUpperCase()} ${config.url}`)
-      } else {
-        console.warn(`[API] ⚠️ No token available for ${config.method?.toUpperCase()} ${config.url}`)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[API] ✅ Token attached to ${config.method?.toUpperCase()} ${config.url}`)
+        }
+      } else if (isApiRoute) {
+        // Never send auth-required requests without a token — causes "Missing token" and kick-out
+        const err = new Error('AUTH_NOT_READY') as any
+        err.isAuthNotReady = true
+        return Promise.reject(err)
       }
     } catch (error: any) {
+      if (error?.isAuthNotReady) return Promise.reject(error)
       console.warn(`[API] ⚠️ Unable to attach token for ${config.method?.toUpperCase()} ${config.url}:`, error.message)
-      // Don't block the request - let server handle auth failure
+      if (isApiRoute) return Promise.reject(error)
     }
 
     return config

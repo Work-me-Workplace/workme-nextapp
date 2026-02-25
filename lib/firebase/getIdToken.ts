@@ -9,7 +9,7 @@
 
 import { auth } from '@/lib/firebase'
 
-export async function getIdToken(): Promise<string | null> {
+export async function getIdToken(forceRefresh = false): Promise<string | null> {
   try {
     if (typeof window === 'undefined') {
       return null
@@ -23,20 +23,19 @@ export async function getIdToken(): Promise<string | null> {
     // Store auth in const so TypeScript knows it's non-null
     const authInstance = auth
 
-    // Wait for auth to be ready if currentUser is null
+    // Wait for auth to be ready if currentUser is null (e.g. Firebase restoring session from persistence)
     let user = authInstance.currentUser
     if (!user) {
-      // Wait up to 2 seconds for auth state to initialize
+      // Wait up to 5s for auth state — restoring session can be slow; 2s caused "Missing token" for logged-in users
       await new Promise<void>((resolve) => {
         const unsubscribe = authInstance.onAuthStateChanged((user) => {
           unsubscribe()
           resolve()
         })
-        // Timeout after 2 seconds
         setTimeout(() => {
           unsubscribe()
           resolve()
-        }, 2000)
+        }, 5000)
       })
       user = authInstance.currentUser
     }
@@ -46,8 +45,7 @@ export async function getIdToken(): Promise<string | null> {
       return null
     }
 
-    // Get fresh token (Firebase SDK automatically refreshes if needed)
-    const token = await user.getIdToken(true) // Force refresh for reliability
+    const token = await user.getIdToken(forceRefresh)
     return token
   } catch (error: any) {
     console.error('[getIdToken] Error getting token:', error)

@@ -101,6 +101,8 @@ export default function DailyOutlookPage() {
   const clearError = () => setErrorMessage(null)
   const getApiError = (err: any) =>
     err?.response?.data?.error || err?.message || 'Something went wrong. Please try again.'
+  const isAuthNotReady = (err: any) =>
+    err?.isAuthNotReady === true || err?.message === 'AUTH_NOT_READY'
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -143,7 +145,7 @@ export default function DailyOutlookPage() {
     }
   }, [outlookId, selectedDate, showUncompletedFromPast])
 
-  async function loadOutlook(workMeId: string) {
+  async function loadOutlook(workMeId: string, retried = false) {
     try {
       setLoading(true)
       const response = await api.get('/api/workops/outlook')
@@ -151,14 +153,18 @@ export default function DailyOutlookPage() {
       if (response.data.success && response.data.outlook) {
         setOutlookId(response.data.outlook.id)
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (!retried && isAuthNotReady(error)) {
+        setTimeout(() => loadOutlook(workMeId, true), 2000)
+        return
+      }
       console.error('Failed to load outlook:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  async function loadDailyAssignments() {
+  async function loadDailyAssignments(retried = false) {
     if (!outlookId) return
     try {
       const dayStr = selectedDate.toISOString().split('T')[0]
@@ -169,12 +175,16 @@ export default function DailyOutlookPage() {
         setAssignments(response.data.assignments || [])
       }
     } catch (error: any) {
+      if (!retried && isAuthNotReady(error)) {
+        setTimeout(() => loadDailyAssignments(true), 2000)
+        return
+      }
       console.error('Failed to load daily assignments:', error)
       setErrorMessage(getApiError(error))
     }
   }
 
-  async function loadUnassignedItems() {
+  async function loadUnassignedItems(retried = false) {
     if (!outlookId) return
     try {
       const response = await api.get(
@@ -184,12 +194,16 @@ export default function DailyOutlookPage() {
         setUnassignedItems(response.data.items || [])
       }
     } catch (error: any) {
+      if (!retried && isAuthNotReady(error)) {
+        setTimeout(() => loadUnassignedItems(true), 2000)
+        return
+      }
       console.error('Failed to load unassigned items:', error)
       setErrorMessage(getApiError(error))
     }
   }
 
-  async function loadPreviousDayAssignments() {
+  async function loadPreviousDayAssignments(retried = false) {
     if (!outlookId || !selectedDate) return
     const prev = new Date(selectedDate)
     prev.setDate(prev.getDate() - 1)
@@ -202,12 +216,16 @@ export default function DailyOutlookPage() {
         setPreviousDayAssignments(response.data.assignments || [])
       }
     } catch (error: any) {
+      if (!retried && isAuthNotReady(error)) {
+        setTimeout(() => loadPreviousDayAssignments(true), 2000)
+        return
+      }
       console.error('Failed to load previous day assignments:', error)
       setErrorMessage(getApiError(error))
     }
   }
 
-  async function loadUncompletedFromPast() {
+  async function loadUncompletedFromPast(retried = false) {
     if (!outlookId || !selectedDate) return
     const beforeStr = selectedDate.toISOString().split('T')[0]
     try {
@@ -218,6 +236,10 @@ export default function DailyOutlookPage() {
         setUncompletedFromPastItems(response.data.items || [])
       }
     } catch (error: any) {
+      if (!retried && isAuthNotReady(error)) {
+        setTimeout(() => loadUncompletedFromPast(true), 2000)
+        return
+      }
       console.error('Failed to load uncompleted from past:', error)
       setErrorMessage(getApiError(error))
     }
@@ -246,18 +268,13 @@ export default function DailyOutlookPage() {
     clearError()
     setBringAllForwardLoading(true)
     const dayStr = selectedDate.toISOString()
-    const failed: string[] = []
+    const itemIds = previousDayAssignments.map((a) => a.item.id)
     try {
-      for (const a of previousDayAssignments) {
-        try {
-          await api.post('/api/workops/daily-assignments', {
-            itemId: a.item.id,
-            day: dayStr,
-          })
-        } catch (_) {
-          failed.push(a.item.title)
-        }
-      }
+      const res = await api.post('/api/workops/daily-assignments/bulk', {
+        itemIds,
+        day: dayStr,
+      })
+      const failed = res.data?.failed ?? []
       await loadDailyAssignments()
       await loadUnassignedItems()
       await loadPreviousDayAssignments()
@@ -278,18 +295,13 @@ export default function DailyOutlookPage() {
     clearError()
     setBringAllUncompletedForwardLoading(true)
     const dayStr = selectedDate.toISOString()
-    const failed: string[] = []
+    const itemIds = uncompletedFromPastItems.map((item) => item.id)
     try {
-      for (const item of uncompletedFromPastItems) {
-        try {
-          await api.post('/api/workops/daily-assignments', {
-            itemId: item.id,
-            day: dayStr,
-          })
-        } catch (_) {
-          failed.push(item.title)
-        }
-      }
+      const res = await api.post('/api/workops/daily-assignments/bulk', {
+        itemIds,
+        day: dayStr,
+      })
+      const failed = res.data?.failed ?? []
       await loadDailyAssignments()
       await loadUnassignedItems()
       await loadUncompletedFromPast()
