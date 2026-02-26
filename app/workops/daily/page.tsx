@@ -2,8 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { getAuth } from 'firebase/auth'
-import { getWorkMeIdFromStorage } from '@/lib/getWorkMeId.client'
+import { useAuth } from '@/lib/providers/AuthProvider'
 import SidebarNav from '@/components/mywork/SidebarNav'
 import AddWorkModal from '@/components/workops/add-work/AddWorkModal'
 import {
@@ -22,6 +21,7 @@ import {
   CalendarClock,
   Loader2,
   Layers,
+  Circle,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { WorkOpsStatus, WorkOpsItemType, WorkOpsUrgency } from '@prisma/client'
@@ -73,13 +73,13 @@ interface DailyAssignment {
 
 export default function DailyOutlookPage() {
   const router = useRouter()
-  const [workMeId, setWorkMeId] = useState<string | null>(null)
+  const { session } = useAuth()
+  const workMeId = session.workMeId
   const [outlookId, setOutlookId] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [assignments, setAssignments] = useState<DailyAssignment[]>([])
   const [unassignedItems, setUnassignedItems] = useState<WorkOpsItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [authReady, setAuthReady] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [showUnassigned, setShowUnassigned] = useState(false)
   const [showFromPreviousDay, setShowFromPreviousDay] = useState(false)
@@ -101,30 +101,14 @@ export default function DailyOutlookPage() {
   const clearError = () => setErrorMessage(null)
   const getApiError = (err: any) =>
     err?.response?.data?.error || err?.message || 'Something went wrong. Please try again.'
-  const isAuthNotReady = (err: any) =>
-    err?.isAuthNotReady === true || err?.message === 'AUTH_NOT_READY'
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    const auth = getAuth()
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        setAuthReady(true)
-        const id = getWorkMeIdFromStorage()
-        if (id) {
-          setWorkMeId(id)
-          loadOutlook(id)
-        } else {
-          router.push('/signin')
-        }
-      } else {
-        router.push('/signin')
-      }
-    })
-
-    return () => unsubscribe()
-  }, [router])
+    if (!workMeId) {
+      router.push('/signin')
+      return
+    }
+    loadOutlook(workMeId)
+  }, [workMeId, router])
 
   useEffect(() => {
     if (outlookId && selectedDate) {
@@ -145,26 +129,21 @@ export default function DailyOutlookPage() {
     }
   }, [outlookId, selectedDate, showUncompletedFromPast])
 
-  async function loadOutlook(workMeId: string, retried = false) {
+  async function loadOutlook(workMeId: string) {
     try {
       setLoading(true)
       const response = await api.get('/api/workops/outlook')
-
       if (response.data.success && response.data.outlook) {
         setOutlookId(response.data.outlook.id)
       }
     } catch (error: any) {
-      if (!retried && isAuthNotReady(error)) {
-        setTimeout(() => loadOutlook(workMeId, true), 2000)
-        return
-      }
       console.error('Failed to load outlook:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  async function loadDailyAssignments(retried = false) {
+  async function loadDailyAssignments() {
     if (!outlookId) return
     try {
       const dayStr = selectedDate.toISOString().split('T')[0]
@@ -175,16 +154,12 @@ export default function DailyOutlookPage() {
         setAssignments(response.data.assignments || [])
       }
     } catch (error: any) {
-      if (!retried && isAuthNotReady(error)) {
-        setTimeout(() => loadDailyAssignments(true), 2000)
-        return
-      }
       console.error('Failed to load daily assignments:', error)
       setErrorMessage(getApiError(error))
     }
   }
 
-  async function loadUnassignedItems(retried = false) {
+  async function loadUnassignedItems() {
     if (!outlookId) return
     try {
       const response = await api.get(
@@ -194,16 +169,12 @@ export default function DailyOutlookPage() {
         setUnassignedItems(response.data.items || [])
       }
     } catch (error: any) {
-      if (!retried && isAuthNotReady(error)) {
-        setTimeout(() => loadUnassignedItems(true), 2000)
-        return
-      }
       console.error('Failed to load unassigned items:', error)
       setErrorMessage(getApiError(error))
     }
   }
 
-  async function loadPreviousDayAssignments(retried = false) {
+  async function loadPreviousDayAssignments() {
     if (!outlookId || !selectedDate) return
     const prev = new Date(selectedDate)
     prev.setDate(prev.getDate() - 1)
@@ -216,16 +187,12 @@ export default function DailyOutlookPage() {
         setPreviousDayAssignments(response.data.assignments || [])
       }
     } catch (error: any) {
-      if (!retried && isAuthNotReady(error)) {
-        setTimeout(() => loadPreviousDayAssignments(true), 2000)
-        return
-      }
       console.error('Failed to load previous day assignments:', error)
       setErrorMessage(getApiError(error))
     }
   }
 
-  async function loadUncompletedFromPast(retried = false) {
+  async function loadUncompletedFromPast() {
     if (!outlookId || !selectedDate) return
     const beforeStr = selectedDate.toISOString().split('T')[0]
     try {
@@ -236,10 +203,6 @@ export default function DailyOutlookPage() {
         setUncompletedFromPastItems(response.data.items || [])
       }
     } catch (error: any) {
-      if (!retried && isAuthNotReady(error)) {
-        setTimeout(() => loadUncompletedFromPast(true), 2000)
-        return
-      }
       console.error('Failed to load uncompleted from past:', error)
       setErrorMessage(getApiError(error))
     }
@@ -324,6 +287,21 @@ export default function DailyOutlookPage() {
       await loadUnassignedItems()
     } catch (error: any) {
       console.error('Failed to unassign item:', error)
+      setErrorMessage(getApiError(error))
+    }
+  }
+
+  const handleToggleComplete = async (item: WorkOpsItem) => {
+    clearError()
+    const nextStatus = item.status === WorkOpsStatus.done ? WorkOpsStatus.open : WorkOpsStatus.done
+    try {
+      await api.patch(`/api/workops/item/${item.id}`, { status: nextStatus })
+      await loadDailyAssignments()
+      await loadUnassignedItems()
+      if (showFromPreviousDay) await loadPreviousDayAssignments()
+      if (showUncompletedFromPast) await loadUncompletedFromPast()
+    } catch (error: any) {
+      console.error('Failed to update status:', error)
       setErrorMessage(getApiError(error))
     }
   }
@@ -467,7 +445,7 @@ export default function DailyOutlookPage() {
     }
   }
 
-  if (!authReady || !workMeId || loading) {
+  if (!workMeId || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -624,51 +602,70 @@ export default function DailyOutlookPage() {
               </div>
               {uncompletedFromPastItems.length > 0 ? (
                 <div className="space-y-2">
-                  {uncompletedFromPastItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between p-3 bg-amber-50/50 rounded-lg hover:bg-amber-50 transition border border-amber-100"
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                        {getStatusIcon(item.status)}
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{item.title}</h4>
-                          {item.body && (
-                            <p className="text-sm text-gray-600 mt-1">{item.body}</p>
-                          )}
-                          {item.lastAssignedDay && (
-                            <p className="text-xs text-amber-700 mt-1">
-                              Last scheduled: {new Date(item.lastAssignedDay + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
-                            </p>
+                  {uncompletedFromPastItems.map((item) => {
+                    const isDone = item.status === WorkOpsStatus.done
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-3 bg-amber-50/50 rounded-lg hover:bg-amber-50 transition border border-amber-100"
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleComplete(item)}
+                            className="flex-shrink-0 p-0.5 rounded-full hover:bg-black/5"
+                            aria-label={isDone ? 'Mark not complete' : 'Mark complete'}
+                            title={isDone ? 'Mark not complete' : 'Mark complete — won’t show in uncompleted list'}
+                          >
+                            {isDone ? (
+                              <CheckCircle className="h-5 w-5 text-green-600" />
+                            ) : (
+                              <Circle className="h-5 w-5 text-gray-400 hover:text-green-600" />
+                            )}
+                          </button>
+                          <div className="flex-1">
+                            <h4 className={`font-medium ${isDone ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                              {item.title}
+                            </h4>
+                            {item.body && (
+                              <p className={`text-sm mt-1 ${isDone ? 'text-gray-400 line-through' : 'text-gray-600'}`}>
+                                {item.body}
+                              </p>
+                            )}
+                            {item.lastAssignedDay && (
+                              <p className="text-xs text-amber-700 mt-1">
+                                Last scheduled: {new Date(item.lastAssignedDay + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                              </p>
+                            )}
+                          </div>
+                          {item.urgency && (
+                            <span
+                              className={`px-2 py-1 text-xs font-medium rounded ${getUrgencyColor(
+                                item.urgency
+                              )}`}
+                            >
+                              {item.urgency}
+                            </span>
                           )}
                         </div>
-                        {item.urgency && (
-                          <span
-                            className={`px-2 py-1 text-xs font-medium rounded ${getUrgencyColor(
-                              item.urgency
-                            )}`}
+                        <div className="ml-4 flex items-center gap-2">
+                          <button
+                            onClick={() => openEdit(item)}
+                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition"
+                            aria-label="Edit task"
                           >
-                            {item.urgency}
-                          </span>
-                        )}
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleAssignItem(item.id)}
+                            className="px-3 py-1.5 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 transition"
+                          >
+                            Add to Day
+                          </button>
+                        </div>
                       </div>
-                      <div className="ml-4 flex items-center gap-2">
-                        <button
-                          onClick={() => openEdit(item)}
-                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition"
-                          aria-label="Edit task"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleAssignItem(item.id)}
-                          className="px-3 py-1.5 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 transition"
-                        >
-                          Add to Day
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-gray-500">No uncompleted work from previous days.</p>
@@ -707,46 +704,65 @@ export default function DailyOutlookPage() {
               </div>
               {previousDayAssignments.length > 0 ? (
                 <div className="space-y-2">
-                  {previousDayAssignments.map((assignment) => (
-                    <div
-                      key={assignment.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                        {getStatusIcon(assignment.item.status)}
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{assignment.item.title}</h4>
-                          {assignment.item.body && (
-                            <p className="text-sm text-gray-600 mt-1">{assignment.item.body}</p>
+                  {previousDayAssignments.map((assignment) => {
+                    const isDone = assignment.item.status === WorkOpsStatus.done
+                    return (
+                      <div
+                        key={assignment.id}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleComplete(assignment.item)}
+                            className="flex-shrink-0 p-0.5 rounded-full hover:bg-black/5"
+                            aria-label={isDone ? 'Mark not complete' : 'Mark complete'}
+                            title={isDone ? 'Mark not complete' : 'Mark complete'}
+                          >
+                            {isDone ? (
+                              <CheckCircle className="h-5 w-5 text-green-600" />
+                            ) : (
+                              <Circle className="h-5 w-5 text-gray-400 hover:text-green-600" />
+                            )}
+                          </button>
+                          <div className="flex-1">
+                            <h4 className={`font-medium ${isDone ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                              {assignment.item.title}
+                            </h4>
+                            {assignment.item.body && (
+                              <p className={`text-sm mt-1 ${isDone ? 'text-gray-400 line-through' : 'text-gray-600'}`}>
+                                {assignment.item.body}
+                              </p>
+                            )}
+                          </div>
+                          {assignment.item.urgency && (
+                            <span
+                              className={`px-2 py-1 text-xs font-medium rounded ${getUrgencyColor(
+                                assignment.item.urgency
+                              )}`}
+                            >
+                              {assignment.item.urgency}
+                            </span>
                           )}
                         </div>
-                        {assignment.item.urgency && (
-                          <span
-                            className={`px-2 py-1 text-xs font-medium rounded ${getUrgencyColor(
-                              assignment.item.urgency
-                            )}`}
+                        <div className="ml-4 flex items-center gap-2">
+                          <button
+                            onClick={() => openEdit(assignment.item)}
+                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition"
+                            aria-label="Edit task"
                           >
-                            {assignment.item.urgency}
-                          </span>
-                        )}
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleAssignItem(assignment.item.id)}
+                            className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+                          >
+                            Add to Day
+                          </button>
+                        </div>
                       </div>
-                      <div className="ml-4 flex items-center gap-2">
-                        <button
-                          onClick={() => openEdit(assignment.item)}
-                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition"
-                          aria-label="Edit task"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleAssignItem(assignment.item.id)}
-                          className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
-                        >
-                          Add to Day
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-gray-500">No tasks were assigned to the previous day.</p>
@@ -760,56 +776,77 @@ export default function DailyOutlookPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-1">
                 Unassigned ({unassignedItems.length})
               </h3>
-              <p className="text-sm text-gray-500 mb-4">Tasks not yet scheduled to a day</p>
+              <p className="text-sm text-gray-500 mb-4">Tasks not yet scheduled to a day. Type & urgency: edit with the pencil.</p>
               <div className="space-y-2">
-                {unassignedItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-                  >
-                    <div className="flex items-center gap-3 flex-1">
-                      {getStatusIcon(item.status)}
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{item.title}</h4>
-                        {item.body && (
-                          <p className="text-sm text-gray-600 mt-1">{item.body}</p>
+                {unassignedItems.map((item) => {
+                  const isDone = item.status === WorkOpsStatus.done
+                  return (
+                    <div
+                      key={item.id}
+                      className={`flex items-center justify-between p-3 rounded-lg transition ${
+                        isDone ? 'bg-green-50/50' : 'bg-gray-50 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleComplete(item)}
+                          className="flex-shrink-0 p-0.5 rounded-full hover:bg-black/5"
+                          aria-label={isDone ? 'Mark not complete' : 'Mark complete'}
+                          title={isDone ? 'Mark not complete' : 'Mark complete'}
+                        >
+                          {isDone ? (
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <Circle className="h-5 w-5 text-gray-400 hover:text-green-600" />
+                          )}
+                        </button>
+                        <div className="flex-1">
+                          <h4 className={`font-medium ${isDone ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                            {item.title}
+                          </h4>
+                          {item.body && (
+                            <p className={`text-sm mt-1 ${isDone ? 'text-gray-400 line-through' : 'text-gray-600'}`}>
+                              {item.body}
+                            </p>
+                          )}
+                        </div>
+                        {item.urgency && (
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded ${getUrgencyColor(
+                              item.urgency
+                            )}`}
+                          >
+                            {item.urgency}
+                          </span>
                         )}
                       </div>
-                      {item.urgency && (
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded ${getUrgencyColor(
-                            item.urgency
-                          )}`}
+                      <div className="ml-4 flex items-center gap-2">
+                        <button
+                          onClick={() => openEdit(item)}
+                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition"
+                          aria-label="Edit task"
                         >
-                          {item.urgency}
-                        </span>
-                      )}
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteItem(item.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                          aria-label="Delete from backlog"
+                          title="Delete from backlog"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleAssignItem(item.id)}
+                          className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+                        >
+                          Add to Day
+                        </button>
+                      </div>
                     </div>
-                    <div className="ml-4 flex items-center gap-2">
-                      <button
-                        onClick={() => openEdit(item)}
-                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition"
-                        aria-label="Edit task"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                        aria-label="Delete from backlog"
-                        title="Delete from backlog"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleAssignItem(item.id)}
-                        className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
-                      >
-                        Add to Day
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
@@ -817,69 +854,91 @@ export default function DailyOutlookPage() {
           {/* Daily Tasks */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Tasks for {formatDate(selectedDate)} ({assignments.length})
-              </h3>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Tasks for {formatDate(selectedDate)} ({assignments.length})
+                </h3>
+                <p className="text-sm text-gray-500 mt-0.5">Click the circle to mark complete (done tasks won’t come forward). Type & urgency: edit with the pencil.</p>
+              </div>
             </div>
 
             {assignments.length > 0 ? (
               <div className="space-y-3">
-                {assignments.map((assignment) => (
-                  <div
-                    key={assignment.id}
-                    className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition border border-gray-200"
-                  >
-                    <div className="flex-shrink-0 mt-1">
-                      {getStatusIcon(assignment.item.status)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-gray-900 mb-1">
-                        {assignment.item.title}
-                      </h4>
-                      {assignment.item.body && (
-                        <p className="text-sm text-gray-600 mb-2">
-                          {assignment.item.body}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <span className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded">
-                          {assignment.item.itemType}
-                        </span>
-                        {assignment.item.urgency && (
-                          <span
-                            className={`text-xs px-2 py-1 rounded font-medium ${getUrgencyColor(
-                              assignment.item.urgency
-                            )}`}
-                          >
-                            {assignment.item.urgency}
-                          </span>
+                {assignments.map((assignment) => {
+                  const isDone = assignment.item.status === WorkOpsStatus.done
+                  return (
+                    <div
+                      key={assignment.id}
+                      className={`flex items-start gap-4 p-4 rounded-lg border transition border-gray-200 ${
+                        isDone ? 'bg-green-50/50 border-green-200' : 'bg-gray-50 hover:bg-gray-100'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleToggleComplete(assignment.item)}
+                        className="flex-shrink-0 mt-0.5 p-0.5 rounded-full hover:bg-black/5 transition"
+                        aria-label={isDone ? 'Mark not complete' : 'Mark complete'}
+                        title={isDone ? 'Mark not complete' : 'Mark complete'}
+                      >
+                        {isDone ? (
+                          <CheckCircle className="h-6 w-6 text-green-600" />
+                        ) : (
+                          <Circle className="h-6 w-6 text-gray-400 hover:text-green-600" />
                         )}
-                        <span className="text-xs text-gray-500">
-                          Status: {assignment.item.status}
-                        </span>
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <h4
+                          className={`font-semibold mb-1 ${
+                            isDone ? 'text-gray-500 line-through' : 'text-gray-900'
+                          }`}
+                        >
+                          {assignment.item.title}
+                        </h4>
+                        {assignment.item.body && (
+                          <p className={`text-sm mb-2 ${isDone ? 'text-gray-400 line-through' : 'text-gray-600'}`}>
+                            {assignment.item.body}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded">
+                            {assignment.item.itemType}
+                          </span>
+                          {assignment.item.urgency && (
+                            <span
+                              className={`text-xs px-2 py-1 rounded font-medium ${getUrgencyColor(
+                                assignment.item.urgency
+                              )}`}
+                            >
+                              {assignment.item.urgency}
+                            </span>
+                          )}
+                          <span className="text-xs text-gray-500">
+                            {assignment.item.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0 flex items-center gap-2">
+                        <button
+                          onClick={() => openEdit(assignment.item)}
+                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition"
+                          aria-label="Edit task"
+                          title="Edit task"
+                        >
+                          <Pencil className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => handleUnassignItem(assignment.id)}
+                          className="flex items-center gap-1.5 px-2 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition text-sm"
+                          aria-label="Remove from day"
+                          title="Remove from day"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span>Remove from day</span>
+                        </button>
                       </div>
                     </div>
-                    <div className="flex-shrink-0 flex items-center gap-2">
-                      <button
-                        onClick={() => openEdit(assignment.item)}
-                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition"
-                        aria-label="Edit task"
-                        title="Edit task"
-                      >
-                        <Pencil className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleUnassignItem(assignment.id)}
-                        className="flex items-center gap-1.5 px-2 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition text-sm"
-                        aria-label="Remove from day"
-                        title="Remove from day"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span>Remove from day</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <div className="text-center py-12">

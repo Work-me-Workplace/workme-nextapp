@@ -32,12 +32,7 @@ api.interceptors.request.use(
     const isApiRoute = config.url && config.url.startsWith('/api/')
 
     try {
-      let token = await getIdToken()
-      // If no token on first try for /api, wait and retry once (Firebase may still be restoring session)
-      if (!token && isApiRoute && typeof window !== 'undefined') {
-        await new Promise((r) => setTimeout(r, 1500))
-        token = await getIdToken(true)
-      }
+      const token = await getIdToken()
       if (token) {
         config.headers['Authorization'] = `Bearer ${token}`
         if (process.env.NODE_ENV === 'development') {

@@ -1,8 +1,8 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { onAuthStateChanged, onIdTokenChanged, User } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
+import { auth, authReady } from '@/lib/firebase'
 import api from '@/lib/api'
 
 /**
@@ -61,11 +61,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  /** Tracks if we've ever had a user this session — only clear on null when this is true (real sign-out). */
+  const hadUserRef = useRef(false)
 
   /**
    * Hydrate WorkMe + Company from server
    */
-  const hydrateSession = useCallback(async (firebaseUser: User) => {
+  const hydrateSession = useCallback(async (firebaseUser: User, isRetry = false) => {
     try {
       setLoading(true)
       setError(null)
@@ -95,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setSession(newSession)
+      hadUserRef.current = true
 
       // Mirror to localStorage
       if (typeof window !== 'undefined') {
@@ -127,8 +130,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                          err.message?.includes('not found')
       
       if (isAuthError) {
-        // Only clear on actual auth failures
+        // On 401, retry once with a fresh token (avoids kick-out on brief token expiry)
+        if (!isRetry && auth?.currentUser) {
+          try {
+            await firebaseUser.getIdToken(true)
+            await hydrateSession(firebaseUser, true)
+            return
+          } catch (_) {
+            // Fall through to clear
+          }
+        }
+        // Only clear on actual auth failures (or retry failed)
         console.warn('[AuthProvider] Auth error detected, clearing session')
+        hadUserRef.current = false
         setSession({
           workMeId: null,
           firebaseId: null,
@@ -169,6 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Clear session
    */
   const clearSession = useCallback(() => {
+    hadUserRef.current = false
     setSession({
       workMeId: null,
       firebaseId: null,
@@ -207,49 +222,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    // Listen for auth state changes
-    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (!firebaseUser) {
-        // Only sign out if we had a previous session (not initial load)
-        const hadSession = session.workMeId !== null || session.firebaseId !== null
-        if (hadSession) {
-          console.log('[AuthProvider] User signed out')
-          clearSession()
-        } else {
-          console.log('[AuthProvider] No user on initial load - waiting for auth')
-        }
-        setLoading(false)
-        return
-      }
+    let unsubscribeAuth: (() => void) | null = null
+    let unsubscribeToken: (() => void) | null = null
 
-      console.log('[AuthProvider] Auth state changed, hydrating session:', firebaseUser.uid)
-      await hydrateSession(firebaseUser)
-    })
+    // Wait for persistence to be set so we don't get a spurious null before restore from storage
+    authReady.then((readyAuth) => {
+      if (!readyAuth) return
 
-    // Listen for token refresh
-    const unsubscribeToken = onIdTokenChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        console.log('[AuthProvider] Token refreshed')
-        // Get fresh token and update session
-        const token = await firebaseUser.getIdToken()
-        setSession((prev) => ({
-          ...prev,
-          firebaseToken: token,
-        }))
-
-        // Update localStorage token
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('firebaseToken', token)
+      unsubscribeAuth = onAuthStateChanged(readyAuth, async (firebaseUser) => {
+        if (!firebaseUser) {
+          // Only clear if we'd already had a user (real sign-out). Avoids kick-out on initial load or persistence delay.
+          if (hadUserRef.current) {
+            console.log('[AuthProvider] User signed out')
+            clearSession()
+          } else {
+            console.log('[AuthProvider] No user (initial load or not signed in)')
+          }
+          setLoading(false)
+          return
         }
 
-        // Optionally re-hydrate if session data might be stale
-        // For now, just update token to avoid unnecessary API calls
-      }
+        console.log('[AuthProvider] Auth state changed, hydrating session:', firebaseUser.uid)
+        await hydrateSession(firebaseUser)
+      })
+
+      // Listen for token refresh
+      unsubscribeToken = onIdTokenChanged(readyAuth, async (firebaseUser) => {
+        if (firebaseUser) {
+          console.log('[AuthProvider] Token refreshed')
+          const token = await firebaseUser.getIdToken(false)
+          setSession((prev) => ({
+            ...prev,
+            firebaseToken: token,
+          }))
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('firebaseToken', token)
+          }
+        }
+      })
     })
 
     return () => {
-      unsubscribeAuth()
-      unsubscribeToken()
+      unsubscribeAuth?.()
+      unsubscribeToken?.()
     }
   }, [auth, hydrateSession, clearSession])
 
@@ -262,7 +277,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refreshSession,
       }}
     >
-      {children}
+      {loading ? (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   )
 }
