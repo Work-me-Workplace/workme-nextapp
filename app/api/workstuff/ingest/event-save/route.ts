@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireWorkMeAuth } from '@/lib/server/requireWorkMeAuth'
 import { prisma } from '@/lib/prisma'
+import { normalizeEventCategory, normalizeAudience } from '@/lib/server/gptJsonMapperService'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -82,11 +83,11 @@ export async function POST(request: NextRequest) {
         endTime: data.endTime,
         location: data.location,
         
-        // Event-specific
-        eventCategory: data.eventCategory as any,
+        // Event-specific (normalize to Prisma enums; invalid values become null)
+        eventCategory: normalizeEventCategory(data.eventCategory),
         registrationRequired: data.registrationRequired,
         registrationLink: data.registrationLink,
-        audience: data.audience as any,
+        audience: normalizeAudience(data.audience),
         vibe: data.vibe,
         eventItems: data.eventItems ?? undefined,
         participation: data.participation ?? undefined,

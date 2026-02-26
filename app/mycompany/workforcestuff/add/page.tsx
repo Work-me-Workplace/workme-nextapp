@@ -7,6 +7,8 @@ import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import { getIdToken } from '@/lib/firebase/getIdToken'
 import api from '@/lib/api'
 import { getWorkMe } from '@/lib/workme.client'
+import { EVENT_CATEGORY_OPTIONS } from '@/config/event-category'
+import { EVENT_AUDIENCE_OPTIONS } from '@/config/event-audience'
 
 // Helper function to format type names for display
 function formatTypeName(type: string | null | undefined): string {
@@ -81,6 +83,7 @@ export default function AddWorkforceStuffPage() {
     explanation: string
     redirectTo: string
   } | null>(null)
+  const [themeSuggestionLoading, setThemeSuggestionLoading] = useState(false)
 
   async function handleContinue() {
     if (!rawText.trim()) {
@@ -503,7 +506,45 @@ export default function AddWorkforceStuffPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <label className="block text-sm font-medium text-gray-700">Theme</label>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (themeSuggestionLoading || !rawText?.trim()) return
+                  setThemeSuggestionLoading(true)
+                  try {
+                    const res = await api.post('/api/workstuff/ingest/event-suggest-theme', {
+                      rawText: rawText.trim(),
+                      title: parsedData?.title,
+                      description: parsedData?.description,
+                    })
+                    if (res.data?.success && (res.data.theme != null || res.data.eventCategory != null)) {
+                      setParsedData({
+                        ...parsedData,
+                        theme: res.data.theme ?? parsedData?.theme ?? '',
+                        eventCategory: res.data.eventCategory ?? parsedData?.eventCategory ?? '',
+                      })
+                    }
+                  } catch (e) {
+                    console.error('Theme suggestion failed', e)
+                  } finally {
+                    setThemeSuggestionLoading(false)
+                  }
+                }}
+                disabled={themeSuggestionLoading || !rawText?.trim()}
+                className="text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+              >
+                {themeSuggestionLoading ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Suggesting...
+                  </>
+                ) : (
+                  'Suggest theme'
+                )}
+              </button>
+            </div>
             <input
               type="text"
               value={parsedData?.theme || ''}
@@ -562,21 +603,33 @@ export default function AddWorkforceStuffPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-              <input
-                type="text"
-                value={parsedData?.eventCategory || ''}
-                onChange={(e) => setParsedData({ ...parsedData, eventCategory: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-md"
-              />
+              <select
+                value={EVENT_CATEGORY_OPTIONS.some((o) => o.value === parsedData?.eventCategory) ? parsedData.eventCategory : ''}
+                onChange={(e) => setParsedData({ ...parsedData, eventCategory: e.target.value || null })}
+                className="w-full p-2 border border-gray-300 rounded-md bg-white"
+              >
+                <option value="">Select category...</option>
+                {EVENT_CATEGORY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Audience</label>
-              <input
-                type="text"
-                value={parsedData?.audience || ''}
-                onChange={(e) => setParsedData({ ...parsedData, audience: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-md"
-              />
+              <select
+                value={EVENT_AUDIENCE_OPTIONS.some((o) => o.value === parsedData?.audience) ? parsedData.audience : ''}
+                onChange={(e) => setParsedData({ ...parsedData, audience: e.target.value || null })}
+                className="w-full p-2 border border-gray-300 rounded-md bg-white"
+              >
+                <option value="">Select audience...</option>
+                {EVENT_AUDIENCE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           <div>

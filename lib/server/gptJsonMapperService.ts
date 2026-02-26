@@ -116,7 +116,7 @@ function normalizeFoodProvided(value: string | null | undefined): string | null 
  * Normalize eventCategory to EventCategory enum
  * Maps string values to enum values (case-insensitive, handles variations)
  */
-function normalizeEventCategory(value: string | EventCategory | null | undefined): EventCategory | null {
+export function normalizeEventCategory(value: string | EventCategory | null | undefined): EventCategory | null {
   if (!value) return null
   
   // If already an enum, return it
@@ -155,6 +155,9 @@ function normalizeEventCategory(value: string | EventCategory | null | undefined
     'THANK_YOU': EventCategory.APPRECIATION,
     'THANKS': EventCategory.APPRECIATION,
     'FAMILY_DAY': EventCategory.FAMILY,
+    'KIDS': EventCategory.FAMILY,
+    'KID': EventCategory.FAMILY,
+    'CHILDREN': EventCategory.FAMILY,
   }
   
   // Check map with uppercase value
@@ -179,7 +182,7 @@ function normalizeEventCategory(value: string | EventCategory | null | undefined
   if (lowerValue.includes('appreciation') || lowerValue.includes('thank') || lowerValue.includes('morale')) {
     return EventCategory.APPRECIATION
   }
-  if (lowerValue.includes('family')) {
+  if (lowerValue.includes('family') || lowerValue.includes('kids') || lowerValue.includes('child')) {
     return EventCategory.FAMILY
   }
   
@@ -191,7 +194,7 @@ function normalizeEventCategory(value: string | EventCategory | null | undefined
  * Normalize audience to EventAudience enum
  * Maps string values to enum values (case-insensitive, handles variations)
  */
-function normalizeAudience(value: string | EventAudience | null | undefined): EventAudience | null {
+export function normalizeAudience(value: string | EventAudience | null | undefined): EventAudience | null {
   if (!value) return null
   
   // If already an enum, return it
