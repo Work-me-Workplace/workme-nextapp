@@ -21,15 +21,23 @@ import {
 } from 'firebase/auth'
 import { firebaseClientApp } from './firebaseClient'
 
-// Only initialize auth in browser
+// Only initialize auth in browser. Persistence MUST be set before any auth use.
 let auth: Auth | null = null
 
 if (typeof window !== 'undefined' && firebaseClientApp) {
   auth = getAuth(firebaseClientApp)
-  setPersistence(auth, browserLocalPersistence).catch((error) => {
-    console.error('Failed to set auth persistence:', error)
-  })
 }
+
+/** Resolves when persistence is set. Subscribe to auth only after this to avoid being kicked out on load. */
+const authReady: Promise<Auth | null> =
+  auth
+    ? setPersistence(auth, browserLocalPersistence)
+        .then(() => auth)
+        .catch((error) => {
+          console.error('[Firebase] Failed to set auth persistence:', error)
+          return auth
+        })
+    : Promise.resolve(null)
 
 export async function signInWithGoogle() {
   if (!auth) {
@@ -99,5 +107,5 @@ export function getCurrentUser() {
   return auth?.currentUser || null
 }
 
-// Export auth for direct access (with null check)
-export { auth }
+// Explicit named exports so bundlers (e.g. Vercel) resolve correctly when lib/firebase/ dir exists
+export { auth, authReady }
