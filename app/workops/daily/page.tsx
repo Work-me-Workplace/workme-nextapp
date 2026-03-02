@@ -24,7 +24,7 @@ import {
   Circle,
 } from 'lucide-react'
 import api from '@/lib/api'
-import { WorkOpsStatus, WorkOpsItemType, WorkOpsUrgency } from '@prisma/client'
+import { WorkOpsStatus, WorkOpsItemType, WorkOpsUrgency, WorkOpsCategory } from '@prisma/client'
 
 const ITEM_TYPE_OPTIONS: { value: WorkOpsItemType; label: string }[] = [
   { value: WorkOpsItemType.task, label: 'Task' },
@@ -46,12 +46,21 @@ const URGENCY_OPTIONS: { value: WorkOpsUrgency; label: string }[] = [
   { value: WorkOpsUrgency.critical, label: 'Critical' },
 ]
 
+const CATEGORY_OPTIONS: { value: WorkOpsCategory; label: string }[] = [
+  { value: WorkOpsCategory.product, label: 'Product' },
+  { value: WorkOpsCategory.planning, label: 'Planning' },
+  { value: WorkOpsCategory.bossrequest, label: 'Boss Request' },
+  { value: WorkOpsCategory.emergent, label: 'Emergent' },
+  { value: WorkOpsCategory.companyevent, label: 'Company Event' },
+]
+
 interface WorkOpsItem {
   id: string
   title: string
   body?: string | null
   itemType: string
   urgency?: string | null
+  category?: string | null
   status: WorkOpsStatus
   source?: string | null
   dueDate?: string | null
@@ -91,6 +100,7 @@ export default function DailyOutlookPage() {
   const [editBody, setEditBody] = useState('')
   const [editItemType, setEditItemType] = useState<WorkOpsItemType>(WorkOpsItemType.task)
   const [editUrgency, setEditUrgency] = useState<WorkOpsUrgency | ''>('')
+  const [editCategory, setEditCategory] = useState<WorkOpsCategory | ''>('')
   const [savingEdit, setSavingEdit] = useState(false)
   const [quickAddText, setQuickAddText] = useState('')
   const [quickAddLoading, setQuickAddLoading] = useState(false)
@@ -110,11 +120,38 @@ export default function DailyOutlookPage() {
     loadOutlook(workMeId)
   }, [workMeId, router])
 
+  const handleAutoCarryover = async () => {
+    if (!outlookId) return
+    clearError()
+    try {
+      const dayStr = selectedDate.toISOString().split('T')[0]
+      const res = await api.post('/api/workops/daily-assignments/auto-carryover', {
+        day: dayStr,
+      })
+      if (res.data.success && res.data.carriedOver > 0) {
+        // Reload assignments to show carried-over tasks
+        await loadDailyAssignments()
+        await loadUnassignedItems()
+        if (showUncompletedFromPast) await loadUncompletedFromPast()
+        // Show subtle notification (optional - could be a toast)
+        console.log(`Auto-carried over ${res.data.carriedOver} tasks`)
+      }
+    } catch (error: any) {
+      // Silently fail - don't show error for auto-carryover
+      console.error('Auto-carryover failed:', error)
+    }
+  }
+
   useEffect(() => {
     if (outlookId && selectedDate) {
       loadDailyAssignments()
       loadUnassignedItems()
+      // Auto-carryover when viewing today
+      if (isToday(selectedDate)) {
+        handleAutoCarryover()
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [outlookId, selectedDate])
 
   useEffect(() => {
@@ -312,10 +349,12 @@ export default function DailyOutlookPage() {
     setEditBody(item.body || '')
     setEditItemType(item.itemType as WorkOpsItemType)
     setEditUrgency((item.urgency as WorkOpsUrgency) || '')
+    setEditCategory((item.category as WorkOpsCategory) || '')
   }
 
   const closeEdit = () => {
     setEditItem(null)
+    setEditCategory('')
   }
 
   const saveEdit = async () => {
@@ -328,6 +367,7 @@ export default function DailyOutlookPage() {
         body: editBody.trim() || null,
         itemType: editItemType,
         urgency: editUrgency || null,
+        category: editCategory || null,
       })
       closeEdit()
       await loadDailyAssignments()
@@ -440,6 +480,23 @@ export default function DailyOutlookPage() {
         return 'bg-yellow-100 text-yellow-800'
       case 'low':
         return 'bg-green-100 text-green-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getCategoryColor = (category?: string | null) => {
+    switch (category) {
+      case 'product':
+        return 'bg-blue-100 text-blue-800'
+      case 'planning':
+        return 'bg-purple-100 text-purple-800'
+      case 'bossrequest':
+        return 'bg-pink-100 text-pink-800'
+      case 'emergent':
+        return 'bg-red-100 text-red-800'
+      case 'companyevent':
+        return 'bg-indigo-100 text-indigo-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
@@ -638,6 +695,15 @@ export default function DailyOutlookPage() {
                               </p>
                             )}
                           </div>
+                          {item.category && (
+                            <span
+                              className={`px-2 py-1 text-xs font-medium rounded ${getCategoryColor(
+                                item.category
+                              )}`}
+                            >
+                              {item.category}
+                            </span>
+                          )}
                           {item.urgency && (
                             <span
                               className={`px-2 py-1 text-xs font-medium rounded ${getUrgencyColor(
@@ -903,6 +969,15 @@ export default function DailyOutlookPage() {
                           <span className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded">
                             {assignment.item.itemType}
                           </span>
+                          {assignment.item.category && (
+                            <span
+                              className={`text-xs px-2 py-1 rounded font-medium ${getCategoryColor(
+                                assignment.item.category
+                              )}`}
+                            >
+                              {assignment.item.category}
+                            </span>
+                          )}
                           {assignment.item.urgency && (
                             <span
                               className={`text-xs px-2 py-1 rounded font-medium ${getUrgencyColor(
@@ -1044,6 +1119,23 @@ export default function DailyOutlookPage() {
                     ))}
                   </select>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <select
+                    value={editCategory}
+                    onChange={(e) => setEditCategory((e.target.value || '') as WorkOpsCategory | '')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">None</option>
+                    {CATEGORY_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Urgency</label>
                   <select

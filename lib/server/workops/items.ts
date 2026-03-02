@@ -5,7 +5,7 @@
  */
 
 import { prisma } from '@/lib/prisma'
-import { WorkOpsItemType, WorkOpsUrgency, WorkOpsSource, WorkOpsDerivedFrom } from '@prisma/client'
+import { WorkOpsItemType, WorkOpsUrgency, WorkOpsSource, WorkOpsDerivedFrom, WorkOpsCategory } from '@prisma/client'
 
 export interface CreateWorkOpsItemData {
   outlookId: string
@@ -15,6 +15,7 @@ export interface CreateWorkOpsItemData {
   urgency?: WorkOpsUrgency | null
   source?: WorkOpsSource | null
   derivedFrom?: WorkOpsDerivedFrom | null
+  category?: WorkOpsCategory | null
   dueDate?: Date | null
   assignedBy?: string | null
 }
@@ -39,6 +40,7 @@ export async function createWorkOpsItem(data: CreateWorkOpsItemData) {
       urgency: data.urgency || null,
       source: data.source || null,
       derivedFrom: data.derivedFrom || null,
+      category: data.category || null,
       dueDate: data.dueDate || null,
       assignedBy: data.assignedBy || null,
     },
@@ -89,6 +91,7 @@ export async function updateWorkOpsItem(id: string, data: Partial<{
   urgency: WorkOpsUrgency | null
   status: any // WorkOpsStatus
   source: WorkOpsSource | null
+  category: WorkOpsCategory | null
   priority: number | null
   dueDate: Date | null
   assignedBy: string | null

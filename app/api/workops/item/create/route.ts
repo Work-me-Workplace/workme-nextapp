@@ -3,7 +3,7 @@ import { verifyAuth } from '@/lib/server/verifyAuth'
 import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { getOrCreateOutlook } from '@/lib/server/workops/outlook'
 import { createWorkOpsItem } from '@/lib/server/workops/items'
-import { WorkOpsItemType, WorkOpsUrgency, WorkOpsSource, WorkOpsDerivedFrom } from '@prisma/client'
+import { WorkOpsItemType, WorkOpsUrgency, WorkOpsSource, WorkOpsDerivedFrom, WorkOpsCategory } from '@prisma/client'
 import { z } from 'zod'
 
 // Force dynamic rendering
@@ -16,6 +16,7 @@ const createItemSchema = z.object({
   urgency: z.nativeEnum(WorkOpsUrgency).optional().nullable(),
   source: z.nativeEnum(WorkOpsSource).optional().nullable(),
   derivedFrom: z.nativeEnum(WorkOpsDerivedFrom).optional().nullable(),
+  category: z.nativeEnum(WorkOpsCategory).optional().nullable(),
   dueDate: z.string().optional().nullable(),
   assignedBy: z.string().optional().nullable(),
 })
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
       urgency: validated.urgency || null,
       source: validated.source || null,
       derivedFrom: validated.derivedFrom || null,
+      category: validated.category || null,
       dueDate: validated.dueDate ? new Date(validated.dueDate) : null,
       assignedBy: validated.assignedBy || null,
     })

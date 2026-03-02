@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/server/verifyAuth'
 import { loadWorkMe } from '@/lib/auth/loadWorkMe'
 import { getWorkOpsItem, updateWorkOpsItem, deleteWorkOpsItem } from '@/lib/server/workops/items'
-import { WorkOpsItemType, WorkOpsUrgency, WorkOpsSource, WorkOpsStatus } from '@prisma/client'
+import { WorkOpsItemType, WorkOpsUrgency, WorkOpsSource, WorkOpsStatus, WorkOpsCategory } from '@prisma/client'
 import { z } from 'zod'
 
 // Force dynamic rendering
@@ -15,6 +15,7 @@ const updateItemSchema = z.object({
   urgency: z.nativeEnum(WorkOpsUrgency).optional().nullable(),
   status: z.nativeEnum(WorkOpsStatus).optional(),
   source: z.nativeEnum(WorkOpsSource).optional().nullable(),
+  category: z.nativeEnum(WorkOpsCategory).optional().nullable(),
   priority: z.number().optional().nullable(),
   dueDate: z.string().optional().nullable(),
   assignedBy: z.string().optional().nullable(),
@@ -63,6 +64,7 @@ export async function PATCH(
     if (validated.urgency !== undefined) updateData.urgency = validated.urgency
     if (validated.status !== undefined) updateData.status = validated.status
     if (validated.source !== undefined) updateData.source = validated.source
+    if (validated.category !== undefined) updateData.category = validated.category
     if (validated.priority !== undefined) updateData.priority = validated.priority
     if (validated.dueDate !== undefined) {
       updateData.dueDate = validated.dueDate ? new Date(validated.dueDate) : null

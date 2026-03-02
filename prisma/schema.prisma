@@ -1504,6 +1504,14 @@ enum WorkOpsDerivedFrom {
   personal
 }
 
+enum WorkOpsCategory {
+  product
+  planning
+  bossrequest
+  emergent
+  companyevent
+}
+
 model WorkOpsOutlook {
   id        String   @id @default(cuid())
   workMeId  String   @unique @db.Uuid
@@ -1531,6 +1539,7 @@ model WorkOpsItem {
   status      WorkOpsStatus   @default(open)
   source      WorkOpsSource?  // how added: manual | ai
   derivedFrom WorkOpsDerivedFrom?
+  category    WorkOpsCategory? // work classification: product, planning, bossrequest, emergent, companyevent
 
   priority   Int?
   dueDate    DateTime?
@@ -1542,6 +1551,7 @@ model WorkOpsItem {
   @@index([outlookId])
   @@index([status])
   @@index([itemType])
+  @@index([category])
 }
 
 model WorkOpsDailyAssignment {
