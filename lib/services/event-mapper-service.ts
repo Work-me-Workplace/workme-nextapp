@@ -41,6 +41,62 @@ export interface EventModel {
   pocPhone: string | null
 }
 
+export interface ThemeSuggestion {
+  theme: string | null
+  eventCategory: EventCategory | null
+}
+
+/**
+ * Suggest theme and event category from raw text (or title+description).
+ * Lightweight call for "Suggest theme" UI — faster than full parseEvent.
+ */
+export async function suggestEventTheme(input: {
+  rawText?: string
+  title?: string
+  description?: string
+}): Promise<ThemeSuggestion> {
+  const openai = getOpenAI()
+  const validCategories = Object.values(EventCategory).join(', ')
+  const text =
+    input.rawText?.trim() ||
+    [input.title, input.description].filter(Boolean).join('\n\n').trim() ||
+    ''
+  if (!text) {
+    return { theme: null, eventCategory: null }
+  }
+
+  const prompt = `From this event text, suggest ONLY:
+1. theme: A short theme label (e.g. "Appreciation", "Heritage", "Recognition", "Community", "Wellness"). One or two words. Or null if unclear.
+2. eventCategory: Exactly one of: ${validCategories}. Or null if unclear.
+
+Return valid JSON only: { "theme": "string or null", "eventCategory": "ENUM_VALUE or null" }
+
+Text:
+${text.substring(0, 2000)}`
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: 'You suggest event theme and category. Return only valid JSON.' },
+        { role: 'user', content: prompt },
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.3,
+    })
+    const parsed = JSON.parse(response.choices[0].message?.content || '{}')
+    const theme = typeof parsed.theme === 'string' && parsed.theme.trim() ? parsed.theme.trim() : null
+    const eventCategory =
+      parsed.eventCategory && Object.values(EventCategory).includes(parsed.eventCategory)
+        ? parsed.eventCategory
+        : null
+    return { theme, eventCategory }
+  } catch (err) {
+    console.error('[suggestEventTheme]', err)
+    return { theme: null, eventCategory: null }
+  }
+}
+
 /**
  * Parse event data from raw text
  * Pure function - no side effects
@@ -133,7 +189,7 @@ ${rawText.substring(0, 3000)}`
       foodProvided = 'yes'
       if (!foodTypes) {
         const matches = lower.match(/\b(coffee|pastries|donuts|doughnuts|breakfast|lunch|refreshments|snacks|drinks|beverages)\b/g)
-        foodTypes = matches ? [...new Set(matches)].join(', ') : 'refreshments'
+        foodTypes = matches ? Array.from(new Set(matches)).join(', ') : 'refreshments'
       }
     }
     // If we set food and eventItems is empty, add food to eventItems so it shows as a highlight

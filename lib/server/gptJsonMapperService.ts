@@ -146,6 +146,10 @@ export function normalizeEventCategory(value: string | EventCategory | null | un
     'RECOGNITION': EventCategory.RECOGNITION,
     'APPRECIATION': EventCategory.APPRECIATION,
     'FAMILY': EventCategory.FAMILY,
+    'TRAINING': EventCategory.TRAINING,
+    'SOCIAL': EventCategory.SOCIAL,
+    'NETWORKING': EventCategory.NETWORKING,
+    'WELLNESS': EventCategory.WELLNESS,
     // Variations
     'CELEBRATING': EventCategory.CELEBRATION,
     'HERITAGE_MONTH': EventCategory.HERITAGE,
@@ -158,6 +162,15 @@ export function normalizeEventCategory(value: string | EventCategory | null | un
     'KIDS': EventCategory.FAMILY,
     'KID': EventCategory.FAMILY,
     'CHILDREN': EventCategory.FAMILY,
+    'TRAININGS': EventCategory.TRAINING,
+    'COURSE': EventCategory.TRAINING,
+    'LEARNING': EventCategory.TRAINING,
+    'SOCIAL_EVENT': EventCategory.SOCIAL,
+    'GATHERING': EventCategory.SOCIAL,
+    'NETWORK': EventCategory.NETWORKING,
+    'CONNECT': EventCategory.NETWORKING,
+    'HEALTH': EventCategory.WELLNESS,
+    'FITNESS': EventCategory.WELLNESS,
   }
   
   // Check map with uppercase value
@@ -184,6 +197,18 @@ export function normalizeEventCategory(value: string | EventCategory | null | un
   }
   if (lowerValue.includes('family') || lowerValue.includes('kids') || lowerValue.includes('child')) {
     return EventCategory.FAMILY
+  }
+  if (lowerValue.includes('training') || lowerValue.includes('course') || lowerValue.includes('learning') || lowerValue.includes('certification')) {
+    return EventCategory.TRAINING
+  }
+  if (lowerValue.includes('social') || lowerValue.includes('gathering') || lowerValue.includes('party')) {
+    return EventCategory.SOCIAL
+  }
+  if (lowerValue.includes('network') || lowerValue.includes('connect') || lowerValue.includes('meetup')) {
+    return EventCategory.NETWORKING
+  }
+  if (lowerValue.includes('wellness') || lowerValue.includes('health') || lowerValue.includes('fitness') || lowerValue.includes('mental health')) {
+    return EventCategory.WELLNESS
   }
   
   console.warn(`[normalizeEventCategory] Could not map value: "${value}" (normalized: "${upperValue}")`)
@@ -222,6 +247,8 @@ export function normalizeAudience(value: string | EventAudience | null | undefin
     'LEADERS': EventAudience.LEADERS,
     'WORKFORCE_AND_FAMILIES': EventAudience.WORKFORCE_AND_FAMILIES,
     'COMMUNITY': EventAudience.COMMUNITY,
+    'MANAGEMENT': EventAudience.MANAGEMENT,
+    'DEPARTMENT_SPECIFIC': EventAudience.DEPARTMENT_SPECIFIC,
     // Variations
     'ALL_EMPLOYEES': EventAudience.ALL_WORKFORCE,
     'WORKFORCE': EventAudience.ALL_WORKFORCE,
@@ -230,6 +257,11 @@ export function normalizeAudience(value: string | EventAudience | null | undefin
     'FAMILIES': EventAudience.WORKFORCE_AND_FAMILIES,
     'OPEN_HOUSE': EventAudience.WORKFORCE_AND_FAMILIES,
     'LOCAL_COMMUNITY': EventAudience.COMMUNITY,
+    'MANAGERS': EventAudience.MANAGEMENT,
+    'MANAGEMENT_TEAM': EventAudience.MANAGEMENT,
+    'DEPARTMENT': EventAudience.DEPARTMENT_SPECIFIC,
+    'DEPT_SPECIFIC': EventAudience.DEPARTMENT_SPECIFIC,
+    'SPECIFIC_DEPARTMENT': EventAudience.DEPARTMENT_SPECIFIC,
   }
   
   // Check map with uppercase value
@@ -250,6 +282,12 @@ export function normalizeAudience(value: string | EventAudience | null | undefin
   }
   if (lowerValue.includes('community') || lowerValue.includes('partner') || lowerValue.includes('visitor')) {
     return EventAudience.COMMUNITY
+  }
+  if (lowerValue.includes('management') || lowerValue.includes('manager') || lowerValue.includes('executive')) {
+    return EventAudience.MANAGEMENT
+  }
+  if (lowerValue.includes('department') && (lowerValue.includes('specific') || lowerValue.includes('only'))) {
+    return EventAudience.DEPARTMENT_SPECIFIC
   }
   
   console.warn(`[normalizeAudience] Could not map value: "${value}" (normalized: "${upperValue}")`)

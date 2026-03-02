@@ -150,6 +150,8 @@ enum EventAudience {
   LEADERS
   WORKFORCE_AND_FAMILIES
   COMMUNITY
+  MANAGEMENT
+  DEPARTMENT_SPECIFIC
 }
 
 enum EventCategory {
@@ -159,6 +161,10 @@ enum EventCategory {
   RECOGNITION
   APPRECIATION
   FAMILY
+  TRAINING
+  SOCIAL
+  NETWORKING
+  WELLNESS
 }
 
 enum DigitalSignType {
@@ -681,6 +687,7 @@ model CompanyEvent {
   audience      EventAudience?
   vibe          String?
   eventItems    String[]       @default([]) // Highlights, agenda items, key moments (replaces perks)
+  highlights    Json?          // JSON array for company event highlights
   participation String[]       @default([])
 
   foodProvided String?
